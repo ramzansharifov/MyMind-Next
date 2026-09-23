@@ -26,6 +26,7 @@ import { notifyDataChanged } from '../../app/changes'
 import { AppIcon, type AppIconName } from '../../shared/ui/icons'
 import {
   MOBILE_CREATE_ACTION_STEP,
+  mobileCreateActionSelection,
   wrapCarouselIndex
 } from '../../shared/ui/mobile-create-action-gesture'
 import { useMobileCreateActionOverlay } from '../../shared/ui/MobileCreateActionOverlayContext'
@@ -50,23 +51,33 @@ interface CarouselOption {
     | { kind: 'glyph'; value: string }
 }
 
-const CAROUSEL_HEIGHT = 356
-const CARD_HEIGHT = 104
+const CAROUSEL_HEIGHT = 382
+const CARD_HEIGHT = 108
 const CARD_TOP = (CAROUSEL_HEIGHT - CARD_HEIGHT) / 2
-const SWIPE_THRESHOLD = 54
+const HALF_STEP = MOBILE_CREATE_ACTION_STEP / 2
 
-function slotScale(slot: number): [number, number, number] {
-  if (slot === 0) return [0.91, 1, 0.91]
-  if (slot === -1) return [0.78, 0.88, 1]
-  if (slot === 1) return [1, 0.88, 0.78]
-  return [0.68, 0.74, 0.78]
+function relativeCarouselSlot(itemIndex: number, currentIndex: number, length: number): number {
+  if (length <= 1) return 0
+
+  let slot = wrapCarouselIndex(itemIndex - currentIndex, length)
+  if (slot > length / 2) slot -= length
+  return slot
 }
 
-function slotOpacity(slot: number): [number, number, number] {
-  if (slot === 0) return [0.82, 1, 0.82]
-  if (slot === -1) return [0.1, 0.5, 0.82]
-  if (slot === 1) return [0.82, 0.5, 0.1]
-  return [0.01, 0.06, 0.1]
+function slotScaleRange(slot: number): [number, number, number] {
+  if (slot === 0) return [0.95, 1, 0.95]
+  if (slot === -1) return [0.82, 0.9, 0.95]
+  if (slot === 1) return [0.95, 0.9, 0.82]
+  if (slot < -1) return [0.74, 0.8, 0.82]
+  return [0.82, 0.8, 0.74]
+}
+
+function slotOpacityRange(slot: number): [number, number, number] {
+  if (slot === 0) return [0.86, 1, 0.86]
+  if (slot === -1) return [0.22, 0.58, 0.86]
+  if (slot === 1) return [0.86, 0.58, 0.22]
+  if (slot < -1) return [0.02, 0.1, 0.22]
+  return [0.22, 0.1, 0.02]
 }
 
 function QuickCarousel({
@@ -81,87 +92,52 @@ function QuickCarousel({
   onBusyChange(busy: boolean): void
 }): React.JSX.Element {
   const theme = useTheme()
-  const [dragY] = useState(() => new Animated.Value(0))
-  const startYRef = useRef(0)
-  const currentYRef = useRef(0)
-  const settlingRef = useRef(false)
+  const [offsetY] = useState(() => new Animated.Value(0))
+  const gestureStartYRef = useRef(0)
+  const gestureBaseIndexRef = useRef(0)
 
-  const settle = (direction: -1 | 1): void => {
-    if (settlingRef.current || options.length < 2) return
-    settlingRef.current = true
-    onBusyChange(true)
-    const target = direction === 1 ? -MOBILE_CREATE_ACTION_STEP : MOBILE_CREATE_ACTION_STEP
-
-    Animated.timing(dragY, {
-      toValue: target,
-      duration: 175,
-      easing: Easing.out(Easing.cubic),
+  const settle = (): void => {
+    offsetY.stopAnimation()
+    Animated.spring(offsetY, {
+      toValue: 0,
+      damping: 25,
+      stiffness: 250,
+      mass: 0.75,
+      overshootClamping: true,
       useNativeDriver: true
-    }).start(() => {
-      onSelectedIndexChange(wrapCarouselIndex(selectedIndex + direction, options.length))
-      dragY.setValue(0)
-      settlingRef.current = false
-      onBusyChange(false)
-    })
+    }).start(() => onBusyChange(false))
   }
-
-  const selected = options[selectedIndex]
 
   return (
     <View
       accessibilityRole="adjustable"
-      accessibilityLabel={selected ? `Выбрано: ${selected.title}` : 'Карусель выбора'}
-      onStartShouldSetResponder={() => true}
-      onMoveShouldSetResponder={() => true}
+      accessibilityLabel={
+        options[selectedIndex] ? `Выбрано: ${options[selectedIndex].title}` : 'Карусель выбора'
+      }
+      onStartShouldSetResponder={() => options.length > 0}
+      onMoveShouldSetResponder={() => options.length > 0}
       onResponderGrant={(event: GestureResponderEvent) => {
-        if (settlingRef.current) return
-        startYRef.current = event.nativeEvent.pageY
-        currentYRef.current = event.nativeEvent.pageY
-        dragY.stopAnimation()
+        if (!options.length) return
+        gestureStartYRef.current = event.nativeEvent.pageY
+        gestureBaseIndexRef.current = selectedIndex
+        onBusyChange(true)
+        offsetY.stopAnimation()
+        offsetY.setValue(0)
       }}
       onResponderMove={(event: GestureResponderEvent) => {
-        if (settlingRef.current) return
-        currentYRef.current = event.nativeEvent.pageY
-        const dy = currentYRef.current - startYRef.current
-        dragY.setValue(
-          Math.max(-MOBILE_CREATE_ACTION_STEP, Math.min(MOBILE_CREATE_ACTION_STEP, dy))
+        if (!options.length) return
+        const selection = mobileCreateActionSelection(
+          event.nativeEvent.pageY - gestureStartYRef.current,
+          options.length,
+          gestureBaseIndexRef.current,
+          MOBILE_CREATE_ACTION_STEP
         )
+        offsetY.setValue(selection.offsetY)
+        if (selection.index !== selectedIndex) onSelectedIndexChange(selection.index)
       }}
-      onResponderRelease={() => {
-        if (settlingRef.current || !selected) return
-        const dy = currentYRef.current - startYRef.current
-        if (Math.abs(dy) < 12) {
-          Animated.spring(dragY, {
-            toValue: 0,
-            damping: 24,
-            stiffness: 250,
-            mass: 0.75,
-            useNativeDriver: true
-          }).start()
-          return
-        }
-        if (Math.abs(dy) >= SWIPE_THRESHOLD && options.length > 1) {
-          settle(dy < 0 ? 1 : -1)
-          return
-        }
-        Animated.spring(dragY, {
-          toValue: 0,
-          damping: 24,
-          stiffness: 250,
-          mass: 0.75,
-          useNativeDriver: true
-        }).start()
-      }}
+      onResponderRelease={settle}
       onResponderTerminationRequest={() => false}
-      onResponderTerminate={() => {
-        Animated.spring(dragY, {
-          toValue: 0,
-          damping: 24,
-          stiffness: 250,
-          mass: 0.75,
-          useNativeDriver: true
-        }).start()
-      }}
+      onResponderTerminate={settle}
       style={{
         width: '100%',
         maxWidth: 360,
@@ -169,141 +145,144 @@ function QuickCarousel({
         overflow: 'hidden'
       }}
     >
-      {(options.length === 1 ? [0] : options.length <= 3 ? [-1, 0, 1] : [-2, -1, 0, 1, 2]).map(
-        (slot) => {
-          const optionIndex = wrapCarouselIndex(selectedIndex + slot, options.length)
-          const option = options[optionIndex]
-          if (!option) return null
+      {options.map((option, optionIndex) => {
+        const slot = relativeCarouselSlot(optionIndex, selectedIndex, options.length)
+        if (Math.abs(slot) > 2) return null
 
-          const scale = dragY.interpolate({
-            inputRange: [-MOBILE_CREATE_ACTION_STEP, 0, MOBILE_CREATE_ACTION_STEP],
-            outputRange: slotScale(slot),
-            extrapolate: 'clamp'
-          })
-          const opacity = dragY.interpolate({
-            inputRange: [-MOBILE_CREATE_ACTION_STEP, 0, MOBILE_CREATE_ACTION_STEP],
-            outputRange: slotOpacity(slot),
-            extrapolate: 'clamp'
-          })
-          const translateY = dragY.interpolate({
-            inputRange: [-MOBILE_CREATE_ACTION_STEP, MOBILE_CREATE_ACTION_STEP],
-            outputRange: [
-              slot * MOBILE_CREATE_ACTION_STEP - MOBILE_CREATE_ACTION_STEP,
-              slot * MOBILE_CREATE_ACTION_STEP + MOBILE_CREATE_ACTION_STEP
-            ],
-            extrapolate: 'clamp'
-          })
-          const active = slot === 0
+        const scale = offsetY.interpolate({
+          inputRange: [-HALF_STEP, 0, HALF_STEP],
+          outputRange: slotScaleRange(slot),
+          extrapolate: 'clamp'
+        })
+        const opacity = offsetY.interpolate({
+          inputRange: [-HALF_STEP, 0, HALF_STEP],
+          outputRange: slotOpacityRange(slot),
+          extrapolate: 'clamp'
+        })
+        const translateY = offsetY.interpolate({
+          inputRange: [-HALF_STEP, HALF_STEP],
+          outputRange: [
+            slot * MOBILE_CREATE_ACTION_STEP - HALF_STEP,
+            slot * MOBILE_CREATE_ACTION_STEP + HALF_STEP
+          ],
+          extrapolate: 'clamp'
+        })
+        const active = slot === 0
 
-          return (
-            <Animated.View
-              key={`${slot}:${option.key}`}
-              pointerEvents="none"
+        return (
+          <Animated.View
+            key={option.key}
+            pointerEvents="none"
+            style={{
+              position: 'absolute',
+              top: CARD_TOP,
+              right: 0,
+              left: 0,
+              height: CARD_HEIGHT,
+              alignItems: 'center',
+              justifyContent: 'center',
+              opacity,
+              transform: [{ translateY }, { scale }]
+            }}
+          >
+            <View
               style={{
-                position: 'absolute',
-                top: CARD_TOP,
-                right: 0,
-                left: 0,
+                width: '88%',
+                maxWidth: 310,
                 height: CARD_HEIGHT,
+                flexDirection: 'row',
                 alignItems: 'center',
-                justifyContent: 'center',
-                opacity,
-                transform: [{ translateY }, { scale }]
+                gap: 14,
+                paddingHorizontal: 16,
+                paddingVertical: 14,
+                borderWidth: 1,
+                borderColor: active ? option.tone + '78' : option.tone + '2E',
+                borderRadius: 22,
+                backgroundColor: active ? '#111318FA' : '#111318F2',
+                elevation: active ? 16 : 5,
+                shadowColor: '#000000',
+                shadowOpacity: active ? 0.34 : 0.16,
+                shadowRadius: active ? 22 : 10,
+                shadowOffset: { width: 0, height: active ? 12 : 5 }
               }}
             >
-              <View
-                style={{
-                  width: '88%',
-                  maxWidth: 310,
-                  height: CARD_HEIGHT,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 13,
-                  paddingHorizontal: 15,
-                  borderWidth: 1,
-                  borderColor: active ? option.tone + '80' : option.tone + '30',
-                  borderRadius: 21,
-                  backgroundColor: active ? '#111318FA' : '#111318F0',
-                  elevation: active ? 14 : 4,
-                  shadowColor: '#000000',
-                  shadowOpacity: active ? 0.34 : 0.14,
-                  shadowRadius: active ? 20 : 8,
-                  shadowOffset: { width: 0, height: active ? 10 : 4 }
-                }}
-              >
-                {option.icon.kind === 'visual' ? (
-                  <VisualIconBadge value={option.icon.value} size={46} />
-                ) : (
-                  <View
-                    style={{
-                      width: 46,
-                      height: 46,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      borderWidth: 1,
-                      borderColor: option.tone + '50',
-                      borderRadius: 14,
-                      backgroundColor: option.tone + '18'
-                    }}
-                  >
-                    {option.icon.kind === 'glyph' ? (
-                      <VisualIconGlyph value={option.icon.value} size={22} color={option.tone} />
-                    ) : (
-                      <AppIcon
-                        name={option.icon.value}
-                        size={22}
-                        strokeWidth={2.3}
-                        color={option.tone}
-                      />
-                    )}
-                  </View>
-                )}
-
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text
-                    numberOfLines={1}
-                    style={{
-                      color: theme.text,
-                      fontSize: active ? 18.5 : 16,
-                      lineHeight: 23,
-                      fontWeight: '700'
-                    }}
-                  >
-                    {option.title}
-                  </Text>
-                  <Text
-                    numberOfLines={1}
-                    style={{
-                      marginTop: 4,
-                      color: theme.muted,
-                      fontSize: 11.5,
-                      lineHeight: 16,
-                      fontWeight: '500'
-                    }}
-                  >
-                    {option.subtitle}
-                  </Text>
+              {option.icon.kind === 'visual' ? (
+                <VisualIconBadge value={option.icon.value} size={48} />
+              ) : (
+                <View
+                  style={{
+                    width: 48,
+                    height: 48,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderWidth: 1,
+                    borderColor: option.tone + (active ? '5C' : '36'),
+                    borderRadius: 15,
+                    backgroundColor: option.tone + (active ? '1D' : '12')
+                  }}
+                >
+                  {option.icon.kind === 'glyph' ? (
+                    <VisualIconGlyph
+                      value={option.icon.value}
+                      size={active ? 23 : 21}
+                      color={option.tone}
+                    />
+                  ) : (
+                    <AppIcon
+                      name={option.icon.value}
+                      size={active ? 23 : 21}
+                      strokeWidth={2.3}
+                      color={option.tone}
+                    />
+                  )}
                 </View>
+              )}
 
-                {active ? (
-                  <View
-                    style={{
-                      width: 28,
-                      height: 28,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      borderRadius: 9,
-                      backgroundColor: option.tone + '14'
-                    }}
-                  >
-                    <AppIcon name="check" size={15} color={option.tone} />
-                  </View>
-                ) : null}
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text
+                  numberOfLines={1}
+                  style={{
+                    color: theme.text,
+                    fontSize: active ? 20 : 17,
+                    lineHeight: active ? 25 : 22,
+                    fontWeight: '700',
+                    letterSpacing: active ? -0.3 : -0.15
+                  }}
+                >
+                  {option.title}
+                </Text>
+                <Text
+                  numberOfLines={1}
+                  style={{
+                    marginTop: 5,
+                    color: theme.muted,
+                    fontSize: active ? 12 : 11.5,
+                    lineHeight: 16,
+                    fontWeight: '500'
+                  }}
+                >
+                  {option.subtitle}
+                </Text>
               </View>
-            </Animated.View>
-          )
-        }
-      )}
+
+              {active ? (
+                <View
+                  style={{
+                    width: 28,
+                    height: 28,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderRadius: 9,
+                    backgroundColor: option.tone + '12'
+                  }}
+                >
+                  <AppIcon name="check" size={15} color={option.tone} />
+                </View>
+              ) : null}
+            </View>
+          </Animated.View>
+        )
+      })}
     </View>
   )
 }
