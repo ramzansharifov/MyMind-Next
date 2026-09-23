@@ -1045,7 +1045,7 @@ export function FinanceScreen(): React.JSX.Element {
           {content}
         </Animated.View>
       </View>
-      <MobileCreateAction actions={createActions} iconOnly />
+      <MobileCreateAction actions={createActions} iconOnly confirmHoldSelection />
       {quickTransactionType ? (
         <FinanceQuickTransactionFlow
           type={quickTransactionType}
