@@ -74,13 +74,15 @@ function NotesTabBar({
   onChange,
   feedback,
   query,
-  onQueryChange
+  onQueryChange,
+  onSearchOpenChange
 }: {
   value: NotesView
   onChange(value: NotesView): void
   feedback: SwipeTabFeedback<NotesView> | null
   query: string
   onQueryChange(value: string): void
+  onSearchOpenChange(open: boolean): void
 }): React.JSX.Element {
   const theme = useTheme()
 
@@ -91,6 +93,7 @@ function NotesTabBar({
       onChange={onChange}
       feedback={feedback}
       search={{ value: query, onChangeText: onQueryChange }}
+      onSearchOpenChange={onSearchOpenChange}
       renderIcon={(item, selected) => {
         const Icon = item.icon
         return (
@@ -336,6 +339,7 @@ export function NotesScreen({
   const [sort, setSort] = useState<NotesSort>('updated')
   const [hideEmptyGroups, setHideEmptyGroups] = useState(false)
   const [swipeTabFeedback, showSwipeTabFeedback] = useSwipeTabFeedback<NotesView>()
+  const [searchOpen, setSearchOpen] = useState(false)
   const queueRef = useRef<AutosaveQueue<NoteDocument> | null>(null)
   const appendQueueRef = useRef<AutosaveQueue<StudyTextBlock> | null>(null)
 
@@ -947,6 +951,7 @@ export function NotesScreen({
             feedback={swipeTabFeedback}
             query={query}
             onQueryChange={setQuery}
+            onSearchOpenChange={setSearchOpen}
           />
         )}
 
@@ -1014,7 +1019,7 @@ export function NotesScreen({
         value={view}
         onChange={changeView}
         onSwipeChange={showSwipeTabFeedback}
-        disabled={Boolean(selectedGroup)}
+        disabled={Boolean(selectedGroup) || searchOpen}
       >
         {overview.loading ? (
           <LoadingState />
