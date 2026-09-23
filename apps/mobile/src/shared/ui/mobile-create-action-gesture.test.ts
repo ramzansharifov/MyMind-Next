@@ -38,9 +38,9 @@ describe('mobile create action carousel', () => {
   })
 
   it('keeps a bounded residual offset for smooth dragging', () => {
-    expect(mobileCreateActionSelection(-40, 4)).toEqual({
+    expect(mobileCreateActionSelection(-70, 4)).toEqual({
       index: 1,
-      offsetY: 24
+      offsetY: 54
     })
   })
 
