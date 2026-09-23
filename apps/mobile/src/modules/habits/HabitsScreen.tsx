@@ -227,6 +227,7 @@ export function HabitsScreen(): React.JSX.Element {
           value={view}
           onChange={changeView}
           feedback={swipeTabFeedback}
+          search={view === 'reports' ? undefined : { value: query, onChangeText: setQuery }}
           renderIcon={(item, selected) => {
             const Icon = item.icon
             return (
@@ -295,9 +296,7 @@ export function HabitsScreen(): React.JSX.Element {
           }
         />
 
-        {view !== 'reports' ? <SearchField value={query} onChangeText={setQuery} /> : null}
-
-        {view === 'all' ? (
+                {view === 'all' ? (
           <View
             style={{
               minHeight: 46,
