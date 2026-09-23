@@ -43,6 +43,11 @@ import {
 } from '../../shared/ui/primitives'
 import { useTheme } from '../../shared/ui/theme'
 import { SwipeableTabContent } from '../../shared/ui/SwipeableTabContent'
+import {
+  SwipeTabBar,
+  useSwipeTabFeedback,
+  type SwipeTabFeedback
+} from '../../shared/ui/SwipeTabBar'
 import { MobileNoteAppendEditor } from './MobileNoteAppendEditor'
 import { createMobileAppendTextBlock, isTextOnlyNote, withoutNoteBlock } from './mobile-note-policy'
 
@@ -75,62 +80,32 @@ const NOTES_VIEWS: ReadonlyArray<{
 
 function NotesTabBar({
   value,
-  onChange
+  onChange,
+  feedback
 }: {
   value: NotesView
   onChange(value: NotesView): void
+  feedback: SwipeTabFeedback<NotesView> | null
 }): React.JSX.Element {
   const theme = useTheme()
 
   return (
-    <View
-      accessibilityRole="tablist"
-      style={{
-        minHeight: 50,
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 2,
-        padding: 4,
-        borderWidth: 1,
-        borderColor: theme.border,
-        borderRadius: 16,
-        backgroundColor: theme.surface
-      }}
-    >
-      {NOTES_VIEWS.map((item) => {
-        const selected = value === item.id
+    <SwipeTabBar
+      items={NOTES_VIEWS}
+      value={value}
+      onChange={onChange}
+      feedback={feedback}
+      renderIcon={(item, selected) => {
         const Icon = item.icon
         return (
-          <Pressable
-            key={item.id}
-            accessibilityRole="tab"
-            accessibilityLabel={item.label}
-            accessibilityState={{ selected }}
-            onPress={() => onChange(item.id)}
-            style={({ pressed }) => ({
-              flex: 1,
-              minWidth: 0,
-              height: 40,
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRadius: 12,
-              backgroundColor: selected
-                ? theme.accent + '18'
-                : pressed
-                  ? theme.raised
-                  : 'transparent',
-              opacity: pressed ? 0.72 : 1
-            })}
-          >
-            <Icon
-              size={18}
-              strokeWidth={selected ? 2.4 : 2}
-              color={selected ? theme.accent : theme.muted}
-            />
-          </Pressable>
+          <Icon
+            size={18}
+            strokeWidth={selected ? 2.4 : 2}
+            color={selected ? theme.accent : theme.muted}
+          />
         )
-      })}
-    </View>
+      }}
+    />
   )
 }
 
@@ -364,6 +339,7 @@ export function NotesScreen({
   const [layout, setLayout] = useState<NotesLayout>('list')
   const [sort, setSort] = useState<NotesSort>('updated')
   const [hideEmptyGroups, setHideEmptyGroups] = useState(false)
+  const [swipeTabFeedback, showSwipeTabFeedback] = useSwipeTabFeedback<NotesView>()
   const queueRef = useRef<AutosaveQueue<NoteDocument> | null>(null)
   const appendQueueRef = useRef<AutosaveQueue<StudyTextBlock> | null>(null)
 
@@ -983,7 +959,7 @@ export function NotesScreen({
             />
           </View>
         ) : (
-          <NotesTabBar value={view} onChange={changeView} />
+          <NotesTabBar value={view} onChange={changeView} feedback={swipeTabFeedback} />
         )}
 
         <SearchField value={query} onChangeText={setQuery} />
@@ -1051,6 +1027,7 @@ export function NotesScreen({
         tabs={NOTES_VIEW_TABS}
         value={view}
         onChange={changeView}
+        onSwipeChange={showSwipeTabFeedback}
         disabled={Boolean(selectedGroup)}
       >
         {overview.loading ? (
