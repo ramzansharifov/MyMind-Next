@@ -1,12 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
-import {
-  PanResponder,
-  Pressable,
-  Text,
-  View,
-  type GestureResponderEvent,
-  type PanResponderGestureState
-} from 'react-native'
+import { Pressable, Text, View, type GestureResponderEvent } from 'react-native'
 
 import { AppDialog } from './AppDialog'
 import { AppIcon, type AppIconName } from './icons'
@@ -62,6 +55,9 @@ export function MobileCreateAction({
   const holdTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const touchActiveRef = useRef(false)
   const holdActiveRef = useRef(false)
+  const startXRef = useRef(0)
+  const startYRef = useRef(0)
+  const currentXRef = useRef(0)
   const currentYRef = useRef(0)
   const anchorYRef = useRef(0)
   const selectedIndexRef = useRef(0)
@@ -123,7 +119,7 @@ export function MobileCreateAction({
     overlay.update(selection.index, selection.offsetY)
   }, [enabledActions, overlay])
 
-  const finishGesture = useCallback((gesture: PanResponderGestureState): void => {
+  const finishGesture = useCallback((): void => {
     touchActiveRef.current = false
     setPressed(false)
     clearHoldTimer()
@@ -140,7 +136,10 @@ export function MobileCreateAction({
       return
     }
 
-    const moved = Math.hypot(gesture.dx, gesture.dy)
+    const moved = Math.hypot(
+      currentXRef.current - startXRef.current,
+      currentYRef.current - startYRef.current
+    )
     if (moved <= TAP_MOVE_TOLERANCE) launchDefaultAction()
   }, [clearHoldTimer, enabledActions, launchDefaultAction, overlay, perform])
 
@@ -153,42 +152,6 @@ export function MobileCreateAction({
     holdActiveRef.current = false
     overlay.hide()
   }, [clearHoldTimer, overlay])
-
-  const panResponder = useMemo(
-    () =>
-      PanResponder.create({
-        onStartShouldSetPanResponder: () => !triggerDisabled,
-        onStartShouldSetPanResponderCapture: () => !triggerDisabled,
-        onMoveShouldSetPanResponder: () => !triggerDisabled,
-        onMoveShouldSetPanResponderCapture: () => !triggerDisabled,
-        onPanResponderGrant: (
-          event: GestureResponderEvent,
-          gesture: PanResponderGestureState
-        ) => {
-          touchActiveRef.current = true
-          holdActiveRef.current = false
-          selectedIndexRef.current = 0
-          setPressed(true)
-
-          const startY = gesture.y0 || event.nativeEvent.pageY
-          currentYRef.current = startY
-          anchorYRef.current = startY
-          beginHoldTimer()
-        },
-        onPanResponderMove: (_event, gesture) => {
-          updateCarousel(gesture.moveY)
-        },
-        onPanResponderRelease: (_event, gesture) => {
-          finishGesture(gesture)
-        },
-        onPanResponderTerminationRequest: () => false,
-        onPanResponderTerminate: () => {
-          cancelGesture()
-        },
-        onShouldBlockNativeResponder: () => true
-      }),
-    [beginHoldTimer, cancelGesture, finishGesture, triggerDisabled, updateCarousel]
-  )
 
   if (!actions.length) return null
 
@@ -217,7 +180,34 @@ export function MobileCreateAction({
             expanded: actions.length > 1 ? open : undefined
           }}
           onAccessibilityTap={launchDefaultAction}
-          {...panResponder.panHandlers}
+          onStartShouldSetResponder={() => !triggerDisabled}
+          onStartShouldSetResponderCapture={() => !triggerDisabled}
+          onMoveShouldSetResponder={() => !triggerDisabled}
+          onMoveShouldSetResponderCapture={() => !triggerDisabled}
+          onResponderGrant={(event: GestureResponderEvent) => {
+            touchActiveRef.current = true
+            holdActiveRef.current = false
+            selectedIndexRef.current = 0
+            setPressed(true)
+
+            startXRef.current = event.nativeEvent.pageX
+            startYRef.current = event.nativeEvent.pageY
+            currentXRef.current = event.nativeEvent.pageX
+            currentYRef.current = event.nativeEvent.pageY
+            anchorYRef.current = event.nativeEvent.pageY
+            beginHoldTimer()
+          }}
+          onResponderMove={(event: GestureResponderEvent) => {
+            currentXRef.current = event.nativeEvent.pageX
+            updateCarousel(event.nativeEvent.pageY)
+          }}
+          onResponderRelease={(event: GestureResponderEvent) => {
+            currentXRef.current = event.nativeEvent.pageX
+            currentYRef.current = event.nativeEvent.pageY
+            finishGesture()
+          }}
+          onResponderTerminationRequest={() => false}
+          onResponderTerminate={cancelGesture}
           style={{
             width: iconOnly ? 52 : undefined,
             height: iconOnly ? 52 : undefined,
