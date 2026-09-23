@@ -43,11 +43,11 @@ import {
 } from '../../shared/ui/primitives'
 import { useTheme } from '../../shared/ui/theme'
 import { SwipeableTabContent } from '../../shared/ui/SwipeableTabContent'
+import { SwipeTabBar } from '../../shared/ui/SwipeTabBar'
 import {
-  SwipeTabBar,
   useSwipeTabFeedback,
   type SwipeTabFeedback
-} from '../../shared/ui/SwipeTabBar'
+} from '../../shared/ui/useSwipeTabFeedback'
 import { MobileNoteAppendEditor } from './MobileNoteAppendEditor'
 import { createMobileAppendTextBlock, isTextOnlyNote, withoutNoteBlock } from './mobile-note-policy'
 
