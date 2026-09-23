@@ -1,4 +1,4 @@
-export const MOBILE_CREATE_ACTION_STEP = 64
+export const MOBILE_CREATE_ACTION_STEP = 124
 
 export function wrapCarouselIndex(index: number, length: number): number {
   if (length <= 0) return 0
