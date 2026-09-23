@@ -128,35 +128,34 @@ function TrackCard({
           opacity: pressed ? 0.82 : 1
         })}
       >
-      <View
-        style={{
-          width: 34,
-          height: 34,
-          flexShrink: 0,
-          alignItems: 'center',
-          justifyContent: 'center',
-          borderRadius: 11,
-          backgroundColor: theme.accent + '10'
-        }}
-      >
-        <Music2 size={16} color={theme.accent} />
-      </View>
-
-      <View style={{ minWidth: 0, flex: 1 }}>
-        <Text
-          numberOfLines={1}
-          style={{ color: theme.text, fontSize: 14, lineHeight: 19, fontWeight: '700' }}
+        <View
+          style={{
+            width: 34,
+            height: 34,
+            flexShrink: 0,
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: 11,
+            backgroundColor: theme.accent + '10'
+          }}
         >
-          {item.title}
-        </Text>
-        <Text
-          numberOfLines={1}
-          style={{ marginTop: 3, color: theme.muted, fontSize: 12, lineHeight: 17 }}
-        >
-          {artist}
-        </Text>
-      </View>
+          <Music2 size={16} color={theme.accent} />
+        </View>
 
+        <View style={{ minWidth: 0, flex: 1 }}>
+          <Text
+            numberOfLines={1}
+            style={{ color: theme.text, fontSize: 14, lineHeight: 19, fontWeight: '700' }}
+          >
+            {item.title}
+          </Text>
+          <Text
+            numberOfLines={1}
+            style={{ marginTop: 3, color: theme.muted, fontSize: 12, lineHeight: 17 }}
+          >
+            {artist}
+          </Text>
+        </View>
       </Pressable>
       <ActionMenuDialog
         open={actionsOpen}

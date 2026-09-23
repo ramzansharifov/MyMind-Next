@@ -97,9 +97,7 @@ export function ActionMenuDialog({
                   color={item.danger ? theme.error : theme.accent}
                 />
               </View>
-              <Text style={{ flex: 1, color, fontSize: 15, fontWeight: '600' }}>
-                {item.label}
-              </Text>
+              <Text style={{ flex: 1, color, fontSize: 15, fontWeight: '600' }}>{item.label}</Text>
             </Pressable>
           )
         })}
