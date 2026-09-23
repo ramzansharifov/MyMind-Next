@@ -1,9 +1,7 @@
 name: CI (manual)
 
 on:
-  push:
-    branches:
-      - 'feat/mobile-finance-persistent-privacy'
+  workflow_dispatch:
 
 permissions:
   contents: read
