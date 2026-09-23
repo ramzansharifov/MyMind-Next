@@ -1,39 +1,13 @@
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type ReactNode
-} from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Animated, Easing, Pressable, Text, View } from 'react-native'
 
 import { useTheme } from './theme'
+import type { SwipeTabFeedback } from './useSwipeTabFeedback'
 
 export interface SwipeTabBarItem<T extends string = string> {
   id: T
   label: string
   disabled?: boolean
-}
-
-export interface SwipeTabFeedback<T extends string> {
-  value: T
-  sequence: number
-}
-
-export function useSwipeTabFeedback<T extends string>(): [
-  SwipeTabFeedback<T> | null,
-  (value: T) => void
-] {
-  const sequenceRef = useRef(0)
-  const [feedback, setFeedback] = useState<SwipeTabFeedback<T> | null>(null)
-
-  const show = useCallback((value: T): void => {
-    sequenceRef.current += 1
-    setFeedback({ value, sequence: sequenceRef.current })
-  }, [])
-
-  return [feedback, show]
 }
 
 export function SwipeTabBar<T extends string, I extends SwipeTabBarItem<T>>({
@@ -52,60 +26,38 @@ export function SwipeTabBar<T extends string, I extends SwipeTabBarItem<T>>({
   trailing?: ReactNode
 }): React.JSX.Element {
   const theme = useTheme()
-  const [shown, setShown] = useState<SwipeTabFeedback<T> | null>(null)
   const [reveal] = useState(() => new Animated.Value(0))
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     if (!feedback) return
 
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current)
-      timeoutRef.current = null
-    }
-
     reveal.stopAnimation()
     reveal.setValue(0)
-    setShown(feedback)
 
-    Animated.timing(reveal, {
-      toValue: 1,
-      duration: 170,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: true
-    }).start()
-
-    timeoutRef.current = setTimeout(() => {
+    Animated.sequence([
+      Animated.timing(reveal, {
+        toValue: 1,
+        duration: 170,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true
+      }),
+      Animated.delay(730),
       Animated.timing(reveal, {
         toValue: 0,
         duration: 190,
         easing: Easing.inOut(Easing.cubic),
         useNativeDriver: true
-      }).start(({ finished }) => {
-        if (finished) setShown(null)
       })
-      timeoutRef.current = null
-    }, 900)
+    ]).start()
 
     return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current)
-        timeoutRef.current = null
-      }
+      reveal.stopAnimation()
     }
   }, [feedback, reveal])
 
-  useEffect(
-    () => () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current)
-      reveal.stopAnimation()
-    },
-    [reveal]
-  )
-
   const shownItem = useMemo(
-    () => (shown ? (items.find((item) => item.id === shown.value) ?? null) : null),
-    [items, shown]
+    () => (feedback ? (items.find((item) => item.id === feedback.value) ?? null) : null),
+    [feedback, items]
   )
 
   const normalOpacity = reveal.interpolate({
