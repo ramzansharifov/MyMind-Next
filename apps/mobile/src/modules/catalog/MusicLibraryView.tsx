@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { FlatList, Image, Pressable, Text, View } from 'react-native'
 import type { MusicItemRecord, MusicPlaylistRecord } from '@mymind/contracts/music'
 import {
@@ -10,7 +11,7 @@ import {
   type LucideIcon
 } from 'lucide-react-native'
 
-import { ActionMenu } from '../../shared/ui/ActionMenu'
+import { ActionMenuDialog } from '../../shared/ui/ActionMenu'
 import { EmptyState } from '../../shared/ui/primitives'
 import { useTheme } from '../../shared/ui/theme'
 import { formatMusicDuration } from './music-presentation'
@@ -97,6 +98,7 @@ function TrackCard({
   onDelete(): void
 }): React.JSX.Element {
   const theme = useTheme()
+  const [actionsOpen, setActionsOpen] = useState(false)
   const artist = item.artists[0] || 'Исполнитель не указан'
   const duration = formatMusicDuration(item.durationSeconds)
   const details = [artist, item.year !== null ? String(item.year) : '', duration]
@@ -104,22 +106,28 @@ function TrackCard({
     .join(' • ')
 
   return (
-    <View
-      style={{
-        minWidth: 0,
-        minHeight: 68,
-        marginBottom: 10,
-        paddingHorizontal: 14,
-        paddingVertical: 12,
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 10,
-        borderWidth: 1,
-        borderColor: theme.border,
-        borderRadius: 16,
-        backgroundColor: theme.background
-      }}
-    >
+    <View style={{ marginBottom: 10 }}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={item.title}
+        accessibilityHint="Удерживайте для действий с треком"
+        onLongPress={() => setActionsOpen(true)}
+        delayLongPress={380}
+        style={({ pressed }) => ({
+          minWidth: 0,
+          minHeight: 68,
+          paddingHorizontal: 14,
+          paddingVertical: 12,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 10,
+          borderWidth: 1,
+          borderColor: theme.border,
+          borderRadius: 16,
+          backgroundColor: pressed ? theme.surface : theme.background,
+          opacity: pressed ? 0.82 : 1
+        })}
+      >
       <View
         style={{
           width: 34,
@@ -149,10 +157,12 @@ function TrackCard({
         </Text>
       </View>
 
-      <ActionMenu
+      </Pressable>
+      <ActionMenuDialog
+        open={actionsOpen}
+        onOpenChange={setActionsOpen}
         title={item.title}
         description={details}
-        triggerLabel={`Действия с треком «${item.title}»`}
         items={[
           {
             key: 'play',
