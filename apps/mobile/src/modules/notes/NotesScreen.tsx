@@ -893,7 +893,6 @@ export function NotesScreen({
     if (next === 'groups') setSelectedGroupId(null)
     if (next === 'recent') setSort('updated')
     setView(next)
-    toast.info(NOTES_VIEWS.find((item) => item.id === next)?.label ?? 'Заметки', 'notes-view')
   }
 
   return (

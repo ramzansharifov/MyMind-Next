@@ -276,9 +276,8 @@ export function PasswordsScreen(): React.JSX.Element {
     (next: Tab): void => {
       if (next === tab) return
       setTab(next)
-      toast.info(PASSWORD_TABS.find((item) => item.id === next)?.label ?? 'Пароли', 'passwords-tab')
     },
-    [tab, toast]
+    [tab]
   )
 
   const refresh = useCallback((): void => {

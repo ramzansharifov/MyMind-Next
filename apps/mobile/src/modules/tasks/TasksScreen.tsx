@@ -28,7 +28,6 @@ import {
 } from '../../shared/ui/form-model'
 import { AppIcon, type AppIconName } from '../../shared/ui/icons'
 import { useTheme } from '../../shared/ui/theme'
-import { useToast } from '../../shared/ui/toast-context'
 import { SwipeableTabContent } from '../../shared/ui/SwipeableTabContent'
 import { SwipeTabBar } from '../../shared/ui/SwipeTabBar'
 import { useSwipeTabFeedback } from '../../shared/ui/useSwipeTabFeedback'
@@ -51,7 +50,6 @@ const STATUS_FILTERS: ReadonlyArray<{
 export function TasksScreen(): React.JSX.Element {
   const { tasks: api } = useServices()
   const theme = useTheme()
-  const toast = useToast()
   const state = useCollection(useCallback(() => api.listTasksOverview(), [api]))
   const [query, setQuery] = useState('')
   const [quickTitle, setQuickTitle] = useState('')
@@ -65,12 +63,8 @@ export function TasksScreen(): React.JSX.Element {
     (next: TaskStatusFilter): void => {
       if (next === filter) return
       setFilter(next)
-      toast.info(
-        STATUS_FILTERS.find((item) => item.id === next)?.label ?? 'Задачи',
-        'tasks-status-filter'
-      )
     },
-    [filter, toast]
+    [filter]
   )
 
   const groupChoices = useMemo(
