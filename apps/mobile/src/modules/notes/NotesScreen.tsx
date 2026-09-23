@@ -181,6 +181,7 @@ function MobileNoteCard({
 }): React.JSX.Element {
   const theme = useTheme()
   const [actionsOpen, setActionsOpen] = useState(false)
+  const suppressOpenUntil = useRef(0)
   const subtitle = note.plainText.trim()
   const date = new Date(note.updatedAt).toLocaleDateString('ru-RU', {
     day: 'numeric',
@@ -217,8 +218,14 @@ function MobileNoteCard({
           accessibilityRole="button"
           accessibilityLabel={note.title}
           accessibilityHint="Удерживайте для действий с заметкой"
-          onPress={onOpen}
-          onLongPress={() => setActionsOpen(true)}
+          onPress={() => {
+            if (Date.now() < suppressOpenUntil.current) return
+            onOpen()
+          }}
+          onLongPress={() => {
+            suppressOpenUntil.current = Date.now() + 900
+            setActionsOpen(true)
+          }}
           delayLongPress={380}
           style={({ pressed }) => ({
             minWidth: 0,
