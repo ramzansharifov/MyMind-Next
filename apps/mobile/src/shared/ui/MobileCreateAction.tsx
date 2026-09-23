@@ -1,6 +1,7 @@
-import { useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import {
   PanResponder,
+  Pressable,
   Text,
   View,
   type GestureResponderEvent,
@@ -61,7 +62,6 @@ export function MobileCreateAction({
   const holdTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const touchActiveRef = useRef(false)
   const holdActiveRef = useRef(false)
-  const startYRef = useRef(0)
   const currentYRef = useRef(0)
   const anchorYRef = useRef(0)
   const selectedIndexRef = useRef(0)
@@ -73,16 +73,16 @@ export function MobileCreateAction({
 
   const triggerDisabled = disabled || enabledActions.length === 0
 
-  const clearHoldTimer = (): void => {
+  const clearHoldTimer = useCallback((): void => {
     if (!holdTimerRef.current) return
     clearTimeout(holdTimerRef.current)
     holdTimerRef.current = null
-  }
+  }, [])
 
-  const perform = (action: MobileCreateActionItem): void => {
+  const perform = useCallback((action: MobileCreateActionItem): void => {
     if (disabled || action.disabled) return
     runWhenIdle(() => action.onPress())
-  }
+  }, [disabled])
 
   const launch = (action: MobileCreateActionItem): void => {
     if (disabled || action.disabled) return
@@ -90,13 +90,13 @@ export function MobileCreateAction({
     perform(action)
   }
 
-  const launchDefaultAction = (): void => {
+  const launchDefaultAction = useCallback((): void => {
     if (triggerDisabled) return
     if (actions.length === 1) perform(actions[0])
     else setOpen(true)
-  }
+  }, [actions, perform, triggerDisabled])
 
-  const beginHoldTimer = (): void => {
+  const beginHoldTimer = useCallback((): void => {
     clearHoldTimer()
     holdTimerRef.current = setTimeout(() => {
       holdTimerRef.current = null
@@ -107,9 +107,9 @@ export function MobileCreateAction({
       anchorYRef.current = currentYRef.current
       overlay.show(enabledActions, 0)
     }, HOLD_DELAY_MS)
-  }
+  }, [clearHoldTimer, enabledActions, overlay])
 
-  const updateCarousel = (moveY: number): void => {
+  const updateCarousel = useCallback((moveY: number): void => {
     currentYRef.current = moveY
     if (!holdActiveRef.current || !overlay || !enabledActions.length) return
 
@@ -121,9 +121,9 @@ export function MobileCreateAction({
     )
     selectedIndexRef.current = selection.index
     overlay.update(selection.index, selection.offsetY)
-  }
+  }, [enabledActions, overlay])
 
-  const finishGesture = (gesture: PanResponderGestureState): void => {
+  const finishGesture = useCallback((gesture: PanResponderGestureState): void => {
     touchActiveRef.current = false
     setPressed(false)
     clearHoldTimer()
@@ -142,9 +142,9 @@ export function MobileCreateAction({
 
     const moved = Math.hypot(gesture.dx, gesture.dy)
     if (moved <= TAP_MOVE_TOLERANCE) launchDefaultAction()
-  }
+  }, [clearHoldTimer, enabledActions, launchDefaultAction, overlay, perform])
 
-  const cancelGesture = (): void => {
+  const cancelGesture = useCallback((): void => {
     touchActiveRef.current = false
     setPressed(false)
     clearHoldTimer()
@@ -152,7 +152,7 @@ export function MobileCreateAction({
     if (!holdActiveRef.current || !overlay) return
     holdActiveRef.current = false
     overlay.hide()
-  }
+  }, [clearHoldTimer, overlay])
 
   const panResponder = useMemo(
     () =>
@@ -171,7 +171,6 @@ export function MobileCreateAction({
           setPressed(true)
 
           const startY = gesture.y0 || event.nativeEvent.pageY
-          startYRef.current = startY
           currentYRef.current = startY
           anchorYRef.current = startY
           beginHoldTimer()
@@ -188,7 +187,7 @@ export function MobileCreateAction({
         },
         onShouldBlockNativeResponder: () => true
       }),
-    [enabledActions, overlay, triggerDisabled]
+    [beginHoldTimer, cancelGesture, finishGesture, triggerDisabled, updateCarousel]
   )
 
   if (!actions.length) return null
@@ -267,16 +266,14 @@ export function MobileCreateAction({
             {actions.map((action) => {
               const actionColor = action.color ?? theme.accent
               return (
-                <View
+                <Pressable
                   key={action.key}
                   accessibilityRole="button"
                   accessibilityLabel={action.label}
                   accessibilityState={{ disabled: disabled || action.disabled }}
-                  onTouchEnd={() => {
-                    if (disabled || action.disabled) return
-                    launch(action)
-                  }}
-                  style={{
+                  disabled={disabled || action.disabled}
+                  onPress={() => launch(action)}
+                  style={({ pressed: actionPressed }) => ({
                     minHeight: 52,
                     flexDirection: 'row',
                     alignItems: 'center',
@@ -286,9 +283,9 @@ export function MobileCreateAction({
                     borderWidth: 1,
                     borderColor: theme.border,
                     borderRadius: 12,
-                    backgroundColor: theme.surface,
-                    opacity: disabled || action.disabled ? 0.42 : 1
-                  }}
+                    backgroundColor: actionPressed ? theme.raised : theme.surface,
+                    opacity: disabled || action.disabled ? 0.42 : actionPressed ? 0.78 : 1
+                  })}
                 >
                   <View
                     style={{
@@ -329,7 +326,7 @@ export function MobileCreateAction({
                     ) : null}
                   </View>
                   <AppIcon name="forward" size={17} color={theme.muted} />
-                </View>
+                </Pressable>
               )
             })}
           </View>
