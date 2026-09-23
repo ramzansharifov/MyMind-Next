@@ -7,7 +7,7 @@ import type {
 import { formatMoneyMinor } from '@mymind/core/finance-money'
 
 import { AppDialog } from '../../shared/ui/AppDialog'
-import { Button } from '../../shared/ui/primitives'
+import { IconButton } from '../../shared/ui/primitives'
 import { useTheme } from '../../shared/ui/theme'
 
 const PERIOD_LABELS: Record<FinanceLimitStatus['periodType'], string> = {
@@ -99,14 +99,13 @@ export function MobileFinanceLimitDetailSheet({
       presentation="sheet"
       footer={
         <>
-          <Button label="Закрыть" onPress={onClose} />
-          <Button
-            label={limit.state === 'active' ? 'Пауза' : 'Возобновить'}
+          <IconButton
+            label={limit.state === 'active' ? 'Поставить лимит на паузу' : 'Возобновить лимит'}
             icon="reset"
             onPress={onToggleState}
           />
-          <Button label="Удалить" icon="delete" danger onPress={onDelete} />
-          <Button label="Изменить" icon="edit" primary onPress={onEdit} />
+          <IconButton label="Удалить лимит" icon="delete" danger onPress={onDelete} />
+          <IconButton label="Изменить лимит" icon="edit" onPress={onEdit} />
         </>
       }
     >

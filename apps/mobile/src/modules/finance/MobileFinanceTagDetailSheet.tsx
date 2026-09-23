@@ -2,7 +2,7 @@ import { ScrollView, Text, View } from 'react-native'
 import type { FinanceTagSummary } from '@mymind/contracts/finance'
 
 import { AppDialog } from '../../shared/ui/AppDialog'
-import { Button } from '../../shared/ui/primitives'
+import { IconButton } from '../../shared/ui/primitives'
 import { VisualIconGlyph } from '../../shared/ui/VisualPickers'
 import { useTheme } from '../../shared/ui/theme'
 import { financeTagTone } from './finance-semantic-colors'
@@ -76,15 +76,14 @@ export function MobileFinanceTagDetailSheet({
       presentation="sheet"
       footer={
         <>
-          <Button label="Закрыть" onPress={onClose} />
-          <Button
-            label="Удалить"
+          <IconButton
+            label="Удалить тег"
             icon="delete"
             danger
             disabled={deleteDisabled}
             onPress={onDelete}
           />
-          <Button label="Изменить" icon="edit" primary onPress={onEdit} />
+          <IconButton label="Изменить тег" icon="edit" onPress={onEdit} />
         </>
       }
     >

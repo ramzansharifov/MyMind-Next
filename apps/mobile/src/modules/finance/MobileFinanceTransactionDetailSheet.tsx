@@ -3,7 +3,7 @@ import type { FinanceTransaction } from '@mymind/contracts/finance'
 import { formatMoneyMinor } from '@mymind/core/finance-money'
 
 import { AppDialog } from '../../shared/ui/AppDialog'
-import { Button } from '../../shared/ui/primitives'
+import { IconButton } from '../../shared/ui/primitives'
 import { useTheme } from '../../shared/ui/theme'
 import { financeOperationTone } from './finance-semantic-colors'
 
@@ -93,15 +93,12 @@ export function MobileFinanceTransactionDetailSheet({
       icon="finance"
       presentation="sheet"
       footer={
-        <>
-          <Button label="Закрыть" onPress={onClose} />
-          {!transaction.isSystem ? (
-            <>
-              <Button label="Удалить" icon="delete" danger onPress={onDelete} />
-              <Button label="Изменить" icon="edit" primary onPress={onEdit} />
-            </>
-          ) : null}
-        </>
+        !transaction.isSystem ? (
+          <>
+            <IconButton label="Удалить операцию" icon="delete" danger onPress={onDelete} />
+            <IconButton label="Изменить операцию" icon="edit" onPress={onEdit} />
+          </>
+        ) : undefined
       }
     >
       <ScrollView
