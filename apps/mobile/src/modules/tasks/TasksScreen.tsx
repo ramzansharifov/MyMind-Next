@@ -29,10 +29,15 @@ import {
 import { AppIcon, type AppIconName } from '../../shared/ui/icons'
 import { useTheme } from '../../shared/ui/theme'
 import { useToast } from '../../shared/ui/toast-context'
+import { SwipeableTabContent } from '../../shared/ui/SwipeableTabContent'
 import { quickTaskInput, taskEditorInput, taskSearchText } from './task-presentation'
 
+type TaskStatusFilter = 'all' | 'active' | 'completed'
+
+const TASK_STATUS_TABS = ['all', 'active', 'completed'] as const
+
 const STATUS_FILTERS: ReadonlyArray<{
-  id: 'all' | 'active' | 'completed'
+  id: TaskStatusFilter
   label: string
   icon: AppIconName
 }> = [
@@ -48,10 +53,19 @@ export function TasksScreen(): React.JSX.Element {
   const state = useCollection(useCallback(() => api.listTasksOverview(), [api]))
   const [query, setQuery] = useState('')
   const [quickTitle, setQuickTitle] = useState('')
-  const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('all')
+  const [filter, setFilter] = useState<TaskStatusFilter>('all')
   const [group, setGroup] = useState<string | null | undefined>(undefined)
   const [groupsOpen, setGroupsOpen] = useState(false)
   const [form, setForm] = useState<FormSpec | null>(null)
+
+  const changeFilter = useCallback(
+    (next: TaskStatusFilter): void => {
+      if (next === filter) return
+      setFilter(next)
+      toast.info(STATUS_FILTERS.find((item) => item.id === next)?.label ?? 'Задачи', 'tasks-status-filter')
+    },
+    [filter, toast]
+  )
 
   const groupChoices = useMemo(
     () => [
@@ -219,11 +233,7 @@ export function TasksScreen(): React.JSX.Element {
                 accessibilityLabel={item.label}
                 accessibilityState={{ selected }}
                 disabled={state.pending}
-                onPress={() => {
-                  if (selected) return
-                  setFilter(item.id)
-                  toast.info(item.label, 'tasks-status-filter')
-                }}
+                onPress={() => changeFilter(item.id)}
                 style={({ pressed }) => ({
                   flex: 1,
                   minWidth: 0,
@@ -303,19 +313,25 @@ export function TasksScreen(): React.JSX.Element {
 
       {state.error && <ErrorState message={state.error} retry={state.refresh} />}
 
-      {state.loading ? (
-        <LoadingState />
-      ) : (
-        <FlatList
-          style={{ flex: 1 }}
-          data={tasks}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingBottom: 8 }}
-          refreshing={state.loading}
-          onRefresh={state.refresh}
-          keyboardShouldPersistTaps="handled"
-          ListEmptyComponent={<EmptyState />}
-          renderItem={({ item }) => {
+      <SwipeableTabContent
+        tabs={TASK_STATUS_TABS}
+        value={filter}
+        onChange={changeFilter}
+        disabled={state.pending}
+      >
+        {state.loading ? (
+          <LoadingState />
+        ) : (
+          <FlatList
+            style={{ flex: 1 }}
+            data={tasks}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={{ paddingBottom: 8 }}
+            refreshing={state.loading}
+            onRefresh={state.refresh}
+            keyboardShouldPersistTaps="handled"
+            ListEmptyComponent={<EmptyState />}
+            renderItem={({ item }) => {
             const taskGroup = item.groupId ? (groupById.get(item.groupId) ?? null) : null
             const completed = item.status === 'completed'
 
@@ -441,9 +457,10 @@ export function TasksScreen(): React.JSX.Element {
                 </View>
               </View>
             )
-          }}
-        />
-      )}
+            }}
+          />
+        )}
+      </SwipeableTabContent>
 
       <View
         style={{
