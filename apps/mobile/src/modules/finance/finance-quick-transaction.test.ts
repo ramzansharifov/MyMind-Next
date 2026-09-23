@@ -16,7 +16,10 @@ function tag(id: string, type: FinanceTagSummary['type']): FinanceTagSummary {
     createdAt: 1,
     updatedAt: 1,
     transactionCount: 0,
-    totalAmountMinor: 0
+    totalAmountMinor: 0,
+    averageAmountMinor: 0,
+    linkedLimitCount: 0,
+    sharePercent: 0
   }
 }
 
