@@ -114,6 +114,7 @@ export function SearchableHeaderRow({
     searchProgress.stopAnimation()
     searchProgress.setValue(0)
     setSearchOpen(true)
+    onSearchOpenChange?.(true)
     requestAnimationFrame(() => {
       Animated.timing(searchProgress, {
         toValue: 1,
@@ -132,7 +133,10 @@ export function SearchableHeaderRow({
       easing: Easing.inOut(Easing.cubic),
       useNativeDriver: true
     }).start(({ finished }) => {
-      if (finished) setSearchOpen(false)
+      if (finished) {
+        setSearchOpen(false)
+        onSearchOpenChange?.(false)
+      }
     })
   }
 
@@ -234,7 +238,8 @@ export function SwipeTabBar<T extends string, I extends SwipeTabBarItem<T>>({
   feedback,
   renderIcon,
   trailing,
-  search
+  search,
+  onSearchOpenChange
 }: {
   items: readonly I[]
   value: T
@@ -243,6 +248,7 @@ export function SwipeTabBar<T extends string, I extends SwipeTabBarItem<T>>({
   renderIcon(item: I, selected: boolean): ReactNode
   trailing?: ReactNode
   search?: InlineTabSearchConfig
+  onSearchOpenChange?(open: boolean): void
 }): React.JSX.Element {
   const theme = useTheme()
   const [progress] = useState(() => new Animated.Value(0))
