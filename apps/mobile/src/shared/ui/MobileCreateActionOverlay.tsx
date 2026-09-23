@@ -6,7 +6,6 @@ import { AppIcon } from './icons'
 import { wrapCarouselIndex } from './mobile-create-action-gesture'
 import {
   MobileCreateActionOverlayContext,
-  type MobileCreateActionOverlayController,
   type MobileCreateActionOverlayItem
 } from './MobileCreateActionOverlayContext'
 import { useTheme } from './theme'
