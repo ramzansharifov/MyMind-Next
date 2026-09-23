@@ -34,16 +34,10 @@ import {
   textField,
   type FormSpec
 } from '../../shared/ui/form-model'
-import {
-  EmptyState,
-  ErrorState,
-  IconButton,
-  LoadingState,
-  SearchField
-} from '../../shared/ui/primitives'
+import { EmptyState, ErrorState, IconButton, LoadingState } from '../../shared/ui/primitives'
 import { useTheme } from '../../shared/ui/theme'
 import { SwipeableTabContent } from '../../shared/ui/SwipeableTabContent'
-import { SwipeTabBar } from '../../shared/ui/SwipeTabBar'
+import { SearchableHeaderRow, SwipeTabBar } from '../../shared/ui/SwipeTabBar'
 import { useSwipeTabFeedback, type SwipeTabFeedback } from '../../shared/ui/useSwipeTabFeedback'
 import { MobileNoteAppendEditor } from './MobileNoteAppendEditor'
 import { createMobileAppendTextBlock, isTextOnlyNote, withoutNoteBlock } from './mobile-note-policy'
@@ -78,11 +72,17 @@ const NOTES_VIEWS: ReadonlyArray<{
 function NotesTabBar({
   value,
   onChange,
-  feedback
+  feedback,
+  query,
+  onQueryChange,
+  onSearchOpenChange
 }: {
   value: NotesView
   onChange(value: NotesView): void
   feedback: SwipeTabFeedback<NotesView> | null
+  query: string
+  onQueryChange(value: string): void
+  onSearchOpenChange(open: boolean): void
 }): React.JSX.Element {
   const theme = useTheme()
 
@@ -92,6 +92,8 @@ function NotesTabBar({
       value={value}
       onChange={onChange}
       feedback={feedback}
+      search={{ value: query, onChangeText: onQueryChange }}
+      onSearchOpenChange={onSearchOpenChange}
       renderIcon={(item, selected) => {
         const Icon = item.icon
         return (
@@ -337,6 +339,7 @@ export function NotesScreen({
   const [sort, setSort] = useState<NotesSort>('updated')
   const [hideEmptyGroups, setHideEmptyGroups] = useState(false)
   const [swipeTabFeedback, showSwipeTabFeedback] = useSwipeTabFeedback<NotesView>()
+  const [searchOpen, setSearchOpen] = useState(false)
   const queueRef = useRef<AutosaveQueue<NoteDocument> | null>(null)
   const appendQueueRef = useRef<AutosaveQueue<StudyTextBlock> | null>(null)
 
@@ -899,20 +902,7 @@ export function NotesScreen({
     <View style={{ flex: 1 }}>
       <View style={{ gap: 10, marginBottom: 10 }}>
         {view === 'groups' && selectedGroup ? (
-          <View
-            style={{
-              minHeight: 54,
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 9,
-              paddingHorizontal: 7,
-              paddingVertical: 6,
-              borderWidth: 1,
-              borderColor: theme.border,
-              borderRadius: 15,
-              backgroundColor: theme.surface
-            }}
-          >
+          <SearchableHeaderRow search={{ value: query, onChangeText: setQuery }}>
             <IconButton
               label="Назад к группам"
               icon="back"
@@ -953,12 +943,17 @@ export function NotesScreen({
                 }
               ]}
             />
-          </View>
+          </SearchableHeaderRow>
         ) : (
-          <NotesTabBar value={view} onChange={changeView} feedback={swipeTabFeedback} />
+          <NotesTabBar
+            value={view}
+            onChange={changeView}
+            feedback={swipeTabFeedback}
+            query={query}
+            onQueryChange={setQuery}
+            onSearchOpenChange={setSearchOpen}
+          />
         )}
-
-        <SearchField value={query} onChangeText={setQuery} />
 
         {view === 'groups' && !selectedGroup ? (
           <View
@@ -1024,7 +1019,7 @@ export function NotesScreen({
         value={view}
         onChange={changeView}
         onSwipeChange={showSwipeTabFeedback}
-        disabled={Boolean(selectedGroup)}
+        disabled={Boolean(selectedGroup) || searchOpen}
       >
         {overview.loading ? (
           <LoadingState />

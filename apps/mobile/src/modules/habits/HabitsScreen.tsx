@@ -18,8 +18,7 @@ import {
   EmptyState,
   ErrorState,
   IconButton,
-  LoadingState,
-  SearchField
+  LoadingState
 } from '../../shared/ui/primitives'
 import { FormSheet } from '../../shared/ui/FormSheet'
 import { AppDialog } from '../../shared/ui/AppDialog'
@@ -79,6 +78,7 @@ export function HabitsScreen(): React.JSX.Element {
   const [groupsOpen, setGroupsOpen] = useState(false)
   const [form, setForm] = useState<FormSpec | null>(null)
   const [swipeTabFeedback, showSwipeTabFeedback] = useSwipeTabFeedback<HabitView>()
+  const [searchOpen, setSearchOpen] = useState(false)
 
   const changeView = useCallback(
     (next: HabitView): void => {
@@ -227,6 +227,8 @@ export function HabitsScreen(): React.JSX.Element {
           value={view}
           onChange={changeView}
           feedback={swipeTabFeedback}
+          search={view === 'reports' ? undefined : { value: query, onChangeText: setQuery }}
+          onSearchOpenChange={setSearchOpen}
           renderIcon={(item, selected) => {
             const Icon = item.icon
             return (
@@ -294,8 +296,6 @@ export function HabitsScreen(): React.JSX.Element {
             </>
           }
         />
-
-        {view !== 'reports' ? <SearchField value={query} onChangeText={setQuery} /> : null}
 
         {view === 'all' ? (
           <View
@@ -387,7 +387,7 @@ export function HabitsScreen(): React.JSX.Element {
         value={view}
         onChange={changeView}
         onSwipeChange={showSwipeTabFeedback}
-        disabled={state.pending}
+        disabled={state.pending || searchOpen}
       >
         {state.loading ? (
           <LoadingState />

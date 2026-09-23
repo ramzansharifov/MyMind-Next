@@ -40,14 +40,7 @@ import {
   textField,
   type FormSpec
 } from '../../shared/ui/form-model'
-import {
-  Button,
-  EmptyState,
-  ErrorState,
-  Label,
-  LoadingState,
-  SearchField
-} from '../../shared/ui/primitives'
+import { Button, EmptyState, ErrorState, Label, LoadingState } from '../../shared/ui/primitives'
 import { useTheme } from '../../shared/ui/theme'
 import { SwipeableTabContent } from '../../shared/ui/SwipeableTabContent'
 import { SwipeTabBar } from '../../shared/ui/SwipeTabBar'
@@ -271,6 +264,7 @@ export function PasswordsScreen(): React.JSX.Element {
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [toolsOpen, setToolsOpen] = useState(false)
   const [swipeTabFeedback, showSwipeTabFeedback] = useSwipeTabFeedback<Tab>()
+  const [searchOpen, setSearchOpen] = useState(false)
 
   const changeTab = useCallback(
     (next: Tab): void => {
@@ -638,13 +632,13 @@ export function PasswordsScreen(): React.JSX.Element {
   return (
     <View style={{ flex: 1, minHeight: 0 }}>
       <View style={{ gap: 10, paddingBottom: 12 }}>
-        {tab !== 'security' ? <SearchField value={query} onChangeText={setQuery} /> : null}
-
         <SwipeTabBar
           items={PASSWORD_TABS}
           value={tab}
           onChange={changeTab}
           feedback={swipeTabFeedback}
+          search={tab === 'security' ? undefined : { value: query, onChangeText: setQuery }}
+          onSearchOpenChange={setSearchOpen}
           renderIcon={(item, selected) => {
             const Icon = item.icon
             return (
@@ -737,7 +731,7 @@ export function PasswordsScreen(): React.JSX.Element {
         value={tab}
         onChange={changeTab}
         onSwipeChange={showSwipeTabFeedback}
-        disabled={loading}
+        disabled={loading || searchOpen}
       >
         {content}
       </SwipeableTabContent>

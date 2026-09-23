@@ -10,8 +10,7 @@ import {
   EmptyState,
   ErrorState,
   IconButton,
-  LoadingState,
-  SearchField
+  LoadingState
 } from '../../shared/ui/primitives'
 import { FormSheet } from '../../shared/ui/FormSheet'
 import { AppDialog } from '../../shared/ui/AppDialog'
@@ -58,6 +57,7 @@ export function TasksScreen(): React.JSX.Element {
   const [groupsOpen, setGroupsOpen] = useState(false)
   const [form, setForm] = useState<FormSpec | null>(null)
   const [swipeTabFeedback, showSwipeTabFeedback] = useSwipeTabFeedback<TaskStatusFilter>()
+  const [searchOpen, setSearchOpen] = useState(false)
 
   const changeFilter = useCallback(
     (next: TaskStatusFilter): void => {
@@ -208,13 +208,13 @@ export function TasksScreen(): React.JSX.Element {
   return (
     <View style={{ flex: 1, minHeight: 0 }}>
       <View style={{ marginBottom: 12 }}>
-        <SearchField value={query} onChangeText={setQuery} />
-
         <SwipeTabBar
           items={STATUS_FILTERS}
           value={filter}
           onChange={changeFilter}
           feedback={swipeTabFeedback}
+          search={{ value: query, onChangeText: setQuery }}
+          onSearchOpenChange={setSearchOpen}
           renderIcon={(item, selected) => (
             <AppIcon
               name={item.icon}
@@ -289,7 +289,7 @@ export function TasksScreen(): React.JSX.Element {
         value={filter}
         onChange={changeFilter}
         onSwipeChange={showSwipeTabFeedback}
-        disabled={state.pending}
+        disabled={state.pending || searchOpen}
       >
         {state.loading ? (
           <LoadingState />

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
-import { Animated, Easing, Pressable, Text, View } from 'react-native'
+import { Animated, Easing, Pressable, Text, TextInput, View } from 'react-native'
+import { Search, X } from 'lucide-react-native'
 
 import { useTheme } from './theme'
 import type { SwipeTabFeedback } from './useSwipeTabFeedback'
@@ -10,13 +11,231 @@ export interface SwipeTabBarItem<T extends string = string> {
   disabled?: boolean
 }
 
+export interface InlineTabSearchConfig {
+  value: string
+  onChangeText(value: string): void
+  placeholder?: string
+  accessibilityLabel?: string
+}
+
+function InlineSearchField({
+  search,
+  close
+}: {
+  search: InlineTabSearchConfig
+  close(): void
+}): React.JSX.Element {
+  const theme = useTheme()
+
+  return (
+    <View
+      style={{
+        flex: 1,
+        minWidth: 0,
+        height: 40,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        paddingLeft: 10,
+        paddingRight: 4,
+        borderRadius: 12,
+        backgroundColor: theme.raised
+      }}
+    >
+      <Search size={17} color={theme.muted} />
+      <TextInput
+        autoFocus
+        accessibilityLabel={search.accessibilityLabel ?? 'Поиск'}
+        placeholder={search.placeholder ?? 'Поиск…'}
+        placeholderTextColor={theme.muted}
+        value={search.value}
+        onChangeText={search.onChangeText}
+        clearButtonMode="never"
+        returnKeyType="search"
+        style={{
+          flex: 1,
+          minWidth: 0,
+          height: 40,
+          paddingVertical: 0,
+          color: theme.text,
+          fontSize: 14
+        }}
+      />
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Закрыть поиск"
+        onPress={close}
+        hitSlop={4}
+        style={({ pressed }) => ({
+          width: 34,
+          height: 34,
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderRadius: 10,
+          backgroundColor: pressed ? theme.surface : 'transparent',
+          opacity: pressed ? 0.72 : 1
+        })}
+      >
+        <X size={17} color={theme.muted} />
+      </Pressable>
+    </View>
+  )
+}
+
+export function SearchableHeaderRow({
+  children,
+  search,
+  minHeight = 54,
+  borderRadius = 15,
+  paddingHorizontal = 7,
+  paddingVertical = 6,
+  gap = 9
+}: {
+  children: ReactNode
+  search: InlineTabSearchConfig
+  minHeight?: number
+  borderRadius?: number
+  paddingHorizontal?: number
+  paddingVertical?: number
+  gap?: number
+}): React.JSX.Element {
+  const theme = useTheme()
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [searchProgress] = useState(() => new Animated.Value(0))
+
+  useEffect(
+    () => () => {
+      searchProgress.stopAnimation()
+    },
+    [searchProgress]
+  )
+
+  const openSearch = (): void => {
+    searchProgress.stopAnimation()
+    searchProgress.setValue(0)
+    setSearchOpen(true)
+    requestAnimationFrame(() => {
+      Animated.timing(searchProgress, {
+        toValue: 1,
+        duration: 230,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true
+      }).start()
+    })
+  }
+
+  const closeSearch = (): void => {
+    search.onChangeText('')
+    Animated.timing(searchProgress, {
+      toValue: 0,
+      duration: 220,
+      easing: Easing.inOut(Easing.cubic),
+      useNativeDriver: true
+    }).start(({ finished }) => {
+      if (finished) setSearchOpen(false)
+    })
+  }
+
+  const normalOpacity = searchProgress.interpolate({
+    inputRange: [0, 0.72, 1],
+    outputRange: [1, 0.12, 0],
+    extrapolate: 'clamp'
+  })
+  const normalTranslateX = searchProgress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, -54],
+    extrapolate: 'clamp'
+  })
+  const searchOpacity = searchProgress.interpolate({
+    inputRange: [0, 0.28, 1],
+    outputRange: [0, 0.82, 1],
+    extrapolate: 'clamp'
+  })
+  const searchTranslateX = searchProgress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [62, 0],
+    extrapolate: 'clamp'
+  })
+
+  return (
+    <View
+      style={{
+        position: 'relative',
+        minHeight,
+        overflow: 'hidden',
+        paddingHorizontal,
+        paddingVertical,
+        borderWidth: 1,
+        borderColor: theme.border,
+        borderRadius,
+        backgroundColor: theme.surface
+      }}
+    >
+      <Animated.View
+        pointerEvents={searchOpen ? 'none' : 'auto'}
+        style={{
+          minHeight: minHeight - paddingVertical * 2,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap,
+          opacity: normalOpacity,
+          transform: [{ translateX: normalTranslateX }]
+        }}
+      >
+        {children}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Поиск"
+          accessibilityState={{ selected: Boolean(search.value) }}
+          onPress={openSearch}
+          style={({ pressed }) => ({
+            width: 40,
+            height: 40,
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: 12,
+            backgroundColor: search.value
+              ? theme.accent + '18'
+              : pressed
+                ? theme.raised
+                : 'transparent',
+            opacity: pressed ? 0.72 : 1
+          })}
+        >
+          <Search size={18} color={search.value ? theme.accent : theme.muted} />
+        </Pressable>
+      </Animated.View>
+
+      {searchOpen ? (
+        <Animated.View
+          style={{
+            position: 'absolute',
+            top: paddingVertical,
+            right: paddingHorizontal,
+            bottom: paddingVertical,
+            left: paddingHorizontal,
+            flexDirection: 'row',
+            alignItems: 'center',
+            opacity: searchOpacity,
+            transform: [{ translateX: searchTranslateX }]
+          }}
+        >
+          <InlineSearchField search={search} close={closeSearch} />
+        </Animated.View>
+      ) : null}
+    </View>
+  )
+}
+
 export function SwipeTabBar<T extends string, I extends SwipeTabBarItem<T>>({
   items,
   value,
   onChange,
   feedback,
   renderIcon,
-  trailing
+  trailing,
+  search,
+  onSearchOpenChange
 }: {
   items: readonly I[]
   value: T
@@ -24,9 +243,13 @@ export function SwipeTabBar<T extends string, I extends SwipeTabBarItem<T>>({
   feedback?: SwipeTabFeedback<T> | null
   renderIcon(item: I, selected: boolean): ReactNode
   trailing?: ReactNode
+  search?: InlineTabSearchConfig
+  onSearchOpenChange?(open: boolean): void
 }): React.JSX.Element {
   const theme = useTheme()
   const [progress] = useState(() => new Animated.Value(0))
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [searchProgress] = useState(() => new Animated.Value(0))
 
   useEffect(() => {
     if (!feedback) return
@@ -55,10 +278,50 @@ export function SwipeTabBar<T extends string, I extends SwipeTabBarItem<T>>({
     }
   }, [feedback, progress])
 
+  useEffect(
+    () => () => {
+      progress.stopAnimation()
+      searchProgress.stopAnimation()
+    },
+    [progress, searchProgress]
+  )
+
   const shownItem = useMemo(
     () => (feedback ? (items.find((item) => item.id === feedback.value) ?? null) : null),
     [feedback, items]
   )
+
+  const openSearch = (): void => {
+    if (!search || shownItem) return
+    searchProgress.stopAnimation()
+    searchProgress.setValue(0)
+    setSearchOpen(true)
+    onSearchOpenChange?.(true)
+    requestAnimationFrame(() => {
+      Animated.timing(searchProgress, {
+        toValue: 1,
+        duration: 230,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true
+      }).start()
+    })
+  }
+
+  const closeSearch = (): void => {
+    if (!search) return
+    search.onChangeText('')
+    Animated.timing(searchProgress, {
+      toValue: 0,
+      duration: 220,
+      easing: Easing.inOut(Easing.cubic),
+      useNativeDriver: true
+    }).start(({ finished }) => {
+      if (finished) {
+        setSearchOpen(false)
+        onSearchOpenChange?.(false)
+      }
+    })
+  }
 
   const directionSign = feedback?.direction === 'previous' ? 1 : -1
   const normalExit = 52 * directionSign
@@ -92,6 +355,27 @@ export function SwipeTabBar<T extends string, I extends SwipeTabBarItem<T>>({
     extrapolate: 'clamp'
   })
 
+  const searchNormalOpacity = searchProgress.interpolate({
+    inputRange: [0, 0.72, 1],
+    outputRange: [1, 0.12, 0],
+    extrapolate: 'clamp'
+  })
+  const searchNormalTranslateX = searchProgress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, -54],
+    extrapolate: 'clamp'
+  })
+  const searchOpacity = searchProgress.interpolate({
+    inputRange: [0, 0.28, 1],
+    outputRange: [0, 0.82, 1],
+    extrapolate: 'clamp'
+  })
+  const searchTranslateX = searchProgress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [62, 0],
+    extrapolate: 'clamp'
+  })
+
   return (
     <View
       accessibilityRole="tablist"
@@ -107,14 +391,14 @@ export function SwipeTabBar<T extends string, I extends SwipeTabBarItem<T>>({
       }}
     >
       <Animated.View
-        pointerEvents={shownItem ? 'none' : 'auto'}
+        pointerEvents={shownItem || searchOpen ? 'none' : 'auto'}
         style={{
           minHeight: 40,
           flexDirection: 'row',
           alignItems: 'center',
           gap: 4,
-          opacity: normalOpacity,
-          transform: [{ translateX: normalTranslateX }]
+          opacity: Animated.multiply(normalOpacity, searchNormalOpacity),
+          transform: [{ translateX: Animated.add(normalTranslateX, searchNormalTranslateX) }]
         }}
       >
         {items.map((item) => {
@@ -147,9 +431,33 @@ export function SwipeTabBar<T extends string, I extends SwipeTabBarItem<T>>({
           )
         })}
         {trailing}
+        {search ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Поиск"
+            accessibilityState={{ selected: Boolean(search.value) }}
+            onPress={openSearch}
+            style={({ pressed }) => ({
+              flex: 1,
+              minWidth: 0,
+              height: 40,
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: 12,
+              backgroundColor: search.value
+                ? theme.accent + '18'
+                : pressed
+                  ? theme.raised
+                  : 'transparent',
+              opacity: pressed ? 0.72 : 1
+            })}
+          >
+            <Search size={19} color={search.value ? theme.accent : theme.muted} />
+          </Pressable>
+        ) : null}
       </Animated.View>
 
-      {shownItem ? (
+      {shownItem && !searchOpen ? (
         <Animated.View
           pointerEvents="none"
           accessibilityElementsHidden
@@ -193,6 +501,24 @@ export function SwipeTabBar<T extends string, I extends SwipeTabBarItem<T>>({
               {shownItem.label}
             </Text>
           </View>
+        </Animated.View>
+      ) : null}
+
+      {search && searchOpen ? (
+        <Animated.View
+          style={{
+            position: 'absolute',
+            top: 4,
+            right: 4,
+            bottom: 4,
+            left: 4,
+            flexDirection: 'row',
+            alignItems: 'center',
+            opacity: searchOpacity,
+            transform: [{ translateX: searchTranslateX }]
+          }}
+        >
+          <InlineSearchField search={search} close={closeSearch} />
         </Animated.View>
       ) : null}
     </View>
