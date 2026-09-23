@@ -7,7 +7,7 @@ import type {
 import { formatMoneyMinor } from '@mymind/core/finance-money'
 
 import { AppDialog } from '../../shared/ui/AppDialog'
-import { Button } from '../../shared/ui/primitives'
+import { Button, IconButton } from '../../shared/ui/primitives'
 import { useTheme } from '../../shared/ui/theme'
 import { financeOperationTone } from './finance-semantic-colors'
 
@@ -70,9 +70,8 @@ export function MobileFinanceTemplateDetailSheet({
       presentation="sheet"
       footer={
         <>
-          <Button label="Закрыть" onPress={onClose} />
-          <Button label="Удалить" icon="delete" danger onPress={onDelete} />
-          <Button label="Изменить" icon="edit" onPress={onEdit} />
+          <IconButton label="Удалить шаблон" icon="delete" danger onPress={onDelete} />
+          <IconButton label="Изменить шаблон" icon="edit" onPress={onEdit} />
           <Button label="Использовать" icon="check" primary onPress={onUse} />
         </>
       }
