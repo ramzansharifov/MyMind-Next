@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { FlatList, Pressable, ScrollView, Text, View } from 'react-native'
 import {
   BarChart3,
@@ -23,7 +23,7 @@ import {
 import { FormSheet } from '../../shared/ui/FormSheet'
 import { AppDialog } from '../../shared/ui/AppDialog'
 import { AppDateField } from '../../shared/ui/FormControls'
-import { ActionMenu } from '../../shared/ui/ActionMenu'
+import { ActionMenu, ActionMenuDialog } from '../../shared/ui/ActionMenu'
 import { WorkspaceNodeCard } from '../../shared/ui/Workspace'
 import { VisualIconBadge } from '../../shared/ui/VisualPickers'
 import { GROUP_COLOR_CHOICES, HABIT_GROUP_ICON_CHOICES } from '../../shared/ui/visual-options'
@@ -77,6 +77,8 @@ export function HabitsScreen(): React.JSX.Element {
   const [trackingFilter, setTrackingFilter] = useState<'all' | 'check' | 'count'>('all')
   const [groupsOpen, setGroupsOpen] = useState(false)
   const [form, setForm] = useState<FormSpec | null>(null)
+  const [habitActionsId, setHabitActionsId] = useState<string | null>(null)
+  const longPressedHabitId = useRef<string | null>(null)
   const [swipeTabFeedback, showSwipeTabFeedback] = useSwipeTabFeedback<HabitView>()
   const [searchOpen, setSearchOpen] = useState(false)
 
@@ -454,7 +456,20 @@ export function HabitsScreen(): React.JSX.Element {
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel={`Изменить привычку ${item.title}`}
-                    onPress={() => edit(item)}
+                    accessibilityHint="Удерживайте для дополнительных действий"
+                    onPress={() => {
+                      if (longPressedHabitId.current === item.id) {
+                        longPressedHabitId.current = null
+                        return
+                      }
+                      edit(item)
+                    }}
+                    onLongPress={() => {
+                      if (state.pending) return
+                      longPressedHabitId.current = item.id
+                      setHabitActionsId(item.id)
+                    }}
+                    delayLongPress={380}
                     disabled={state.pending}
                     style={({ pressed }) => ({
                       flex: 1,
@@ -555,14 +570,21 @@ export function HabitsScreen(): React.JSX.Element {
                       />
                     ) : null}
 
-                    <ActionMenu
-                      disabled={state.pending}
+                    <ActionMenuDialog
+                      open={habitActionsId === item.id}
+                      onOpenChange={(open) => {
+                        if (!open) {
+                          setHabitActionsId(null)
+                          longPressedHabitId.current = null
+                        }
+                      }}
                       title={item.title}
                       items={[
                         {
                           key: 'group',
                           label: `Группа: ${habitGroup?.name ?? 'Без группы'}`,
                           icon: 'folder',
+                          disabled: state.pending,
                           onPress: () => move(item)
                         },
                         ...(scheduled
@@ -571,6 +593,7 @@ export function HabitsScreen(): React.JSX.Element {
                                 key: 'skip',
                                 label: 'Пропустить',
                                 icon: 'skip' as const,
+                                disabled: state.pending,
                                 onPress: () =>
                                   state.mutate(() => {
                                     api.upsertHabitEntry({
@@ -589,6 +612,7 @@ export function HabitsScreen(): React.JSX.Element {
                                 key: 'reset',
                                 label: 'Сбросить отметку',
                                 icon: 'reset' as const,
+                                disabled: state.pending,
                                 onPress: () =>
                                   state.mutate(() => {
                                     api.deleteHabitEntry({ habitId: item.id, date })
@@ -600,6 +624,7 @@ export function HabitsScreen(): React.JSX.Element {
                           key: 'edit',
                           label: 'Изменить',
                           icon: 'edit',
+                          disabled: state.pending,
                           onPress: () => edit(item)
                         },
                         {
@@ -607,6 +632,7 @@ export function HabitsScreen(): React.JSX.Element {
                           label: 'Удалить привычку',
                           icon: 'delete',
                           danger: true,
+                          disabled: state.pending,
                           onPress: () =>
                             state.confirmDelete(
                               'Удалить привычку?',

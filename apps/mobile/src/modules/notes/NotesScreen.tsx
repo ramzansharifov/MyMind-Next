@@ -20,7 +20,7 @@ import { notifyDataChanged } from '../../app/changes'
 import { useCollection } from '../../shared/hooks/useCollection'
 import { DocumentEditor } from '../../shared/ui/DocumentEditor'
 import { FormSheet } from '../../shared/ui/FormSheet'
-import { ActionMenu } from '../../shared/ui/ActionMenu'
+import { ActionMenu, ActionMenuDialog } from '../../shared/ui/ActionMenu'
 import { useConfirmation } from '../../shared/ui/ConfirmationProvider'
 import { useToast } from '../../shared/ui/toast-context'
 import { WorkspaceNodeCard } from '../../shared/ui/Workspace'
@@ -180,21 +180,23 @@ function MobileNoteCard({
   onDelete(): void
 }): React.JSX.Element {
   const theme = useTheme()
+  const [actionsOpen, setActionsOpen] = useState(false)
+  const suppressOpenUntil = useRef(0)
   const subtitle = note.plainText.trim()
   const date = new Date(note.updatedAt).toLocaleDateString('ru-RU', {
     day: 'numeric',
     month: 'short'
   })
-  const menu = (
-    <ActionMenu
-      title={note.title}
-      items={[
-        { label: 'Переименовать', icon: 'edit', onPress: onRename },
-        { label: 'Переместить', icon: 'move', onPress: onMove },
-        { label: 'Удалить заметку', icon: 'delete', danger: true, onPress: onDelete }
-      ]}
-    />
-  )
+  const actions = [
+    { label: 'Переименовать', icon: 'edit' as const, onPress: onRename },
+    { label: 'Переместить', icon: 'move' as const, onPress: onMove },
+    {
+      label: 'Удалить заметку',
+      icon: 'delete' as const,
+      danger: true,
+      onPress: onDelete
+    }
+  ]
   const meta = [groupTitle, date].filter(Boolean).join(' · ')
 
   if (layout === 'list') {
@@ -215,7 +217,16 @@ function MobileNoteCard({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={note.title}
-          onPress={onOpen}
+          accessibilityHint="Удерживайте для действий с заметкой"
+          onPress={() => {
+            if (Date.now() < suppressOpenUntil.current) return
+            onOpen()
+          }}
+          onLongPress={() => {
+            suppressOpenUntil.current = Date.now() + 900
+            setActionsOpen(true)
+          }}
+          delayLongPress={380}
           style={({ pressed }) => ({
             minWidth: 0,
             flex: 1,
@@ -223,7 +234,7 @@ function MobileNoteCard({
             alignItems: 'flex-start',
             gap: 11,
             paddingLeft: 12,
-            paddingRight: 4,
+            paddingRight: 12,
             paddingVertical: 12,
             backgroundColor: pressed ? theme.raised : 'transparent'
           })}
@@ -252,9 +263,12 @@ function MobileNoteCard({
             </Text>
           </View>
         </Pressable>
-        <View style={{ alignItems: 'center', justifyContent: 'center', paddingRight: 6 }}>
-          {menu}
-        </View>
+        <ActionMenuDialog
+          open={actionsOpen}
+          onOpenChange={setActionsOpen}
+          title={note.title}
+          items={actions}
+        />
       </View>
     )
   }
@@ -274,13 +288,15 @@ function MobileNoteCard({
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={note.title}
+        accessibilityHint="Удерживайте для действий с заметкой"
         onPress={onOpen}
+        onLongPress={() => setActionsOpen(true)}
+        delayLongPress={380}
         style={({ pressed }) => ({
           minHeight: 150,
           flex: 1,
           gap: 8,
           padding: 12,
-          paddingRight: 42,
           backgroundColor: pressed ? theme.raised : 'transparent'
         })}
       >
@@ -302,7 +318,12 @@ function MobileNoteCard({
           {meta || 'Без группы'}
         </Text>
       </Pressable>
-      <View style={{ position: 'absolute', top: 5, right: 4 }}>{menu}</View>
+      <ActionMenuDialog
+        open={actionsOpen}
+        onOpenChange={setActionsOpen}
+        title={note.title}
+        items={actions}
+      />
     </View>
   )
 }
