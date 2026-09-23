@@ -109,7 +109,7 @@ function TemporalField({
   )
 }
 
-export { AppDateField } from './AppDateField'
+export { AppDateField, AppDatePickerDialog } from './AppDateField'
 
 export function AppTimeField(props: {
   value: string
