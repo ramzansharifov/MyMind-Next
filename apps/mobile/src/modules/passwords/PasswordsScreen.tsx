@@ -49,12 +49,15 @@ import {
   SearchField
 } from '../../shared/ui/primitives'
 import { useTheme } from '../../shared/ui/theme'
+import { SwipeableTabContent } from '../../shared/ui/SwipeableTabContent'
 import { ChangeMasterPasswordModal } from './ChangeMasterPasswordModal'
 import { PasswordGeneratorModal } from './PasswordGeneratorModal'
 import { PasswordItemEditor } from './PasswordItemEditor'
 import { passwordClipboard } from './passwordClipboard'
 
 type Tab = 'items' | 'favorites' | 'security'
+
+const PASSWORD_TAB_IDS = ['items', 'favorites', 'security'] as const
 
 const PASSWORD_TABS: ReadonlyArray<{ id: Tab; label: string; icon: LucideIcon }> = [
   { id: 'items', label: 'Хранилище', icon: KeyRound },
@@ -265,6 +268,15 @@ export function PasswordsScreen(): React.JSX.Element {
   const [groupsOpen, setGroupsOpen] = useState(false)
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [toolsOpen, setToolsOpen] = useState(false)
+
+  const changeTab = useCallback(
+    (next: Tab): void => {
+      if (next === tab) return
+      setTab(next)
+      toast.info(PASSWORD_TABS.find((item) => item.id === next)?.label ?? 'Пароли', 'passwords-tab')
+    },
+    [tab, toast]
+  )
 
   const refresh = useCallback((): void => {
     setLoading(true)
@@ -649,11 +661,7 @@ export function PasswordsScreen(): React.JSX.Element {
                 accessibilityRole="button"
                 accessibilityLabel={item.label}
                 accessibilityState={{ selected }}
-                onPress={() => {
-                  if (selected) return
-                  setTab(item.id)
-                  toast.info(item.label, 'passwords-tab')
-                }}
+                onPress={() => changeTab(item.id)}
                 style={({ pressed }) => ({
                   flex: 1,
                   minWidth: 0,
@@ -751,7 +759,14 @@ export function PasswordsScreen(): React.JSX.Element {
         {error ? <ErrorState message={error} retry={refresh} /> : null}
       </View>
 
-      <View style={{ flex: 1 }}>{content}</View>
+      <SwipeableTabContent
+        tabs={PASSWORD_TAB_IDS}
+        value={tab}
+        onChange={changeTab}
+        disabled={loading}
+      >
+        {content}
+      </SwipeableTabContent>
       <MobileCreateAction
         iconOnly
         actions={[
