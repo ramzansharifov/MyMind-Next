@@ -14,7 +14,7 @@ import {
 } from '../../shared/ui/primitives'
 import { FormSheet } from '../../shared/ui/FormSheet'
 import { AppDialog } from '../../shared/ui/AppDialog'
-import { ActionMenu } from '../../shared/ui/ActionMenu'
+import { ActionMenu, ActionMenuDialog } from '../../shared/ui/ActionMenu'
 import { WorkspaceNodeCard } from '../../shared/ui/Workspace'
 import { VisualIconBadge } from '../../shared/ui/VisualPickers'
 import { TASK_GROUP_COLOR_CHOICES, TASK_GROUP_ICON_CHOICES } from '../../shared/ui/visual-options'
@@ -56,6 +56,7 @@ export function TasksScreen(): React.JSX.Element {
   const [group, setGroup] = useState<string | null | undefined>(undefined)
   const [groupsOpen, setGroupsOpen] = useState(false)
   const [form, setForm] = useState<FormSpec | null>(null)
+  const [taskActionsId, setTaskActionsId] = useState<string | null>(null)
   const [swipeTabFeedback, showSwipeTabFeedback] = useSwipeTabFeedback<TaskStatusFilter>()
   const [searchOpen, setSearchOpen] = useState(false)
 
@@ -343,7 +344,12 @@ export function TasksScreen(): React.JSX.Element {
                     accessibilityLabel={
                       completed ? 'Вернуть задачу ' + item.title : 'Выполнить задачу ' + item.title
                     }
+                    accessibilityHint="Удерживайте для действий с задачей"
                     onPress={() => toggle(item)}
+                    onLongPress={() => {
+                      if (!state.pending) setTaskActionsId(item.id)
+                    }}
+                    delayLongPress={380}
                     disabled={state.pending}
                     style={({ pressed }) => ({
                       flex: 1,
@@ -353,7 +359,7 @@ export function TasksScreen(): React.JSX.Element {
                       alignItems: 'center',
                       gap: 11,
                       paddingLeft: 14,
-                      paddingRight: 6,
+                      paddingRight: 14,
                       paddingVertical: 11,
                       opacity: pressed ? 0.72 : 1
                     })}
@@ -393,40 +399,40 @@ export function TasksScreen(): React.JSX.Element {
                     </Text>
                   </Pressable>
 
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      paddingRight: 6
+                  <ActionMenuDialog
+                    open={taskActionsId === item.id}
+                    onOpenChange={(open) => {
+                      if (!open) setTaskActionsId(null)
                     }}
-                  >
-                    <ActionMenu
-                      disabled={state.pending}
-                      title={item.title}
-                      items={[
-                        {
-                          key: 'group',
-                          label: `Группа: ${taskGroup?.name ?? 'Без группы'}`,
-                          icon: 'folder',
-                          onPress: () => move(item)
-                        },
-                        {
-                          label: 'Изменить',
-                          icon: 'edit',
-                          onPress: () => edit(item)
-                        },
-                        {
-                          label: 'Удалить',
-                          icon: 'delete',
-                          danger: true,
-                          onPress: () =>
-                            state.confirmDelete('Удалить задачу?', () => {
-                              api.deleteTask({ id: item.id })
-                            })
-                        }
-                      ]}
-                    />
-                  </View>
+                    title={item.title}
+                    items={[
+                      {
+                        key: 'group',
+                        label: `Группа: ${taskGroup?.name ?? 'Без группы'}`,
+                        icon: 'folder',
+                        disabled: state.pending,
+                        onPress: () => move(item)
+                      },
+                      {
+                        key: 'edit',
+                        label: 'Изменить',
+                        icon: 'edit',
+                        disabled: state.pending,
+                        onPress: () => edit(item)
+                      },
+                      {
+                        key: 'delete',
+                        label: 'Удалить',
+                        icon: 'delete',
+                        danger: true,
+                        disabled: state.pending,
+                        onPress: () =>
+                          state.confirmDelete('Удалить задачу?', () => {
+                            api.deleteTask({ id: item.id })
+                          })
+                      }
+                    ]}
+                  />
                 </View>
               )
             }}
