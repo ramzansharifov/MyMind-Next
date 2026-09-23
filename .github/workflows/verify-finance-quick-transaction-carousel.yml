@@ -1,0 +1,41 @@
+name: Verify finance quick transaction carousel
+
+on:
+  push:
+    branches:
+      - 'feat/finance-quick-transaction-carousel'
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run postinstall --workspace=mymind-mobile
+      - run: npm run native:node
+      - run: npx prettier --write apps/mobile/src/shared/ui/MobileCreateActionOverlayContext.ts apps/mobile/src/shared/ui/MobileCreateActionOverlay.tsx apps/mobile/src/shared/ui/MobileCreateAction.tsx apps/mobile/src/modules/finance/FinanceScreen.tsx apps/mobile/src/modules/finance/FinanceQuickTransactionFlow.tsx apps/mobile/src/modules/finance/finance-quick-transaction.ts apps/mobile/src/modules/finance/finance-quick-transaction.test.ts
+      - run: npx prettier --check apps/mobile/src/shared/ui/MobileCreateActionOverlayContext.ts apps/mobile/src/shared/ui/MobileCreateActionOverlay.tsx apps/mobile/src/shared/ui/MobileCreateAction.tsx apps/mobile/src/modules/finance/FinanceScreen.tsx apps/mobile/src/modules/finance/FinanceQuickTransactionFlow.tsx apps/mobile/src/modules/finance/finance-quick-transaction.ts apps/mobile/src/modules/finance/finance-quick-transaction.test.ts
+      - run: npx eslint apps/mobile/src/shared/ui/MobileCreateActionOverlayContext.ts apps/mobile/src/shared/ui/MobileCreateActionOverlay.tsx apps/mobile/src/shared/ui/MobileCreateAction.tsx apps/mobile/src/modules/finance/FinanceScreen.tsx apps/mobile/src/modules/finance/FinanceQuickTransactionFlow.tsx apps/mobile/src/modules/finance/finance-quick-transaction.ts apps/mobile/src/modules/finance/finance-quick-transaction.test.ts
+      - run: npm run typecheck
+      - run: npm run test:mobile
+      - run: npm run export:android
+      - name: Commit formatting
+        shell: pwsh
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apps/mobile/src/shared/ui/MobileCreateActionOverlayContext.ts apps/mobile/src/shared/ui/MobileCreateActionOverlay.tsx apps/mobile/src/shared/ui/MobileCreateAction.tsx apps/mobile/src/modules/finance/FinanceScreen.tsx apps/mobile/src/modules/finance/FinanceQuickTransactionFlow.tsx apps/mobile/src/modules/finance/finance-quick-transaction.ts apps/mobile/src/modules/finance/finance-quick-transaction.test.ts
+          if (git diff --cached --quiet) {
+            Write-Host "No formatting changes to commit."
+          } else {
+            git commit -m "style: format finance quick transaction carousel"
+            git push origin HEAD:feat/finance-quick-transaction-carousel
+          }
