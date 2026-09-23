@@ -97,6 +97,7 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
   const [webError, setWebError] = useState('')
   const [movieSwipeFeedback, showMovieSwipeFeedback] = useSwipeTabFeedback<MovieStatusFilter>()
   const [musicSwipeFeedback, showMusicSwipeFeedback] = useSwipeTabFeedback<MusicTopTab>()
+  const [searchOpen, setSearchOpen] = useState(false)
 
   const changeMovieFilter = useCallback(
     (next: MovieStatusFilter): void => {
@@ -446,6 +447,7 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
             onChange={changeMovieFilter}
             feedback={movieSwipeFeedback}
             search={{ value: query, onChangeText: setQuery }}
+            onSearchOpenChange={setSearchOpen}
             renderIcon={(item, selected) => {
               const Icon = item.icon
               return (
@@ -518,6 +520,7 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
             onChange={changeMusicTab}
             feedback={musicSwipeFeedback}
             search={{ value: query, onChangeText: setQuery }}
+            onSearchOpenChange={setSearchOpen}
             renderIcon={(item, selected) => {
               const Icon = item.icon
               return (
@@ -600,7 +603,7 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
           value={filter}
           onChange={changeMovieFilter}
           onSwipeChange={showMovieSwipeFeedback}
-          disabled={state.pending}
+          disabled={state.pending || searchOpen}
         >
           <MovieLibraryView
             movies={movieItems}
@@ -619,7 +622,7 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
           value={musicTopTab}
           onChange={changeMusicTab}
           onSwipeChange={showMusicSwipeFeedback}
-          disabled={state.pending || Boolean(playlistId)}
+          disabled={state.pending || Boolean(playlistId) || searchOpen}
         >
           <MusicLibraryView
             view={musicView}
