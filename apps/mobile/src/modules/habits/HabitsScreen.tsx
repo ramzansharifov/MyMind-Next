@@ -38,10 +38,15 @@ import {
 import { AppIcon } from '../../shared/ui/icons'
 import { useTheme } from '../../shared/ui/theme'
 import { useToast } from '../../shared/ui/toast-context'
+import { SwipeableTabContent } from '../../shared/ui/SwipeableTabContent'
 import { HabitsReportsView } from './HabitsReportsView'
 
+type HabitView = 'today' | 'all' | 'reports'
+
+const HABIT_VIEW_TABS = ['today', 'all', 'reports'] as const
+
 const VIEW_FILTERS: ReadonlyArray<{
-  id: 'today' | 'all' | 'reports'
+  id: HabitView
   label: string
   icon: LucideIcon
 }> = [
@@ -65,12 +70,24 @@ export function HabitsScreen(): React.JSX.Element {
   const theme = useTheme()
   const toast = useToast()
   const [date, setDate] = useState(localDateKey())
-  const [view, setView] = useState<'today' | 'all' | 'reports'>('today')
+  const [view, setView] = useState<HabitView>('today')
   const [query, setQuery] = useState('')
   const [group, setGroup] = useState<string | null | undefined>(undefined)
   const [trackingFilter, setTrackingFilter] = useState<'all' | 'check' | 'count'>('all')
   const [groupsOpen, setGroupsOpen] = useState(false)
   const [form, setForm] = useState<FormSpec | null>(null)
+
+  const changeView = useCallback(
+    (next: HabitView): void => {
+      if (next === view) return
+      setView(next)
+      toast.info(
+        VIEW_FILTERS.find((item) => item.id === next)?.label ?? 'Привычки',
+        'habits-view-filter'
+      )
+    },
+    [toast, view]
+  )
 
   const state = useCollection(
     useCallback(
@@ -230,11 +247,7 @@ export function HabitsScreen(): React.JSX.Element {
                 accessibilityLabel={item.label}
                 accessibilityState={{ selected }}
                 disabled={state.pending}
-                onPress={() => {
-                  if (selected) return
-                  setView(item.id)
-                  toast.info(item.label, 'habits-view-filter')
-                }}
+                onPress={() => changeView(item.id)}
                 style={({ pressed }) => ({
                   flex: 1,
                   minWidth: 0,
@@ -397,236 +410,243 @@ export function HabitsScreen(): React.JSX.Element {
 
       {state.error && <ErrorState message={state.error} retry={state.refresh} />}
 
-      {state.loading ? (
-        <LoadingState />
-      ) : view === 'reports' ? (
-        <View style={{ flex: 1, minHeight: 0 }}>
-          <HabitsReportsView api={api} groupId={group} scopeLabel={scopeLabel} />
-        </View>
-      ) : (
-        <FlatList
-          style={{ flex: 1 }}
-          data={visible}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingBottom: 8 }}
-          ListEmptyComponent={<EmptyState />}
-          onRefresh={state.refresh}
-          refreshing={state.loading}
-          renderItem={({ item }) => {
-            const entry = state.data?.entries.find((candidate) => candidate.habitId === item.id)
-            const scheduled = isHabitScheduledOn(item, date)
-            const habitGroup = item.groupId ? (groupById.get(item.groupId) ?? null) : null
-            const currentValue = entry?.value ?? 0
-            const completed = currentValue >= item.targetValue && !entry?.skipped
+      <SwipeableTabContent
+        tabs={HABIT_VIEW_TABS}
+        value={view}
+        onChange={changeView}
+        disabled={state.pending}
+      >
+        {state.loading ? (
+          <LoadingState />
+        ) : view === 'reports' ? (
+          <View style={{ flex: 1, minHeight: 0 }}>
+            <HabitsReportsView api={api} groupId={group} scopeLabel={scopeLabel} />
+          </View>
+        ) : (
+          <FlatList
+            style={{ flex: 1 }}
+            data={visible}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={{ paddingBottom: 8 }}
+            ListEmptyComponent={<EmptyState />}
+            onRefresh={state.refresh}
+            refreshing={state.loading}
+            renderItem={({ item }) => {
+              const entry = state.data?.entries.find((candidate) => candidate.habitId === item.id)
+              const scheduled = isHabitScheduledOn(item, date)
+              const habitGroup = item.groupId ? (groupById.get(item.groupId) ?? null) : null
+              const currentValue = entry?.value ?? 0
+              const completed = currentValue >= item.targetValue && !entry?.skipped
 
-            return (
-              <View
-                style={{
-                  position: 'relative',
-                  minHeight: 70,
-                  marginBottom: 8,
-                  overflow: 'hidden',
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  borderWidth: 1,
-                  borderColor: theme.border,
-                  borderRadius: 16,
-                  backgroundColor: completed
-                    ? theme.success + '0E'
-                    : entry?.skipped
-                      ? theme.muted + '08'
-                      : theme.surface
-                }}
-              >
-                {completed || entry?.skipped ? (
-                  <View
-                    pointerEvents="none"
-                    style={{
-                      position: 'absolute',
-                      top: 8,
-                      bottom: 8,
-                      left: 0,
-                      width: 2,
-                      borderTopRightRadius: 2,
-                      borderBottomRightRadius: 2,
-                      backgroundColor: completed ? theme.success : theme.muted
-                    }}
-                  />
-                ) : null}
-
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={`Изменить привычку ${item.title}`}
-                  onPress={() => edit(item)}
-                  disabled={state.pending}
-                  style={({ pressed }) => ({
-                    flex: 1,
-                    minWidth: 0,
-                    minHeight: 68,
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 11,
-                    paddingLeft: 14,
-                    paddingRight: 6,
-                    paddingVertical: 10,
-                    opacity: pressed ? 0.72 : 1
-                  })}
-                >
-                  <View
-                    style={{
-                      width: 34,
-                      height: 34,
-                      flexShrink: 0,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      borderWidth: 1,
-                      borderColor: completed ? theme.success + '44' : theme.border,
-                      borderRadius: 11,
-                      backgroundColor: completed ? theme.success + '12' : theme.background
-                    }}
-                  >
-                    <AppIcon
-                      name={completed ? 'check' : 'habits'}
-                      size={17}
-                      strokeWidth={completed ? 2.5 : 2}
-                      color={completed ? theme.success : theme.accent}
-                    />
-                  </View>
-
-                  <View style={{ flex: 1, minWidth: 0 }}>
-                    <Text
-                      numberOfLines={2}
-                      style={{
-                        color: completed ? theme.muted : theme.text,
-                        fontSize: 14,
-                        lineHeight: 20,
-                        fontWeight: '600'
-                      }}
-                    >
-                      {item.title}
-                    </Text>
-                    <Text
-                      numberOfLines={1}
-                      style={{
-                        marginTop: 3,
-                        color: entry?.skipped
-                          ? theme.muted
-                          : completed
-                            ? theme.success
-                            : theme.muted,
-                        fontSize: 11,
-                        lineHeight: 15,
-                        fontWeight: completed ? '600' : '500'
-                      }}
-                    >
-                      {entry?.skipped
-                        ? 'Пропущено'
-                        : !scheduled
-                          ? 'Не запланировано на эту дату'
-                          : `${currentValue} / ${item.targetValue}${item.unit ? ` ${item.unit}` : ''}`}
-                    </Text>
-                  </View>
-                </Pressable>
-
+              return (
                 <View
                   style={{
+                    position: 'relative',
+                    minHeight: 70,
+                    marginBottom: 8,
+                    overflow: 'hidden',
                     flexDirection: 'row',
                     alignItems: 'center',
-                    gap: 4,
-                    paddingRight: 6
+                    borderWidth: 1,
+                    borderColor: theme.border,
+                    borderRadius: 16,
+                    backgroundColor: completed
+                      ? theme.success + '0E'
+                      : entry?.skipped
+                        ? theme.muted + '08'
+                        : theme.surface
                   }}
                 >
-                  {scheduled ? (
-                    <IconButton
-                      label={item.trackingType === 'count' ? 'Добавить единицу' : 'Выполнить'}
-                      icon="check"
-                      compact
-                      selected={completed}
-                      disabled={state.pending}
-                      onPress={() =>
-                        state.mutate(() => {
-                          api.upsertHabitEntry(
-                            schema.upsertHabitEntryInputSchema.parse({
-                              habitId: item.id,
-                              date,
-                              value: item.trackingType === 'count' ? currentValue + 1 : 1,
-                              skipped: false
-                            })
-                          )
-                        })
-                      }
+                  {completed || entry?.skipped ? (
+                    <View
+                      pointerEvents="none"
+                      style={{
+                        position: 'absolute',
+                        top: 8,
+                        bottom: 8,
+                        left: 0,
+                        width: 2,
+                        borderTopRightRadius: 2,
+                        borderBottomRightRadius: 2,
+                        backgroundColor: completed ? theme.success : theme.muted
+                      }}
                     />
                   ) : null}
 
-                  <ActionMenu
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`Изменить привычку ${item.title}`}
+                    onPress={() => edit(item)}
                     disabled={state.pending}
-                    title={item.title}
-                    items={[
-                      {
-                        key: 'group',
-                        label: `Группа: ${habitGroup?.name ?? 'Без группы'}`,
-                        icon: 'folder',
-                        onPress: () => move(item)
-                      },
-                      ...(scheduled
-                        ? [
-                            {
-                              key: 'skip',
-                              label: 'Пропустить',
-                              icon: 'skip' as const,
-                              onPress: () =>
-                                state.mutate(() => {
-                                  api.upsertHabitEntry({
-                                    habitId: item.id,
-                                    date,
-                                    value: 0,
-                                    skipped: true
+                    style={({ pressed }) => ({
+                      flex: 1,
+                      minWidth: 0,
+                      minHeight: 68,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 11,
+                      paddingLeft: 14,
+                      paddingRight: 6,
+                      paddingVertical: 10,
+                      opacity: pressed ? 0.72 : 1
+                    })}
+                  >
+                    <View
+                      style={{
+                        width: 34,
+                        height: 34,
+                        flexShrink: 0,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        borderWidth: 1,
+                        borderColor: completed ? theme.success + '44' : theme.border,
+                        borderRadius: 11,
+                        backgroundColor: completed ? theme.success + '12' : theme.background
+                      }}
+                    >
+                      <AppIcon
+                        name={completed ? 'check' : 'habits'}
+                        size={17}
+                        strokeWidth={completed ? 2.5 : 2}
+                        color={completed ? theme.success : theme.accent}
+                      />
+                    </View>
+
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text
+                        numberOfLines={2}
+                        style={{
+                          color: completed ? theme.muted : theme.text,
+                          fontSize: 14,
+                          lineHeight: 20,
+                          fontWeight: '600'
+                        }}
+                      >
+                        {item.title}
+                      </Text>
+                      <Text
+                        numberOfLines={1}
+                        style={{
+                          marginTop: 3,
+                          color: entry?.skipped
+                            ? theme.muted
+                            : completed
+                              ? theme.success
+                              : theme.muted,
+                          fontSize: 11,
+                          lineHeight: 15,
+                          fontWeight: completed ? '600' : '500'
+                        }}
+                      >
+                        {entry?.skipped
+                          ? 'Пропущено'
+                          : !scheduled
+                            ? 'Не запланировано на эту дату'
+                            : `${currentValue} / ${item.targetValue}${item.unit ? ` ${item.unit}` : ''}`}
+                      </Text>
+                    </View>
+                  </Pressable>
+
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 4,
+                      paddingRight: 6
+                    }}
+                  >
+                    {scheduled ? (
+                      <IconButton
+                        label={item.trackingType === 'count' ? 'Добавить единицу' : 'Выполнить'}
+                        icon="check"
+                        compact
+                        selected={completed}
+                        disabled={state.pending}
+                        onPress={() =>
+                          state.mutate(() => {
+                            api.upsertHabitEntry(
+                              schema.upsertHabitEntryInputSchema.parse({
+                                habitId: item.id,
+                                date,
+                                value: item.trackingType === 'count' ? currentValue + 1 : 1,
+                                skipped: false
+                              })
+                            )
+                          })
+                        }
+                      />
+                    ) : null}
+
+                    <ActionMenu
+                      disabled={state.pending}
+                      title={item.title}
+                      items={[
+                        {
+                          key: 'group',
+                          label: `Группа: ${habitGroup?.name ?? 'Без группы'}`,
+                          icon: 'folder',
+                          onPress: () => move(item)
+                        },
+                        ...(scheduled
+                          ? [
+                              {
+                                key: 'skip',
+                                label: 'Пропустить',
+                                icon: 'skip' as const,
+                                onPress: () =>
+                                  state.mutate(() => {
+                                    api.upsertHabitEntry({
+                                      habitId: item.id,
+                                      date,
+                                      value: 0,
+                                      skipped: true
+                                    })
                                   })
-                                })
-                            }
-                          ]
-                        : []),
-                      ...(entry
-                        ? [
-                            {
-                              key: 'reset',
-                              label: 'Сбросить отметку',
-                              icon: 'reset' as const,
-                              onPress: () =>
-                                state.mutate(() => {
-                                  api.deleteHabitEntry({ habitId: item.id, date })
-                                })
-                            }
-                          ]
-                        : []),
-                      {
-                        key: 'edit',
-                        label: 'Изменить',
-                        icon: 'edit',
-                        onPress: () => edit(item)
-                      },
-                      {
-                        key: 'delete',
-                        label: 'Удалить привычку',
-                        icon: 'delete',
-                        danger: true,
-                        onPress: () =>
-                          state.confirmDelete(
-                            'Удалить привычку?',
-                            () => {
-                              api.deleteHabit({ id: item.id })
-                            },
-                            'Будет удалена и история отметок.'
-                          )
-                      }
-                    ]}
-                  />
+                              }
+                            ]
+                          : []),
+                        ...(entry
+                          ? [
+                              {
+                                key: 'reset',
+                                label: 'Сбросить отметку',
+                                icon: 'reset' as const,
+                                onPress: () =>
+                                  state.mutate(() => {
+                                    api.deleteHabitEntry({ habitId: item.id, date })
+                                  })
+                              }
+                            ]
+                          : []),
+                        {
+                          key: 'edit',
+                          label: 'Изменить',
+                          icon: 'edit',
+                          onPress: () => edit(item)
+                        },
+                        {
+                          key: 'delete',
+                          label: 'Удалить привычку',
+                          icon: 'delete',
+                          danger: true,
+                          onPress: () =>
+                            state.confirmDelete(
+                              'Удалить привычку?',
+                              () => {
+                                api.deleteHabit({ id: item.id })
+                              },
+                              'Будет удалена и история отметок.'
+                            )
+                        }
+                      ]}
+                    />
+                  </View>
                 </View>
-              </View>
-            )
-          }}
-        />
-      )}
+              )
+            }}
+          />
+        )}
+      </SwipeableTabContent>
 
       <View
         style={{
