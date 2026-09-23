@@ -64,20 +64,17 @@ function TemporalField({
   value,
   onChangeText,
   label,
-  kind,
   disabled = false,
   optional = false
 }: {
   value: string
   onChangeText(value: string): void
   label: string
-  kind: 'date' | 'time'
   disabled?: boolean
   optional?: boolean
 }): React.JSX.Element {
   const theme = useTheme()
   const [focused, setFocused] = useState(false)
-  const date = kind === 'date'
   return (
     <View
       style={{
@@ -93,18 +90,14 @@ function TemporalField({
         opacity: disabled ? 0.5 : 1
       }}
     >
-      <AppIcon
-        name={date ? 'calendar' : 'clock'}
-        size={18}
-        color={focused ? theme.accent : theme.muted}
-      />
+      <AppIcon name="clock" size={18} color={focused ? theme.accent : theme.muted} />
       <TextInput
         accessibilityLabel={label}
         value={value}
         onChangeText={onChangeText}
         editable={!disabled}
-        maxLength={date ? 10 : 5}
-        placeholder={date ? 'ГГГГ-ММ-ДД' : optional ? 'ЧЧ:ММ (необязательно)' : 'ЧЧ:ММ'}
+        maxLength={5}
+        placeholder={optional ? 'ЧЧ:ММ (необязательно)' : 'ЧЧ:ММ'}
         placeholderTextColor={theme.muted}
         autoCapitalize="none"
         autoCorrect={false}
@@ -116,15 +109,7 @@ function TemporalField({
   )
 }
 
-export function AppDateField(props: {
-  value: string
-  onChangeText(value: string): void
-  label: string
-  disabled?: boolean
-  optional?: boolean
-}): React.JSX.Element {
-  return <TemporalField {...props} kind="date" />
-}
+export { AppDateField } from './AppDateField'
 
 export function AppTimeField(props: {
   value: string
@@ -133,7 +118,7 @@ export function AppTimeField(props: {
   disabled?: boolean
   optional?: boolean
 }): React.JSX.Element {
-  return <TemporalField {...props} kind="time" />
+  return <TemporalField {...props} />
 }
 
 export function AppCheckbox({

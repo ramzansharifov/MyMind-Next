@@ -11,6 +11,7 @@ import * as validation from '@mymind/core/validation/nutrition'
 import { useServices } from '../../app/context'
 import { useCollection } from '../../shared/hooks/useCollection'
 import { FormSheet } from '../../shared/ui/FormSheet'
+import { AppDateField } from '../../shared/ui/FormControls'
 import { MobileCreateAction } from '../../shared/ui/MobileCreateAction'
 import { choiceField, textField, type FormSpec } from '../../shared/ui/form-model'
 import { Button, ErrorState, IconButton, LoadingState } from '../../shared/ui/primitives'
@@ -133,15 +134,6 @@ function formatNutritionNumber(value: number, maximumFractionDigits = 1): string
 function nutritionProgress(value: number, target: number | null): number {
   if (!target || target <= 0) return 0
   return Math.min(100, Math.max(0, (value / target) * 100))
-}
-
-function nutritionDateTitle(value: string): string {
-  const formatted = new Intl.DateTimeFormat('ru-RU', {
-    weekday: 'short',
-    day: 'numeric',
-    month: 'long'
-  }).format(new Date(`${value}T12:00:00`))
-  return formatted.charAt(0).toUpperCase() + formatted.slice(1)
 }
 
 function NutritionMacroMetric({
@@ -828,18 +820,6 @@ export function NutritionScreen(): React.JSX.Element {
     })
   }
 
-  const chooseDiaryDate = (): void => {
-    setForm({
-      title: 'Дата дневника',
-      initial: { date },
-      fields: [textField('date', 'Дата', 'date')],
-      save: (values) => {
-        const next = validation.nutritionOverviewInputSchema.parse({ date: values.date }).date
-        setDate(next)
-      }
-    })
-  }
-
   const header = (
     <View style={{ gap: 10, paddingBottom: 12 }}>
       <SwipeTabBar
@@ -880,31 +860,15 @@ export function NutritionScreen(): React.JSX.Element {
             ghost
             onPress={() => setDate((value) => shiftDate(value, -1))}
           />
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Выбрать дату дневника"
-            onPress={chooseDiaryDate}
-            style={({ pressed }) => ({
-              minWidth: 0,
-              flex: 1,
-              alignItems: 'center',
-              paddingHorizontal: 8,
-              paddingVertical: 4,
-              borderRadius: 10,
-              backgroundColor: pressed ? theme.raised : 'transparent',
-              opacity: pressed ? 0.74 : 1
-            })}
-          >
-            <Text
-              numberOfLines={1}
-              style={{ color: theme.text, fontSize: 12.5, fontWeight: '700' }}
-            >
-              {nutritionDateTitle(date)}
-            </Text>
-            <Text style={{ marginTop: 1, color: theme.muted, fontSize: 9.5 }}>
-              {date === localDateKey() ? 'Сегодня' : date}
-            </Text>
-          </Pressable>
+          <AppDateField
+            compact
+            label="Дата дневника питания"
+            value={date}
+            onChangeText={(value) => {
+              const next = validation.nutritionOverviewInputSchema.parse({ date: value }).date
+              setDate(next)
+            }}
+          />
           <IconButton
             label="Следующий день"
             icon="forward"

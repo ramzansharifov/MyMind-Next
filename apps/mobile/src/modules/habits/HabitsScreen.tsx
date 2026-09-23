@@ -359,7 +359,12 @@ export function HabitsScreen(): React.JSX.Element {
               onPress={() => setDate(addDays(date, -1))}
             />
             <View style={{ flex: 1 }}>
-              <AppDateField label="Дата привычек" value={date} onChangeText={setDate} />
+              <AppDateField
+                label="Дата привычек"
+                value={date}
+                max={localDateKey()}
+                onChangeText={setDate}
+              />
             </View>
             <IconButton
               label="Следующий день"
