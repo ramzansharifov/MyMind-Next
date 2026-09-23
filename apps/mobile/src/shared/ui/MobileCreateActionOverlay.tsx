@@ -358,8 +358,6 @@ export function MobileCreateActionOverlayProvider({
                   )
                 })}
               </View>
-
-
             </View>
           </Animated.View>
         ) : null}
