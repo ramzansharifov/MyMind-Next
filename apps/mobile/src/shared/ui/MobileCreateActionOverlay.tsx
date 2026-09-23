@@ -1,43 +1,19 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useMemo,
-  useRef,
-  useState,
-  type ReactNode
-} from 'react'
+import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Animated, Easing, StyleSheet, Text, View } from 'react-native'
 import { BlurTargetView, BlurView } from 'expo-blur'
 
-import { AppIcon, type AppIconName } from './icons'
+import { AppIcon } from './icons'
 import { wrapCarouselIndex } from './mobile-create-action-gesture'
+import {
+  MobileCreateActionOverlayContext,
+  type MobileCreateActionOverlayController,
+  type MobileCreateActionOverlayItem
+} from './MobileCreateActionOverlayContext'
 import { useTheme } from './theme'
-
-export interface MobileCreateActionOverlayItem {
-  key: string
-  label: string
-  description?: string
-  icon?: AppIconName
-  color?: string
-}
 
 interface MobileCreateActionOverlayState {
   items: readonly MobileCreateActionOverlayItem[]
   index: number
-}
-
-interface MobileCreateActionOverlayController {
-  show(items: readonly MobileCreateActionOverlayItem[], index: number): void
-  update(index: number, offsetY: number): void
-  hide(): void
-}
-
-const MobileCreateActionOverlayContext =
-  createContext<MobileCreateActionOverlayController | null>(null)
-
-export function useMobileCreateActionOverlay(): MobileCreateActionOverlayController | null {
-  return useContext(MobileCreateActionOverlayContext)
 }
 
 export function MobileCreateActionOverlayProvider({
