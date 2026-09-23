@@ -2,8 +2,8 @@ name: Release MyMind
 
 on:
   push:
-    tags:
-      - 'v*.*.*'
+    branches:
+      - 'release-run-1.1.10'
 
 permissions:
   contents: write
@@ -18,6 +18,8 @@ jobs:
     timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: 349adeb9154ba876c8ae869aeb6abe707c25f320
 
       - uses: actions/setup-node@v4
         with:
@@ -27,7 +29,7 @@ jobs:
       - name: Verify tag matches desktop and mobile versions
         shell: pwsh
         run: |
-          $tagVersion = "${{ github.ref_name }}" -replace '^v', ''
+          $tagVersion = "1.1.10"
           $desktopVersion = (Get-Content apps/desktop/package.json -Raw | ConvertFrom-Json).version
           $mobilePackageVersion = (Get-Content apps/mobile/package.json -Raw | ConvertFrom-Json).version
           $mobileApp = Get-Content apps/mobile/app.json -Raw | ConvertFrom-Json
@@ -73,6 +75,8 @@ jobs:
     timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: 349adeb9154ba876c8ae869aeb6abe707c25f320
 
       - uses: actions/setup-node@v4
         with:
@@ -85,7 +89,7 @@ jobs:
       - name: Verify Windows updater artifacts
         shell: pwsh
         run: |
-          $version = "${{ github.ref_name }}" -replace '^v', ''
+          $version = "1.1.10"
           $files = @(
             "apps/desktop/dist/latest.yml",
             "apps/desktop/dist/mymind-next-$version-setup.exe",
@@ -116,6 +120,8 @@ jobs:
       MYMIND_ANDROID_KEY_PASSWORD: ${{ secrets.MYMIND_ANDROID_KEY_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: 349adeb9154ba876c8ae869aeb6abe707c25f320
 
       - uses: actions/setup-node@v4
         with:
@@ -182,7 +188,7 @@ jobs:
       - name: Verify and stage signed Android APK
         shell: pwsh
         run: |
-          $version = "${{ github.ref_name }}" -replace '^v', ''
+          $version = "1.1.10"
           $source = "apps/mobile/android/app/build/outputs/apk/release/app-release.apk"
           $targetDirectory = "apps/mobile/release"
           $target = "$targetDirectory/mymind-mobile-$version.apk"
@@ -234,7 +240,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          version="${GITHUB_REF_NAME#v}"
+          version="1.1.10"
           test -s release/windows/latest.yml
           test -s "release/windows/mymind-next-$version-setup.exe"
           test -s "release/windows/mymind-next-$version-setup.exe.blockmap"
@@ -247,10 +253,10 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          tag="${GITHUB_REF_NAME}"
+          tag="v1.1.10"
 
           if ! gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release create "$tag"               --repo "$GITHUB_REPOSITORY"               --target "$GITHUB_SHA"               --title "$tag"               --notes ""               --draft
+            gh release create "$tag"               --repo "$GITHUB_REPOSITORY"               --target "349adeb9154ba876c8ae869aeb6abe707c25f320"               --title "1.1.10"               --notes ""               --draft
           fi
 
           gh release upload "$tag"             --repo "$GITHUB_REPOSITORY"             --clobber             release/windows/latest.yml             release/windows/mymind-next-*-setup.exe             release/windows/mymind-next-*-setup.exe.blockmap             release/android/mymind-mobile-*.apk
