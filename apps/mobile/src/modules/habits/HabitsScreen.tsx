@@ -39,6 +39,7 @@ import { AppIcon } from '../../shared/ui/icons'
 import { useTheme } from '../../shared/ui/theme'
 import { useToast } from '../../shared/ui/toast-context'
 import { SwipeableTabContent } from '../../shared/ui/SwipeableTabContent'
+import { SwipeTabBar, useSwipeTabFeedback } from '../../shared/ui/SwipeTabBar'
 import { HabitsReportsView } from './HabitsReportsView'
 
 type HabitView = 'today' | 'all' | 'reports'
@@ -76,6 +77,7 @@ export function HabitsScreen(): React.JSX.Element {
   const [trackingFilter, setTrackingFilter] = useState<'all' | 'check' | 'count'>('all')
   const [groupsOpen, setGroupsOpen] = useState(false)
   const [form, setForm] = useState<FormSpec | null>(null)
+  const [swipeTabFeedback, showSwipeTabFeedback] = useSwipeTabFeedback<HabitView>()
 
   const changeView = useCallback(
     (next: HabitView): void => {
@@ -223,105 +225,78 @@ export function HabitsScreen(): React.JSX.Element {
   return (
     <View style={{ flex: 1, minHeight: 0 }}>
       <View style={{ marginBottom: 12, gap: 10 }}>
-        <View
-          style={{
-            minHeight: 50,
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 4,
-            padding: 4,
-            borderWidth: 1,
-            borderColor: theme.border,
-            borderRadius: 16,
-            backgroundColor: theme.surface
-          }}
-        >
-          {VIEW_FILTERS.map((item) => {
-            const selected = view === item.id
+        <SwipeTabBar
+          items={VIEW_FILTERS}
+          value={view}
+          onChange={changeView}
+          feedback={swipeTabFeedback}
+          renderIcon={(item, selected) => {
             const Icon = item.icon
-
             return (
+              <Icon
+                size={19}
+                strokeWidth={selected ? 2.4 : 2}
+                color={selected ? theme.accent : theme.muted}
+              />
+            )
+          }}
+          trailing={
+            <>
+              <View
+                style={{
+                  width: 1,
+                  height: 26,
+                  marginHorizontal: 2,
+                  backgroundColor: theme.border
+                }}
+              />
               <Pressable
-                key={item.id}
                 accessibilityRole="button"
-                accessibilityLabel={item.label}
-                accessibilityState={{ selected }}
+                accessibilityLabel={`Группы. Сейчас: ${activeGroupLabel}`}
+                accessibilityState={{ selected: group !== undefined }}
                 disabled={state.pending}
-                onPress={() => changeView(item.id)}
+                onPress={() => setGroupsOpen(true)}
                 style={({ pressed }) => ({
+                  position: 'relative',
                   flex: 1,
                   minWidth: 0,
                   height: 40,
                   alignItems: 'center',
                   justifyContent: 'center',
                   borderRadius: 12,
-                  backgroundColor: selected
-                    ? theme.accent + '18'
-                    : pressed
-                      ? theme.raised
-                      : 'transparent',
+                  backgroundColor:
+                    group !== undefined
+                      ? theme.accent + '18'
+                      : pressed
+                        ? theme.raised
+                        : 'transparent',
                   opacity: state.pending ? 0.45 : pressed ? 0.72 : 1
                 })}
               >
-                <Icon
+                <AppIcon
+                  name="folder"
                   size={19}
-                  strokeWidth={selected ? 2.4 : 2}
-                  color={selected ? theme.accent : theme.muted}
+                  strokeWidth={group !== undefined ? 2.4 : 2}
+                  color={group !== undefined ? theme.accent : theme.muted}
                 />
+                {group !== undefined ? (
+                  <View
+                    pointerEvents="none"
+                    style={{
+                      position: 'absolute',
+                      top: 7,
+                      right: 12,
+                      width: 6,
+                      height: 6,
+                      borderRadius: 3,
+                      backgroundColor: theme.accent
+                    }}
+                  />
+                ) : null}
               </Pressable>
-            )
-          })}
-
-          <View
-            style={{
-              width: 1,
-              height: 26,
-              marginHorizontal: 2,
-              backgroundColor: theme.border
-            }}
-          />
-
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`Группы. Сейчас: ${activeGroupLabel}`}
-            accessibilityState={{ selected: group !== undefined }}
-            disabled={state.pending}
-            onPress={() => setGroupsOpen(true)}
-            style={({ pressed }) => ({
-              position: 'relative',
-              flex: 1,
-              minWidth: 0,
-              height: 40,
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRadius: 12,
-              backgroundColor:
-                group !== undefined ? theme.accent + '18' : pressed ? theme.raised : 'transparent',
-              opacity: state.pending ? 0.45 : pressed ? 0.72 : 1
-            })}
-          >
-            <AppIcon
-              name="folder"
-              size={19}
-              strokeWidth={group !== undefined ? 2.4 : 2}
-              color={group !== undefined ? theme.accent : theme.muted}
-            />
-            {group !== undefined ? (
-              <View
-                pointerEvents="none"
-                style={{
-                  position: 'absolute',
-                  top: 7,
-                  right: 12,
-                  width: 6,
-                  height: 6,
-                  borderRadius: 3,
-                  backgroundColor: theme.accent
-                }}
-              />
-            ) : null}
-          </Pressable>
-        </View>
+            </>
+          }
+        />
 
         {view !== 'reports' ? <SearchField value={query} onChangeText={setQuery} /> : null}
 
@@ -414,6 +389,7 @@ export function HabitsScreen(): React.JSX.Element {
         tabs={HABIT_VIEW_TABS}
         value={view}
         onChange={changeView}
+        onSwipeChange={showSwipeTabFeedback}
         disabled={state.pending}
       >
         {state.loading ? (
