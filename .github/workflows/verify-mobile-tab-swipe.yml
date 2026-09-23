@@ -1,0 +1,27 @@
+name: Verify mobile tab swipe
+
+on:
+  push:
+    branches:
+      - 'feat/mobile-tab-swipe-navigation'
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: windows-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run native:node
+      - run: npx prettier --check apps/mobile/src/modules/catalog/CatalogScreen.tsx apps/mobile/src/modules/habits/HabitsScreen.tsx apps/mobile/src/modules/notes/NotesScreen.tsx apps/mobile/src/modules/nutrition/NutritionScreen.tsx apps/mobile/src/modules/passwords/PasswordsScreen.tsx apps/mobile/src/modules/tasks/TasksScreen.tsx apps/mobile/src/shared/ui/SwipeableTabContent.tsx apps/mobile/src/shared/ui/tab-swipe.ts apps/mobile/src/shared/ui/tab-swipe.test.ts
+      - run: npx eslint apps/mobile/src/modules/catalog/CatalogScreen.tsx apps/mobile/src/modules/habits/HabitsScreen.tsx apps/mobile/src/modules/notes/NotesScreen.tsx apps/mobile/src/modules/nutrition/NutritionScreen.tsx apps/mobile/src/modules/passwords/PasswordsScreen.tsx apps/mobile/src/modules/tasks/TasksScreen.tsx apps/mobile/src/shared/ui/SwipeableTabContent.tsx apps/mobile/src/shared/ui/tab-swipe.ts apps/mobile/src/shared/ui/tab-swipe.test.ts
+      - run: npm run typecheck
+      - run: npm run test:mobile
+      - run: npm run export:android
