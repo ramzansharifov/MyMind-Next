@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { FlatList, Pressable, ScrollView, Text, TextInput, View } from 'react-native'
 import { type TaskGroupRecord, type TaskRecord } from '@mymind/contracts/tasks'
 import * as schema from '@mymind/core/validation/tasks'
@@ -57,6 +57,7 @@ export function TasksScreen(): React.JSX.Element {
   const [groupsOpen, setGroupsOpen] = useState(false)
   const [form, setForm] = useState<FormSpec | null>(null)
   const [taskActionsId, setTaskActionsId] = useState<string | null>(null)
+  const longPressedTaskId = useRef<string | null>(null)
   const [swipeTabFeedback, showSwipeTabFeedback] = useSwipeTabFeedback<TaskStatusFilter>()
   const [searchOpen, setSearchOpen] = useState(false)
 
@@ -345,9 +346,17 @@ export function TasksScreen(): React.JSX.Element {
                       completed ? 'Вернуть задачу ' + item.title : 'Выполнить задачу ' + item.title
                     }
                     accessibilityHint="Удерживайте для действий с задачей"
-                    onPress={() => toggle(item)}
+                    onPress={() => {
+                      if (longPressedTaskId.current === item.id) {
+                        longPressedTaskId.current = null
+                        return
+                      }
+                      toggle(item)
+                    }}
                     onLongPress={() => {
-                      if (!state.pending) setTaskActionsId(item.id)
+                      if (state.pending) return
+                      longPressedTaskId.current = item.id
+                      setTaskActionsId(item.id)
                     }}
                     delayLongPress={380}
                     disabled={state.pending}
@@ -402,7 +411,10 @@ export function TasksScreen(): React.JSX.Element {
                   <ActionMenuDialog
                     open={taskActionsId === item.id}
                     onOpenChange={(open) => {
-                      if (!open) setTaskActionsId(null)
+                      if (!open) {
+                        setTaskActionsId(null)
+                        longPressedTaskId.current = null
+                      }
                     }}
                     title={item.title}
                     items={[
