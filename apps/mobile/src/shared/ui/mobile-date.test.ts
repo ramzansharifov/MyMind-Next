@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   datePickerDays,
   datePickerReference,
+  datePickerWeeks,
   dateWithinBounds,
   formatMobileDate,
   isValidDateKey
@@ -33,5 +34,20 @@ describe('mobile date helpers', () => {
     expect(days).toHaveLength(42)
     expect(days[0]).toBe('2026-08-31')
     expect(days[41]).toBe('2026-10-11')
+  })
+
+  it('splits the calendar into exactly six rows with seven columns each', () => {
+    const weeks = datePickerWeeks('2026-09-01')
+    expect(weeks).toHaveLength(6)
+    expect(weeks.every((week) => week.length === 7)).toBe(true)
+    expect(weeks[0]).toEqual([
+      '2026-08-31',
+      '2026-09-01',
+      '2026-09-02',
+      '2026-09-03',
+      '2026-09-04',
+      '2026-09-05',
+      '2026-09-06'
+    ])
   })
 })
