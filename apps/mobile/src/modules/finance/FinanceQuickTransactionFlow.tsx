@@ -80,6 +80,72 @@ function slotOpacityRange(slot: number): [number, number, number] {
   return [0.22, 0.1, 0.02]
 }
 
+function QuickSelectionChip({
+  label,
+  tone,
+  icon
+}: {
+  label: string
+  tone: string
+  icon?: AppIconName
+}): React.JSX.Element {
+  const [progress] = useState(() => new Animated.Value(0))
+
+  useEffect(() => {
+    Animated.spring(progress, {
+      toValue: 1,
+      damping: 20,
+      stiffness: 260,
+      mass: 0.72,
+      overshootClamping: true,
+      useNativeDriver: true
+    }).start()
+  }, [progress])
+
+  const translateY = progress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-8, 0]
+  })
+  const scale = progress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.94, 1]
+  })
+
+  return (
+    <Animated.View
+      style={{
+        maxWidth: 185,
+        minHeight: 36,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 7,
+        paddingHorizontal: 10,
+        borderWidth: 1,
+        borderColor: tone + '50',
+        borderRadius: 12,
+        backgroundColor: '#111318E8',
+        opacity: progress,
+        transform: [{ translateY }, { scale }]
+      }}
+    >
+      {icon ? <AppIcon name={icon} size={15.5} color={tone} strokeWidth={2.2} /> : null}
+      <Text
+        numberOfLines={1}
+        ellipsizeMode="tail"
+        style={{
+          flexShrink: 1,
+          color: tone,
+          fontSize: 11.5,
+          lineHeight: 16,
+          fontWeight: '700'
+        }}
+      >
+        {label}
+      </Text>
+    </Animated.View>
+  )
+}
+
 function QuickCarousel({
   options,
   selectedIndex,
@@ -339,6 +405,7 @@ export function FinanceQuickTransactionFlow({
 
   const sourceAccount = accounts.find((account) => account.id === sourceAccountId)
   const destinationAccount = accounts.find((account) => account.id === destinationAccountId)
+  const selectedTag = tags.find((tag) => tag.id === tagId)
 
   const enterStage = useCallback((): void => {
     stageOpacity.setValue(0)
@@ -561,31 +628,51 @@ export function FinanceQuickTransactionFlow({
           <View
             style={{
               minHeight: 44,
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 10
+              position: 'relative',
+              justifyContent: 'flex-start'
             }}
           >
             <View
               style={{
                 minHeight: 38,
                 flexDirection: 'row',
+                flexWrap: 'wrap',
                 alignItems: 'center',
-                gap: 8,
-                paddingHorizontal: 11,
-                borderWidth: 1,
-                borderColor: tone + '50',
-                borderRadius: 13,
-                backgroundColor: '#111318E8'
+                gap: 6,
+                paddingRight: 48
               }}
             >
-              <AppIcon name={operationIcon} size={17} color={tone} />
-              <Text style={{ color: tone, fontSize: 12.5, fontWeight: '700' }}>
-                {operationLabel}
-              </Text>
-            </View>
+              <QuickSelectionChip label={operationLabel} tone={tone} icon={operationIcon} />
 
-            <View style={{ flex: 1 }} />
+              {sourceAccount ? (
+                <QuickSelectionChip
+                  key={`source:${sourceAccount.id}`}
+                  label={
+                    type === 'transfer'
+                      ? `Списание: ${sourceAccount.name}`
+                      : sourceAccount.name
+                  }
+                  tone={tone}
+                />
+              ) : null}
+
+              {destinationAccount ? (
+                <QuickSelectionChip
+                  key={`destination:${destinationAccount.id}`}
+                  label={`Зачисление: ${destinationAccount.name}`}
+                  tone={tone}
+                />
+              ) : null}
+
+              {selectedTag ? (
+                <QuickSelectionChip
+                  key={`tag:${selectedTag.id}`}
+                  label={selectedTag.name}
+                  tone={tone}
+                  icon="tag"
+                />
+              ) : null}
+            </View>
 
             <Pressable
               accessibilityRole="button"
@@ -593,6 +680,9 @@ export function FinanceQuickTransactionFlow({
               disabled={pending}
               onPress={close}
               style={({ pressed }) => ({
+                position: 'absolute',
+                top: 0,
+                right: 0,
                 width: 38,
                 height: 38,
                 alignItems: 'center',
