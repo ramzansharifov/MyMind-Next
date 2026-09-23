@@ -264,6 +264,7 @@ export function PasswordsScreen(): React.JSX.Element {
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [toolsOpen, setToolsOpen] = useState(false)
   const [swipeTabFeedback, showSwipeTabFeedback] = useSwipeTabFeedback<Tab>()
+  const [searchOpen, setSearchOpen] = useState(false)
 
   const changeTab = useCallback(
     (next: Tab): void => {
@@ -637,6 +638,7 @@ export function PasswordsScreen(): React.JSX.Element {
           onChange={changeTab}
           feedback={swipeTabFeedback}
           search={tab === 'security' ? undefined : { value: query, onChangeText: setQuery }}
+          onSearchOpenChange={setSearchOpen}
           renderIcon={(item, selected) => {
             const Icon = item.icon
             return (
@@ -729,7 +731,7 @@ export function PasswordsScreen(): React.JSX.Element {
         value={tab}
         onChange={changeTab}
         onSwipeChange={showSwipeTabFeedback}
-        disabled={loading}
+        disabled={loading || searchOpen}
       >
         {content}
       </SwipeableTabContent>
