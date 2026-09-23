@@ -18,6 +18,7 @@ export interface MobileCreateActionItem {
   color?: string
   disabled?: boolean
   onPress(): void
+  onHoldSelect?(): void
 }
 
 type IdleGlobal = typeof globalThis & {
@@ -134,10 +135,12 @@ export function MobileCreateAction({
       holdActiveRef.current = false
 
       const action = enabledActions[selectedIndexRef.current]
-      overlay.hide()
-
-      if (action) {
-        setTimeout(() => perform(action), 90)
+      if (action?.onHoldSelect) {
+        overlay.handoff()
+        setTimeout(() => action.onHoldSelect?.(), 155)
+      } else {
+        overlay.hide()
+        if (action) setTimeout(() => perform(action), 90)
       }
       return
     }

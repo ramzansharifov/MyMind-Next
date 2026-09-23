@@ -54,6 +54,8 @@ export function MobileCreateActionOverlayProvider({
   const [overlay, setOverlay] = useState<MobileCreateActionOverlayState | null>(null)
   const [opacity] = useState(() => new Animated.Value(0))
   const [offsetY] = useState(() => new Animated.Value(0))
+  const [contentOpacity] = useState(() => new Animated.Value(1))
+  const [contentTranslateY] = useState(() => new Animated.Value(0))
   const generationRef = useRef(0)
 
   const show = useCallback(
@@ -63,7 +65,11 @@ export function MobileCreateActionOverlayProvider({
       generationRef.current += 1
       opacity.stopAnimation()
       offsetY.stopAnimation()
+      contentOpacity.stopAnimation()
+      contentTranslateY.stopAnimation()
       offsetY.setValue(0)
+      contentOpacity.setValue(1)
+      contentTranslateY.setValue(0)
       setOverlay({
         items,
         index: wrapCarouselIndex(index, items.length)
@@ -95,6 +101,25 @@ export function MobileCreateActionOverlayProvider({
     [offsetY]
   )
 
+  const handoff = useCallback((): void => {
+    contentOpacity.stopAnimation()
+    contentTranslateY.stopAnimation()
+    Animated.parallel([
+      Animated.timing(contentOpacity, {
+        toValue: 0,
+        duration: 180,
+        easing: Easing.in(Easing.cubic),
+        useNativeDriver: true
+      }),
+      Animated.timing(contentTranslateY, {
+        toValue: 126,
+        duration: 210,
+        easing: Easing.in(Easing.cubic),
+        useNativeDriver: true
+      })
+    ]).start()
+  }, [contentOpacity, contentTranslateY])
+
   const hide = useCallback((): void => {
     const generation = generationRef.current
     offsetY.stopAnimation()
@@ -122,9 +147,10 @@ export function MobileCreateActionOverlayProvider({
     () => ({
       show,
       update,
+      handoff,
       hide
     }),
-    [hide, show, update]
+    [handoff, hide, show, update]
   )
 
   const current = overlay?.items[overlay.index] ?? null
@@ -175,12 +201,14 @@ export function MobileCreateActionOverlayProvider({
               ]}
             />
 
-            <View
+            <Animated.View
               style={{
                 flex: 1,
                 alignItems: 'center',
                 justifyContent: 'center',
-                paddingHorizontal: 22
+                paddingHorizontal: 22,
+                opacity: contentOpacity,
+                transform: [{ translateY: contentTranslateY }]
               }}
             >
               <View
@@ -358,7 +386,7 @@ export function MobileCreateActionOverlayProvider({
                   )
                 })}
               </View>
-            </View>
+            </Animated.View>
           </Animated.View>
         ) : null}
       </View>
