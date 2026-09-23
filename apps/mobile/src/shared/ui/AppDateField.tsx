@@ -7,10 +7,10 @@ import { AppDialog } from './AppDialog'
 import { AppIcon } from './icons'
 import {
   MOBILE_DATE_WEEKDAYS,
-  datePickerDays,
   datePickerReference,
   datePickerSameMonth,
   datePickerShiftMonth,
+  datePickerWeeks,
   dateWithinBounds,
   formatMobileAccessibleDate,
   formatMobileDate,
@@ -39,11 +39,7 @@ function DateCalendar({
   const theme = useTheme()
   const today = localDateKey()
   const [visibleMonth, setVisibleMonth] = useState(() => calendarMonthKey(reference))
-  const days = useMemo(() => datePickerDays(visibleMonth), [visibleMonth])
-  const weeks = useMemo(
-    () => Array.from({ length: 6 }, (_, index) => days.slice(index * 7, index * 7 + 7)),
-    [days]
-  )
+  const weeks = useMemo(() => datePickerWeeks(visibleMonth), [visibleMonth])
   const previousMonth = datePickerShiftMonth(visibleMonth, -1)
   const nextMonth = datePickerShiftMonth(visibleMonth, 1)
   const previousMonthDisabled = isValidDateKey(min) && previousMonth < calendarMonthKey(min)
