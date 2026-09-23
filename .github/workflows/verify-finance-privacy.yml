@@ -1,0 +1,27 @@
+name: Verify mobile finance privacy
+
+on:
+  push:
+    branches:
+      - 'feat/mobile-finance-persistent-privacy'
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run native:node
+      - run: npx prettier --check apps/mobile/src/modules/finance/FinanceScreen.tsx
+      - run: npm run lint:mobile
+      - run: npm run typecheck
+      - run: npm run test:mobile
+      - run: npm run export:android
