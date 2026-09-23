@@ -25,16 +25,8 @@ function tag(id: string, type: FinanceTagSummary['type']): FinanceTagSummary {
 
 describe('finance quick transaction flow', () => {
   it('uses account, tag and amount for income/expense', () => {
-    expect(financeQuickTransactionStages('income')).toEqual([
-      'source-account',
-      'tag',
-      'amount'
-    ])
-    expect(financeQuickTransactionStages('expense')).toEqual([
-      'source-account',
-      'tag',
-      'amount'
-    ])
+    expect(financeQuickTransactionStages('income')).toEqual(['source-account', 'tag', 'amount'])
+    expect(financeQuickTransactionStages('expense')).toEqual(['source-account', 'tag', 'amount'])
   })
 
   it('uses source, destination and amount for transfers', () => {

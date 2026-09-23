@@ -1,13 +1,7 @@
-import type {
-  FinanceTagSummary,
-  FinanceUserTransactionType
-} from '@mymind/contracts/finance'
+import type { FinanceTagSummary, FinanceUserTransactionType } from '@mymind/contracts/finance'
 
 export type FinanceQuickTransactionStage =
-  | 'source-account'
-  | 'destination-account'
-  | 'tag'
-  | 'amount'
+  'source-account' | 'destination-account' | 'tag' | 'amount'
 
 export function financeQuickTransactionStages(
   type: FinanceUserTransactionType

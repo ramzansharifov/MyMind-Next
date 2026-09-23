@@ -19,16 +19,15 @@ import type {
   FinanceUserTransactionType
 } from '@mymind/contracts/finance'
 import type { FinanceRepository } from '@mymind/persistence/finance'
-import {
-  FINANCE_RATE_SCALE,
-  formatMoneyMinor,
-  parseMoneyToMinor
-} from '@mymind/core/finance-money'
+import { FINANCE_RATE_SCALE, formatMoneyMinor, parseMoneyToMinor } from '@mymind/core/finance-money'
 import * as validation from '@mymind/core/validation/finance'
 
 import { notifyDataChanged } from '../../app/changes'
 import { AppIcon, type AppIconName } from '../../shared/ui/icons'
-import { MOBILE_CREATE_ACTION_STEP, wrapCarouselIndex } from '../../shared/ui/mobile-create-action-gesture'
+import {
+  MOBILE_CREATE_ACTION_STEP,
+  wrapCarouselIndex
+} from '../../shared/ui/mobile-create-action-gesture'
 import { useMobileCreateActionOverlay } from '../../shared/ui/MobileCreateActionOverlayContext'
 import { VisualIconBadge } from '../../shared/ui/VisualPickers'
 import { useTheme } from '../../shared/ui/theme'
@@ -45,9 +44,7 @@ interface CarouselOption {
   title: string
   subtitle: string
   tone: string
-  icon:
-    | { kind: 'app'; value: AppIconName }
-    | { kind: 'visual'; value: string }
+  icon: { kind: 'app'; value: AppIconName } | { kind: 'visual'; value: string }
 }
 
 const CAROUSEL_HEIGHT = 356
@@ -97,9 +94,7 @@ function QuickCarousel({
       easing: Easing.out(Easing.cubic),
       useNativeDriver: true
     }).start(() => {
-      onSelectedIndexChange(
-        wrapCarouselIndex(selectedIndex + direction, options.length)
-      )
+      onSelectedIndexChange(wrapCarouselIndex(selectedIndex + direction, options.length))
       dragY.setValue(0)
       settlingRef.current = false
     })
@@ -761,11 +756,7 @@ export function FinanceQuickTransactionFlow({
                   })}
                 >
                   <Text style={{ color: '#ffffff', fontSize: 14, fontWeight: '700' }}>
-                    {pending
-                      ? 'Сохранение…'
-                      : impactConfirmed
-                        ? 'Подтвердить расход'
-                        : 'Создать'}
+                    {pending ? 'Сохранение…' : impactConfirmed ? 'Подтвердить расход' : 'Создать'}
                   </Text>
                 </Pressable>
               </View>
