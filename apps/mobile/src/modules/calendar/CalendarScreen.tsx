@@ -21,7 +21,7 @@ import { useCollection } from '../../shared/hooks/useCollection'
 import { ActionMenu } from '../../shared/ui/ActionMenu'
 import { AppDialog } from '../../shared/ui/AppDialog'
 import { FormSheet } from '../../shared/ui/FormSheet'
-import { AppDateField } from '../../shared/ui/FormControls'
+import { AppDatePickerDialog } from '../../shared/ui/FormControls'
 import { MobileCreateAction } from '../../shared/ui/MobileCreateAction'
 import { WorkspaceNodeCard } from '../../shared/ui/Workspace'
 import { choiceField, textField, type FormSpec } from '../../shared/ui/form-model'
@@ -134,8 +134,6 @@ export function CalendarScreen(): React.JSX.Element {
   const [form, setForm] = useState<FormSpec | null>(null)
   const [inboxOpen, setInboxOpen] = useState(false)
   const [dateJumpOpen, setDateJumpOpen] = useState(false)
-  const [dateDraft, setDateDraft] = useState(today)
-  const [dateJumpError, setDateJumpError] = useState('')
   const grid = useMemo(() => calendarMonthGrid(month), [month])
   const state = useCollection(
     useCallback(
@@ -189,23 +187,6 @@ export function CalendarScreen(): React.JSX.Element {
     setMonth(calendarMonthKey(today))
     setSelectedDate(today)
     setSelectedEventKey(null)
-  }
-
-  const openDateJump = (): void => {
-    setDateDraft(selectedDate)
-    setDateJumpError('')
-    setDateJumpOpen(true)
-  }
-
-  const applyDateJump = (): void => {
-    try {
-      const date = diaryDayKeySchema.parse(dateDraft)
-      selectDate(date)
-      setDateJumpOpen(false)
-      setDateJumpError('')
-    } catch {
-      setDateJumpError('Введите корректную дату в формате ГГГГ-ММ-ДД')
-    }
   }
 
   const acknowledgeReminders = (reminders: CalendarUnreadReminderRecord[]): void => {
@@ -523,7 +504,12 @@ export function CalendarScreen(): React.JSX.Element {
                 {selectedDayEvents.length}
               </Text>
             </View>
-            <IconButton label="Перейти к дате" icon="calendar" ghost onPress={openDateJump} />
+            <IconButton
+              label="Перейти к дате"
+              icon="calendar"
+              ghost
+              onPress={() => setDateJumpOpen(true)}
+            />
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={
@@ -664,29 +650,13 @@ export function CalendarScreen(): React.JSX.Element {
 
       {form ? <FormSheet spec={form} close={() => setForm(null)} /> : null}
 
-      <AppDialog
+      <AppDatePickerDialog
         open={dateJumpOpen}
         onOpenChange={setDateJumpOpen}
-        title="Перейти к дате"
-        description="Введите точную дату календаря"
-        icon="calendar"
-        presentation="card"
-        footer={
-          <>
-            <Button label="Отмена" onPress={() => setDateJumpOpen(false)} />
-            <Button label="Перейти" icon="calendar" primary onPress={applyDateJump} />
-          </>
-        }
-      >
-        <View style={{ padding: 16, gap: 10 }}>
-          {dateJumpError ? <ErrorState message={dateJumpError} /> : null}
-          <AppDateField
-            label="Точная дата календаря"
-            value={dateDraft}
-            onChangeText={setDateDraft}
-          />
-        </View>
-      </AppDialog>
+        value={selectedDate}
+        onChangeText={selectDate}
+        label="Перейти к дате"
+      />
 
       <AppDialog
         open={selectedEvent !== null}
