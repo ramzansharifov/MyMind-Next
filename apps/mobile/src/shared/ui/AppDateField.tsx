@@ -46,8 +46,7 @@ export function AppDateField({
   const days = useMemo(() => datePickerDays(visibleMonth), [visibleMonth])
   const previousMonth = datePickerShiftMonth(visibleMonth, -1)
   const nextMonth = datePickerShiftMonth(visibleMonth, 1)
-  const previousMonthDisabled =
-    isValidDateKey(min) && previousMonth < calendarMonthKey(min)
+  const previousMonthDisabled = isValidDateKey(min) && previousMonth < calendarMonthKey(min)
   const nextMonthDisabled = isValidDateKey(max) && nextMonth > calendarMonthKey(max)
   const todayAllowed = dateWithinBounds(today, min, max)
   const display = isValidDateKey(value)
