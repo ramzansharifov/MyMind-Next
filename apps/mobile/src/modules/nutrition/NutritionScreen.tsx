@@ -27,8 +27,18 @@ import { ActionMenu } from '../../shared/ui/ActionMenu'
 import { useToast } from '../../shared/ui/toast-context'
 import { NutritionReportsView } from './NutritionReportsView'
 import { useTheme } from '../../shared/ui/theme'
+import { SwipeableTabContent } from '../../shared/ui/SwipeableTabContent'
 
 type Tab = 'today' | 'diary' | 'goal' | 'progress'
+
+const NUTRITION_TAB_IDS = ['today', 'diary', 'goal', 'progress'] as const
+const NUTRITION_TABS = [
+  { id: 'today' as const, label: 'Сегодня', icon: Utensils },
+  { id: 'diary' as const, label: 'Дневник', icon: CalendarDays },
+  { id: 'goal' as const, label: 'Цель', icon: Target },
+  { id: 'progress' as const, label: 'Прогресс', icon: BarChart3 }
+]
+
 const mealLabels: Record<NutritionMealType, string> = {
   breakfast: 'Завтрак',
   lunch: 'Обед',
@@ -649,6 +659,17 @@ export function NutritionScreen(): React.JSX.Element {
   const overview = useCollection(useCallback(() => api.listOverview({ date }), [api, date]))
   const [tab, setTab] = useState<Tab>('today')
   const [form, setForm] = useState<FormSpec | null>(null)
+
+  const changeTab = useCallback(
+    (next: Tab): void => {
+      if (next === tab) return
+      if (next === 'today') setDate(localDateKey())
+      setTab(next)
+      toast.info(NUTRITION_TABS.find((item) => item.id === next)?.label ?? 'Питание', 'nutrition-tab')
+    },
+    [tab, toast]
+  )
+
   const data = overview.data
   const foods = useMemo(() => data?.foods ?? [], [data?.foods])
   const recipes = useMemo(() => data?.recipes ?? [], [data?.recipes])
@@ -807,13 +828,6 @@ export function NutritionScreen(): React.JSX.Element {
     })
   }
 
-  const tabs = [
-    { id: 'today' as const, label: 'Сегодня', icon: Utensils },
-    { id: 'diary' as const, label: 'Дневник', icon: CalendarDays },
-    { id: 'goal' as const, label: 'Цель', icon: Target },
-    { id: 'progress' as const, label: 'Прогресс', icon: BarChart3 }
-  ]
-
   const chooseDiaryDate = (): void => {
     setForm({
       title: 'Дата дневника',
@@ -842,7 +856,7 @@ export function NutritionScreen(): React.JSX.Element {
           backgroundColor: theme.surface
         }}
       >
-        {tabs.map((item) => {
+        {NUTRITION_TABS.map((item) => {
           const selected = tab === item.id
           const Icon = item.icon
           return (
@@ -851,12 +865,7 @@ export function NutritionScreen(): React.JSX.Element {
               accessibilityRole="tab"
               accessibilityLabel={item.label}
               accessibilityState={{ selected }}
-              onPress={() => {
-                if (selected) return
-                if (item.id === 'today') setDate(localDateKey())
-                setTab(item.id)
-                toast.info(item.label, 'nutrition-tab')
-              }}
+              onPress={() => changeTab(item.id)}
               style={({ pressed }) => ({
                 flex: 1,
                 minWidth: 0,
@@ -957,10 +966,15 @@ export function NutritionScreen(): React.JSX.Element {
       <View style={{ flex: 1 }}>
         {header}
         {overview.error ? <ErrorState message={overview.error} retry={overview.refresh} /> : null}
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ gap: 12, paddingBottom: 96 }}
+        <SwipeableTabContent
+          tabs={NUTRITION_TAB_IDS}
+          value={tab}
+          onChange={changeTab}
         >
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ gap: 12, paddingBottom: 96 }}
+          >
           <NutritionDaySummary
             nutrients={day?.nutrients ?? zeroNutrients}
             target={target ?? null}
@@ -1000,7 +1014,8 @@ export function NutritionScreen(): React.JSX.Element {
               />
             ) : null}
           </View>
-        </ScrollView>
+          </ScrollView>
+        </SwipeableTabContent>
 
         <MobileCreateAction
           iconOnly
@@ -1031,15 +1046,17 @@ export function NutritionScreen(): React.JSX.Element {
       <View style={{ flex: 1 }}>
         {header}
         {overview.error ? <ErrorState message={overview.error} retry={overview.refresh} /> : null}
-        <NutritionGoalCard
-          key={data?.currentTarget?.id ?? 'nutrition-goal-empty'}
-          target={data?.currentTarget ?? null}
-          onSave={(input) =>
-            overview.mutate(() => {
-              api.setTargets(input)
-            }, 'Цель питания сохранена')
-          }
-        />
+        <SwipeableTabContent tabs={NUTRITION_TAB_IDS} value={tab} onChange={changeTab}>
+          <NutritionGoalCard
+            key={data?.currentTarget?.id ?? 'nutrition-goal-empty'}
+            target={data?.currentTarget ?? null}
+            onSave={(input) =>
+              overview.mutate(() => {
+                api.setTargets(input)
+              }, 'Цель питания сохранена')
+            }
+          />
+        </SwipeableTabContent>
       </View>
     )
   }
@@ -1049,7 +1066,9 @@ export function NutritionScreen(): React.JSX.Element {
       <View style={{ flex: 1 }}>
         {header}
         {overview.error ? <ErrorState message={overview.error} retry={overview.refresh} /> : null}
-        <NutritionReportsView />
+        <SwipeableTabContent tabs={NUTRITION_TAB_IDS} value={tab} onChange={changeTab}>
+          <NutritionReportsView />
+        </SwipeableTabContent>
       </View>
     )
   }
