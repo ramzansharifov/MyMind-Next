@@ -22,7 +22,7 @@ export function SwipeableTabContent<T extends string>({
   tabs: readonly T[]
   value: T
   onChange(value: T): void
-  onSwipeChange?(value: T): void
+  onSwipeChange?(value: T, direction: TabSwipeDirection): void
   disabled?: boolean
   children: ReactNode
 }): React.JSX.Element {
@@ -66,7 +66,7 @@ export function SwipeableTabContent<T extends string>({
         }
 
         onChange(nextValue)
-        onSwipeChange?.(nextValue)
+        onSwipeChange?.(nextValue, direction)
         translateX.setValue(enterX)
 
         requestAnimationFrame(() => {
