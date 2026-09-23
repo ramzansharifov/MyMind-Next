@@ -3,10 +3,7 @@ import { Animated, Easing, StyleSheet, Text, View } from 'react-native'
 import { BlurTargetView, BlurView } from 'expo-blur'
 
 import { AppIcon } from './icons'
-import {
-  MOBILE_CREATE_ACTION_STEP,
-  wrapCarouselIndex
-} from './mobile-create-action-gesture'
+import { MOBILE_CREATE_ACTION_STEP, wrapCarouselIndex } from './mobile-create-action-gesture'
 import {
   MobileCreateActionOverlayContext,
   type MobileCreateActionOverlayItem
@@ -195,11 +192,7 @@ export function MobileCreateActionOverlayProvider({
                 }}
               >
                 {overlay.items.map((item, itemIndex) => {
-                  const slot = relativeCarouselSlot(
-                    itemIndex,
-                    overlay.index,
-                    overlay.items.length
-                  )
+                  const slot = relativeCarouselSlot(itemIndex, overlay.index, overlay.items.length)
                   if (Math.abs(slot) > 2) return null
 
                   const actionColor = item.color ?? theme.accent
