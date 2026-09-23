@@ -16,7 +16,7 @@ import * as moviesSchema from '@mymind/core/validation/movies'
 import * as musicSchema from '@mymind/core/validation/music'
 import { useServices } from '../../app/context'
 import { useCollection } from '../../shared/hooks/useCollection'
-import { ErrorState, LoadingState, SearchField } from '../../shared/ui/primitives'
+import { ErrorState, LoadingState  } from '../../shared/ui/primitives'
 import { FormSheet } from '../../shared/ui/FormSheet'
 import { MobileCreateAction } from '../../shared/ui/MobileCreateAction'
 import { choiceField, messageFor, textField, type FormSpec } from '../../shared/ui/form-model'
@@ -439,13 +439,13 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
   return (
     <View style={{ flex: 1 }}>
       <View style={{ gap: 8, marginBottom: 12 }}>
-        <SearchField value={query} onChangeText={setQuery} />
         {mode === 'movies' ? (
           <SwipeTabBar
             items={MOVIE_STATUS_FILTERS}
             value={filter}
             onChange={changeMovieFilter}
             feedback={movieSwipeFeedback}
+            search={{ value: query, onChangeText: setQuery }}
             renderIcon={(item, selected) => {
               const Icon = item.icon
               return (
@@ -517,6 +517,7 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
             value={musicTopTab}
             onChange={changeMusicTab}
             feedback={musicSwipeFeedback}
+            search={{ value: query, onChangeText: setQuery }}
             renderIcon={(item, selected) => {
               const Icon = item.icon
               return (
