@@ -28,7 +28,8 @@ import { useToast } from '../../shared/ui/toast-context'
 import { NutritionReportsView } from './NutritionReportsView'
 import { useTheme } from '../../shared/ui/theme'
 import { SwipeableTabContent } from '../../shared/ui/SwipeableTabContent'
-import { SwipeTabBar, useSwipeTabFeedback } from '../../shared/ui/SwipeTabBar'
+import { SwipeTabBar } from '../../shared/ui/SwipeTabBar'
+import { useSwipeTabFeedback } from '../../shared/ui/useSwipeTabFeedback'
 
 type Tab = 'today' | 'diary' | 'goal' | 'progress'
 
