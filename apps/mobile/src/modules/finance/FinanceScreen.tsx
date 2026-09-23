@@ -43,6 +43,7 @@ import type { FormSpec } from '../../shared/ui/form-model'
 import { ErrorState, LoadingState } from '../../shared/ui/primitives'
 import { accountForm } from './finance-forms'
 import { FinanceReportsView } from './FinanceReportsView'
+import { FinanceQuickTransactionFlow } from './FinanceQuickTransactionFlow'
 import { MobileFinanceTransactionSheet } from './MobileFinanceTransactionSheet'
 import { MobileFinanceTemplateSheet } from './MobileFinanceTemplateSheet'
 import { MobileFinanceTagSheet } from './MobileFinanceTagSheet'
@@ -352,6 +353,8 @@ export function FinanceScreen(): React.JSX.Element {
   )
   const [tab, setTab] = useState<FinanceTab>('home')
   const [form, setForm] = useState<FormSpec | null>(null)
+  const [quickTransactionType, setQuickTransactionType] =
+    useState<FinanceUserTransactionType | null>(null)
   const [transactionSheet, setTransactionSheet] = useState<{
     type: FinanceUserTransactionType
     transaction: FinanceTransaction | null
@@ -936,7 +939,8 @@ export function FinanceScreen(): React.JSX.Element {
       color: financeOperationTone('income', theme.accent),
       disabled:
         !accounts.length || !tags.some((tag) => tag.type === 'income' || tag.type === 'both'),
-      onPress: () => openTransaction('income')
+      onPress: () => openTransaction('income'),
+      onHoldSelect: () => setQuickTransactionType('income')
     },
     {
       key: 'expense',
@@ -946,7 +950,8 @@ export function FinanceScreen(): React.JSX.Element {
       color: financeOperationTone('expense', theme.accent),
       disabled:
         !accounts.length || !tags.some((tag) => tag.type === 'expense' || tag.type === 'both'),
-      onPress: () => openTransaction('expense')
+      onPress: () => openTransaction('expense'),
+      onHoldSelect: () => setQuickTransactionType('expense')
     },
     {
       key: 'transfer',
@@ -955,7 +960,8 @@ export function FinanceScreen(): React.JSX.Element {
       icon: 'transfer',
       color: financeOperationTone('transfer', theme.accent),
       disabled: accounts.length < 2,
-      onPress: () => openTransaction('transfer')
+      onPress: () => openTransaction('transfer'),
+      onHoldSelect: () => setQuickTransactionType('transfer')
     }
   ]
 
@@ -1040,6 +1046,16 @@ export function FinanceScreen(): React.JSX.Element {
         </Animated.View>
       </View>
       <MobileCreateAction actions={createActions} iconOnly />
+      {quickTransactionType ? (
+        <FinanceQuickTransactionFlow
+          type={quickTransactionType}
+          api={api}
+          accounts={accounts}
+          tags={tags}
+          onClose={() => setQuickTransactionType(null)}
+          onSaved={state.refresh}
+        />
+      ) : null}
       {transactionDetail ? (
         <MobileFinanceTransactionDetailSheet
           transaction={transactionDetail}
