@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   Animated,
   Easing,
@@ -30,7 +30,7 @@ import { notifyDataChanged } from '../../app/changes'
 import { AppIcon, type AppIconName } from '../../shared/ui/icons'
 import { MOBILE_CREATE_ACTION_STEP, wrapCarouselIndex } from '../../shared/ui/mobile-create-action-gesture'
 import { useMobileCreateActionOverlay } from '../../shared/ui/MobileCreateActionOverlayContext'
-import { VisualIconBadge, VisualIconGlyph } from '../../shared/ui/VisualPickers'
+import { VisualIconBadge } from '../../shared/ui/VisualPickers'
 import { useTheme } from '../../shared/ui/theme'
 import { useToast } from '../../shared/ui/toast-context'
 import {
@@ -185,10 +185,7 @@ function QuickCarousel({
           outputRange: slotOpacity(slot),
           extrapolate: 'clamp'
         })
-        const translateY = Animated.add(
-          dragY,
-          new Animated.Value(slot * MOBILE_CREATE_ACTION_STEP)
-        )
+        const translateY = Animated.add(dragY, slot * MOBILE_CREATE_ACTION_STEP)
         const active = slot === 0
 
         return (
@@ -371,10 +368,9 @@ export function FinanceQuickTransactionFlow({
     ]).start()
   }
 
-  useState(() => {
+  useEffect(() => {
     requestAnimationFrame(enterStage)
-    return 0
-  })
+  }, [])
 
   const transitionNext = (): void => {
     if (stageIndex >= stages.length - 1) return
@@ -430,7 +426,7 @@ export function FinanceQuickTransactionFlow({
         subtitle:
           tag.type === 'both' ? 'Доходы и расходы' : tag.type === 'income' ? 'Доход' : 'Расход',
         tone: financeTagTone(tag.type, theme.accent),
-        icon: { kind: 'app', value: 'tag' }
+        icon: { kind: 'visual', value: tag.icon }
       })),
     [compatibleTags, theme.accent]
   )
