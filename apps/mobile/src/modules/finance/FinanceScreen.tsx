@@ -68,11 +68,11 @@ const FINANCE_PRIVACY_SETTING_KEY = 'finance.amounts-hidden'
 
 const FINANCE_TABS: ReadonlyArray<{ id: FinanceTab; label: string; icon: LucideIcon }> = [
   { id: 'home', label: 'Главная', icon: Home },
-  { id: 'transactions', label: 'Транзакции', icon: ReceiptText },
   { id: 'templates', label: 'Шаблоны', icon: Copy },
-  { id: 'limits', label: 'Лимиты', icon: Gauge },
   { id: 'accounts', label: 'Счета', icon: Landmark },
+  { id: 'transactions', label: 'Транзакции', icon: ReceiptText },
   { id: 'tags', label: 'Теги', icon: Tags },
+  { id: 'limits', label: 'Лимиты', icon: Gauge },
   { id: 'reports', label: 'Отчёты', icon: BarChart3 }
 ]
 
