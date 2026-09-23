@@ -63,6 +63,8 @@ import { useConfirmation } from '../../shared/ui/ConfirmationProvider'
 import { useTheme } from '../../shared/ui/theme'
 import { useToast } from '../../shared/ui/toast-context'
 
+const FINANCE_PRIVACY_SETTING_KEY = 'finance.amounts-hidden'
+
 const FINANCE_TABS: ReadonlyArray<{ id: FinanceTab; label: string; icon: LucideIcon }> = [
   { id: 'home', label: 'Главная', icon: Home },
   { id: 'transactions', label: 'Транзакции', icon: ReceiptText },
@@ -322,7 +324,7 @@ function operationTitle(transaction: FinanceTransaction): string {
 }
 
 export function FinanceScreen(): React.JSX.Element {
-  const { finance: api } = useServices()
+  const { finance: api, settings } = useServices()
   const confirm = useConfirmation()
   const theme = useTheme()
   const toast = useToast()
@@ -362,9 +364,19 @@ export function FinanceScreen(): React.JSX.Element {
   const [accountDetail, setAccountDetail] = useState<FinanceAccountSummary | null>(null)
   const [tagDetail, setTagDetail] = useState<FinanceTagSummary | null>(null)
   const [limitDetail, setLimitDetail] = useState<FinanceLimitStatus | null>(null)
-  const [balanceHidden, setBalanceHidden] = useState(false)
+  const [balanceHidden, setBalanceHidden] = useState(
+    () => settings.get(FINANCE_PRIVACY_SETTING_KEY) === 'true'
+  )
 
   const tabPageWidth = Math.max(screenWidth - 28, 280)
+
+  const toggleBalancePrivacy = useCallback((): void => {
+    setBalanceHidden((hidden) => {
+      const next = !hidden
+      settings.set(FINANCE_PRIVACY_SETTING_KEY, String(next))
+      return next
+    })
+  }, [settings])
 
   const announceTab = useCallback(
     (nextTab: FinanceTab): void => {
@@ -811,8 +823,10 @@ export function FinanceScreen(): React.JSX.Element {
             </View>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={balanceHidden ? 'Показать общий баланс' : 'Скрыть общий баланс'}
-              onPress={() => setBalanceHidden((hidden) => !hidden)}
+              accessibilityLabel={
+                balanceHidden ? 'Показать финансовые суммы' : 'Скрыть финансовые суммы'
+              }
+              onPress={toggleBalancePrivacy}
               style={({ pressed }) => ({
                 width: 38,
                 height: 38,
@@ -846,15 +860,18 @@ export function FinanceScreen(): React.JSX.Element {
         <View style={{ flexDirection: 'row', gap: 8 }}>
           <FinanceMetric
             label="Доходы"
-            value={formatMoneyMinor(dashboard.incomeMinor, currency)}
+            value={balanceHidden ? '******' : formatMoneyMinor(dashboard.incomeMinor, currency)}
             tone="accent"
           />
           <FinanceMetric
             label="Расходы"
-            value={formatMoneyMinor(dashboard.expenseMinor, currency)}
+            value={balanceHidden ? '******' : formatMoneyMinor(dashboard.expenseMinor, currency)}
             tone="danger"
           />
-          <FinanceMetric label="Итог" value={formatMoneyMinor(dashboard.netMinor, currency)} />
+          <FinanceMetric
+            label="Итог"
+            value={balanceHidden ? '******' : formatMoneyMinor(dashboard.netMinor, currency)}
+          />
         </View>
 
         <FinanceSection title="Счета" icon={Landmark}>
