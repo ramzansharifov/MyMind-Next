@@ -37,7 +37,7 @@ import {
   financeQuickTransactionStages,
   type FinanceQuickTransactionStage
 } from './finance-quick-transaction'
-import { financeOperationTone, financeTagTone } from './finance-semantic-colors'
+import { financeOperationTone } from './finance-semantic-colors'
 
 interface CarouselOption {
   key: string
@@ -50,7 +50,7 @@ interface CarouselOption {
 const CAROUSEL_HEIGHT = 356
 const CARD_HEIGHT = 104
 const CARD_TOP = (CAROUSEL_HEIGHT - CARD_HEIGHT) / 2
-const SWIPE_THRESHOLD = 34
+const SWIPE_THRESHOLD = 54
 
 function slotScale(slot: number): [number, number, number] {
   if (slot === 0) return [0.91, 1, 0.91]
@@ -70,12 +70,12 @@ function QuickCarousel({
   options,
   selectedIndex,
   onSelectedIndexChange,
-  onChoose
+  onBusyChange
 }: {
   options: readonly CarouselOption[]
   selectedIndex: number
   onSelectedIndexChange(index: number): void
-  onChoose(option: CarouselOption): void
+  onBusyChange(busy: boolean): void
 }): React.JSX.Element {
   const theme = useTheme()
   const [dragY] = useState(() => new Animated.Value(0))
@@ -86,6 +86,7 @@ function QuickCarousel({
   const settle = (direction: -1 | 1): void => {
     if (settlingRef.current || options.length < 2) return
     settlingRef.current = true
+    onBusyChange(true)
     const target = direction === 1 ? -MOBILE_CREATE_ACTION_STEP : MOBILE_CREATE_ACTION_STEP
 
     Animated.timing(dragY, {
@@ -97,6 +98,7 @@ function QuickCarousel({
       onSelectedIndexChange(wrapCarouselIndex(selectedIndex + direction, options.length))
       dragY.setValue(0)
       settlingRef.current = false
+      onBusyChange(false)
     })
   }
 
@@ -133,7 +135,6 @@ function QuickCarousel({
             mass: 0.75,
             useNativeDriver: true
           }).start()
-          onChoose(selected)
           return
         }
         if (Math.abs(dy) >= SWIPE_THRESHOLD && options.length > 1) {
@@ -165,7 +166,12 @@ function QuickCarousel({
         overflow: 'hidden'
       }}
     >
-      {(options.length === 1 ? [0] : [-2, -1, 0, 1, 2]).map((slot) => {
+      {(options.length === 1
+        ? [0]
+        : options.length <= 3
+          ? [-1, 0, 1]
+          : [-2, -1, 0, 1, 2]
+      ).map((slot) => {
         const optionIndex = wrapCarouselIndex(selectedIndex + slot, options.length)
         const option = options[optionIndex]
         if (!option) return null
@@ -340,6 +346,8 @@ export function FinanceQuickTransactionFlow({
   const [impactConfirmed, setImpactConfirmed] = useState(false)
   const [stageOpacity] = useState(() => new Animated.Value(0))
   const [stageTranslateY] = useState(() => new Animated.Value(-62))
+  const [stageScale] = useState(() => new Animated.Value(0.97))
+  const [carouselBusy, setCarouselBusy] = useState(false)
 
   const tone = financeOperationTone(type, theme.accent)
   const operationLabel = type === 'income' ? 'Доход' : type === 'expense' ? 'Расход' : 'Перевод'
@@ -352,6 +360,7 @@ export function FinanceQuickTransactionFlow({
   const enterStage = useCallback((): void => {
     stageOpacity.setValue(0)
     stageTranslateY.setValue(-62)
+    stageScale.setValue(0.97)
     Animated.parallel([
       Animated.timing(stageOpacity, {
         toValue: 1,
@@ -366,9 +375,17 @@ export function FinanceQuickTransactionFlow({
         mass: 0.78,
         overshootClamping: true,
         useNativeDriver: true
+      }),
+      Animated.spring(stageScale, {
+        toValue: 1,
+        damping: 24,
+        stiffness: 230,
+        mass: 0.78,
+        overshootClamping: true,
+        useNativeDriver: true
       })
     ]).start()
-  }, [stageOpacity, stageTranslateY])
+  }, [stageOpacity, stageScale, stageTranslateY])
 
   useEffect(() => {
     requestAnimationFrame(enterStage)
@@ -380,13 +397,19 @@ export function FinanceQuickTransactionFlow({
     Animated.parallel([
       Animated.timing(stageOpacity, {
         toValue: 0,
-        duration: 145,
+        duration: 190,
         easing: Easing.in(Easing.cubic),
         useNativeDriver: true
       }),
       Animated.timing(stageTranslateY, {
-        toValue: 108,
-        duration: 175,
+        toValue: 136,
+        duration: 215,
+        easing: Easing.in(Easing.cubic),
+        useNativeDriver: true
+      }),
+      Animated.timing(stageScale, {
+        toValue: 0.96,
+        duration: 215,
         easing: Easing.in(Easing.cubic),
         useNativeDriver: true
       })
@@ -427,10 +450,10 @@ export function FinanceQuickTransactionFlow({
         title: tag.name,
         subtitle:
           tag.type === 'both' ? 'Доходы и расходы' : tag.type === 'income' ? 'Доход' : 'Расход',
-        tone: financeTagTone(tag.type, theme.accent),
+        tone: financeOperationTone(type, theme.accent),
         icon: { kind: 'visual', value: tag.icon }
       })),
-    [compatibleTags, theme.accent]
+    [compatibleTags, theme.accent, type]
   )
 
   const currentOptions =
@@ -440,7 +463,15 @@ export function FinanceQuickTransactionFlow({
         ? destinationOptions
         : tagOptions
 
-  const chooseCarouselOption = (option: CarouselOption): void => {
+  const confirmCarouselSelection = (): void => {
+    if (carouselBusy) return
+    const safeIndex = Math.min(carouselIndex, Math.max(0, currentOptions.length - 1))
+    const option = currentOptions[safeIndex]
+    if (!option) {
+      setError('Нет доступных вариантов для выбора')
+      return
+    }
+
     setError('')
     setImpact(null)
     setImpactConfirmed(false)
@@ -453,6 +484,7 @@ export function FinanceQuickTransactionFlow({
     } else if (stage === 'tag') {
       setTagId(option.key)
     }
+
     transitionNext()
   }
 
@@ -597,7 +629,7 @@ export function FinanceQuickTransactionFlow({
               alignItems: 'center',
               justifyContent: 'center',
               opacity: stageOpacity,
-              transform: [{ translateY: stageTranslateY }]
+              transform: [{ translateY: stageTranslateY }, { scale: stageScale }]
             }}
           >
             <Text
@@ -625,7 +657,7 @@ export function FinanceQuickTransactionFlow({
                     textAlign: 'center'
                   }}
                 >
-                  Проведите вверх или вниз · нажмите, чтобы выбрать
+                  Проведите вверх или вниз · затем нажмите «Дальше»
                 </Text>
 
                 <View style={{ marginTop: 12, width: '100%', alignItems: 'center' }}>
@@ -633,7 +665,7 @@ export function FinanceQuickTransactionFlow({
                     options={currentOptions}
                     selectedIndex={Math.min(carouselIndex, Math.max(0, currentOptions.length - 1))}
                     onSelectedIndexChange={setCarouselIndex}
-                    onChoose={chooseCarouselOption}
+                    onBusyChange={setCarouselBusy}
                   />
                 </View>
               </>
@@ -735,33 +767,69 @@ export function FinanceQuickTransactionFlow({
                   </View>
                 ) : null}
 
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={
-                    pending
-                      ? 'Сохранение'
-                      : impactConfirmed
-                        ? 'Подтвердить расход'
-                        : 'Создать операцию'
-                  }
-                  disabled={pending}
-                  onPress={save}
-                  style={({ pressed }) => ({
-                    minHeight: 50,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    borderRadius: 15,
-                    backgroundColor: tone,
-                    opacity: pending ? 0.5 : pressed ? 0.8 : 1
-                  })}
-                >
-                  <Text style={{ color: '#ffffff', fontSize: 14, fontWeight: '700' }}>
-                    {pending ? 'Сохранение…' : impactConfirmed ? 'Подтвердить расход' : 'Создать'}
-                  </Text>
-                </Pressable>
+
               </View>
             )}
           </Animated.View>
+
+          <View
+            pointerEvents="box-none"
+            style={{
+              position: 'absolute',
+              right: 0,
+              bottom: 20,
+              left: 0,
+              alignItems: 'center'
+            }}
+          >
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={
+                stage === 'amount'
+                  ? pending
+                    ? 'Сохранение'
+                    : impactConfirmed
+                      ? 'Подтвердить расход'
+                      : 'Создать операцию'
+                  : 'Дальше'
+              }
+              disabled={
+                pending ||
+                carouselBusy ||
+                (stage !== 'amount' && currentOptions.length === 0)
+              }
+              onPress={stage === 'amount' ? save : confirmCarouselSelection}
+              style={({ pressed }) => ({
+                minWidth: 176,
+                minHeight: 50,
+                alignItems: 'center',
+                justifyContent: 'center',
+                paddingHorizontal: 24,
+                borderRadius: 15,
+                borderWidth: 1,
+                borderColor: tone + '55',
+                backgroundColor: tone,
+                opacity:
+                  pending ||
+                  carouselBusy ||
+                  (stage !== 'amount' && currentOptions.length === 0)
+                    ? 0.45
+                    : pressed
+                      ? 0.8
+                      : 1
+              })}
+            >
+              <Text style={{ color: '#ffffff', fontSize: 14, fontWeight: '700' }}>
+                {stage === 'amount'
+                  ? pending
+                    ? 'Сохранение…'
+                    : impactConfirmed
+                      ? 'Подтвердить расход'
+                      : 'Создать'
+                  : 'Дальше'}
+              </Text>
+            </Pressable>
+          </View>
         </View>
       </KeyboardAvoidingView>
     </Modal>
