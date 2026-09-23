@@ -114,7 +114,6 @@ export function SearchableHeaderRow({
     searchProgress.stopAnimation()
     searchProgress.setValue(0)
     setSearchOpen(true)
-    onSearchOpenChange?.(true)
     requestAnimationFrame(() => {
       Animated.timing(searchProgress, {
         toValue: 1,
@@ -133,10 +132,7 @@ export function SearchableHeaderRow({
       easing: Easing.inOut(Easing.cubic),
       useNativeDriver: true
     }).start(({ finished }) => {
-      if (finished) {
-        setSearchOpen(false)
-        onSearchOpenChange?.(false)
-      }
+      if (finished) setSearchOpen(false)
     })
   }
 
@@ -300,6 +296,7 @@ export function SwipeTabBar<T extends string, I extends SwipeTabBarItem<T>>({
     searchProgress.stopAnimation()
     searchProgress.setValue(0)
     setSearchOpen(true)
+    onSearchOpenChange?.(true)
     requestAnimationFrame(() => {
       Animated.timing(searchProgress, {
         toValue: 1,
@@ -319,7 +316,10 @@ export function SwipeTabBar<T extends string, I extends SwipeTabBarItem<T>>({
       easing: Easing.inOut(Easing.cubic),
       useNativeDriver: true
     }).start(({ finished }) => {
-      if (finished) setSearchOpen(false)
+      if (finished) {
+        setSearchOpen(false)
+        onSearchOpenChange?.(false)
+      }
     })
   }
 
