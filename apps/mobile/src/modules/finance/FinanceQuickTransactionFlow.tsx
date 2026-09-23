@@ -29,7 +29,7 @@ import {
   wrapCarouselIndex
 } from '../../shared/ui/mobile-create-action-gesture'
 import { useMobileCreateActionOverlay } from '../../shared/ui/MobileCreateActionOverlayContext'
-import { VisualIconBadge } from '../../shared/ui/VisualPickers'
+import { VisualIconBadge, VisualIconGlyph } from '../../shared/ui/VisualPickers'
 import { useTheme } from '../../shared/ui/theme'
 import { useToast } from '../../shared/ui/toast-context'
 import {
@@ -44,7 +44,10 @@ interface CarouselOption {
   title: string
   subtitle: string
   tone: string
-  icon: { kind: 'app'; value: AppIconName } | { kind: 'visual'; value: string }
+  icon:
+    | { kind: 'app'; value: AppIconName }
+    | { kind: 'visual'; value: string }
+    | { kind: 'glyph'; value: string }
 }
 
 const CAROUSEL_HEIGHT = 356
@@ -247,12 +250,16 @@ function QuickCarousel({
                     backgroundColor: option.tone + '18'
                   }}
                 >
-                  <AppIcon
-                    name={option.icon.value}
-                    size={22}
-                    strokeWidth={2.3}
-                    color={option.tone}
-                  />
+                  {option.icon.kind === 'glyph' ? (
+                    <VisualIconGlyph value={option.icon.value} size={22} color={option.tone} />
+                  ) : (
+                    <AppIcon
+                      name={option.icon.value}
+                      size={22}
+                      strokeWidth={2.3}
+                      color={option.tone}
+                    />
+                  )}
                 </View>
               )}
 
@@ -451,7 +458,7 @@ export function FinanceQuickTransactionFlow({
         subtitle:
           tag.type === 'both' ? 'Доходы и расходы' : tag.type === 'income' ? 'Доход' : 'Расход',
         tone: financeOperationTone(type, theme.accent),
-        icon: { kind: 'visual', value: tag.icon }
+        icon: { kind: 'glyph', value: tag.icon }
       })),
     [compatibleTags, theme.accent, type]
   )
