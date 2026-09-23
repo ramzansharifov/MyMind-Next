@@ -75,10 +75,13 @@ export function MobileCreateAction({
     holdTimerRef.current = null
   }, [])
 
-  const perform = useCallback((action: MobileCreateActionItem): void => {
-    if (disabled || action.disabled) return
-    runWhenIdle(() => action.onPress())
-  }, [disabled])
+  const perform = useCallback(
+    (action: MobileCreateActionItem): void => {
+      if (disabled || action.disabled) return
+      runWhenIdle(() => action.onPress())
+    },
+    [disabled]
+  )
 
   const launch = (action: MobileCreateActionItem): void => {
     if (disabled || action.disabled) return
@@ -105,19 +108,22 @@ export function MobileCreateAction({
     }, HOLD_DELAY_MS)
   }, [clearHoldTimer, enabledActions, overlay])
 
-  const updateCarousel = useCallback((moveY: number): void => {
-    currentYRef.current = moveY
-    if (!holdActiveRef.current || !overlay || !enabledActions.length) return
+  const updateCarousel = useCallback(
+    (moveY: number): void => {
+      currentYRef.current = moveY
+      if (!holdActiveRef.current || !overlay || !enabledActions.length) return
 
-    const selection = mobileCreateActionSelection(
-      currentYRef.current - anchorYRef.current,
-      enabledActions.length,
-      0,
-      MOBILE_CREATE_ACTION_STEP
-    )
-    selectedIndexRef.current = selection.index
-    overlay.update(selection.index, selection.offsetY)
-  }, [enabledActions, overlay])
+      const selection = mobileCreateActionSelection(
+        currentYRef.current - anchorYRef.current,
+        enabledActions.length,
+        0,
+        MOBILE_CREATE_ACTION_STEP
+      )
+      selectedIndexRef.current = selection.index
+      overlay.update(selection.index, selection.offsetY)
+    },
+    [enabledActions, overlay]
+  )
 
   const finishGesture = useCallback((): void => {
     touchActiveRef.current = false
