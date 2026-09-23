@@ -38,10 +38,15 @@ import {
 import { AppIcon } from '../../shared/ui/icons'
 import { useTheme } from '../../shared/ui/theme'
 import { useToast } from '../../shared/ui/toast-context'
+import { SwipeableTabContent } from '../../shared/ui/SwipeableTabContent'
 import { HabitsReportsView } from './HabitsReportsView'
 
+type HabitView = 'today' | 'all' | 'reports'
+
+const HABIT_VIEW_TABS = ['today', 'all', 'reports'] as const
+
 const VIEW_FILTERS: ReadonlyArray<{
-  id: 'today' | 'all' | 'reports'
+  id: HabitView
   label: string
   icon: LucideIcon
 }> = [
@@ -65,12 +70,21 @@ export function HabitsScreen(): React.JSX.Element {
   const theme = useTheme()
   const toast = useToast()
   const [date, setDate] = useState(localDateKey())
-  const [view, setView] = useState<'today' | 'all' | 'reports'>('today')
+  const [view, setView] = useState<HabitView>('today')
   const [query, setQuery] = useState('')
   const [group, setGroup] = useState<string | null | undefined>(undefined)
   const [trackingFilter, setTrackingFilter] = useState<'all' | 'check' | 'count'>('all')
   const [groupsOpen, setGroupsOpen] = useState(false)
   const [form, setForm] = useState<FormSpec | null>(null)
+
+  const changeView = useCallback(
+    (next: HabitView): void => {
+      if (next === view) return
+      setView(next)
+      toast.info(VIEW_FILTERS.find((item) => item.id === next)?.label ?? 'Привычки', 'habits-view-filter')
+    },
+    [toast, view]
+  )
 
   const state = useCollection(
     useCallback(
@@ -230,11 +244,7 @@ export function HabitsScreen(): React.JSX.Element {
                 accessibilityLabel={item.label}
                 accessibilityState={{ selected }}
                 disabled={state.pending}
-                onPress={() => {
-                  if (selected) return
-                  setView(item.id)
-                  toast.info(item.label, 'habits-view-filter')
-                }}
+                onPress={() => changeView(item.id)}
                 style={({ pressed }) => ({
                   flex: 1,
                   minWidth: 0,
@@ -397,14 +407,20 @@ export function HabitsScreen(): React.JSX.Element {
 
       {state.error && <ErrorState message={state.error} retry={state.refresh} />}
 
-      {state.loading ? (
-        <LoadingState />
-      ) : view === 'reports' ? (
-        <View style={{ flex: 1, minHeight: 0 }}>
-          <HabitsReportsView api={api} groupId={group} scopeLabel={scopeLabel} />
-        </View>
-      ) : (
-        <FlatList
+      <SwipeableTabContent
+        tabs={HABIT_VIEW_TABS}
+        value={view}
+        onChange={changeView}
+        disabled={state.pending}
+      >
+        {state.loading ? (
+          <LoadingState />
+        ) : view === 'reports' ? (
+          <View style={{ flex: 1, minHeight: 0 }}>
+            <HabitsReportsView api={api} groupId={group} scopeLabel={scopeLabel} />
+          </View>
+        ) : (
+          <FlatList
           style={{ flex: 1 }}
           data={visible}
           keyExtractor={(item) => item.id}
@@ -624,9 +640,10 @@ export function HabitsScreen(): React.JSX.Element {
                 </View>
               </View>
             )
-          }}
-        />
-      )}
+            }}
+          />
+        )}
+      </SwipeableTabContent>
 
       <View
         style={{
