@@ -13,6 +13,7 @@ export interface MobileCreateActionOverlayItem {
 export interface MobileCreateActionOverlayController {
   show(items: readonly MobileCreateActionOverlayItem[], index: number): void
   update(index: number, offsetY: number): void
+  handoff(): void
   hide(): void
 }
 
