@@ -57,6 +57,7 @@ export function TasksScreen(): React.JSX.Element {
   const [groupsOpen, setGroupsOpen] = useState(false)
   const [form, setForm] = useState<FormSpec | null>(null)
   const [swipeTabFeedback, showSwipeTabFeedback] = useSwipeTabFeedback<TaskStatusFilter>()
+  const [searchOpen, setSearchOpen] = useState(false)
 
   const changeFilter = useCallback(
     (next: TaskStatusFilter): void => {
@@ -213,6 +214,7 @@ export function TasksScreen(): React.JSX.Element {
           onChange={changeFilter}
           feedback={swipeTabFeedback}
           search={{ value: query, onChangeText: setQuery }}
+          onSearchOpenChange={setSearchOpen}
           renderIcon={(item, selected) => (
             <AppIcon
               name={item.icon}
@@ -287,7 +289,7 @@ export function TasksScreen(): React.JSX.Element {
         value={filter}
         onChange={changeFilter}
         onSwipeChange={showSwipeTabFeedback}
-        disabled={state.pending}
+        disabled={state.pending || searchOpen}
       >
         {state.loading ? (
           <LoadingState />
