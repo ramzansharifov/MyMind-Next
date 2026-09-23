@@ -648,9 +648,7 @@ export function FinanceQuickTransactionFlow({
                 <QuickSelectionChip
                   key={`source:${sourceAccount.id}`}
                   label={
-                    type === 'transfer'
-                      ? `Списание: ${sourceAccount.name}`
-                      : sourceAccount.name
+                    type === 'transfer' ? `Списание: ${sourceAccount.name}` : sourceAccount.name
                   }
                   tone={tone}
                 />
