@@ -22,6 +22,7 @@ import { MobileCreateAction } from '../../shared/ui/MobileCreateAction'
 import { choiceField, messageFor, textField, type FormSpec } from '../../shared/ui/form-model'
 import { useTheme } from '../../shared/ui/theme'
 import { useToast } from '../../shared/ui/toast-context'
+import { SwipeableTabContent } from '../../shared/ui/SwipeableTabContent'
 import { movieFields, movieValues, normalizeMovieFormValues } from './catalog-forms'
 import { CatalogJsonImportModal } from './CatalogJsonImportModal'
 import { MovieDetailView } from './MovieDetailView'
@@ -37,8 +38,14 @@ import {
   musicTrackInputFromDraft
 } from './music-presentation'
 
+type MovieStatusFilter = 'all' | 'watchlist' | 'watched' | 'favorite'
+type MusicTopTab = 'tracks' | 'favorites' | 'playlists'
+
+const MOVIE_STATUS_TAB_IDS = ['all', 'watchlist', 'watched', 'favorite'] as const
+const MUSIC_TAB_IDS = ['tracks', 'favorites', 'playlists'] as const
+
 const MOVIE_STATUS_FILTERS: ReadonlyArray<{
-  id: 'all' | 'watchlist' | 'watched' | 'favorite'
+  id: MovieStatusFilter
   label: string
   icon: LucideIcon
 }> = [
@@ -49,7 +56,7 @@ const MOVIE_STATUS_FILTERS: ReadonlyArray<{
 ]
 
 const MUSIC_VIEW_FILTERS: ReadonlyArray<{
-  id: 'tracks' | 'favorites' | 'playlists'
+  id: MusicTopTab
   label: string
   icon: LucideIcon
 }> = [
@@ -72,7 +79,7 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
     }, [mode, services])
   )
   const [query, setQuery] = useState('')
-  const [filter, setFilter] = useState('all')
+  const [filter, setFilter] = useState<MovieStatusFilter>('all')
   const [sort, setSort] = useState('recent')
   const [genre, setGenre] = useState('')
   const [type, setType] = useState('')
@@ -88,6 +95,46 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
   const [form, setForm] = useState<FormSpec | null>(null)
   const [jsonImportOpen, setJsonImportOpen] = useState(false)
   const [webError, setWebError] = useState('')
+
+  const changeMovieFilter = useCallback(
+    (next: MovieStatusFilter): void => {
+      if (next === filter) return
+      setFilter(next)
+      toast.info(
+        MOVIE_STATUS_FILTERS.find((item) => item.id === next)?.label ?? 'Фильмы',
+        'movies-status-filter'
+      )
+    },
+    [filter, toast]
+  )
+
+  const changeMusicTab = useCallback(
+    (next: MusicTopTab): void => {
+      const current: MusicTopTab =
+        playlistId || playlistsView ? 'playlists' : filter === 'favorite' ? 'favorites' : 'tracks'
+      if (next === current && !playlistId) return
+
+      setQuery('')
+      setPlaylistId(null)
+
+      if (next === 'favorites') {
+        setFilter('favorite')
+        setPlaylistsView(false)
+      } else if (next === 'playlists') {
+        setFilter('all')
+        setPlaylistsView(true)
+      } else {
+        setFilter('all')
+        setPlaylistsView(false)
+      }
+
+      toast.info(
+        MUSIC_VIEW_FILTERS.find((item) => item.id === next)?.label ?? 'Музыка',
+        'music-view-filter'
+      )
+    },
+    [filter, playlistId, playlistsView, toast]
+  )
 
   const editMovie = (item?: MovieRecord): void =>
     setForm({
@@ -327,6 +374,8 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
       : filter === 'favorite'
         ? 'favorites'
         : 'tracks'
+  const musicTopTab: MusicTopTab =
+    playlistId || playlistsView ? 'playlists' : filter === 'favorite' ? 'favorites' : 'tracks'
   const musicEmptyBecauseFilter =
     Boolean(normalizedQuery) || Boolean(musicArtist) || Boolean(musicYear)
   const musicAdvancedFiltersActive = Boolean(musicArtist || musicYear)
@@ -423,11 +472,7 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
                   accessibilityLabel={item.label}
                   accessibilityState={{ selected }}
                   disabled={state.pending}
-                  onPress={() => {
-                    if (selected) return
-                    setFilter(item.id)
-                    toast.info(item.label, 'movies-status-filter')
-                  }}
+                  onPress={() => changeMovieFilter(item.id)}
                   style={({ pressed }) => ({
                     flex: 1,
                     minWidth: 0,
@@ -530,24 +575,7 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
                   accessibilityLabel={item.label}
                   accessibilityState={{ selected }}
                   disabled={state.pending}
-                  onPress={() => {
-                    if (selected && musicView !== 'playlist') return
-                    setQuery('')
-                    setPlaylistId(null)
-
-                    if (item.id === 'favorites') {
-                      setFilter('favorite')
-                      setPlaylistsView(false)
-                    } else if (item.id === 'playlists') {
-                      setFilter('all')
-                      setPlaylistsView(true)
-                    } else {
-                      setFilter('all')
-                      setPlaylistsView(false)
-                    }
-
-                    toast.info(item.label, 'music-view-filter')
-                  }}
+                  onPress={() => changeMusicTab(item.id)}
                   style={({ pressed }) => ({
                     flex: 1,
                     minWidth: 0,
@@ -635,18 +663,31 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
       {state.loading ? (
         <LoadingState />
       ) : mode === 'movies' ? (
-        <MovieLibraryView
+        <SwipeableTabContent
+          tabs={MOVIE_STATUS_TAB_IDS}
+          value={filter}
+          onChange={changeMovieFilter}
+          disabled={state.pending}
+        >
+          <MovieLibraryView
           movies={movieItems}
           refreshing={state.loading}
           onRefresh={state.refresh}
           onOpen={(movie) => setSelectedMovieId(movie.id)}
           onToggleFavorite={(movie) => updateMovie({ ...movie, favorite: !movie.favorite })}
-          onSearchWeb={(movie) => {
-            void webSearch(movie.title)
-          }}
-        />
+            onSearchWeb={(movie) => {
+              void webSearch(movie.title)
+            }}
+          />
+        </SwipeableTabContent>
       ) : (
-        <MusicLibraryView
+        <SwipeableTabContent
+          tabs={MUSIC_TAB_IDS}
+          value={musicTopTab}
+          onChange={changeMusicTab}
+          disabled={state.pending || Boolean(playlistId)}
+        >
+          <MusicLibraryView
           view={musicView}
           items={visibleMusicItems}
           playlists={visiblePlaylists}
@@ -677,12 +718,13 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
           }}
           onEditPlaylist={editPlaylist}
           onDeletePlaylist={deletePlaylist}
-          onBackToPlaylists={() => {
-            setQuery('')
-            setPlaylistId(null)
-            setPlaylistsView(true)
-          }}
-        />
+            onBackToPlaylists={() => {
+              setQuery('')
+              setPlaylistId(null)
+              setPlaylistsView(true)
+            }}
+          />
+        </SwipeableTabContent>
       )}
 
       <MobileCreateAction
