@@ -21,7 +21,7 @@ jobs:
       - run: npm ci
       - run: npm run native:node
       - run: npx prettier --check apps/mobile/src/modules/finance/FinanceScreen.tsx
-      - run: npm run lint:mobile
+      - run: npx eslint apps/mobile/src/modules/finance/FinanceScreen.tsx
       - run: npm run typecheck
       - run: npm run test:mobile
       - run: npm run export:android
