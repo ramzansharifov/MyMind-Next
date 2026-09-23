@@ -15,12 +15,14 @@ export function SwipeableTabContent<T extends string>({
   tabs,
   value,
   onChange,
+  onSwipeChange,
   disabled = false,
   children
 }: {
   tabs: readonly T[]
   value: T
   onChange(value: T): void
+  onSwipeChange?(value: T): void
   disabled?: boolean
   children: ReactNode
 }): React.JSX.Element {
@@ -64,6 +66,7 @@ export function SwipeableTabContent<T extends string>({
         }
 
         onChange(nextValue)
+        onSwipeChange?.(nextValue)
         translateX.setValue(enterX)
 
         requestAnimationFrame(() => {
@@ -78,7 +81,7 @@ export function SwipeableTabContent<T extends string>({
         })
       })
     },
-    [animating, disabled, onChange, pageWidth, resetPosition, translateX, value]
+    [animating, disabled, onChange, onSwipeChange, pageWidth, resetPosition, translateX, value]
   )
 
   const responder = useMemo(() => {

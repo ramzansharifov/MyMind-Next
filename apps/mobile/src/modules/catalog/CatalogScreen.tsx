@@ -23,6 +23,8 @@ import { choiceField, messageFor, textField, type FormSpec } from '../../shared/
 import { useTheme } from '../../shared/ui/theme'
 import { useToast } from '../../shared/ui/toast-context'
 import { SwipeableTabContent } from '../../shared/ui/SwipeableTabContent'
+import { SwipeTabBar } from '../../shared/ui/SwipeTabBar'
+import { useSwipeTabFeedback } from '../../shared/ui/useSwipeTabFeedback'
 import { movieFields, movieValues, normalizeMovieFormValues } from './catalog-forms'
 import { CatalogJsonImportModal } from './CatalogJsonImportModal'
 import { MovieDetailView } from './MovieDetailView'
@@ -95,6 +97,8 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
   const [form, setForm] = useState<FormSpec | null>(null)
   const [jsonImportOpen, setJsonImportOpen] = useState(false)
   const [webError, setWebError] = useState('')
+  const [movieSwipeFeedback, showMovieSwipeFeedback] = useSwipeTabFeedback<MovieStatusFilter>()
+  const [musicSwipeFeedback, showMusicSwipeFeedback] = useSwipeTabFeedback<MusicTopTab>()
 
   const changeMovieFilter = useCallback(
     (next: MovieStatusFilter): void => {
@@ -448,39 +452,46 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
       <View style={{ gap: 8, marginBottom: 12 }}>
         <SearchField value={query} onChangeText={setQuery} />
         {mode === 'movies' ? (
-          <View
-            style={{
-              minHeight: 50,
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 4,
-              padding: 4,
-              borderWidth: 1,
-              borderColor: theme.border,
-              borderRadius: 16,
-              backgroundColor: theme.surface
-            }}
-          >
-            {MOVIE_STATUS_FILTERS.map((item) => {
-              const selected = filter === item.id
+          <SwipeTabBar
+            items={MOVIE_STATUS_FILTERS}
+            value={filter}
+            onChange={changeMovieFilter}
+            feedback={movieSwipeFeedback}
+            renderIcon={(item, selected) => {
               const Icon = item.icon
-
               return (
+                <Icon
+                  size={19}
+                  strokeWidth={selected ? 2.4 : 2}
+                  color={selected ? theme.accent : theme.muted}
+                />
+              )
+            }}
+            trailing={
+              <>
+                <View
+                  style={{
+                    width: 1,
+                    height: 26,
+                    marginHorizontal: 2,
+                    backgroundColor: theme.border
+                  }}
+                />
                 <Pressable
-                  key={item.id}
                   accessibilityRole="button"
-                  accessibilityLabel={item.label}
-                  accessibilityState={{ selected }}
+                  accessibilityLabel="Фильтры и сортировка"
+                  accessibilityState={{ selected: movieAdvancedFiltersActive }}
                   disabled={state.pending}
-                  onPress={() => changeMovieFilter(item.id)}
+                  onPress={movieFilters}
                   style={({ pressed }) => ({
+                    position: 'relative',
                     flex: 1,
                     minWidth: 0,
                     height: 40,
                     alignItems: 'center',
                     justifyContent: 'center',
                     borderRadius: 12,
-                    backgroundColor: selected
+                    backgroundColor: movieAdvancedFiltersActive
                       ? theme.accent + '18'
                       : pressed
                         ? theme.raised
@@ -488,173 +499,104 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
                     opacity: state.pending ? 0.45 : pressed ? 0.72 : 1
                   })}
                 >
-                  <Icon
+                  <SlidersHorizontal
                     size={19}
-                    strokeWidth={selected ? 2.4 : 2}
-                    color={selected ? theme.accent : theme.muted}
+                    strokeWidth={movieAdvancedFiltersActive ? 2.4 : 2}
+                    color={movieAdvancedFiltersActive ? theme.accent : theme.muted}
                   />
+                  {movieAdvancedFiltersActive ? (
+                    <View
+                      pointerEvents="none"
+                      style={{
+                        position: 'absolute',
+                        top: 7,
+                        right: 10,
+                        width: 6,
+                        height: 6,
+                        borderRadius: 3,
+                        backgroundColor: theme.accent
+                      }}
+                    />
+                  ) : null}
                 </Pressable>
-              )
-            })}
-
-            <View
-              style={{
-                width: 1,
-                height: 26,
-                marginHorizontal: 2,
-                backgroundColor: theme.border
-              }}
-            />
-
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Фильтры и сортировка"
-              accessibilityState={{ selected: movieAdvancedFiltersActive }}
-              disabled={state.pending}
-              onPress={movieFilters}
-              style={({ pressed }) => ({
-                position: 'relative',
-                flex: 1,
-                minWidth: 0,
-                height: 40,
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: 12,
-                backgroundColor: movieAdvancedFiltersActive
-                  ? theme.accent + '18'
-                  : pressed
-                    ? theme.raised
-                    : 'transparent',
-                opacity: state.pending ? 0.45 : pressed ? 0.72 : 1
-              })}
-            >
-              <SlidersHorizontal
-                size={19}
-                strokeWidth={movieAdvancedFiltersActive ? 2.4 : 2}
-                color={movieAdvancedFiltersActive ? theme.accent : theme.muted}
-              />
-              {movieAdvancedFiltersActive ? (
-                <View
-                  pointerEvents="none"
-                  style={{
-                    position: 'absolute',
-                    top: 7,
-                    right: 10,
-                    width: 6,
-                    height: 6,
-                    borderRadius: 3,
-                    backgroundColor: theme.accent
-                  }}
-                />
-              ) : null}
-            </Pressable>
-          </View>
+              </>
+            }
+          />
         ) : (
-          <View
-            style={{
-              minHeight: 50,
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 4,
-              padding: 4,
-              borderWidth: 1,
-              borderColor: theme.border,
-              borderRadius: 16,
-              backgroundColor: theme.surface
-            }}
-          >
-            {MUSIC_VIEW_FILTERS.map((item) => {
-              const selected =
-                musicView === item.id || (musicView === 'playlist' && item.id === 'playlists')
+          <SwipeTabBar
+            items={MUSIC_VIEW_FILTERS}
+            value={musicTopTab}
+            onChange={changeMusicTab}
+            feedback={musicSwipeFeedback}
+            renderIcon={(item, selected) => {
               const Icon = item.icon
-
               return (
+                <Icon
+                  size={19}
+                  strokeWidth={selected ? 2.4 : 2}
+                  color={selected ? theme.accent : theme.muted}
+                />
+              )
+            }}
+            trailing={
+              <>
+                <View
+                  style={{
+                    width: 1,
+                    height: 26,
+                    marginHorizontal: 2,
+                    backgroundColor: theme.border
+                  }}
+                />
                 <Pressable
-                  key={item.id}
                   accessibilityRole="button"
-                  accessibilityLabel={item.label}
-                  accessibilityState={{ selected }}
-                  disabled={state.pending}
-                  onPress={() => changeMusicTab(item.id)}
+                  accessibilityLabel="Фильтры музыки"
+                  accessibilityState={{
+                    disabled: playlistsView || Boolean(playlistId),
+                    selected: musicAdvancedFiltersActive
+                  }}
+                  disabled={state.pending || playlistsView || Boolean(playlistId)}
+                  onPress={musicFilters}
                   style={({ pressed }) => ({
+                    position: 'relative',
                     flex: 1,
                     minWidth: 0,
                     height: 40,
                     alignItems: 'center',
                     justifyContent: 'center',
                     borderRadius: 12,
-                    backgroundColor: selected
+                    backgroundColor: musicAdvancedFiltersActive
                       ? theme.accent + '18'
                       : pressed
                         ? theme.raised
                         : 'transparent',
-                    opacity: state.pending ? 0.45 : pressed ? 0.72 : 1
+                    opacity:
+                      state.pending || playlistsView || playlistId ? 0.34 : pressed ? 0.72 : 1
                   })}
                 >
-                  <Icon
+                  <SlidersHorizontal
                     size={19}
-                    strokeWidth={selected ? 2.4 : 2}
-                    color={selected ? theme.accent : theme.muted}
+                    strokeWidth={musicAdvancedFiltersActive ? 2.4 : 2}
+                    color={musicAdvancedFiltersActive ? theme.accent : theme.muted}
                   />
+                  {musicAdvancedFiltersActive ? (
+                    <View
+                      pointerEvents="none"
+                      style={{
+                        position: 'absolute',
+                        top: 7,
+                        right: 10,
+                        width: 6,
+                        height: 6,
+                        borderRadius: 3,
+                        backgroundColor: theme.accent
+                      }}
+                    />
+                  ) : null}
                 </Pressable>
-              )
-            })}
-
-            <View
-              style={{
-                width: 1,
-                height: 26,
-                marginHorizontal: 2,
-                backgroundColor: theme.border
-              }}
-            />
-
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Фильтры музыки"
-              accessibilityState={{
-                disabled: playlistsView || Boolean(playlistId),
-                selected: musicAdvancedFiltersActive
-              }}
-              disabled={state.pending || playlistsView || Boolean(playlistId)}
-              onPress={musicFilters}
-              style={({ pressed }) => ({
-                position: 'relative',
-                flex: 1,
-                minWidth: 0,
-                height: 40,
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: 12,
-                backgroundColor: musicAdvancedFiltersActive
-                  ? theme.accent + '18'
-                  : pressed
-                    ? theme.raised
-                    : 'transparent',
-                opacity: state.pending || playlistsView || playlistId ? 0.34 : pressed ? 0.72 : 1
-              })}
-            >
-              <SlidersHorizontal
-                size={19}
-                strokeWidth={musicAdvancedFiltersActive ? 2.4 : 2}
-                color={musicAdvancedFiltersActive ? theme.accent : theme.muted}
-              />
-              {musicAdvancedFiltersActive ? (
-                <View
-                  pointerEvents="none"
-                  style={{
-                    position: 'absolute',
-                    top: 7,
-                    right: 10,
-                    width: 6,
-                    height: 6,
-                    borderRadius: 3,
-                    backgroundColor: theme.accent
-                  }}
-                />
-              ) : null}
-            </Pressable>
-          </View>
+              </>
+            }
+          />
         )}
       </View>
 
@@ -667,6 +609,7 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
           tabs={MOVIE_STATUS_TAB_IDS}
           value={filter}
           onChange={changeMovieFilter}
+          onSwipeChange={showMovieSwipeFeedback}
           disabled={state.pending}
         >
           <MovieLibraryView
@@ -685,6 +628,7 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
           tabs={MUSIC_TAB_IDS}
           value={musicTopTab}
           onChange={changeMusicTab}
+          onSwipeChange={showMusicSwipeFeedback}
           disabled={state.pending || Boolean(playlistId)}
         >
           <MusicLibraryView

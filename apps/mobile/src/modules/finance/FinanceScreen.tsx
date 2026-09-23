@@ -62,6 +62,8 @@ import {
 import { useConfirmation } from '../../shared/ui/ConfirmationProvider'
 import { useTheme } from '../../shared/ui/theme'
 import { useToast } from '../../shared/ui/toast-context'
+import { SwipeTabBar } from '../../shared/ui/SwipeTabBar'
+import { useSwipeTabFeedback } from '../../shared/ui/useSwipeTabFeedback'
 
 const FINANCE_PRIVACY_SETTING_KEY = 'finance.amounts-hidden'
 
@@ -331,6 +333,7 @@ export function FinanceScreen(): React.JSX.Element {
   const { width: screenWidth } = useWindowDimensions()
   const [tabTranslateX] = useState(() => new Animated.Value(0))
   const [swipeAnimating, setSwipeAnimating] = useState(false)
+  const [swipeTabFeedback, showSwipeTabFeedback] = useSwipeTabFeedback<FinanceTab>()
   const state = useCollection(
     useCallback(() => {
       const dashboard = api.getDashboard()
@@ -433,6 +436,7 @@ export function FinanceScreen(): React.JSX.Element {
 
         setTab(nextTab)
         announceTab(nextTab)
+        showSwipeTabFeedback(nextTab)
         tabTranslateX.setValue(enterX)
 
         requestAnimationFrame(() => {
@@ -447,7 +451,15 @@ export function FinanceScreen(): React.JSX.Element {
         })
       })
     },
-    [announceTab, resetSwipePosition, swipeAnimating, tab, tabPageWidth, tabTranslateX]
+    [
+      announceTab,
+      resetSwipePosition,
+      showSwipeTabFeedback,
+      swipeAnimating,
+      tab,
+      tabPageWidth,
+      tabTranslateX
+    ]
   )
 
   const tabSwipeResponder = useMemo(() => {
@@ -549,55 +561,22 @@ export function FinanceScreen(): React.JSX.Element {
 
   const header = (
     <View style={{ gap: 10, paddingBottom: 12 }}>
-      <View
-        accessibilityRole="tablist"
-        style={{
-          minHeight: 50,
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 2,
-          padding: 4,
-          borderWidth: 1,
-          borderColor: theme.border,
-          borderRadius: 16,
-          backgroundColor: theme.surface
-        }}
-      >
-        {FINANCE_TABS.map((item) => {
-          const selected = tab === item.id
+      <SwipeTabBar
+        items={FINANCE_TABS}
+        value={tab}
+        onChange={switchTab}
+        feedback={swipeTabFeedback}
+        renderIcon={(item, selected) => {
           const Icon = item.icon
-
           return (
-            <Pressable
-              key={item.id}
-              accessibilityRole="tab"
-              accessibilityLabel={item.label}
-              accessibilityState={{ selected }}
-              onPress={() => switchTab(item.id)}
-              style={({ pressed }) => ({
-                flex: 1,
-                minWidth: 0,
-                height: 40,
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: 12,
-                backgroundColor: selected
-                  ? theme.accent + '18'
-                  : pressed
-                    ? theme.raised
-                    : 'transparent',
-                opacity: pressed ? 0.72 : 1
-              })}
-            >
-              <Icon
-                size={18}
-                strokeWidth={selected ? 2.4 : 2}
-                color={selected ? theme.accent : theme.muted}
-              />
-            </Pressable>
+            <Icon
+              size={18}
+              strokeWidth={selected ? 2.4 : 2}
+              color={selected ? theme.accent : theme.muted}
+            />
           )
-        })}
-      </View>
+        }}
+      />
       {state.error ? <ErrorState message={state.error} retry={state.refresh} /> : null}
     </View>
   )
