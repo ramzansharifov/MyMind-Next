@@ -24,7 +24,6 @@ import {
   Utensils
 } from 'lucide-react-native'
 import { ActionMenu } from '../../shared/ui/ActionMenu'
-import { useToast } from '../../shared/ui/toast-context'
 import { NutritionReportsView } from './NutritionReportsView'
 import { useTheme } from '../../shared/ui/theme'
 import { SwipeableTabContent } from '../../shared/ui/SwipeableTabContent'
@@ -656,7 +655,6 @@ function NutritionGoalCard({
 export function NutritionScreen(): React.JSX.Element {
   const { nutrition: api } = useServices()
   const theme = useTheme()
-  const toast = useToast()
   const [date, setDate] = useState(localDateKey())
   const overview = useCollection(useCallback(() => api.listOverview({ date }), [api, date]))
   const [tab, setTab] = useState<Tab>('today')
@@ -668,12 +666,8 @@ export function NutritionScreen(): React.JSX.Element {
       if (next === tab) return
       if (next === 'today') setDate(localDateKey())
       setTab(next)
-      toast.info(
-        NUTRITION_TABS.find((item) => item.id === next)?.label ?? 'Питание',
-        'nutrition-tab'
-      )
     },
-    [tab, toast]
+    [tab]
   )
 
   const data = overview.data
