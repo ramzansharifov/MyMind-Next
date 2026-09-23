@@ -84,12 +84,8 @@ export function HabitsScreen(): React.JSX.Element {
     (next: HabitView): void => {
       if (next === view) return
       setView(next)
-      toast.info(
-        VIEW_FILTERS.find((item) => item.id === next)?.label ?? 'Привычки',
-        'habits-view-filter'
-      )
     },
-    [toast, view]
+    [view]
   )
 
   const state = useCollection(
