@@ -398,9 +398,7 @@ export function SwipeTabBar<T extends string, I extends SwipeTabBarItem<T>>({
           alignItems: 'center',
           gap: 4,
           opacity: Animated.multiply(normalOpacity, searchNormalOpacity),
-          transform: [
-            { translateX: Animated.add(normalTranslateX, searchNormalTranslateX) }
-          ]
+          transform: [{ translateX: Animated.add(normalTranslateX, searchNormalTranslateX) }]
         }}
       >
         {items.map((item) => {

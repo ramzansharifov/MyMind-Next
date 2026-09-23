@@ -13,7 +13,13 @@ import { addDays, isHabitScheduledOn, localDateKey } from '@mymind/core/habits'
 import * as schema from '@mymind/core/validation/habits'
 import { useServices } from '../../app/context'
 import { useCollection } from '../../shared/hooks/useCollection'
-import { Button, EmptyState, ErrorState, IconButton, LoadingState } from '../../shared/ui/primitives'
+import {
+  Button,
+  EmptyState,
+  ErrorState,
+  IconButton,
+  LoadingState
+} from '../../shared/ui/primitives'
 import { FormSheet } from '../../shared/ui/FormSheet'
 import { AppDialog } from '../../shared/ui/AppDialog'
 import { AppDateField } from '../../shared/ui/FormControls'
@@ -291,7 +297,7 @@ export function HabitsScreen(): React.JSX.Element {
           }
         />
 
-                {view === 'all' ? (
+        {view === 'all' ? (
           <View
             style={{
               minHeight: 46,
