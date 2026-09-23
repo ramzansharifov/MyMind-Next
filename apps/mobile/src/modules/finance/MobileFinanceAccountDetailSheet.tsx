@@ -5,7 +5,7 @@ import type { FinanceRepository } from '@mymind/persistence/finance'
 import { formatMoneyMinor } from '@mymind/core/finance-money'
 
 import { AppDialog } from '../../shared/ui/AppDialog'
-import { Button, EmptyState } from '../../shared/ui/primitives'
+import { EmptyState, IconButton } from '../../shared/ui/primitives'
 import { VisualIconBadge } from '../../shared/ui/VisualPickers'
 import { useTheme } from '../../shared/ui/theme'
 import { financeOperationTone } from './finance-semantic-colors'
@@ -119,13 +119,17 @@ export function MobileFinanceAccountDetailSheet({
       presentation="sheet"
       footer={
         <>
-          <Button label="Закрыть" onPress={onClose} />
           {account.transactionCount > 0 ? (
-            <Button label="Очистить историю" icon="reset" danger onPress={onClearHistory} />
+            <IconButton
+              label="Очистить историю счёта"
+              icon="reset"
+              danger
+              onPress={onClearHistory}
+            />
           ) : (
-            <Button label="Удалить" icon="delete" danger onPress={onDelete} />
+            <IconButton label="Удалить счёт" icon="delete" danger onPress={onDelete} />
           )}
-          <Button label="Изменить" icon="edit" primary onPress={onEdit} />
+          <IconButton label="Изменить счёт" icon="edit" onPress={onEdit} />
         </>
       }
     >
