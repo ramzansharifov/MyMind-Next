@@ -439,14 +439,7 @@ export function FinanceScreen(): React.JSX.Element {
         })
       })
     },
-    [
-      resetSwipePosition,
-      showSwipeTabFeedback,
-      swipeAnimating,
-      tab,
-      tabPageWidth,
-      tabTranslateX
-    ]
+    [resetSwipePosition, showSwipeTabFeedback, swipeAnimating, tab, tabPageWidth, tabTranslateX]
   )
 
   const tabSwipeResponder = useMemo(() => {

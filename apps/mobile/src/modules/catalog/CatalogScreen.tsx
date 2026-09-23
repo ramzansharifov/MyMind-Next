@@ -125,7 +125,6 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
         setFilter('all')
         setPlaylistsView(false)
       }
-
     },
     [filter, playlistId, playlistsView]
   )
