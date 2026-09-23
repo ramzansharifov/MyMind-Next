@@ -638,13 +638,12 @@ export function PasswordsScreen(): React.JSX.Element {
   return (
     <View style={{ flex: 1, minHeight: 0 }}>
       <View style={{ gap: 10, paddingBottom: 12 }}>
-        {tab !== 'security' ? <SearchField value={query} onChangeText={setQuery} /> : null}
-
         <SwipeTabBar
           items={PASSWORD_TABS}
           value={tab}
           onChange={changeTab}
           feedback={swipeTabFeedback}
+          search={tab === 'security' ? undefined : { value: query, onChangeText: setQuery }}
           renderIcon={(item, selected) => {
             const Icon = item.icon
             return (
