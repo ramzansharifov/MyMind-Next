@@ -3,7 +3,7 @@ import { Animated, Easing, StyleSheet, Text, View } from 'react-native'
 import { BlurTargetView, BlurView } from 'expo-blur'
 
 import { AppIcon } from './icons'
-import { wrapCarouselIndex } from './mobile-create-action-gesture'
+import { MOBILE_CREATE_ACTION_STEP, wrapCarouselIndex } from './mobile-create-action-gesture'
 import {
   MobileCreateActionOverlayContext,
   type MobileCreateActionOverlayItem
@@ -13,6 +13,35 @@ import { useTheme } from './theme'
 interface MobileCreateActionOverlayState {
   items: readonly MobileCreateActionOverlayItem[]
   index: number
+}
+
+const CAROUSEL_HEIGHT = 382
+const CARD_HEIGHT = 108
+const CARD_CENTER_TOP = (CAROUSEL_HEIGHT - CARD_HEIGHT) / 2
+const HALF_STEP = MOBILE_CREATE_ACTION_STEP / 2
+
+function relativeCarouselSlot(itemIndex: number, currentIndex: number, length: number): number {
+  if (length <= 1) return 0
+
+  let slot = wrapCarouselIndex(itemIndex - currentIndex, length)
+  if (slot > length / 2) slot -= length
+  return slot
+}
+
+function slotScaleRange(slot: number): [number, number, number] {
+  if (slot === 0) return [0.95, 1, 0.95]
+  if (slot === -1) return [0.82, 0.9, 0.95]
+  if (slot === 1) return [0.95, 0.9, 0.82]
+  if (slot < -1) return [0.74, 0.8, 0.82]
+  return [0.82, 0.8, 0.74]
+}
+
+function slotOpacityRange(slot: number): [number, number, number] {
+  if (slot === 0) return [0.86, 1, 0.86]
+  if (slot === -1) return [0.22, 0.58, 0.86]
+  if (slot === 1) return [0.86, 0.58, 0.22]
+  if (slot < -1) return [0.02, 0.1, 0.22]
+  return [0.22, 0.1, 0.02]
 }
 
 export function MobileCreateActionOverlayProvider({
@@ -43,7 +72,7 @@ export function MobileCreateActionOverlayProvider({
       requestAnimationFrame(() => {
         Animated.timing(opacity, {
           toValue: 1,
-          duration: 150,
+          duration: 170,
           easing: Easing.out(Easing.cubic),
           useNativeDriver: true
         }).start()
@@ -72,15 +101,15 @@ export function MobileCreateActionOverlayProvider({
     Animated.parallel([
       Animated.timing(opacity, {
         toValue: 0,
-        duration: 120,
+        duration: 135,
         easing: Easing.in(Easing.cubic),
         useNativeDriver: true
       }),
       Animated.spring(offsetY, {
         toValue: 0,
-        damping: 24,
-        stiffness: 260,
-        mass: 0.75,
+        damping: 26,
+        stiffness: 240,
+        mass: 0.8,
         overshootClamping: true,
         useNativeDriver: true
       })
@@ -99,21 +128,15 @@ export function MobileCreateActionOverlayProvider({
   )
 
   const current = overlay?.items[overlay.index] ?? null
-  const previous =
-    overlay && overlay.items.length > 1
-      ? overlay.items[wrapCarouselIndex(overlay.index - 1, overlay.items.length)]
-      : null
-  const next =
-    overlay && overlay.items.length > 1
-      ? overlay.items[wrapCarouselIndex(overlay.index + 1, overlay.items.length)]
-      : null
-  const currentColor = current?.color ?? theme.accent
   const darkTheme = theme.background.toLowerCase() === '#0a0b0d'
 
   return (
     <MobileCreateActionOverlayContext.Provider value={controller}>
-      <View style={{ flex: 1, minHeight: 0 }}>
-        <BlurTargetView ref={blurTarget} style={{ flex: 1, minHeight: 0 }}>
+      <View style={{ flex: 1, minHeight: 0, backgroundColor: theme.background }}>
+        <BlurTargetView
+          ref={blurTarget}
+          style={{ flex: 1, minHeight: 0, backgroundColor: theme.background }}
+        >
           {children}
         </BlurTargetView>
 
@@ -126,22 +149,28 @@ export function MobileCreateActionOverlayProvider({
               StyleSheet.absoluteFill,
               {
                 zIndex: 1000,
-                opacity
+                opacity,
+                backgroundColor: darkTheme ? '#050608' : '#E8EDF3'
               }
             ]}
           >
             <BlurView
               blurTarget={blurTarget}
               blurMethod="dimezisBlurView"
-              intensity={darkTheme ? 34 : 28}
+              intensity={darkTheme ? 22 : 18}
               tint={darkTheme ? 'dark' : 'light'}
-              style={StyleSheet.absoluteFill}
+              style={[
+                StyleSheet.absoluteFill,
+                {
+                  opacity: darkTheme ? 0.68 : 0.78
+                }
+              ]}
             />
             <View
               style={[
                 StyleSheet.absoluteFill,
                 {
-                  backgroundColor: darkTheme ? '#0000008C' : '#0F172A4D'
+                  backgroundColor: darkTheme ? '#000000D1' : '#0F172A70'
                 }
               ]}
             />
@@ -151,137 +180,181 @@ export function MobileCreateActionOverlayProvider({
                 flex: 1,
                 alignItems: 'center',
                 justifyContent: 'center',
-                paddingHorizontal: 32
+                paddingHorizontal: 22
               }}
             >
-              <Animated.View
+              <View
                 style={{
                   width: '100%',
-                  alignItems: 'center',
-                  transform: [{ translateY: offsetY }]
+                  maxWidth: 360,
+                  height: CAROUSEL_HEIGHT,
+                  overflow: 'hidden'
                 }}
               >
-                {previous ? (
-                  <Text
-                    numberOfLines={1}
-                    style={{
-                      maxWidth: '88%',
-                      marginBottom: 20,
-                      color: theme.muted,
-                      fontSize: 15,
-                      lineHeight: 20,
-                      fontWeight: '600',
-                      opacity: 0.56
-                    }}
-                  >
-                    {previous.label}
-                  </Text>
-                ) : null}
+                {overlay.items.map((item, itemIndex) => {
+                  const slot = relativeCarouselSlot(itemIndex, overlay.index, overlay.items.length)
+                  if (Math.abs(slot) > 2) return null
 
-                <View
-                  style={{
-                    minWidth: 220,
-                    maxWidth: '94%',
-                    alignItems: 'center',
-                    gap: 12,
-                    paddingHorizontal: 24,
-                    paddingVertical: 20,
-                    borderWidth: 1,
-                    borderColor: currentColor + '4A',
-                    borderRadius: 24,
-                    backgroundColor: darkTheme ? '#111318F2' : theme.surface + 'F2',
-                    elevation: 14,
-                    shadowColor: '#000000',
-                    shadowOpacity: 0.28,
-                    shadowRadius: 24,
-                    shadowOffset: { width: 0, height: 12 }
-                  }}
-                >
-                  <View
-                    style={{
-                      width: 50,
-                      height: 50,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      borderWidth: 1,
-                      borderColor: currentColor + '44',
-                      borderRadius: 16,
-                      backgroundColor: currentColor + '18'
-                    }}
-                  >
-                    <AppIcon
-                      name={current.icon ?? 'add'}
-                      size={24}
-                      strokeWidth={2.35}
-                      color={currentColor}
-                    />
-                  </View>
+                  const actionColor = item.color ?? theme.accent
+                  const scaleRange = slotScaleRange(slot)
+                  const opacityRange = slotOpacityRange(slot)
+                  const translateY = offsetY.interpolate({
+                    inputRange: [-HALF_STEP, HALF_STEP],
+                    outputRange: [
+                      slot * MOBILE_CREATE_ACTION_STEP - HALF_STEP,
+                      slot * MOBILE_CREATE_ACTION_STEP + HALF_STEP
+                    ],
+                    extrapolate: 'clamp'
+                  })
+                  const scale = offsetY.interpolate({
+                    inputRange: [-HALF_STEP, 0, HALF_STEP],
+                    outputRange: scaleRange,
+                    extrapolate: 'clamp'
+                  })
+                  const cardOpacity = offsetY.interpolate({
+                    inputRange: [-HALF_STEP, 0, HALF_STEP],
+                    outputRange: opacityRange,
+                    extrapolate: 'clamp'
+                  })
+                  const active = slot === 0
 
-                  <Text
-                    numberOfLines={2}
-                    style={{
-                      color: theme.text,
-                      fontSize: 25,
-                      lineHeight: 31,
-                      fontWeight: '700',
-                      textAlign: 'center',
-                      letterSpacing: -0.55
-                    }}
-                  >
-                    {current.label}
-                  </Text>
-
-                  {current.description ? (
-                    <Text
-                      numberOfLines={2}
+                  return (
+                    <Animated.View
+                      key={item.key}
                       style={{
-                        maxWidth: 280,
-                        color: theme.muted,
-                        fontSize: 12.5,
-                        lineHeight: 18,
-                        fontWeight: '500',
-                        textAlign: 'center'
+                        position: 'absolute',
+                        top: CARD_CENTER_TOP,
+                        right: 0,
+                        left: 0,
+                        height: CARD_HEIGHT,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        opacity: cardOpacity,
+                        transform: [{ translateY }, { scale }]
                       }}
                     >
-                      {current.description}
-                    </Text>
-                  ) : null}
-                </View>
+                      <View
+                        style={{
+                          width: '88%',
+                          maxWidth: 310,
+                          height: CARD_HEIGHT,
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          gap: 14,
+                          paddingHorizontal: 16,
+                          paddingVertical: 14,
+                          borderWidth: 1,
+                          borderColor: active
+                            ? actionColor + '78'
+                            : actionColor + (darkTheme ? '2E' : '38'),
+                          borderRadius: 22,
+                          backgroundColor: darkTheme
+                            ? active
+                              ? '#111318FA'
+                              : '#111318F2'
+                            : active
+                              ? '#FFFFFFFA'
+                              : '#F8FAFCF2',
+                          elevation: active ? 16 : 5,
+                          shadowColor: '#000000',
+                          shadowOpacity: active ? 0.34 : 0.16,
+                          shadowRadius: active ? 22 : 10,
+                          shadowOffset: { width: 0, height: active ? 12 : 5 }
+                        }}
+                      >
+                        <View
+                          style={{
+                            width: 48,
+                            height: 48,
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            borderWidth: 1,
+                            borderColor: actionColor + (active ? '5C' : '36'),
+                            borderRadius: 15,
+                            backgroundColor: actionColor + (active ? '1D' : '12')
+                          }}
+                        >
+                          <AppIcon
+                            name={item.icon ?? 'add'}
+                            size={active ? 23 : 21}
+                            strokeWidth={2.3}
+                            color={actionColor}
+                          />
+                        </View>
 
-                {next ? (
-                  <Text
-                    numberOfLines={1}
-                    style={{
-                      maxWidth: '88%',
-                      marginTop: 20,
-                      color: theme.muted,
-                      fontSize: 15,
-                      lineHeight: 20,
-                      fontWeight: '600',
-                      opacity: 0.56
-                    }}
-                  >
-                    {next.label}
-                  </Text>
-                ) : null}
-              </Animated.View>
+                        <View style={{ flex: 1, minWidth: 0 }}>
+                          <Text
+                            numberOfLines={1}
+                            style={{
+                              color: theme.text,
+                              fontSize: active ? 20 : 17,
+                              lineHeight: active ? 25 : 22,
+                              fontWeight: '700',
+                              letterSpacing: active ? -0.3 : -0.15
+                            }}
+                          >
+                            {item.label}
+                          </Text>
+                          {item.description ? (
+                            <Text
+                              numberOfLines={1}
+                              style={{
+                                marginTop: 5,
+                                color: theme.muted,
+                                fontSize: active ? 12 : 11.5,
+                                lineHeight: 16,
+                                fontWeight: '500'
+                              }}
+                            >
+                              {item.description}
+                            </Text>
+                          ) : null}
+                        </View>
 
-              {overlay.items.length > 1 ? (
+                        {active ? (
+                          <View
+                            style={{
+                              width: 28,
+                              height: 28,
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              borderRadius: 9,
+                              backgroundColor: actionColor + '12'
+                            }}
+                          >
+                            <AppIcon name="check" size={15} color={actionColor} />
+                          </View>
+                        ) : null}
+                      </View>
+                    </Animated.View>
+                  )
+                })}
+              </View>
+
+              <View
+                style={{
+                  marginTop: 14,
+                  minHeight: 38,
+                  paddingHorizontal: 14,
+                  paddingVertical: 8,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: 14,
+                  backgroundColor: darkTheme ? '#111318B8' : '#FFFFFFC9'
+                }}
+              >
                 <Text
                   style={{
-                    position: 'absolute',
-                    bottom: 38,
-                    color: theme.muted,
+                    color: darkTheme ? '#D5D8DE' : theme.text,
                     fontSize: 11.5,
                     lineHeight: 17,
                     fontWeight: '600',
-                    textAlign: 'center',
-                    opacity: 0.82
+                    textAlign: 'center'
                   }}
                 >
                   Проведите вверх или вниз · отпустите, чтобы выбрать
                 </Text>
-              ) : null}
+              </View>
             </View>
           </Animated.View>
         ) : null}
