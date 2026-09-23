@@ -21,7 +21,6 @@ import { FormSheet } from '../../shared/ui/FormSheet'
 import { MobileCreateAction } from '../../shared/ui/MobileCreateAction'
 import { choiceField, messageFor, textField, type FormSpec } from '../../shared/ui/form-model'
 import { useTheme } from '../../shared/ui/theme'
-import { useToast } from '../../shared/ui/toast-context'
 import { SwipeableTabContent } from '../../shared/ui/SwipeableTabContent'
 import { SwipeTabBar } from '../../shared/ui/SwipeTabBar'
 import { useSwipeTabFeedback } from '../../shared/ui/useSwipeTabFeedback'
@@ -70,7 +69,6 @@ const MUSIC_VIEW_FILTERS: ReadonlyArray<{
 export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX.Element {
   const services = useServices()
   const theme = useTheme()
-  const toast = useToast()
   const state = useCollection(
     useCallback(() => {
       if (mode === 'movies') {
@@ -104,12 +102,8 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
     (next: MovieStatusFilter): void => {
       if (next === filter) return
       setFilter(next)
-      toast.info(
-        MOVIE_STATUS_FILTERS.find((item) => item.id === next)?.label ?? 'Фильмы',
-        'movies-status-filter'
-      )
     },
-    [filter, toast]
+    [filter]
   )
 
   const changeMusicTab = useCallback(
@@ -132,12 +126,8 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
         setPlaylistsView(false)
       }
 
-      toast.info(
-        MUSIC_VIEW_FILTERS.find((item) => item.id === next)?.label ?? 'Музыка',
-        'music-view-filter'
-      )
     },
-    [filter, playlistId, playlistsView, toast]
+    [filter, playlistId, playlistsView]
   )
 
   const editMovie = (item?: MovieRecord): void =>
