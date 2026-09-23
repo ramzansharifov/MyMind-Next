@@ -50,6 +50,7 @@ import {
 } from '../../shared/ui/primitives'
 import { useTheme } from '../../shared/ui/theme'
 import { SwipeableTabContent } from '../../shared/ui/SwipeableTabContent'
+import { SwipeTabBar, useSwipeTabFeedback } from '../../shared/ui/SwipeTabBar'
 import { ChangeMasterPasswordModal } from './ChangeMasterPasswordModal'
 import { PasswordGeneratorModal } from './PasswordGeneratorModal'
 import { PasswordItemEditor } from './PasswordItemEditor'
@@ -268,6 +269,7 @@ export function PasswordsScreen(): React.JSX.Element {
   const [groupsOpen, setGroupsOpen] = useState(false)
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [toolsOpen, setToolsOpen] = useState(false)
+  const [swipeTabFeedback, showSwipeTabFeedback] = useSwipeTabFeedback<Tab>()
 
   const changeTab = useCallback(
     (next: Tab): void => {
@@ -638,38 +640,46 @@ export function PasswordsScreen(): React.JSX.Element {
       <View style={{ gap: 10, paddingBottom: 12 }}>
         {tab !== 'security' ? <SearchField value={query} onChangeText={setQuery} /> : null}
 
-        <View
-          style={{
-            minHeight: 50,
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 4,
-            padding: 4,
-            borderWidth: 1,
-            borderColor: theme.border,
-            borderRadius: 16,
-            backgroundColor: theme.surface
-          }}
-        >
-          {PASSWORD_TABS.map((item) => {
-            const selected = tab === item.id
+        <SwipeTabBar
+          items={PASSWORD_TABS}
+          value={tab}
+          onChange={changeTab}
+          feedback={swipeTabFeedback}
+          renderIcon={(item, selected) => {
             const Icon = item.icon
-
             return (
+              <Icon
+                size={19}
+                strokeWidth={selected ? 2.4 : 2}
+                color={selected ? theme.accent : theme.muted}
+              />
+            )
+          }}
+          trailing={
+            <>
+              <View
+                style={{
+                  width: 1,
+                  height: 26,
+                  marginHorizontal: 2,
+                  backgroundColor: theme.border
+                }}
+              />
+
               <Pressable
-                key={item.id}
                 accessibilityRole="button"
-                accessibilityLabel={item.label}
-                accessibilityState={{ selected }}
-                onPress={() => changeTab(item.id)}
+                accessibilityLabel={`Фильтры. Группа: ${activeGroupLabel}`}
+                accessibilityState={{ selected: filtersActive }}
+                onPress={() => setFiltersOpen(true)}
                 style={({ pressed }) => ({
+                  position: 'relative',
                   flex: 1,
                   minWidth: 0,
                   height: 40,
                   alignItems: 'center',
                   justifyContent: 'center',
                   borderRadius: 12,
-                  backgroundColor: selected
+                  backgroundColor: filtersActive
                     ? theme.accent + '18'
                     : pressed
                       ? theme.raised
@@ -677,84 +687,47 @@ export function PasswordsScreen(): React.JSX.Element {
                   opacity: pressed ? 0.72 : 1
                 })}
               >
-                <Icon
+                <SlidersHorizontal
                   size={19}
-                  strokeWidth={selected ? 2.4 : 2}
-                  color={selected ? theme.accent : theme.muted}
+                  strokeWidth={filtersActive ? 2.4 : 2}
+                  color={filtersActive ? theme.accent : theme.muted}
                 />
+                {filtersActive ? (
+                  <View
+                    pointerEvents="none"
+                    style={{
+                      position: 'absolute',
+                      top: 7,
+                      right: 10,
+                      width: 6,
+                      height: 6,
+                      borderRadius: 3,
+                      backgroundColor: theme.accent
+                    }}
+                  />
+                ) : null}
               </Pressable>
-            )
-          })}
 
-          <View
-            style={{
-              width: 1,
-              height: 26,
-              marginHorizontal: 2,
-              backgroundColor: theme.border
-            }}
-          />
-
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`Фильтры. Группа: ${activeGroupLabel}`}
-            accessibilityState={{ selected: filtersActive }}
-            onPress={() => setFiltersOpen(true)}
-            style={({ pressed }) => ({
-              position: 'relative',
-              flex: 1,
-              minWidth: 0,
-              height: 40,
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRadius: 12,
-              backgroundColor: filtersActive
-                ? theme.accent + '18'
-                : pressed
-                  ? theme.raised
-                  : 'transparent',
-              opacity: pressed ? 0.72 : 1
-            })}
-          >
-            <SlidersHorizontal
-              size={19}
-              strokeWidth={filtersActive ? 2.4 : 2}
-              color={filtersActive ? theme.accent : theme.muted}
-            />
-            {filtersActive ? (
-              <View
-                pointerEvents="none"
-                style={{
-                  position: 'absolute',
-                  top: 7,
-                  right: 10,
-                  width: 6,
-                  height: 6,
-                  borderRadius: 3,
-                  backgroundColor: theme.accent
-                }}
-              />
-            ) : null}
-          </Pressable>
-
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Действия хранилища"
-            onPress={() => setToolsOpen(true)}
-            style={({ pressed }) => ({
-              flex: 1,
-              minWidth: 0,
-              height: 40,
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRadius: 12,
-              backgroundColor: pressed ? theme.raised : 'transparent',
-              opacity: pressed ? 0.72 : 1
-            })}
-          >
-            <MoreHorizontal size={19} color={theme.muted} />
-          </Pressable>
-        </View>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Действия хранилища"
+                onPress={() => setToolsOpen(true)}
+                style={({ pressed }) => ({
+                  flex: 1,
+                  minWidth: 0,
+                  height: 40,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: 12,
+                  backgroundColor: pressed ? theme.raised : 'transparent',
+                  opacity: pressed ? 0.72 : 1
+                })}
+              >
+                <MoreHorizontal size={19} color={theme.muted} />
+              </Pressable>
+            </>
+          }
+        />
 
         {error ? <ErrorState message={error} retry={refresh} /> : null}
       </View>
@@ -763,6 +736,7 @@ export function PasswordsScreen(): React.JSX.Element {
         tabs={PASSWORD_TAB_IDS}
         value={tab}
         onChange={changeTab}
+        onSwipeChange={showSwipeTabFeedback}
         disabled={loading}
       >
         {content}
