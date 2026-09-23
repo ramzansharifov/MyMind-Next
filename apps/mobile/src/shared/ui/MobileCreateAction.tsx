@@ -41,12 +41,14 @@ export function MobileCreateAction({
   actions,
   disabled = false,
   label = 'Создать',
-  iconOnly = false
+  iconOnly = false,
+  confirmHoldSelection = false
 }: {
   actions: readonly MobileCreateActionItem[]
   disabled?: boolean
   label?: string
   iconOnly?: boolean
+  confirmHoldSelection?: boolean
 }): React.JSX.Element | null {
   const theme = useTheme()
   const overlay = useMobileCreateActionOverlay()
@@ -135,7 +137,23 @@ export function MobileCreateAction({
       holdActiveRef.current = false
 
       const action = enabledActions[selectedIndexRef.current]
-      if (action?.onHoldSelect) {
+      if (confirmHoldSelection) {
+        overlay.awaitConfirmation('Дальше', (key) => {
+          const confirmedAction = enabledActions.find((item) => item.key === key)
+          if (!confirmedAction) {
+            overlay.hide()
+            return
+          }
+
+          if (confirmedAction.onHoldSelect) {
+            overlay.handoff()
+            setTimeout(() => confirmedAction.onHoldSelect?.(), 155)
+          } else {
+            overlay.hide()
+            setTimeout(() => perform(confirmedAction), 90)
+          }
+        })
+      } else if (action?.onHoldSelect) {
         overlay.handoff()
         setTimeout(() => action.onHoldSelect?.(), 155)
       } else {
@@ -150,7 +168,7 @@ export function MobileCreateAction({
       currentYRef.current - startYRef.current
     )
     if (moved <= TAP_MOVE_TOLERANCE) launchDefaultAction()
-  }, [clearHoldTimer, enabledActions, launchDefaultAction, overlay, perform])
+  }, [clearHoldTimer, confirmHoldSelection, enabledActions, launchDefaultAction, overlay, perform])
 
   const cancelGesture = useCallback((): void => {
     touchActiveRef.current = false
@@ -181,7 +199,9 @@ export function MobileCreateAction({
           accessibilityLabel={actions.length === 1 ? actions[0].label : label}
           accessibilityHint={
             enabledActions.length
-              ? 'Удерживайте и проведите вверх или вниз для быстрого выбора действия'
+              ? confirmHoldSelection
+                ? 'Удерживайте и проведите вверх или вниз, затем подтвердите выбор кнопкой Дальше'
+                : 'Удерживайте и проведите вверх или вниз для быстрого выбора действия'
               : undefined
           }
           accessibilityState={{

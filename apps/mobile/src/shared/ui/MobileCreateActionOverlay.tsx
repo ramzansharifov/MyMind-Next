@@ -1,9 +1,21 @@
 import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react'
-import { Animated, Easing, StyleSheet, Text, View } from 'react-native'
+import {
+  Animated,
+  Easing,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  type GestureResponderEvent
+} from 'react-native'
 import { BlurTargetView, BlurView } from 'expo-blur'
 
 import { AppIcon } from './icons'
-import { MOBILE_CREATE_ACTION_STEP, wrapCarouselIndex } from './mobile-create-action-gesture'
+import {
+  MOBILE_CREATE_ACTION_STEP,
+  mobileCreateActionSelection,
+  wrapCarouselIndex
+} from './mobile-create-action-gesture'
 import {
   MobileCreateActionOverlayContext,
   type MobileCreateActionOverlayItem
@@ -13,6 +25,11 @@ import { useTheme } from './theme'
 interface MobileCreateActionOverlayState {
   items: readonly MobileCreateActionOverlayItem[]
   index: number
+}
+
+interface MobileCreateActionConfirmation {
+  label: string
+  onConfirm(key: string): void
 }
 
 const CAROUSEL_HEIGHT = 382
@@ -52,17 +69,21 @@ export function MobileCreateActionOverlayProvider({
   const theme = useTheme()
   const blurTarget = useRef<View | null>(null)
   const [overlay, setOverlay] = useState<MobileCreateActionOverlayState | null>(null)
+  const [confirmation, setConfirmation] = useState<MobileCreateActionConfirmation | null>(null)
   const [opacity] = useState(() => new Animated.Value(0))
   const [offsetY] = useState(() => new Animated.Value(0))
   const [contentOpacity] = useState(() => new Animated.Value(1))
   const [contentTranslateY] = useState(() => new Animated.Value(0))
   const generationRef = useRef(0)
+  const gestureStartYRef = useRef(0)
+  const gestureBaseIndexRef = useRef(0)
 
   const show = useCallback(
     (items: readonly MobileCreateActionOverlayItem[], index: number): void => {
       if (!items.length) return
 
       generationRef.current += 1
+      setConfirmation(null)
       opacity.stopAnimation()
       offsetY.stopAnimation()
       contentOpacity.stopAnimation()
@@ -84,7 +105,7 @@ export function MobileCreateActionOverlayProvider({
         }).start()
       })
     },
-    [offsetY, opacity]
+    [contentOpacity, contentTranslateY, offsetY, opacity]
   )
 
   const update = useCallback(
@@ -101,7 +122,24 @@ export function MobileCreateActionOverlayProvider({
     [offsetY]
   )
 
+  const awaitConfirmation = useCallback(
+    (label: string, onConfirm: (key: string) => void): void => {
+      offsetY.stopAnimation()
+      Animated.spring(offsetY, {
+        toValue: 0,
+        damping: 25,
+        stiffness: 250,
+        mass: 0.75,
+        overshootClamping: true,
+        useNativeDriver: true
+      }).start()
+      setConfirmation({ label, onConfirm })
+    },
+    [offsetY]
+  )
+
   const handoff = useCallback((): void => {
+    setConfirmation(null)
     contentOpacity.stopAnimation()
     contentTranslateY.stopAnimation()
     Animated.parallel([
@@ -122,6 +160,7 @@ export function MobileCreateActionOverlayProvider({
 
   const hide = useCallback((): void => {
     const generation = generationRef.current
+    setConfirmation(null)
     offsetY.stopAnimation()
     Animated.parallel([
       Animated.timing(opacity, {
@@ -147,14 +186,27 @@ export function MobileCreateActionOverlayProvider({
     () => ({
       show,
       update,
+      awaitConfirmation,
       handoff,
       hide
     }),
-    [handoff, hide, show, update]
+    [awaitConfirmation, handoff, hide, show, update]
   )
 
   const current = overlay?.items[overlay.index] ?? null
   const darkTheme = theme.background.toLowerCase() === '#0a0b0d'
+
+  const settleInteractiveCarousel = (): void => {
+    offsetY.stopAnimation()
+    Animated.spring(offsetY, {
+      toValue: 0,
+      damping: 25,
+      stiffness: 250,
+      mass: 0.75,
+      overshootClamping: true,
+      useNativeDriver: true
+    }).start()
+  }
 
   return (
     <MobileCreateActionOverlayContext.Provider value={controller}>
@@ -168,9 +220,9 @@ export function MobileCreateActionOverlayProvider({
 
         {overlay && current ? (
           <Animated.View
-            pointerEvents="none"
-            accessibilityElementsHidden
-            importantForAccessibility="no-hide-descendants"
+            pointerEvents={confirmation ? 'box-none' : 'none'}
+            accessibilityElementsHidden={!confirmation}
+            importantForAccessibility={confirmation ? 'yes' : 'no-hide-descendants'}
             style={[
               StyleSheet.absoluteFill,
               {
@@ -181,6 +233,7 @@ export function MobileCreateActionOverlayProvider({
             ]}
           >
             <BlurView
+              pointerEvents="none"
               blurTarget={blurTarget}
               blurMethod="dimezisBlurView"
               intensity={darkTheme ? 12 : 18}
@@ -193,6 +246,7 @@ export function MobileCreateActionOverlayProvider({
               ]}
             />
             <View
+              pointerEvents="none"
               style={[
                 StyleSheet.absoluteFill,
                 {
@@ -202,6 +256,7 @@ export function MobileCreateActionOverlayProvider({
             />
 
             <Animated.View
+              pointerEvents={confirmation ? 'box-none' : 'none'}
               style={{
                 flex: 1,
                 alignItems: 'center',
@@ -212,6 +267,7 @@ export function MobileCreateActionOverlayProvider({
               }}
             >
               <View
+                pointerEvents="none"
                 style={{
                   position: 'absolute',
                   top: 18,
@@ -236,10 +292,40 @@ export function MobileCreateActionOverlayProvider({
                     textAlign: 'center'
                   }}
                 >
-                  Проведите вверх или вниз · отпустите, чтобы выбрать
+                  {confirmation
+                    ? 'Проведите вверх или вниз · затем нажмите «Дальше»'
+                    : 'Проведите вверх или вниз · выберите действие'}
                 </Text>
               </View>
+
               <View
+                onStartShouldSetResponder={() => Boolean(confirmation)}
+                onMoveShouldSetResponder={() => Boolean(confirmation)}
+                onResponderGrant={(event: GestureResponderEvent) => {
+                  if (!confirmation || !overlay.items.length) return
+                  gestureStartYRef.current = event.nativeEvent.pageY
+                  gestureBaseIndexRef.current = overlay.index
+                  offsetY.stopAnimation()
+                  offsetY.setValue(0)
+                }}
+                onResponderMove={(event: GestureResponderEvent) => {
+                  if (!confirmation || !overlay.items.length) return
+                  const selection = mobileCreateActionSelection(
+                    event.nativeEvent.pageY - gestureStartYRef.current,
+                    overlay.items.length,
+                    gestureBaseIndexRef.current,
+                    MOBILE_CREATE_ACTION_STEP
+                  )
+                  offsetY.setValue(selection.offsetY)
+                  setOverlay((state) =>
+                    state && state.index !== selection.index
+                      ? { ...state, index: selection.index }
+                      : state
+                  )
+                }}
+                onResponderRelease={settleInteractiveCarousel}
+                onResponderTerminationRequest={() => false}
+                onResponderTerminate={settleInteractiveCarousel}
                 style={{
                   width: '100%',
                   maxWidth: 360,
@@ -277,6 +363,7 @@ export function MobileCreateActionOverlayProvider({
                   return (
                     <Animated.View
                       key={item.key}
+                      pointerEvents="none"
                       style={{
                         position: 'absolute',
                         top: CARD_CENTER_TOP,
@@ -387,6 +474,69 @@ export function MobileCreateActionOverlayProvider({
                 })}
               </View>
             </Animated.View>
+
+            {confirmation ? (
+              <>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Закрыть выбор действия"
+                  onPress={hide}
+                  style={({ pressed }) => ({
+                    position: 'absolute',
+                    top: 18,
+                    right: 18,
+                    width: 38,
+                    height: 38,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderRadius: 12,
+                    backgroundColor: darkTheme ? '#111318E8' : '#FFFFFFE8',
+                    opacity: pressed ? 0.72 : 1
+                  })}
+                >
+                  <AppIcon name="close" size={18} color={theme.muted} />
+                </Pressable>
+
+                <View
+                  pointerEvents="box-none"
+                  style={{
+                    position: 'absolute',
+                    right: 0,
+                    bottom: 18,
+                    left: 0,
+                    alignItems: 'center'
+                  }}
+                >
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={confirmation.label}
+                    onPress={() => {
+                      const selected = overlay.items[overlay.index]
+                      if (!selected) return
+                      const callback = confirmation.onConfirm
+                      setConfirmation(null)
+                      callback(selected.key)
+                    }}
+                    style={({ pressed }) => ({
+                      minWidth: 170,
+                      minHeight: 48,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      paddingHorizontal: 24,
+                      borderRadius: 15,
+                      borderWidth: 1,
+                      borderColor: (current.color ?? theme.accent) + '55',
+                      backgroundColor: current.color ?? theme.accent,
+                      opacity: pressed ? 0.8 : 1
+                    })}
+                  >
+                    <Text style={{ color: '#ffffff', fontSize: 14, fontWeight: '700' }}>
+                      {confirmation.label}
+                    </Text>
+                  </Pressable>
+                </View>
+              </>
+            ) : null}
           </Animated.View>
         ) : null}
       </View>
