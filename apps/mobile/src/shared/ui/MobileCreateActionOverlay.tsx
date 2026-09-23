@@ -122,7 +122,7 @@ export function MobileCreateActionOverlayProvider({
             accessibilityElementsHidden
             importantForAccessibility="no-hide-descendants"
             style={[
-              StyleSheet.absoluteFillObject,
+              StyleSheet.absoluteFill,
               {
                 zIndex: 1000,
                 opacity
@@ -134,11 +134,11 @@ export function MobileCreateActionOverlayProvider({
               blurMethod="dimezisBlurView"
               intensity={58}
               tint="default"
-              style={StyleSheet.absoluteFillObject}
+              style={StyleSheet.absoluteFill}
             />
             <View
               style={[
-                StyleSheet.absoluteFillObject,
+                StyleSheet.absoluteFill,
                 {
                   backgroundColor: theme.background + '72'
                 }
