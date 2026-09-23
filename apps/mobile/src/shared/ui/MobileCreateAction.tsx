@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { Pressable, Text, View, type GestureResponderEvent } from 'react-native'
 
 import { AppDialog } from './AppDialog'
@@ -33,6 +33,9 @@ function runWhenIdle(callback: () => void): void {
   setTimeout(callback, 0)
 }
 
+const HOLD_DELAY_MS = 380
+const TAP_MOVE_TOLERANCE = 18
+
 export function MobileCreateAction({
   actions,
   disabled = false,
@@ -47,9 +50,14 @@ export function MobileCreateAction({
   const theme = useTheme()
   const overlay = useMobileCreateActionOverlay()
   const [open, setOpen] = useState(false)
+  const [pressed, setPressed] = useState(false)
+
   const holdTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const touchActiveRef = useRef(false)
   const holdActiveRef = useRef(false)
-  const suppressPressRef = useRef(false)
+  const startXRef = useRef(0)
+  const startYRef = useRef(0)
+  const currentXRef = useRef(0)
   const currentYRef = useRef(0)
   const anchorYRef = useRef(0)
   const selectedIndexRef = useRef(0)
@@ -59,18 +67,21 @@ export function MobileCreateAction({
     [actions, disabled]
   )
 
-  if (!actions.length) return null
+  const triggerDisabled = disabled || enabledActions.length === 0
 
-  const clearHoldTimer = (): void => {
+  const clearHoldTimer = useCallback((): void => {
     if (!holdTimerRef.current) return
     clearTimeout(holdTimerRef.current)
     holdTimerRef.current = null
-  }
+  }, [])
 
-  const perform = (action: MobileCreateActionItem): void => {
-    if (disabled || action.disabled) return
-    runWhenIdle(() => action.onPress())
-  }
+  const perform = useCallback(
+    (action: MobileCreateActionItem): void => {
+      if (disabled || action.disabled) return
+      runWhenIdle(() => action.onPress())
+    },
+    [disabled]
+  )
 
   const launch = (action: MobileCreateActionItem): void => {
     if (disabled || action.disabled) return
@@ -78,64 +89,77 @@ export function MobileCreateAction({
     perform(action)
   }
 
-  const startHold = (event: GestureResponderEvent): void => {
-    if (!overlay || !enabledActions.length) return
+  const launchDefaultAction = useCallback((): void => {
+    if (triggerDisabled) return
+    if (actions.length === 1) perform(actions[0])
+    else setOpen(true)
+  }, [actions, perform, triggerDisabled])
 
+  const beginHoldTimer = useCallback((): void => {
     clearHoldTimer()
-    suppressPressRef.current = false
-    holdActiveRef.current = false
-    selectedIndexRef.current = 0
-    currentYRef.current = event.nativeEvent.pageY
-    anchorYRef.current = event.nativeEvent.pageY
-
     holdTimerRef.current = setTimeout(() => {
       holdTimerRef.current = null
+      if (!touchActiveRef.current || !overlay || !enabledActions.length) return
+
       holdActiveRef.current = true
       selectedIndexRef.current = 0
       anchorYRef.current = currentYRef.current
       overlay.show(enabledActions, 0)
-    }, 380)
-  }
+    }, HOLD_DELAY_MS)
+  }, [clearHoldTimer, enabledActions, overlay])
 
-  const moveHold = (event: GestureResponderEvent): void => {
-    const touch = event.nativeEvent.touches[0]
-    currentYRef.current = touch?.pageY ?? event.nativeEvent.pageY
-    if (!holdActiveRef.current || !overlay || !enabledActions.length) return
+  const updateCarousel = useCallback(
+    (moveY: number): void => {
+      currentYRef.current = moveY
+      if (!holdActiveRef.current || !overlay || !enabledActions.length) return
 
-    const selection = mobileCreateActionSelection(
-      currentYRef.current - anchorYRef.current,
-      enabledActions.length,
-      0,
-      MOBILE_CREATE_ACTION_STEP
-    )
-    selectedIndexRef.current = selection.index
-    overlay.update(selection.index, selection.offsetY)
-  }
+      const selection = mobileCreateActionSelection(
+        currentYRef.current - anchorYRef.current,
+        enabledActions.length,
+        0,
+        MOBILE_CREATE_ACTION_STEP
+      )
+      selectedIndexRef.current = selection.index
+      overlay.update(selection.index, selection.offsetY)
+    },
+    [enabledActions, overlay]
+  )
 
-  const finishHold = (): void => {
+  const finishGesture = useCallback((): void => {
+    touchActiveRef.current = false
+    setPressed(false)
     clearHoldTimer()
-    if (!holdActiveRef.current || !overlay || !enabledActions.length) return
 
-    holdActiveRef.current = false
-    suppressPressRef.current = true
+    if (holdActiveRef.current && overlay && enabledActions.length) {
+      holdActiveRef.current = false
 
-    const action = enabledActions[selectedIndexRef.current]
-    overlay.hide()
+      const action = enabledActions[selectedIndexRef.current]
+      overlay.hide()
 
-    if (action) {
-      setTimeout(() => perform(action), 90)
+      if (action) {
+        setTimeout(() => perform(action), 90)
+      }
+      return
     }
-  }
 
-  const cancelHold = (): void => {
+    const moved = Math.hypot(
+      currentXRef.current - startXRef.current,
+      currentYRef.current - startYRef.current
+    )
+    if (moved <= TAP_MOVE_TOLERANCE) launchDefaultAction()
+  }, [clearHoldTimer, enabledActions, launchDefaultAction, overlay, perform])
+
+  const cancelGesture = useCallback((): void => {
+    touchActiveRef.current = false
+    setPressed(false)
     clearHoldTimer()
+
     if (!holdActiveRef.current || !overlay) return
     holdActiveRef.current = false
-    suppressPressRef.current = true
     overlay.hide()
-  }
+  }, [clearHoldTimer, overlay])
 
-  const triggerDisabled = disabled || enabledActions.length === 0
+  if (!actions.length) return null
 
   return (
     <>
@@ -148,7 +172,8 @@ export function MobileCreateAction({
           zIndex: 30
         }}
       >
-        <Pressable
+        <View
+          accessible
           accessibilityRole="button"
           accessibilityLabel={actions.length === 1 ? actions[0].label : label}
           accessibilityHint={
@@ -160,20 +185,36 @@ export function MobileCreateAction({
             disabled: triggerDisabled,
             expanded: actions.length > 1 ? open : undefined
           }}
-          disabled={triggerDisabled}
-          onPressIn={startHold}
-          onTouchMove={moveHold}
-          onPressOut={finishHold}
-          onResponderTerminate={cancelHold}
-          onPress={() => {
-            if (suppressPressRef.current) {
-              suppressPressRef.current = false
-              return
-            }
-            if (actions.length === 1) perform(actions[0])
-            else setOpen(true)
+          onAccessibilityTap={launchDefaultAction}
+          onStartShouldSetResponder={() => !triggerDisabled}
+          onStartShouldSetResponderCapture={() => !triggerDisabled}
+          onMoveShouldSetResponder={() => !triggerDisabled}
+          onMoveShouldSetResponderCapture={() => !triggerDisabled}
+          onResponderGrant={(event: GestureResponderEvent) => {
+            touchActiveRef.current = true
+            holdActiveRef.current = false
+            selectedIndexRef.current = 0
+            setPressed(true)
+
+            startXRef.current = event.nativeEvent.pageX
+            startYRef.current = event.nativeEvent.pageY
+            currentXRef.current = event.nativeEvent.pageX
+            currentYRef.current = event.nativeEvent.pageY
+            anchorYRef.current = event.nativeEvent.pageY
+            beginHoldTimer()
           }}
-          style={({ pressed }) => ({
+          onResponderMove={(event: GestureResponderEvent) => {
+            currentXRef.current = event.nativeEvent.pageX
+            updateCarousel(event.nativeEvent.pageY)
+          }}
+          onResponderRelease={(event: GestureResponderEvent) => {
+            currentXRef.current = event.nativeEvent.pageX
+            currentYRef.current = event.nativeEvent.pageY
+            finishGesture()
+          }}
+          onResponderTerminationRequest={() => false}
+          onResponderTerminate={cancelGesture}
+          style={{
             width: iconOnly ? 52 : undefined,
             height: iconOnly ? 52 : undefined,
             minHeight: iconOnly ? 52 : 44,
@@ -192,7 +233,7 @@ export function MobileCreateAction({
             shadowOpacity: 0.24,
             shadowRadius: 12,
             shadowOffset: { width: 0, height: 7 }
-          })}
+          }}
         >
           <AppIcon
             name="add"
@@ -205,7 +246,7 @@ export function MobileCreateAction({
               {actions.length === 1 ? actions[0].label : label}
             </Text>
           ) : null}
-        </Pressable>
+        </View>
       </View>
 
       {actions.length > 1 ? (
@@ -228,7 +269,7 @@ export function MobileCreateAction({
                   accessibilityState={{ disabled: disabled || action.disabled }}
                   disabled={disabled || action.disabled}
                   onPress={() => launch(action)}
-                  style={({ pressed }) => ({
+                  style={({ pressed: actionPressed }) => ({
                     minHeight: 52,
                     flexDirection: 'row',
                     alignItems: 'center',
@@ -238,8 +279,8 @@ export function MobileCreateAction({
                     borderWidth: 1,
                     borderColor: theme.border,
                     borderRadius: 12,
-                    backgroundColor: pressed ? theme.raised : theme.surface,
-                    opacity: disabled || action.disabled ? 0.42 : pressed ? 0.78 : 1
+                    backgroundColor: actionPressed ? theme.raised : theme.surface,
+                    opacity: disabled || action.disabled ? 0.42 : actionPressed ? 0.78 : 1
                   })}
                 >
                   <View

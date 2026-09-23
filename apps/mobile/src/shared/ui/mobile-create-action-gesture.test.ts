@@ -26,6 +26,17 @@ describe('mobile create action carousel', () => {
     })
   })
 
+  it('keeps wrapping while the finger continues through multiple carousel turns', () => {
+    expect(mobileCreateActionSelection(-MOBILE_CREATE_ACTION_STEP * 7, 3)).toEqual({
+      index: 1,
+      offsetY: 0
+    })
+    expect(mobileCreateActionSelection(MOBILE_CREATE_ACTION_STEP * 8, 3)).toEqual({
+      index: 1,
+      offsetY: 0
+    })
+  })
+
   it('keeps a bounded residual offset for smooth dragging', () => {
     expect(mobileCreateActionSelection(-40, 4)).toEqual({
       index: 1,

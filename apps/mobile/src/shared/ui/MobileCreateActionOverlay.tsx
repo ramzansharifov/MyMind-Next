@@ -108,6 +108,7 @@ export function MobileCreateActionOverlayProvider({
       ? overlay.items[wrapCarouselIndex(overlay.index + 1, overlay.items.length)]
       : null
   const currentColor = current?.color ?? theme.accent
+  const darkTheme = theme.background.toLowerCase() === '#0a0b0d'
 
   return (
     <MobileCreateActionOverlayContext.Provider value={controller}>
@@ -132,15 +133,15 @@ export function MobileCreateActionOverlayProvider({
             <BlurView
               blurTarget={blurTarget}
               blurMethod="dimezisBlurView"
-              intensity={58}
-              tint="default"
+              intensity={darkTheme ? 34 : 28}
+              tint={darkTheme ? 'dark' : 'light'}
               style={StyleSheet.absoluteFill}
             />
             <View
               style={[
                 StyleSheet.absoluteFill,
                 {
-                  backgroundColor: theme.background + '72'
+                  backgroundColor: darkTheme ? '#0000008C' : '#0F172A4D'
                 }
               ]}
             />
@@ -170,7 +171,7 @@ export function MobileCreateActionOverlayProvider({
                       fontSize: 15,
                       lineHeight: 20,
                       fontWeight: '600',
-                      opacity: 0.48
+                      opacity: 0.56
                     }}
                   >
                     {previous.label}
@@ -188,7 +189,7 @@ export function MobileCreateActionOverlayProvider({
                     borderWidth: 1,
                     borderColor: currentColor + '4A',
                     borderRadius: 24,
-                    backgroundColor: theme.surface + 'E8',
+                    backgroundColor: darkTheme ? '#111318F2' : theme.surface + 'F2',
                     elevation: 14,
                     shadowColor: '#000000',
                     shadowOpacity: 0.28,
@@ -257,7 +258,7 @@ export function MobileCreateActionOverlayProvider({
                       fontSize: 15,
                       lineHeight: 20,
                       fontWeight: '600',
-                      opacity: 0.48
+                      opacity: 0.56
                     }}
                   >
                     {next.label}
@@ -275,7 +276,7 @@ export function MobileCreateActionOverlayProvider({
                     lineHeight: 17,
                     fontWeight: '600',
                     textAlign: 'center',
-                    opacity: 0.7
+                    opacity: 0.82
                   }}
                 >
                   Проведите вверх или вниз · отпустите, чтобы выбрать
