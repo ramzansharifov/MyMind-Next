@@ -1,0 +1,40 @@
+name: Verify mobile date picker
+
+on:
+  push:
+    branches:
+      - 'feat/mobile-date-picker-parity'
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: windows-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run native:node
+      - run: npx prettier --write apps/mobile/src/shared/ui/AppDateField.tsx apps/mobile/src/shared/ui/FormControls.tsx apps/mobile/src/shared/ui/mobile-date.ts apps/mobile/src/shared/ui/mobile-date.test.ts apps/mobile/src/modules/habits/HabitsScreen.tsx apps/mobile/src/modules/nutrition/NutritionScreen.tsx
+      - run: npx prettier --check apps/mobile/src/shared/ui/AppDateField.tsx apps/mobile/src/shared/ui/FormControls.tsx apps/mobile/src/shared/ui/mobile-date.ts apps/mobile/src/shared/ui/mobile-date.test.ts apps/mobile/src/modules/habits/HabitsScreen.tsx apps/mobile/src/modules/nutrition/NutritionScreen.tsx
+      - run: npx eslint apps/mobile/src/shared/ui/AppDateField.tsx apps/mobile/src/shared/ui/FormControls.tsx apps/mobile/src/shared/ui/mobile-date.ts apps/mobile/src/shared/ui/mobile-date.test.ts apps/mobile/src/modules/habits/HabitsScreen.tsx apps/mobile/src/modules/nutrition/NutritionScreen.tsx
+      - run: npm run typecheck
+      - run: npm run test:mobile
+      - run: npm run export:android
+      - name: Commit formatting
+        shell: pwsh
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apps/mobile/src/shared/ui/AppDateField.tsx apps/mobile/src/shared/ui/FormControls.tsx apps/mobile/src/shared/ui/mobile-date.ts apps/mobile/src/shared/ui/mobile-date.test.ts apps/mobile/src/modules/habits/HabitsScreen.tsx apps/mobile/src/modules/nutrition/NutritionScreen.tsx
+          if (git diff --cached --quiet) {
+            Write-Host "No formatting changes to commit."
+          } else {
+            git commit -m "style: format mobile date picker"
+            git push origin HEAD:feat/mobile-date-picker-parity
+          }
