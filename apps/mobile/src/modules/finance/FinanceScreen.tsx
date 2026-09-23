@@ -61,7 +61,6 @@ import {
 } from './finance-tab-navigation'
 import { useConfirmation } from '../../shared/ui/ConfirmationProvider'
 import { useTheme } from '../../shared/ui/theme'
-import { useToast } from '../../shared/ui/toast-context'
 import { SwipeTabBar } from '../../shared/ui/SwipeTabBar'
 import { useSwipeTabFeedback } from '../../shared/ui/useSwipeTabFeedback'
 
@@ -329,7 +328,6 @@ export function FinanceScreen(): React.JSX.Element {
   const { finance: api, settings } = useServices()
   const confirm = useConfirmation()
   const theme = useTheme()
-  const toast = useToast()
   const { width: screenWidth } = useWindowDimensions()
   const [tabTranslateX] = useState(() => new Animated.Value(0))
   const [swipeAnimating, setSwipeAnimating] = useState(false)
@@ -381,14 +379,6 @@ export function FinanceScreen(): React.JSX.Element {
     })
   }, [settings])
 
-  const announceTab = useCallback(
-    (nextTab: FinanceTab): void => {
-      const label = FINANCE_TABS.find((item) => item.id === nextTab)?.label
-      if (label) toast.info(label, 'finance-tab')
-    },
-    [toast]
-  )
-
   const resetSwipePosition = useCallback((): void => {
     Animated.spring(tabTranslateX, {
       toValue: 0,
@@ -406,9 +396,8 @@ export function FinanceScreen(): React.JSX.Element {
       tabTranslateX.stopAnimation()
       tabTranslateX.setValue(0)
       setTab(nextTab)
-      announceTab(nextTab)
     },
-    [announceTab, swipeAnimating, tab, tabTranslateX]
+    [swipeAnimating, tab, tabTranslateX]
   )
 
   const completeSwipe = useCallback(
@@ -435,8 +424,7 @@ export function FinanceScreen(): React.JSX.Element {
         }
 
         setTab(nextTab)
-        announceTab(nextTab)
-        showSwipeTabFeedback(nextTab)
+        showSwipeTabFeedback(nextTab, direction)
         tabTranslateX.setValue(enterX)
 
         requestAnimationFrame(() => {
@@ -452,7 +440,6 @@ export function FinanceScreen(): React.JSX.Element {
       })
     },
     [
-      announceTab,
       resetSwipePosition,
       showSwipeTabFeedback,
       swipeAnimating,
