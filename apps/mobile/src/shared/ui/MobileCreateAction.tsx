@@ -7,7 +7,7 @@ import {
   MOBILE_CREATE_ACTION_STEP,
   mobileCreateActionSelection
 } from './mobile-create-action-gesture'
-import { useMobileCreateActionOverlay } from './MobileCreateActionOverlay'
+import { useMobileCreateActionOverlay } from './MobileCreateActionOverlayContext'
 import { useTheme } from './theme'
 
 export interface MobileCreateActionItem {
