@@ -26,58 +26,69 @@ export function SwipeTabBar<T extends string, I extends SwipeTabBarItem<T>>({
   trailing?: ReactNode
 }): React.JSX.Element {
   const theme = useTheme()
-  const [reveal] = useState(() => new Animated.Value(0))
+  const [progress] = useState(() => new Animated.Value(0))
 
   useEffect(() => {
     if (!feedback) return
 
-    reveal.stopAnimation()
-    reveal.setValue(0)
+    progress.stopAnimation()
+    progress.setValue(0)
 
     Animated.sequence([
-      Animated.timing(reveal, {
+      Animated.timing(progress, {
         toValue: 1,
-        duration: 170,
+        duration: 240,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true
       }),
-      Animated.delay(730),
-      Animated.timing(reveal, {
-        toValue: 0,
-        duration: 190,
+      Animated.delay(620),
+      Animated.timing(progress, {
+        toValue: 2,
+        duration: 280,
         easing: Easing.inOut(Easing.cubic),
         useNativeDriver: true
       })
     ]).start()
 
     return () => {
-      reveal.stopAnimation()
+      progress.stopAnimation()
     }
-  }, [feedback, reveal])
+  }, [feedback, progress])
 
   const shownItem = useMemo(
     () => (feedback ? (items.find((item) => item.id === feedback.value) ?? null) : null),
     [feedback, items]
   )
 
-  const normalOpacity = reveal.interpolate({
-    inputRange: [0, 0.72, 1],
-    outputRange: [1, 0, 0],
+  const directionSign = feedback?.direction === 'previous' ? 1 : -1
+  const normalExit = 52 * directionSign
+  const normalEnter = -52 * directionSign
+  const feedbackEnter = -56 * directionSign
+  const feedbackExit = 56 * directionSign
+
+  const normalOpacity = progress.interpolate({
+    inputRange: [0, 0.42, 0.58, 1.42, 1.58, 2],
+    outputRange: [1, 0, 0, 0, 0, 1],
     extrapolate: 'clamp'
   })
-  const feedbackOpacity = reveal.interpolate({
-    inputRange: [0, 0.3, 1],
-    outputRange: [0, 0.82, 1],
+  const normalTranslateX = progress.interpolate({
+    inputRange: [0, 0.48, 0.52, 1.48, 1.52, 2],
+    outputRange: [0, normalExit, normalEnter, normalEnter, normalEnter, 0],
     extrapolate: 'clamp'
   })
-  const iconTranslateX = reveal.interpolate({
-    inputRange: [0, 1],
-    outputRange: [28, 0],
+  const feedbackOpacity = progress.interpolate({
+    inputRange: [0, 0.38, 1.5, 2],
+    outputRange: [0, 1, 1, 0],
     extrapolate: 'clamp'
   })
-  const labelTranslateX = reveal.interpolate({
-    inputRange: [0, 1],
-    outputRange: [14, 0],
+  const feedbackTranslateX = progress.interpolate({
+    inputRange: [0, 0.5, 1.5, 2],
+    outputRange: [feedbackEnter, 0, 0, feedbackExit],
+    extrapolate: 'clamp'
+  })
+  const feedbackScale = progress.interpolate({
+    inputRange: [0, 0.5, 1.5, 2],
+    outputRange: [0.985, 1, 1, 0.985],
     extrapolate: 'clamp'
   })
 
@@ -102,7 +113,8 @@ export function SwipeTabBar<T extends string, I extends SwipeTabBarItem<T>>({
           flexDirection: 'row',
           alignItems: 'center',
           gap: 4,
-          opacity: normalOpacity
+          opacity: normalOpacity,
+          transform: [{ translateX: normalTranslateX }]
         }}
       >
         {items.map((item) => {
@@ -152,29 +164,23 @@ export function SwipeTabBar<T extends string, I extends SwipeTabBarItem<T>>({
             flexDirection: 'row',
             alignItems: 'center',
             gap: 11,
-            opacity: feedbackOpacity
+            opacity: feedbackOpacity,
+            transform: [{ translateX: feedbackTranslateX }, { scale: feedbackScale }]
           }}
         >
-          <Animated.View
+          <View
             style={{
               width: 40,
               height: 40,
               alignItems: 'center',
               justifyContent: 'center',
               borderRadius: 12,
-              backgroundColor: theme.accent + '18',
-              transform: [{ translateX: iconTranslateX }]
+              backgroundColor: theme.accent + '18'
             }}
           >
             {renderIcon(shownItem, true)}
-          </Animated.View>
-          <Animated.View
-            style={{
-              flex: 1,
-              minWidth: 0,
-              transform: [{ translateX: labelTranslateX }]
-            }}
-          >
+          </View>
+          <View style={{ flex: 1, minWidth: 0 }}>
             <Text
               numberOfLines={1}
               style={{
@@ -186,7 +192,7 @@ export function SwipeTabBar<T extends string, I extends SwipeTabBarItem<T>>({
             >
               {shownItem.label}
             </Text>
-          </Animated.View>
+          </View>
         </Animated.View>
       ) : null}
     </View>
