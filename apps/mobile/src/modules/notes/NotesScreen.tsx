@@ -1057,88 +1057,88 @@ export function NotesScreen({
           <LoadingState />
         ) : view === 'groups' && !selectedGroup ? (
           <FlatList
-          data={visibleGroups}
-          keyExtractor={(item) => item.id}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 96 }}
-          ListEmptyComponent={
-            <EmptyState
-              text={query.trim() ? 'По этому запросу группы не найдены.' : 'Групп пока нет.'}
-            />
-          }
-          renderItem={({ item }) => (
-            <WorkspaceNodeCard
-              title={item.title}
-              subtitle={`${allNotes.filter((note) => note.groupId === item.id).length} заметок`}
-              leading={<VisualIconBadge value={item.icon ?? 'folder'} />}
-              onPress={() => setSelectedGroupId(item.id)}
-              action={
-                <ActionMenu
-                  title={item.title}
-                  items={[
-                    {
-                      label: 'Новая заметка',
-                      icon: 'add',
-                      onPress: () => createNote(item.id)
-                    },
-                    {
-                      label: 'Изменить группу',
-                      icon: 'edit',
-                      onPress: () => editGroup(item)
-                    },
-                    {
-                      label: 'Удалить группу',
-                      icon: 'delete',
-                      danger: true,
-                      onPress: () => deleteGroup(item)
-                    }
-                  ]}
-                />
-              }
-            />
-          )}
-        />
-      ) : (
-        <FlatList
-          key={`notes-${layout}`}
-          data={visibleNotes}
-          keyExtractor={(item) => item.id}
-          numColumns={layout === 'grid' ? 2 : 1}
-          columnWrapperStyle={layout === 'grid' ? { gap: 8 } : undefined}
-          showsVerticalScrollIndicator={false}
-          refreshing={overview.loading}
-          onRefresh={overview.refresh}
-          contentContainerStyle={{ paddingBottom: 96 }}
-          ListEmptyComponent={
-            <EmptyState
-              text={
-                query.trim()
-                  ? 'По этому запросу заметки не найдены.'
-                  : view === 'ungrouped'
-                    ? 'Все заметки уже распределены по группам.'
-                    : selectedGroup
-                      ? 'В этой группе пока нет заметок.'
-                      : view === 'recent'
-                        ? 'Недавних заметок пока нет.'
-                        : 'Заметок пока нет.'
-              }
-            />
-          }
-          renderItem={({ item }) => {
-            const noteGroup = allGroups.find((group) => group.id === item.groupId)
-            return (
-              <View style={layout === 'grid' ? { flex: 1, maxWidth: '50%' } : undefined}>
-                <MobileNoteCard
-                  note={item}
-                  groupTitle={noteGroup?.title}
-                  layout={layout}
-                  onOpen={() => openNote(item.id)}
-                  onRename={() => renameListedNote(item)}
-                  onMove={() => moveListedNote(item)}
-                  onDelete={() => deleteListedNote(item)}
-                />
-              </View>
-            )
+            data={visibleGroups}
+            keyExtractor={(item) => item.id}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingBottom: 96 }}
+            ListEmptyComponent={
+              <EmptyState
+                text={query.trim() ? 'По этому запросу группы не найдены.' : 'Групп пока нет.'}
+              />
+            }
+            renderItem={({ item }) => (
+              <WorkspaceNodeCard
+                title={item.title}
+                subtitle={`${allNotes.filter((note) => note.groupId === item.id).length} заметок`}
+                leading={<VisualIconBadge value={item.icon ?? 'folder'} />}
+                onPress={() => setSelectedGroupId(item.id)}
+                action={
+                  <ActionMenu
+                    title={item.title}
+                    items={[
+                      {
+                        label: 'Новая заметка',
+                        icon: 'add',
+                        onPress: () => createNote(item.id)
+                      },
+                      {
+                        label: 'Изменить группу',
+                        icon: 'edit',
+                        onPress: () => editGroup(item)
+                      },
+                      {
+                        label: 'Удалить группу',
+                        icon: 'delete',
+                        danger: true,
+                        onPress: () => deleteGroup(item)
+                      }
+                    ]}
+                  />
+                }
+              />
+            )}
+          />
+        ) : (
+          <FlatList
+            key={`notes-${layout}`}
+            data={visibleNotes}
+            keyExtractor={(item) => item.id}
+            numColumns={layout === 'grid' ? 2 : 1}
+            columnWrapperStyle={layout === 'grid' ? { gap: 8 } : undefined}
+            showsVerticalScrollIndicator={false}
+            refreshing={overview.loading}
+            onRefresh={overview.refresh}
+            contentContainerStyle={{ paddingBottom: 96 }}
+            ListEmptyComponent={
+              <EmptyState
+                text={
+                  query.trim()
+                    ? 'По этому запросу заметки не найдены.'
+                    : view === 'ungrouped'
+                      ? 'Все заметки уже распределены по группам.'
+                      : selectedGroup
+                        ? 'В этой группе пока нет заметок.'
+                        : view === 'recent'
+                          ? 'Недавних заметок пока нет.'
+                          : 'Заметок пока нет.'
+                }
+              />
+            }
+            renderItem={({ item }) => {
+              const noteGroup = allGroups.find((group) => group.id === item.groupId)
+              return (
+                <View style={layout === 'grid' ? { flex: 1, maxWidth: '50%' } : undefined}>
+                  <MobileNoteCard
+                    note={item}
+                    groupTitle={noteGroup?.title}
+                    layout={layout}
+                    onOpen={() => openNote(item.id)}
+                    onRename={() => renameListedNote(item)}
+                    onMove={() => moveListedNote(item)}
+                    onDelete={() => deleteListedNote(item)}
+                  />
+                </View>
+              )
             }}
           />
         )}

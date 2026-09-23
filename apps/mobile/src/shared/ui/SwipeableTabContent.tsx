@@ -130,16 +130,7 @@ export function SwipeableTabContent<T extends string>({
         if (!animating) resetPosition()
       }
     })
-  }, [
-    animating,
-    completeSwipe,
-    disabled,
-    pageWidth,
-    resetPosition,
-    tabs,
-    translateX,
-    value
-  ])
+  }, [animating, completeSwipe, disabled, pageWidth, resetPosition, tabs, translateX, value])
 
   const opacity = translateX.interpolate({
     inputRange: [-pageWidth, 0, pageWidth],

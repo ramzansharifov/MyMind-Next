@@ -12,11 +12,7 @@ export function adjacentTab<T extends string>(
   return tabs[Math.max(0, Math.min(tabs.length - 1, nextIndex))] ?? value
 }
 
-export function tabSwipeDirection(
-  dx: number,
-  dy: number,
-  velocityX = 0
-): TabSwipeDirection | null {
+export function tabSwipeDirection(dx: number, dy: number, velocityX = 0): TabSwipeDirection | null {
   const horizontal = Math.abs(dx)
   const vertical = Math.abs(dy)
 

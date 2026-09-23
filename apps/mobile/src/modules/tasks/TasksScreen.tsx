@@ -62,7 +62,10 @@ export function TasksScreen(): React.JSX.Element {
     (next: TaskStatusFilter): void => {
       if (next === filter) return
       setFilter(next)
-      toast.info(STATUS_FILTERS.find((item) => item.id === next)?.label ?? 'Задачи', 'tasks-status-filter')
+      toast.info(
+        STATUS_FILTERS.find((item) => item.id === next)?.label ?? 'Задачи',
+        'tasks-status-filter'
+      )
     },
     [filter, toast]
   )
@@ -332,131 +335,131 @@ export function TasksScreen(): React.JSX.Element {
             keyboardShouldPersistTaps="handled"
             ListEmptyComponent={<EmptyState />}
             renderItem={({ item }) => {
-            const taskGroup = item.groupId ? (groupById.get(item.groupId) ?? null) : null
-            const completed = item.status === 'completed'
+              const taskGroup = item.groupId ? (groupById.get(item.groupId) ?? null) : null
+              const completed = item.status === 'completed'
 
-            return (
-              <View
-                style={{
-                  position: 'relative',
-                  minHeight: 66,
-                  marginBottom: 8,
-                  overflow: 'hidden',
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  borderWidth: 1,
-                  borderColor: theme.border,
-                  borderRadius: 16,
-                  backgroundColor: completed ? theme.success + '0E' : theme.surface
-                }}
-              >
-                {completed ? (
-                  <View
-                    pointerEvents="none"
-                    style={{
-                      position: 'absolute',
-                      top: 8,
-                      bottom: 8,
-                      left: 0,
-                      width: 2,
-                      borderTopRightRadius: 2,
-                      borderBottomRightRadius: 2,
-                      backgroundColor: theme.success
-                    }}
-                  />
-                ) : null}
-
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={
-                    completed ? 'Вернуть задачу ' + item.title : 'Выполнить задачу ' + item.title
-                  }
-                  onPress={() => toggle(item)}
-                  disabled={state.pending}
-                  style={({ pressed }) => ({
-                    flex: 1,
-                    minWidth: 0,
-                    minHeight: 64,
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 11,
-                    paddingLeft: 14,
-                    paddingRight: 6,
-                    paddingVertical: 11,
-                    opacity: pressed ? 0.72 : 1
-                  })}
-                >
-                  <View
-                    style={{
-                      width: 22,
-                      height: 22,
-                      flexShrink: 0,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      borderRadius: 11,
-                      borderWidth: 1,
-                      borderColor: completed ? theme.success : theme.muted,
-                      backgroundColor: completed ? theme.success + '22' : 'transparent'
-                    }}
-                  >
-                    {completed ? (
-                      <AppIcon name="check" size={13} strokeWidth={3} color={theme.success} />
-                    ) : null}
-                  </View>
-
-                  <Text
-                    numberOfLines={3}
-                    style={{
-                      flex: 1,
-                      minWidth: 0,
-                      color: completed ? theme.muted : theme.text,
-                      fontSize: 14,
-                      lineHeight: 20,
-                      fontWeight: '600',
-                      textDecorationLine: completed ? 'line-through' : 'none',
-                      textDecorationColor: completed ? theme.success : undefined
-                    }}
-                  >
-                    {item.title}
-                  </Text>
-                </Pressable>
-
+              return (
                 <View
                   style={{
+                    position: 'relative',
+                    minHeight: 66,
+                    marginBottom: 8,
+                    overflow: 'hidden',
                     flexDirection: 'row',
                     alignItems: 'center',
-                    paddingRight: 6
+                    borderWidth: 1,
+                    borderColor: theme.border,
+                    borderRadius: 16,
+                    backgroundColor: completed ? theme.success + '0E' : theme.surface
                   }}
                 >
-                  <ActionMenu
+                  {completed ? (
+                    <View
+                      pointerEvents="none"
+                      style={{
+                        position: 'absolute',
+                        top: 8,
+                        bottom: 8,
+                        left: 0,
+                        width: 2,
+                        borderTopRightRadius: 2,
+                        borderBottomRightRadius: 2,
+                        backgroundColor: theme.success
+                      }}
+                    />
+                  ) : null}
+
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={
+                      completed ? 'Вернуть задачу ' + item.title : 'Выполнить задачу ' + item.title
+                    }
+                    onPress={() => toggle(item)}
                     disabled={state.pending}
-                    title={item.title}
-                    items={[
-                      {
-                        key: 'group',
-                        label: `Группа: ${taskGroup?.name ?? 'Без группы'}`,
-                        icon: 'folder',
-                        onPress: () => move(item)
-                      },
-                      {
-                        label: 'Изменить',
-                        icon: 'edit',
-                        onPress: () => edit(item)
-                      },
-                      {
-                        label: 'Удалить',
-                        icon: 'delete',
-                        danger: true,
-                        onPress: () =>
-                          state.confirmDelete('Удалить задачу?', () => {
-                            api.deleteTask({ id: item.id })
-                          })
-                      }
-                    ]}
-                  />
+                    style={({ pressed }) => ({
+                      flex: 1,
+                      minWidth: 0,
+                      minHeight: 64,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 11,
+                      paddingLeft: 14,
+                      paddingRight: 6,
+                      paddingVertical: 11,
+                      opacity: pressed ? 0.72 : 1
+                    })}
+                  >
+                    <View
+                      style={{
+                        width: 22,
+                        height: 22,
+                        flexShrink: 0,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        borderRadius: 11,
+                        borderWidth: 1,
+                        borderColor: completed ? theme.success : theme.muted,
+                        backgroundColor: completed ? theme.success + '22' : 'transparent'
+                      }}
+                    >
+                      {completed ? (
+                        <AppIcon name="check" size={13} strokeWidth={3} color={theme.success} />
+                      ) : null}
+                    </View>
+
+                    <Text
+                      numberOfLines={3}
+                      style={{
+                        flex: 1,
+                        minWidth: 0,
+                        color: completed ? theme.muted : theme.text,
+                        fontSize: 14,
+                        lineHeight: 20,
+                        fontWeight: '600',
+                        textDecorationLine: completed ? 'line-through' : 'none',
+                        textDecorationColor: completed ? theme.success : undefined
+                      }}
+                    >
+                      {item.title}
+                    </Text>
+                  </Pressable>
+
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      paddingRight: 6
+                    }}
+                  >
+                    <ActionMenu
+                      disabled={state.pending}
+                      title={item.title}
+                      items={[
+                        {
+                          key: 'group',
+                          label: `Группа: ${taskGroup?.name ?? 'Без группы'}`,
+                          icon: 'folder',
+                          onPress: () => move(item)
+                        },
+                        {
+                          label: 'Изменить',
+                          icon: 'edit',
+                          onPress: () => edit(item)
+                        },
+                        {
+                          label: 'Удалить',
+                          icon: 'delete',
+                          danger: true,
+                          onPress: () =>
+                            state.confirmDelete('Удалить задачу?', () => {
+                              api.deleteTask({ id: item.id })
+                            })
+                        }
+                      ]}
+                    />
+                  </View>
                 </View>
-              </View>
-            )
+              )
             }}
           />
         )}

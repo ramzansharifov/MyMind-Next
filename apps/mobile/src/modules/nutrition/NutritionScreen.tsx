@@ -665,7 +665,10 @@ export function NutritionScreen(): React.JSX.Element {
       if (next === tab) return
       if (next === 'today') setDate(localDateKey())
       setTab(next)
-      toast.info(NUTRITION_TABS.find((item) => item.id === next)?.label ?? 'Питание', 'nutrition-tab')
+      toast.info(
+        NUTRITION_TABS.find((item) => item.id === next)?.label ?? 'Питание',
+        'nutrition-tab'
+      )
     },
     [tab, toast]
   )
@@ -966,54 +969,50 @@ export function NutritionScreen(): React.JSX.Element {
       <View style={{ flex: 1 }}>
         {header}
         {overview.error ? <ErrorState message={overview.error} retry={overview.refresh} /> : null}
-        <SwipeableTabContent
-          tabs={NUTRITION_TAB_IDS}
-          value={tab}
-          onChange={changeTab}
-        >
+        <SwipeableTabContent tabs={NUTRITION_TAB_IDS} value={tab} onChange={changeTab}>
           <ScrollView
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ gap: 12, paddingBottom: 96 }}
           >
-          <NutritionDaySummary
-            nutrients={day?.nutrients ?? zeroNutrients}
-            target={target ?? null}
-            waterMl={day?.waterMl ?? 0}
-            onEditWater={editWater}
-            onEditTargets={editTargets}
-            onWaterChange={(delta) =>
-              overview.mutate(() =>
-                api.setWater({
-                  date,
-                  waterMl: Math.min(100_000, Math.max(0, (day?.waterMl ?? 0) + delta))
-                })
-              )
-            }
-          />
+            <NutritionDaySummary
+              nutrients={day?.nutrients ?? zeroNutrients}
+              target={target ?? null}
+              waterMl={day?.waterMl ?? 0}
+              onEditWater={editWater}
+              onEditTargets={editTargets}
+              onWaterChange={(delta) =>
+                overview.mutate(() =>
+                  api.setWater({
+                    date,
+                    waterMl: Math.min(100_000, Math.max(0, (day?.waterMl ?? 0) + delta))
+                  })
+                )
+              }
+            />
 
-          <View style={{ gap: 8 }}>
-            {visibleMeals.map((mealType) => (
-              <NutritionMealSection
-                key={mealType}
-                mealType={mealType}
-                label={mealLabels[mealType]}
-                entries={entries.filter((entry) => entry.mealType === mealType)}
-                onAdd={() => editLog(undefined, mealType)}
-                onEdit={editLog}
-                onDelete={deleteEntry}
-              />
-            ))}
-            {otherEntries.length ? (
-              <NutritionMealSection
-                mealType="other"
-                label="Другое"
-                entries={otherEntries}
-                onAdd={() => editLog(undefined, 'other')}
-                onEdit={editLog}
-                onDelete={deleteEntry}
-              />
-            ) : null}
-          </View>
+            <View style={{ gap: 8 }}>
+              {visibleMeals.map((mealType) => (
+                <NutritionMealSection
+                  key={mealType}
+                  mealType={mealType}
+                  label={mealLabels[mealType]}
+                  entries={entries.filter((entry) => entry.mealType === mealType)}
+                  onAdd={() => editLog(undefined, mealType)}
+                  onEdit={editLog}
+                  onDelete={deleteEntry}
+                />
+              ))}
+              {otherEntries.length ? (
+                <NutritionMealSection
+                  mealType="other"
+                  label="Другое"
+                  entries={otherEntries}
+                  onAdd={() => editLog(undefined, 'other')}
+                  onEdit={editLog}
+                  onDelete={deleteEntry}
+                />
+              ) : null}
+            </View>
           </ScrollView>
         </SwipeableTabContent>
 

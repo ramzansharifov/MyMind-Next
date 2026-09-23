@@ -670,11 +670,11 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
           disabled={state.pending}
         >
           <MovieLibraryView
-          movies={movieItems}
-          refreshing={state.loading}
-          onRefresh={state.refresh}
-          onOpen={(movie) => setSelectedMovieId(movie.id)}
-          onToggleFavorite={(movie) => updateMovie({ ...movie, favorite: !movie.favorite })}
+            movies={movieItems}
+            refreshing={state.loading}
+            onRefresh={state.refresh}
+            onOpen={(movie) => setSelectedMovieId(movie.id)}
+            onToggleFavorite={(movie) => updateMovie({ ...movie, favorite: !movie.favorite })}
             onSearchWeb={(movie) => {
               void webSearch(movie.title)
             }}
@@ -688,36 +688,36 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
           disabled={state.pending || Boolean(playlistId)}
         >
           <MusicLibraryView
-          view={musicView}
-          items={visibleMusicItems}
-          playlists={visiblePlaylists}
-          selectedPlaylist={selectedPlaylist}
-          refreshing={state.loading}
-          emptyBecauseFilter={musicEmptyBecauseFilter}
-          onRefresh={state.refresh}
-          onOpenTrack={editTrack}
-          onToggleFavorite={(item) => updateMusic({ ...item, favorite: !item.favorite })}
-          onSearchWeb={(item) => {
-            setWebError('')
-            void Linking.openURL(musicYoutubeSearchUrl(item)).catch((reason) => {
-              setWebError(messageFor(reason))
-            })
-          }}
-          onDeleteTrack={(item) =>
-            state.confirmDelete(
-              'Удалить трек?',
-              () => services.music.deleteMusicItem({ id: item.id }),
-              'Трек будет удалён из библиотеки и всех плейлистов.'
-            )
-          }
-          onOpenPlaylist={(playlist) => {
-            setQuery('')
-            setFilter('all')
-            setPlaylistId(playlist.id)
-            setPlaylistsView(false)
-          }}
-          onEditPlaylist={editPlaylist}
-          onDeletePlaylist={deletePlaylist}
+            view={musicView}
+            items={visibleMusicItems}
+            playlists={visiblePlaylists}
+            selectedPlaylist={selectedPlaylist}
+            refreshing={state.loading}
+            emptyBecauseFilter={musicEmptyBecauseFilter}
+            onRefresh={state.refresh}
+            onOpenTrack={editTrack}
+            onToggleFavorite={(item) => updateMusic({ ...item, favorite: !item.favorite })}
+            onSearchWeb={(item) => {
+              setWebError('')
+              void Linking.openURL(musicYoutubeSearchUrl(item)).catch((reason) => {
+                setWebError(messageFor(reason))
+              })
+            }}
+            onDeleteTrack={(item) =>
+              state.confirmDelete(
+                'Удалить трек?',
+                () => services.music.deleteMusicItem({ id: item.id }),
+                'Трек будет удалён из библиотеки и всех плейлистов.'
+              )
+            }
+            onOpenPlaylist={(playlist) => {
+              setQuery('')
+              setFilter('all')
+              setPlaylistId(playlist.id)
+              setPlaylistsView(false)
+            }}
+            onEditPlaylist={editPlaylist}
+            onDeletePlaylist={deletePlaylist}
             onBackToPlaylists={() => {
               setQuery('')
               setPlaylistId(null)
