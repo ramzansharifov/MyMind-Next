@@ -40,6 +40,10 @@ function DateCalendar({
   const today = localDateKey()
   const [visibleMonth, setVisibleMonth] = useState(() => calendarMonthKey(reference))
   const days = useMemo(() => datePickerDays(visibleMonth), [visibleMonth])
+  const weeks = useMemo(
+    () => Array.from({ length: 6 }, (_, index) => days.slice(index * 7, index * 7 + 7)),
+    [days]
+  )
   const previousMonth = datePickerShiftMonth(visibleMonth, -1)
   const nextMonth = datePickerShiftMonth(visibleMonth, 1)
   const previousMonthDisabled = isValidDateKey(min) && previousMonth < calendarMonthKey(min)
@@ -112,7 +116,8 @@ function DateCalendar({
           <View
             key={weekday}
             style={{
-              width: '14.285714%',
+              flex: 1,
+              minWidth: 0,
               height: 24,
               alignItems: 'center',
               justifyContent: 'center'
@@ -132,86 +137,91 @@ function DateCalendar({
         ))}
       </View>
 
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
-        {days.map((day) => {
-          const selected = day === value
-          const isToday = day === today
-          const outsideMonth = !datePickerSameMonth(day, visibleMonth)
-          const dayDisabled = !dateWithinBounds(day, min, max)
-          const dayNumber = Number(day.slice(8, 10))
+      <View>
+        {weeks.map((week, weekIndex) => (
+          <View key={weekIndex} style={{ flexDirection: 'row' }}>
+            {week.map((day) => {
+              const selected = day === value
+              const isToday = day === today
+              const outsideMonth = !datePickerSameMonth(day, visibleMonth)
+              const dayDisabled = !dateWithinBounds(day, min, max)
+              const dayNumber = Number(day.slice(8, 10))
 
-          return (
-            <View
-              key={day}
-              style={{
-                width: '14.285714%',
-                height: 38,
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}
-            >
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={`Выбрать ${formatMobileAccessibleDate(day)}`}
-                accessibilityState={{ selected, disabled: dayDisabled }}
-                disabled={dayDisabled}
-                onPress={() => onChoose(day)}
-                style={({ pressed }) => ({
-                  position: 'relative',
-                  width: 34,
-                  height: 34,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  borderRadius: 11,
-                  borderWidth: isToday && !selected ? 1 : 0,
-                  borderColor: isToday && !selected ? theme.accent + '66' : 'transparent',
-                  backgroundColor: selected
-                    ? theme.accent
-                    : pressed
-                      ? theme.surface
-                      : 'transparent',
-                  opacity:
-                    dayDisabled && outsideMonth
-                      ? 0.4
-                      : dayDisabled
-                        ? 0.62
-                        : outsideMonth && !selected
-                          ? 0.48
-                          : 1
-                })}
-              >
-                <Text
+              return (
+                <View
+                  key={day}
                   style={{
-                    color: selected
-                      ? '#ffffff'
-                      : isToday
-                        ? theme.accent
-                        : dayDisabled
-                          ? theme.muted
-                          : theme.text,
-                    fontSize: 12,
-                    fontWeight: selected || isToday ? '700' : '500'
+                    flex: 1,
+                    minWidth: 0,
+                    height: 38,
+                    alignItems: 'center',
+                    justifyContent: 'center'
                   }}
                 >
-                  {dayNumber}
-                </Text>
-                {isToday && !selected ? (
-                  <View
-                    pointerEvents="none"
-                    style={{
-                      position: 'absolute',
-                      bottom: 3,
-                      width: 3.5,
-                      height: 3.5,
-                      borderRadius: 2,
-                      backgroundColor: theme.accent
-                    }}
-                  />
-                ) : null}
-              </Pressable>
-            </View>
-          )
-        })}
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`Выбрать ${formatMobileAccessibleDate(day)}`}
+                    accessibilityState={{ selected, disabled: dayDisabled }}
+                    disabled={dayDisabled}
+                    onPress={() => onChoose(day)}
+                    style={({ pressed }) => ({
+                      position: 'relative',
+                      width: 34,
+                      height: 34,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      borderRadius: 11,
+                      borderWidth: isToday && !selected ? 1 : 0,
+                      borderColor: isToday && !selected ? theme.accent + '66' : 'transparent',
+                      backgroundColor: selected
+                        ? theme.accent
+                        : pressed
+                          ? theme.surface
+                          : 'transparent',
+                      opacity:
+                        dayDisabled && outsideMonth
+                          ? 0.4
+                          : dayDisabled
+                            ? 0.62
+                            : outsideMonth && !selected
+                              ? 0.48
+                              : 1
+                    })}
+                  >
+                    <Text
+                      style={{
+                        color: selected
+                          ? '#ffffff'
+                          : isToday
+                            ? theme.accent
+                            : dayDisabled
+                              ? theme.muted
+                              : theme.text,
+                        fontSize: 12,
+                        fontWeight: selected || isToday ? '700' : '500'
+                      }}
+                    >
+                      {dayNumber}
+                    </Text>
+                    {isToday && !selected ? (
+                      <View
+                        pointerEvents="none"
+                        style={{
+                          position: 'absolute',
+                          bottom: 3,
+                          width: 3.5,
+                          height: 3.5,
+                          borderRadius: 2,
+                          backgroundColor: theme.accent
+                        }}
+                      />
+                    ) : null}
+                  </Pressable>
+                </View>
+              )
+            })}
+          </View>
+        ))}
       </View>
 
       <View
