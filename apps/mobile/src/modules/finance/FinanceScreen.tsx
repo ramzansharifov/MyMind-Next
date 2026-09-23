@@ -62,7 +62,8 @@ import {
 import { useConfirmation } from '../../shared/ui/ConfirmationProvider'
 import { useTheme } from '../../shared/ui/theme'
 import { useToast } from '../../shared/ui/toast-context'
-import { SwipeTabBar, useSwipeTabFeedback } from '../../shared/ui/SwipeTabBar'
+import { SwipeTabBar } from '../../shared/ui/SwipeTabBar'
+import { useSwipeTabFeedback } from '../../shared/ui/useSwipeTabFeedback'
 
 const FINANCE_PRIVACY_SETTING_KEY = 'finance.amounts-hidden'
 
