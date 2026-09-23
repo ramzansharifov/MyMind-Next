@@ -42,6 +42,7 @@ import {
   SearchField
 } from '../../shared/ui/primitives'
 import { useTheme } from '../../shared/ui/theme'
+import { SwipeableTabContent } from '../../shared/ui/SwipeableTabContent'
 import { MobileNoteAppendEditor } from './MobileNoteAppendEditor'
 import { createMobileAppendTextBlock, isTextOnlyNote, withoutNoteBlock } from './mobile-note-policy'
 
@@ -58,6 +59,8 @@ function sortNotes(notes: NoteSummary[], sort: NotesSort): NoteSummary[] {
       : right.updatedAt - left.updatedAt
   )
 }
+
+const NOTES_VIEW_TABS = ['all', 'recent', 'groups', 'ungrouped'] as const
 
 const NOTES_VIEWS: ReadonlyArray<{
   id: NotesView
@@ -1044,10 +1047,16 @@ export function NotesScreen({
 
       {overview.error ? <ErrorState message={overview.error} retry={overview.refresh} /> : null}
       {editorError ? <ErrorState message={editorError} /> : null}
-      {overview.loading ? (
-        <LoadingState />
-      ) : view === 'groups' && !selectedGroup ? (
-        <FlatList
+      <SwipeableTabContent
+        tabs={NOTES_VIEW_TABS}
+        value={view}
+        onChange={changeView}
+        disabled={Boolean(selectedGroup)}
+      >
+        {overview.loading ? (
+          <LoadingState />
+        ) : view === 'groups' && !selectedGroup ? (
+          <FlatList
           data={visibleGroups}
           keyExtractor={(item) => item.id}
           showsVerticalScrollIndicator={false}
@@ -1130,9 +1139,10 @@ export function NotesScreen({
                 />
               </View>
             )
-          }}
-        />
-      )}
+            }}
+          />
+        )}
+      </SwipeableTabContent>
 
       <MobileCreateAction actions={createActions} iconOnly />
       {form && <FormSheet spec={form} close={() => setForm(null)} />}
