@@ -28,6 +28,7 @@ import { useToast } from '../../shared/ui/toast-context'
 import { NutritionReportsView } from './NutritionReportsView'
 import { useTheme } from '../../shared/ui/theme'
 import { SwipeableTabContent } from '../../shared/ui/SwipeableTabContent'
+import { SwipeTabBar, useSwipeTabFeedback } from '../../shared/ui/SwipeTabBar'
 
 type Tab = 'today' | 'diary' | 'goal' | 'progress'
 
@@ -659,6 +660,7 @@ export function NutritionScreen(): React.JSX.Element {
   const overview = useCollection(useCallback(() => api.listOverview({ date }), [api, date]))
   const [tab, setTab] = useState<Tab>('today')
   const [form, setForm] = useState<FormSpec | null>(null)
+  const [swipeTabFeedback, showSwipeTabFeedback] = useSwipeTabFeedback<Tab>()
 
   const changeTab = useCallback(
     (next: Tab): void => {
@@ -845,54 +847,22 @@ export function NutritionScreen(): React.JSX.Element {
 
   const header = (
     <View style={{ gap: 10, paddingBottom: 12 }}>
-      <View
-        accessibilityRole="tablist"
-        style={{
-          minHeight: 50,
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 2,
-          padding: 4,
-          borderWidth: 1,
-          borderColor: theme.border,
-          borderRadius: 16,
-          backgroundColor: theme.surface
-        }}
-      >
-        {NUTRITION_TABS.map((item) => {
-          const selected = tab === item.id
+      <SwipeTabBar
+        items={NUTRITION_TABS}
+        value={tab}
+        onChange={changeTab}
+        feedback={swipeTabFeedback}
+        renderIcon={(item, selected) => {
           const Icon = item.icon
           return (
-            <Pressable
-              key={item.id}
-              accessibilityRole="tab"
-              accessibilityLabel={item.label}
-              accessibilityState={{ selected }}
-              onPress={() => changeTab(item.id)}
-              style={({ pressed }) => ({
-                flex: 1,
-                minWidth: 0,
-                height: 40,
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: 12,
-                backgroundColor: selected
-                  ? theme.accent + '18'
-                  : pressed
-                    ? theme.raised
-                    : 'transparent',
-                opacity: pressed ? 0.72 : 1
-              })}
-            >
-              <Icon
-                size={18}
-                strokeWidth={selected ? 2.4 : 2}
-                color={selected ? theme.accent : theme.muted}
-              />
-            </Pressable>
+            <Icon
+              size={18}
+              strokeWidth={selected ? 2.4 : 2}
+              color={selected ? theme.accent : theme.muted}
+            />
           )
-        })}
-      </View>
+        }}
+      />
 
       {tab === 'diary' ? (
         <View
@@ -969,7 +939,12 @@ export function NutritionScreen(): React.JSX.Element {
       <View style={{ flex: 1 }}>
         {header}
         {overview.error ? <ErrorState message={overview.error} retry={overview.refresh} /> : null}
-        <SwipeableTabContent tabs={NUTRITION_TAB_IDS} value={tab} onChange={changeTab}>
+        <SwipeableTabContent
+          tabs={NUTRITION_TAB_IDS}
+          value={tab}
+          onChange={changeTab}
+          onSwipeChange={showSwipeTabFeedback}
+        >
           <ScrollView
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ gap: 12, paddingBottom: 96 }}
@@ -1045,7 +1020,12 @@ export function NutritionScreen(): React.JSX.Element {
       <View style={{ flex: 1 }}>
         {header}
         {overview.error ? <ErrorState message={overview.error} retry={overview.refresh} /> : null}
-        <SwipeableTabContent tabs={NUTRITION_TAB_IDS} value={tab} onChange={changeTab}>
+        <SwipeableTabContent
+          tabs={NUTRITION_TAB_IDS}
+          value={tab}
+          onChange={changeTab}
+          onSwipeChange={showSwipeTabFeedback}
+        >
           <NutritionGoalCard
             key={data?.currentTarget?.id ?? 'nutrition-goal-empty'}
             target={data?.currentTarget ?? null}
@@ -1065,7 +1045,12 @@ export function NutritionScreen(): React.JSX.Element {
       <View style={{ flex: 1 }}>
         {header}
         {overview.error ? <ErrorState message={overview.error} retry={overview.refresh} /> : null}
-        <SwipeableTabContent tabs={NUTRITION_TAB_IDS} value={tab} onChange={changeTab}>
+        <SwipeableTabContent
+          tabs={NUTRITION_TAB_IDS}
+          value={tab}
+          onChange={changeTab}
+          onSwipeChange={showSwipeTabFeedback}
+        >
           <NutritionReportsView />
         </SwipeableTabContent>
       </View>
