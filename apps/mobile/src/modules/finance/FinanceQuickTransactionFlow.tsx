@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Animated,
   Easing,
@@ -185,7 +185,14 @@ function QuickCarousel({
           outputRange: slotOpacity(slot),
           extrapolate: 'clamp'
         })
-        const translateY = Animated.add(dragY, slot * MOBILE_CREATE_ACTION_STEP)
+        const translateY = dragY.interpolate({
+          inputRange: [-MOBILE_CREATE_ACTION_STEP, MOBILE_CREATE_ACTION_STEP],
+          outputRange: [
+            slot * MOBILE_CREATE_ACTION_STEP - MOBILE_CREATE_ACTION_STEP,
+            slot * MOBILE_CREATE_ACTION_STEP + MOBILE_CREATE_ACTION_STEP
+          ],
+          extrapolate: 'clamp'
+        })
         const active = slot === 0
 
         return (
@@ -347,7 +354,7 @@ export function FinanceQuickTransactionFlow({
   const sourceAccount = accounts.find((account) => account.id === sourceAccountId)
   const destinationAccount = accounts.find((account) => account.id === destinationAccountId)
 
-  const enterStage = (): void => {
+  const enterStage = useCallback((): void => {
     stageOpacity.setValue(0)
     stageTranslateY.setValue(-62)
     Animated.parallel([
@@ -366,11 +373,11 @@ export function FinanceQuickTransactionFlow({
         useNativeDriver: true
       })
     ]).start()
-  }
+  }, [stageOpacity, stageTranslateY])
 
   useEffect(() => {
     requestAnimationFrame(enterStage)
-  }, [])
+  }, [enterStage])
 
   const transitionNext = (): void => {
     if (stageIndex >= stages.length - 1) return
