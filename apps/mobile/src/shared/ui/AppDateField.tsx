@@ -170,12 +170,25 @@ function DateCalendar({
                     : pressed
                       ? theme.surface
                       : 'transparent',
-                  opacity: dayDisabled ? 0.2 : outsideMonth && !selected ? 0.38 : 1
+                  opacity:
+                    dayDisabled && outsideMonth
+                      ? 0.4
+                      : dayDisabled
+                        ? 0.62
+                        : outsideMonth && !selected
+                          ? 0.48
+                          : 1
                 })}
               >
                 <Text
                   style={{
-                    color: selected ? '#ffffff' : isToday ? theme.accent : theme.text,
+                    color: selected
+                      ? '#ffffff'
+                      : isToday
+                        ? theme.accent
+                        : dayDisabled
+                          ? theme.muted
+                          : theme.text,
                     fontSize: 12,
                     fontWeight: selected || isToday ? '700' : '500'
                   }}
