@@ -70,6 +70,11 @@ export function datePickerDays(month: string): string[] {
   return calendarMonthGrid(month).days
 }
 
+export function datePickerWeeks(month: string): string[][] {
+  const days = datePickerDays(month)
+  return Array.from({ length: 6 }, (_, index) => days.slice(index * 7, index * 7 + 7))
+}
+
 export function datePickerSameMonth(day: string, month: string): boolean {
   return calendarSameMonth(day, month)
 }
