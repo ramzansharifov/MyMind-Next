@@ -1,5 +1,11 @@
 import { useMemo, useRef, useState } from 'react'
-import { Pressable, Text, View, type GestureResponderEvent } from 'react-native'
+import {
+  PanResponder,
+  Text,
+  View,
+  type GestureResponderEvent,
+  type PanResponderGestureState
+} from 'react-native'
 
 import { AppDialog } from './AppDialog'
 import { AppIcon, type AppIconName } from './icons'
@@ -33,6 +39,9 @@ function runWhenIdle(callback: () => void): void {
   setTimeout(callback, 0)
 }
 
+const HOLD_DELAY_MS = 380
+const TAP_MOVE_TOLERANCE = 18
+
 export function MobileCreateAction({
   actions,
   disabled = false,
@@ -47,9 +56,12 @@ export function MobileCreateAction({
   const theme = useTheme()
   const overlay = useMobileCreateActionOverlay()
   const [open, setOpen] = useState(false)
+  const [pressed, setPressed] = useState(false)
+
   const holdTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const touchActiveRef = useRef(false)
   const holdActiveRef = useRef(false)
-  const suppressPressRef = useRef(false)
+  const startYRef = useRef(0)
   const currentYRef = useRef(0)
   const anchorYRef = useRef(0)
   const selectedIndexRef = useRef(0)
@@ -59,7 +71,7 @@ export function MobileCreateAction({
     [actions, disabled]
   )
 
-  if (!actions.length) return null
+  const triggerDisabled = disabled || enabledActions.length === 0
 
   const clearHoldTimer = (): void => {
     if (!holdTimerRef.current) return
@@ -78,28 +90,27 @@ export function MobileCreateAction({
     perform(action)
   }
 
-  const startHold = (event: GestureResponderEvent): void => {
-    if (!overlay || !enabledActions.length) return
+  const launchDefaultAction = (): void => {
+    if (triggerDisabled) return
+    if (actions.length === 1) perform(actions[0])
+    else setOpen(true)
+  }
 
+  const beginHoldTimer = (): void => {
     clearHoldTimer()
-    suppressPressRef.current = false
-    holdActiveRef.current = false
-    selectedIndexRef.current = 0
-    currentYRef.current = event.nativeEvent.pageY
-    anchorYRef.current = event.nativeEvent.pageY
-
     holdTimerRef.current = setTimeout(() => {
       holdTimerRef.current = null
+      if (!touchActiveRef.current || !overlay || !enabledActions.length) return
+
       holdActiveRef.current = true
       selectedIndexRef.current = 0
       anchorYRef.current = currentYRef.current
       overlay.show(enabledActions, 0)
-    }, 380)
+    }, HOLD_DELAY_MS)
   }
 
-  const moveHold = (event: GestureResponderEvent): void => {
-    const touch = event.nativeEvent.touches[0]
-    currentYRef.current = touch?.pageY ?? event.nativeEvent.pageY
+  const updateCarousel = (moveY: number): void => {
+    currentYRef.current = moveY
     if (!holdActiveRef.current || !overlay || !enabledActions.length) return
 
     const selection = mobileCreateActionSelection(
@@ -112,30 +123,75 @@ export function MobileCreateAction({
     overlay.update(selection.index, selection.offsetY)
   }
 
-  const finishHold = (): void => {
+  const finishGesture = (gesture: PanResponderGestureState): void => {
+    touchActiveRef.current = false
+    setPressed(false)
     clearHoldTimer()
-    if (!holdActiveRef.current || !overlay || !enabledActions.length) return
 
-    holdActiveRef.current = false
-    suppressPressRef.current = true
+    if (holdActiveRef.current && overlay && enabledActions.length) {
+      holdActiveRef.current = false
 
-    const action = enabledActions[selectedIndexRef.current]
-    overlay.hide()
+      const action = enabledActions[selectedIndexRef.current]
+      overlay.hide()
 
-    if (action) {
-      setTimeout(() => perform(action), 90)
+      if (action) {
+        setTimeout(() => perform(action), 90)
+      }
+      return
     }
+
+    const moved = Math.hypot(gesture.dx, gesture.dy)
+    if (moved <= TAP_MOVE_TOLERANCE) launchDefaultAction()
   }
 
-  const cancelHold = (): void => {
+  const cancelGesture = (): void => {
+    touchActiveRef.current = false
+    setPressed(false)
     clearHoldTimer()
+
     if (!holdActiveRef.current || !overlay) return
     holdActiveRef.current = false
-    suppressPressRef.current = true
     overlay.hide()
   }
 
-  const triggerDisabled = disabled || enabledActions.length === 0
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => !triggerDisabled,
+        onStartShouldSetPanResponderCapture: () => !triggerDisabled,
+        onMoveShouldSetPanResponder: () => !triggerDisabled,
+        onMoveShouldSetPanResponderCapture: () => !triggerDisabled,
+        onPanResponderGrant: (
+          event: GestureResponderEvent,
+          gesture: PanResponderGestureState
+        ) => {
+          touchActiveRef.current = true
+          holdActiveRef.current = false
+          selectedIndexRef.current = 0
+          setPressed(true)
+
+          const startY = gesture.y0 || event.nativeEvent.pageY
+          startYRef.current = startY
+          currentYRef.current = startY
+          anchorYRef.current = startY
+          beginHoldTimer()
+        },
+        onPanResponderMove: (_event, gesture) => {
+          updateCarousel(gesture.moveY)
+        },
+        onPanResponderRelease: (_event, gesture) => {
+          finishGesture(gesture)
+        },
+        onPanResponderTerminationRequest: () => false,
+        onPanResponderTerminate: () => {
+          cancelGesture()
+        },
+        onShouldBlockNativeResponder: () => true
+      }),
+    [enabledActions, overlay, triggerDisabled]
+  )
+
+  if (!actions.length) return null
 
   return (
     <>
@@ -148,7 +204,8 @@ export function MobileCreateAction({
           zIndex: 30
         }}
       >
-        <Pressable
+        <View
+          accessible
           accessibilityRole="button"
           accessibilityLabel={actions.length === 1 ? actions[0].label : label}
           accessibilityHint={
@@ -160,20 +217,9 @@ export function MobileCreateAction({
             disabled: triggerDisabled,
             expanded: actions.length > 1 ? open : undefined
           }}
-          disabled={triggerDisabled}
-          onPressIn={startHold}
-          onTouchMove={moveHold}
-          onPressOut={finishHold}
-          onResponderTerminate={cancelHold}
-          onPress={() => {
-            if (suppressPressRef.current) {
-              suppressPressRef.current = false
-              return
-            }
-            if (actions.length === 1) perform(actions[0])
-            else setOpen(true)
-          }}
-          style={({ pressed }) => ({
+          onAccessibilityTap={launchDefaultAction}
+          {...panResponder.panHandlers}
+          style={{
             width: iconOnly ? 52 : undefined,
             height: iconOnly ? 52 : undefined,
             minHeight: iconOnly ? 52 : 44,
@@ -192,7 +238,7 @@ export function MobileCreateAction({
             shadowOpacity: 0.24,
             shadowRadius: 12,
             shadowOffset: { width: 0, height: 7 }
-          })}
+          }}
         >
           <AppIcon
             name="add"
@@ -205,7 +251,7 @@ export function MobileCreateAction({
               {actions.length === 1 ? actions[0].label : label}
             </Text>
           ) : null}
-        </Pressable>
+        </View>
       </View>
 
       {actions.length > 1 ? (
@@ -221,14 +267,16 @@ export function MobileCreateAction({
             {actions.map((action) => {
               const actionColor = action.color ?? theme.accent
               return (
-                <Pressable
+                <View
                   key={action.key}
                   accessibilityRole="button"
                   accessibilityLabel={action.label}
                   accessibilityState={{ disabled: disabled || action.disabled }}
-                  disabled={disabled || action.disabled}
-                  onPress={() => launch(action)}
-                  style={({ pressed }) => ({
+                  onTouchEnd={() => {
+                    if (disabled || action.disabled) return
+                    launch(action)
+                  }}
+                  style={{
                     minHeight: 52,
                     flexDirection: 'row',
                     alignItems: 'center',
@@ -238,9 +286,9 @@ export function MobileCreateAction({
                     borderWidth: 1,
                     borderColor: theme.border,
                     borderRadius: 12,
-                    backgroundColor: pressed ? theme.raised : theme.surface,
-                    opacity: disabled || action.disabled ? 0.42 : pressed ? 0.78 : 1
-                  })}
+                    backgroundColor: theme.surface,
+                    opacity: disabled || action.disabled ? 0.42 : 1
+                  }}
                 >
                   <View
                     style={{
@@ -281,7 +329,7 @@ export function MobileCreateAction({
                     ) : null}
                   </View>
                   <AppIcon name="forward" size={17} color={theme.muted} />
-                </Pressable>
+                </View>
               )
             })}
           </View>
