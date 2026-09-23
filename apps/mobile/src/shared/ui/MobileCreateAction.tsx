@@ -168,14 +168,7 @@ export function MobileCreateAction({
       currentYRef.current - startYRef.current
     )
     if (moved <= TAP_MOVE_TOLERANCE) launchDefaultAction()
-  }, [
-    clearHoldTimer,
-    confirmHoldSelection,
-    enabledActions,
-    launchDefaultAction,
-    overlay,
-    perform
-  ])
+  }, [clearHoldTimer, confirmHoldSelection, enabledActions, launchDefaultAction, overlay, perform])
 
   const cancelGesture = useCallback((): void => {
     touchActiveRef.current = false

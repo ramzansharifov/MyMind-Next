@@ -169,144 +169,141 @@ function QuickCarousel({
         overflow: 'hidden'
       }}
     >
-      {(options.length === 1
-        ? [0]
-        : options.length <= 3
-          ? [-1, 0, 1]
-          : [-2, -1, 0, 1, 2]
-      ).map((slot) => {
-        const optionIndex = wrapCarouselIndex(selectedIndex + slot, options.length)
-        const option = options[optionIndex]
-        if (!option) return null
+      {(options.length === 1 ? [0] : options.length <= 3 ? [-1, 0, 1] : [-2, -1, 0, 1, 2]).map(
+        (slot) => {
+          const optionIndex = wrapCarouselIndex(selectedIndex + slot, options.length)
+          const option = options[optionIndex]
+          if (!option) return null
 
-        const scale = dragY.interpolate({
-          inputRange: [-MOBILE_CREATE_ACTION_STEP, 0, MOBILE_CREATE_ACTION_STEP],
-          outputRange: slotScale(slot),
-          extrapolate: 'clamp'
-        })
-        const opacity = dragY.interpolate({
-          inputRange: [-MOBILE_CREATE_ACTION_STEP, 0, MOBILE_CREATE_ACTION_STEP],
-          outputRange: slotOpacity(slot),
-          extrapolate: 'clamp'
-        })
-        const translateY = dragY.interpolate({
-          inputRange: [-MOBILE_CREATE_ACTION_STEP, MOBILE_CREATE_ACTION_STEP],
-          outputRange: [
-            slot * MOBILE_CREATE_ACTION_STEP - MOBILE_CREATE_ACTION_STEP,
-            slot * MOBILE_CREATE_ACTION_STEP + MOBILE_CREATE_ACTION_STEP
-          ],
-          extrapolate: 'clamp'
-        })
-        const active = slot === 0
+          const scale = dragY.interpolate({
+            inputRange: [-MOBILE_CREATE_ACTION_STEP, 0, MOBILE_CREATE_ACTION_STEP],
+            outputRange: slotScale(slot),
+            extrapolate: 'clamp'
+          })
+          const opacity = dragY.interpolate({
+            inputRange: [-MOBILE_CREATE_ACTION_STEP, 0, MOBILE_CREATE_ACTION_STEP],
+            outputRange: slotOpacity(slot),
+            extrapolate: 'clamp'
+          })
+          const translateY = dragY.interpolate({
+            inputRange: [-MOBILE_CREATE_ACTION_STEP, MOBILE_CREATE_ACTION_STEP],
+            outputRange: [
+              slot * MOBILE_CREATE_ACTION_STEP - MOBILE_CREATE_ACTION_STEP,
+              slot * MOBILE_CREATE_ACTION_STEP + MOBILE_CREATE_ACTION_STEP
+            ],
+            extrapolate: 'clamp'
+          })
+          const active = slot === 0
 
-        return (
-          <Animated.View
-            key={`${slot}:${option.key}`}
-            pointerEvents="none"
-            style={{
-              position: 'absolute',
-              top: CARD_TOP,
-              right: 0,
-              left: 0,
-              height: CARD_HEIGHT,
-              alignItems: 'center',
-              justifyContent: 'center',
-              opacity,
-              transform: [{ translateY }, { scale }]
-            }}
-          >
-            <View
+          return (
+            <Animated.View
+              key={`${slot}:${option.key}`}
+              pointerEvents="none"
               style={{
-                width: '88%',
-                maxWidth: 310,
+                position: 'absolute',
+                top: CARD_TOP,
+                right: 0,
+                left: 0,
                 height: CARD_HEIGHT,
-                flexDirection: 'row',
                 alignItems: 'center',
-                gap: 13,
-                paddingHorizontal: 15,
-                borderWidth: 1,
-                borderColor: active ? option.tone + '80' : option.tone + '30',
-                borderRadius: 21,
-                backgroundColor: active ? '#111318FA' : '#111318F0',
-                elevation: active ? 14 : 4,
-                shadowColor: '#000000',
-                shadowOpacity: active ? 0.34 : 0.14,
-                shadowRadius: active ? 20 : 8,
-                shadowOffset: { width: 0, height: active ? 10 : 4 }
+                justifyContent: 'center',
+                opacity,
+                transform: [{ translateY }, { scale }]
               }}
             >
-              {option.icon.kind === 'visual' ? (
-                <VisualIconBadge value={option.icon.value} size={46} />
-              ) : (
-                <View
-                  style={{
-                    width: 46,
-                    height: 46,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    borderWidth: 1,
-                    borderColor: option.tone + '50',
-                    borderRadius: 14,
-                    backgroundColor: option.tone + '18'
-                  }}
-                >
-                  {option.icon.kind === 'glyph' ? (
-                    <VisualIconGlyph value={option.icon.value} size={22} color={option.tone} />
-                  ) : (
-                    <AppIcon
-                      name={option.icon.value}
-                      size={22}
-                      strokeWidth={2.3}
-                      color={option.tone}
-                    />
-                  )}
-                </View>
-              )}
+              <View
+                style={{
+                  width: '88%',
+                  maxWidth: 310,
+                  height: CARD_HEIGHT,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 13,
+                  paddingHorizontal: 15,
+                  borderWidth: 1,
+                  borderColor: active ? option.tone + '80' : option.tone + '30',
+                  borderRadius: 21,
+                  backgroundColor: active ? '#111318FA' : '#111318F0',
+                  elevation: active ? 14 : 4,
+                  shadowColor: '#000000',
+                  shadowOpacity: active ? 0.34 : 0.14,
+                  shadowRadius: active ? 20 : 8,
+                  shadowOffset: { width: 0, height: active ? 10 : 4 }
+                }}
+              >
+                {option.icon.kind === 'visual' ? (
+                  <VisualIconBadge value={option.icon.value} size={46} />
+                ) : (
+                  <View
+                    style={{
+                      width: 46,
+                      height: 46,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      borderWidth: 1,
+                      borderColor: option.tone + '50',
+                      borderRadius: 14,
+                      backgroundColor: option.tone + '18'
+                    }}
+                  >
+                    {option.icon.kind === 'glyph' ? (
+                      <VisualIconGlyph value={option.icon.value} size={22} color={option.tone} />
+                    ) : (
+                      <AppIcon
+                        name={option.icon.value}
+                        size={22}
+                        strokeWidth={2.3}
+                        color={option.tone}
+                      />
+                    )}
+                  </View>
+                )}
 
-              <View style={{ flex: 1, minWidth: 0 }}>
-                <Text
-                  numberOfLines={1}
-                  style={{
-                    color: theme.text,
-                    fontSize: active ? 18.5 : 16,
-                    lineHeight: 23,
-                    fontWeight: '700'
-                  }}
-                >
-                  {option.title}
-                </Text>
-                <Text
-                  numberOfLines={1}
-                  style={{
-                    marginTop: 4,
-                    color: theme.muted,
-                    fontSize: 11.5,
-                    lineHeight: 16,
-                    fontWeight: '500'
-                  }}
-                >
-                  {option.subtitle}
-                </Text>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text
+                    numberOfLines={1}
+                    style={{
+                      color: theme.text,
+                      fontSize: active ? 18.5 : 16,
+                      lineHeight: 23,
+                      fontWeight: '700'
+                    }}
+                  >
+                    {option.title}
+                  </Text>
+                  <Text
+                    numberOfLines={1}
+                    style={{
+                      marginTop: 4,
+                      color: theme.muted,
+                      fontSize: 11.5,
+                      lineHeight: 16,
+                      fontWeight: '500'
+                    }}
+                  >
+                    {option.subtitle}
+                  </Text>
+                </View>
+
+                {active ? (
+                  <View
+                    style={{
+                      width: 28,
+                      height: 28,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      borderRadius: 9,
+                      backgroundColor: option.tone + '14'
+                    }}
+                  >
+                    <AppIcon name="check" size={15} color={option.tone} />
+                  </View>
+                ) : null}
               </View>
-
-              {active ? (
-                <View
-                  style={{
-                    width: 28,
-                    height: 28,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    borderRadius: 9,
-                    backgroundColor: option.tone + '14'
-                  }}
-                >
-                  <AppIcon name="check" size={15} color={option.tone} />
-                </View>
-              ) : null}
-            </View>
-          </Animated.View>
-        )
-      })}
+            </Animated.View>
+          )
+        }
+      )}
     </View>
   )
 }
@@ -773,8 +770,6 @@ export function FinanceQuickTransactionFlow({
                     </Text>
                   </View>
                 ) : null}
-
-
               </View>
             )}
           </Animated.View>
@@ -801,9 +796,7 @@ export function FinanceQuickTransactionFlow({
                   : 'Дальше'
               }
               disabled={
-                pending ||
-                carouselBusy ||
-                (stage !== 'amount' && currentOptions.length === 0)
+                pending || carouselBusy || (stage !== 'amount' && currentOptions.length === 0)
               }
               onPress={stage === 'amount' ? save : confirmCarouselSelection}
               style={({ pressed }) => ({
@@ -817,9 +810,7 @@ export function FinanceQuickTransactionFlow({
                 borderColor: tone + '55',
                 backgroundColor: tone,
                 opacity:
-                  pending ||
-                  carouselBusy ||
-                  (stage !== 'amount' && currentOptions.length === 0)
+                  pending || carouselBusy || (stage !== 'amount' && currentOptions.length === 0)
                     ? 0.45
                     : pressed
                       ? 0.8
