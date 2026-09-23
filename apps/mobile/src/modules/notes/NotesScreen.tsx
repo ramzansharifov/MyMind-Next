@@ -44,10 +44,7 @@ import {
 import { useTheme } from '../../shared/ui/theme'
 import { SwipeableTabContent } from '../../shared/ui/SwipeableTabContent'
 import { SwipeTabBar } from '../../shared/ui/SwipeTabBar'
-import {
-  useSwipeTabFeedback,
-  type SwipeTabFeedback
-} from '../../shared/ui/useSwipeTabFeedback'
+import { useSwipeTabFeedback, type SwipeTabFeedback } from '../../shared/ui/useSwipeTabFeedback'
 import { MobileNoteAppendEditor } from './MobileNoteAppendEditor'
 import { createMobileAppendTextBlock, isTextOnlyNote, withoutNoteBlock } from './mobile-note-policy'
 

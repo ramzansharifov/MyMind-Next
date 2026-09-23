@@ -97,8 +97,7 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
   const [form, setForm] = useState<FormSpec | null>(null)
   const [jsonImportOpen, setJsonImportOpen] = useState(false)
   const [webError, setWebError] = useState('')
-  const [movieSwipeFeedback, showMovieSwipeFeedback] =
-    useSwipeTabFeedback<MovieStatusFilter>()
+  const [movieSwipeFeedback, showMovieSwipeFeedback] = useSwipeTabFeedback<MovieStatusFilter>()
   const [musicSwipeFeedback, showMusicSwipeFeedback] = useSwipeTabFeedback<MusicTopTab>()
 
   const changeMovieFilter = useCallback(
