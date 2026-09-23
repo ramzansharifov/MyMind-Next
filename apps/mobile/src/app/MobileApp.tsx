@@ -20,6 +20,7 @@ import { AppIcon } from '../shared/ui/icons'
 import { messageFor } from '../shared/ui/form-model'
 import { ConfirmationProvider } from '../shared/ui/ConfirmationProvider'
 import { ToastProvider } from '../shared/ui/ToastProvider'
+import { MobileCreateActionOverlayProvider } from '../shared/ui/MobileCreateActionOverlay'
 import { TasksScreen } from '../modules/tasks/TasksScreen'
 import { HabitsScreen } from '../modules/habits/HabitsScreen'
 import { NotesScreen } from '../modules/notes/NotesScreen'
@@ -197,7 +198,8 @@ export default function MobileApp(): React.JSX.Element {
             <SafeAreaView style={{ flex: 1, backgroundColor: palette.background }}>
               <StatusBar style={dark ? 'light' : 'dark'} />
 
-              <MobileNavigationDrawer
+              <MobileCreateActionOverlayProvider>
+                <MobileNavigationDrawer
                 visible={navigationOpen}
                 currentRoute={route}
                 updater={updater}
@@ -375,6 +377,7 @@ export default function MobileApp(): React.JSX.Element {
                   </View>
                 </ServicesContext.Provider>
               )}
+              </MobileCreateActionOverlayProvider>
             </SafeAreaView>
           </ConfirmationProvider>
         </ToastProvider>
