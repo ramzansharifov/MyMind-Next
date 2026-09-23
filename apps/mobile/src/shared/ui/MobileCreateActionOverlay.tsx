@@ -157,12 +157,12 @@ export function MobileCreateActionOverlayProvider({
             <BlurView
               blurTarget={blurTarget}
               blurMethod="dimezisBlurView"
-              intensity={darkTheme ? 22 : 18}
+              intensity={darkTheme ? 12 : 18}
               tint={darkTheme ? 'dark' : 'light'}
               style={[
                 StyleSheet.absoluteFill,
                 {
-                  opacity: darkTheme ? 0.68 : 0.78
+                  opacity: darkTheme ? 0.52 : 0.78
                 }
               ]}
             />
@@ -170,7 +170,7 @@ export function MobileCreateActionOverlayProvider({
               style={[
                 StyleSheet.absoluteFill,
                 {
-                  backgroundColor: darkTheme ? '#000000D1' : '#0F172A70'
+                  backgroundColor: darkTheme ? '#000000ED' : '#0F172A70'
                 }
               ]}
             />
@@ -183,6 +183,34 @@ export function MobileCreateActionOverlayProvider({
                 paddingHorizontal: 22
               }}
             >
+              <View
+                style={{
+                  position: 'absolute',
+                  top: 18,
+                  minHeight: 38,
+                  maxWidth: '92%',
+                  paddingHorizontal: 14,
+                  paddingVertical: 8,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: 14,
+                  borderWidth: 1,
+                  borderColor: darkTheme ? '#FFFFFF12' : theme.border,
+                  backgroundColor: darkTheme ? '#0B0D11E8' : '#FFFFFFE6'
+                }}
+              >
+                <Text
+                  style={{
+                    color: darkTheme ? '#D8DCE4' : theme.text,
+                    fontSize: 11.5,
+                    lineHeight: 17,
+                    fontWeight: '600',
+                    textAlign: 'center'
+                  }}
+                >
+                  Проведите вверх или вниз · отпустите, чтобы выбрать
+                </Text>
+              </View>
               <View
                 style={{
                   width: '100%',
@@ -331,30 +359,7 @@ export function MobileCreateActionOverlayProvider({
                 })}
               </View>
 
-              <View
-                style={{
-                  marginTop: 14,
-                  minHeight: 38,
-                  paddingHorizontal: 14,
-                  paddingVertical: 8,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  borderRadius: 14,
-                  backgroundColor: darkTheme ? '#111318B8' : '#FFFFFFC9'
-                }}
-              >
-                <Text
-                  style={{
-                    color: darkTheme ? '#D5D8DE' : theme.text,
-                    fontSize: 11.5,
-                    lineHeight: 17,
-                    fontWeight: '600',
-                    textAlign: 'center'
-                  }}
-                >
-                  Проведите вверх или вниз · отпустите, чтобы выбрать
-                </Text>
-              </View>
+
             </View>
           </Animated.View>
         ) : null}
