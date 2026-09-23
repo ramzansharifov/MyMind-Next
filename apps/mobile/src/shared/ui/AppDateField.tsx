@@ -252,6 +252,61 @@ function DateCalendar({
   )
 }
 
+export function AppDatePickerDialog({
+  open,
+  onOpenChange,
+  value,
+  onChangeText,
+  label,
+  optional = false,
+  min,
+  max
+}: {
+  open: boolean
+  onOpenChange(open: boolean): void
+  value: string
+  onChangeText(value: string): void
+  label: string
+  optional?: boolean
+  min?: string
+  max?: string
+}): React.JSX.Element {
+  const today = localDateKey()
+  const reference = datePickerReference(value, min, max, today)
+
+  const choose = (next: string): void => {
+    if (!dateWithinBounds(next, min, max)) return
+    onChangeText(next)
+    onOpenChange(false)
+  }
+
+  return (
+    <AppDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title={label}
+      description={isValidDateKey(value) ? formatMobileAccessibleDate(value) : 'Выберите дату'}
+      icon="calendar"
+      presentation="card"
+    >
+      {open ? (
+        <DateCalendar
+          value={value}
+          reference={reference}
+          min={min}
+          max={max}
+          optional={optional}
+          onChoose={choose}
+          onClear={() => {
+            onChangeText('')
+            onOpenChange(false)
+          }}
+        />
+      ) : null}
+    </AppDialog>
+  )
+}
+
 export function AppDateField({
   value,
   onChangeText,
@@ -272,20 +327,12 @@ export function AppDateField({
   compact?: boolean
 }): React.JSX.Element {
   const theme = useTheme()
-  const today = localDateKey()
-  const reference = datePickerReference(value, min, max, today)
   const [open, setOpen] = useState(false)
   const display = isValidDateKey(value)
     ? formatMobileDate(value)
     : optional
       ? 'Не выбрано'
       : 'Выберите дату'
-
-  const choose = (next: string): void => {
-    if (!dateWithinBounds(next, min, max)) return
-    onChangeText(next)
-    setOpen(false)
-  }
 
   return (
     <>
@@ -335,29 +382,16 @@ export function AppDateField({
         </Text>
       </Pressable>
 
-      <AppDialog
+      <AppDatePickerDialog
         open={open}
         onOpenChange={setOpen}
-        title={label}
-        description={isValidDateKey(value) ? formatMobileAccessibleDate(value) : 'Выберите дату'}
-        icon="calendar"
-        presentation="card"
-      >
-        {open ? (
-          <DateCalendar
-            value={value}
-            reference={reference}
-            min={min}
-            max={max}
-            optional={optional}
-            onChoose={choose}
-            onClear={() => {
-              onChangeText('')
-              setOpen(false)
-            }}
-          />
-        ) : null}
-      </AppDialog>
+        value={value}
+        onChangeText={onChangeText}
+        label={label}
+        optional={optional}
+        min={min}
+        max={max}
+      />
     </>
   )
 }
