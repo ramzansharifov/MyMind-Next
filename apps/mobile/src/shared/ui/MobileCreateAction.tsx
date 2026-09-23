@@ -1,8 +1,13 @@
-import { Pressable, Text, View } from 'react-native'
-import { useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
+import { Pressable, Text, View, type GestureResponderEvent } from 'react-native'
 
 import { AppDialog } from './AppDialog'
 import { AppIcon, type AppIconName } from './icons'
+import {
+  MOBILE_CREATE_ACTION_STEP,
+  mobileCreateActionSelection
+} from './mobile-create-action-gesture'
+import { useMobileCreateActionOverlay } from './MobileCreateActionOverlayContext'
 import { useTheme } from './theme'
 
 export interface MobileCreateActionItem {
@@ -40,21 +45,97 @@ export function MobileCreateAction({
   iconOnly?: boolean
 }): React.JSX.Element | null {
   const theme = useTheme()
+  const overlay = useMobileCreateActionOverlay()
   const [open, setOpen] = useState(false)
+  const holdTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const holdActiveRef = useRef(false)
+  const suppressPressRef = useRef(false)
+  const currentYRef = useRef(0)
+  const anchorYRef = useRef(0)
+  const selectedIndexRef = useRef(0)
+
+  const enabledActions = useMemo(
+    () => actions.filter((action) => !disabled && !action.disabled),
+    [actions, disabled]
+  )
 
   if (!actions.length) return null
 
-  const launch = (action: MobileCreateActionItem): void => {
+  const clearHoldTimer = (): void => {
+    if (!holdTimerRef.current) return
+    clearTimeout(holdTimerRef.current)
+    holdTimerRef.current = null
+  }
+
+  const perform = (action: MobileCreateActionItem): void => {
     if (disabled || action.disabled) return
-    if (actions.length === 1) {
-      action.onPress()
-      return
-    }
-    setOpen(false)
     runWhenIdle(() => action.onPress())
   }
 
-  const triggerDisabled = disabled || (actions.length === 1 && Boolean(actions[0].disabled))
+  const launch = (action: MobileCreateActionItem): void => {
+    if (disabled || action.disabled) return
+    setOpen(false)
+    perform(action)
+  }
+
+  const startHold = (event: GestureResponderEvent): void => {
+    if (!overlay || !enabledActions.length) return
+
+    clearHoldTimer()
+    suppressPressRef.current = false
+    holdActiveRef.current = false
+    selectedIndexRef.current = 0
+    currentYRef.current = event.nativeEvent.pageY
+    anchorYRef.current = event.nativeEvent.pageY
+
+    holdTimerRef.current = setTimeout(() => {
+      holdTimerRef.current = null
+      holdActiveRef.current = true
+      selectedIndexRef.current = 0
+      anchorYRef.current = currentYRef.current
+      overlay.show(enabledActions, 0)
+    }, 380)
+  }
+
+  const moveHold = (event: GestureResponderEvent): void => {
+    const touch = event.nativeEvent.touches[0]
+    currentYRef.current = touch?.pageY ?? event.nativeEvent.pageY
+    if (!holdActiveRef.current || !overlay || !enabledActions.length) return
+
+    const selection = mobileCreateActionSelection(
+      currentYRef.current - anchorYRef.current,
+      enabledActions.length,
+      0,
+      MOBILE_CREATE_ACTION_STEP
+    )
+    selectedIndexRef.current = selection.index
+    overlay.update(selection.index, selection.offsetY)
+  }
+
+  const finishHold = (): void => {
+    clearHoldTimer()
+    if (!holdActiveRef.current || !overlay || !enabledActions.length) return
+
+    holdActiveRef.current = false
+    suppressPressRef.current = true
+
+    const action = enabledActions[selectedIndexRef.current]
+    overlay.hide()
+
+    if (action) {
+      setTimeout(() => perform(action), 90)
+    }
+  }
+
+  const cancelHold = (): void => {
+    clearHoldTimer()
+    if (!holdActiveRef.current || !overlay) return
+    holdActiveRef.current = false
+    suppressPressRef.current = true
+    overlay.hide()
+  }
+
+  const triggerDisabled = disabled || enabledActions.length === 0
 
   return (
     <>
@@ -70,13 +151,26 @@ export function MobileCreateAction({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={actions.length === 1 ? actions[0].label : label}
+          accessibilityHint={
+            enabledActions.length
+              ? 'Удерживайте и проведите вверх или вниз для быстрого выбора действия'
+              : undefined
+          }
           accessibilityState={{
             disabled: triggerDisabled,
             expanded: actions.length > 1 ? open : undefined
           }}
           disabled={triggerDisabled}
+          onPressIn={startHold}
+          onTouchMove={moveHold}
+          onPressOut={finishHold}
+          onResponderTerminate={cancelHold}
           onPress={() => {
-            if (actions.length === 1) launch(actions[0])
+            if (suppressPressRef.current) {
+              suppressPressRef.current = false
+              return
+            }
+            if (actions.length === 1) perform(actions[0])
             else setOpen(true)
           }}
           style={({ pressed }) => ({

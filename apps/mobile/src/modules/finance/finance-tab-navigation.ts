@@ -1,10 +1,10 @@
 export const FINANCE_TAB_IDS = [
   'home',
-  'transactions',
   'templates',
-  'limits',
   'accounts',
+  'transactions',
   'tags',
+  'limits',
   'reports'
 ] as const
 
