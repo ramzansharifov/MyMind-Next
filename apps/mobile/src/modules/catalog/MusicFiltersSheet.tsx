@@ -24,7 +24,7 @@ export function MusicFiltersSheet({
   onApply(value: MusicLibraryFilters): void
 }): React.JSX.Element {
   const artists = useMemo(() => musicFilterArtists(items), [items])
-  const years = useMemo(() => musicFilterYears(items).map(String), [items])
+  const years = useMemo(() => musicFilterYears(items).map((year) => String(year)), [items])
   const [draft, setDraft] = useState<MusicLibraryFilters>({ ...value })
 
   const reset = (): void => {
