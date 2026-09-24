@@ -19,7 +19,7 @@ import { useCollection } from '../../shared/hooks/useCollection'
 import { ErrorState, LoadingState } from '../../shared/ui/primitives'
 import { FormSheet } from '../../shared/ui/FormSheet'
 import { MobileCreateAction } from '../../shared/ui/MobileCreateAction'
-import { choiceField, messageFor, textField, type FormSpec } from '../../shared/ui/form-model'
+import { messageFor, textField, type FormSpec } from '../../shared/ui/form-model'
 import { useTheme } from '../../shared/ui/theme'
 import { SwipeableTabContent } from '../../shared/ui/SwipeableTabContent'
 import { SwipeTabBar } from '../../shared/ui/SwipeTabBar'
@@ -29,6 +29,7 @@ import { CatalogJsonImportModal } from './CatalogJsonImportModal'
 import { MovieDetailView } from './MovieDetailView'
 import { MovieLibraryView } from './MovieLibraryView'
 import { MovieFiltersSheet } from './MovieFiltersSheet'
+import { MusicFiltersSheet } from './MusicFiltersSheet'
 import { MusicLibraryView, type MobileMusicView } from './MusicLibraryView'
 import {
   movieAdvancedFiltersActive,
@@ -38,8 +39,6 @@ import {
 } from './movie-filters'
 import { movieRecordToUpdateInput } from './movie-presentation'
 import {
-  musicFilterArtists,
-  musicFilterYears,
   musicRecordToUpdateInput,
   musicTrackDraftFromItem,
   musicYoutubeSearchUrl,
@@ -97,6 +96,7 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
     sort: 'recent'
   })
   const [movieFiltersOpen, setMovieFiltersOpen] = useState(false)
+  const [musicFiltersOpen, setMusicFiltersOpen] = useState(false)
   const [musicArtist, setMusicArtist] = useState('')
   const [musicYear, setMusicYear] = useState('')
   const [playlistsView, setPlaylistsView] = useState(false)
@@ -227,34 +227,6 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
         state.refresh()
       }
     })
-
-  const musicFilters = (): void => {
-    const musicItems = (state.data?.items ?? []) as MusicItemRecord[]
-    setForm({
-      title: 'Фильтры библиотеки',
-      initial: { artist: musicArtist, year: musicYear },
-      fields: [
-        choiceField('artist', 'Исполнитель', [
-          { value: '', label: 'Все исполнители' },
-          ...musicFilterArtists(musicItems).map((artistName) => ({
-            value: artistName,
-            label: artistName
-          }))
-        ]),
-        choiceField('year', 'Год', [
-          { value: '', label: 'Любой год' },
-          ...musicFilterYears(musicItems).map((value) => ({
-            value: String(value),
-            label: String(value)
-          }))
-        ])
-      ],
-      save: (values) => {
-        setMusicArtist(String(values.artist ?? ''))
-        setMusicYear(String(values.year ?? ''))
-      }
-    })
-  }
 
   const webSearch = async (searchQuery: string): Promise<void> => {
     setWebError('')
@@ -504,7 +476,7 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
                     selected: musicAdvancedFiltersActive
                   }}
                   disabled={state.pending || playlistsView || Boolean(playlistId)}
-                  onPress={musicFilters}
+                  onPress={() => setMusicFiltersOpen(true)}
                   style={({ pressed }) => ({
                     position: 'relative',
                     flex: 1,
@@ -665,6 +637,17 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
           value={movieAdvancedFilters}
           onClose={() => setMovieFiltersOpen(false)}
           onApply={setMovieAdvancedFilters}
+        />
+      ) : null}
+      {mode === 'music' && musicFiltersOpen ? (
+        <MusicFiltersSheet
+          items={musicItems}
+          value={{ artist: musicArtist, year: musicYear }}
+          onClose={() => setMusicFiltersOpen(false)}
+          onApply={(next) => {
+            setMusicArtist(next.artist)
+            setMusicYear(next.year)
+          }}
         />
       ) : null}
       {mode === 'movies' && jsonImportOpen && (
