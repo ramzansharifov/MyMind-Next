@@ -265,8 +265,7 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
     }
   }
 
-  const allMovieItems =
-    mode === 'movies' ? ((state.data?.items ?? []) as MovieRecord[]) : []
+  const allMovieItems = mode === 'movies' ? ((state.data?.items ?? []) as MovieRecord[]) : []
   const normalizedMovieQuery = query.trim().toLocaleLowerCase('ru')
   const movieItems = sortMovieRecords(
     allMovieItems.filter((item) => {

@@ -60,10 +60,7 @@ export function movieMatchesAdvancedFilters(
   )
 }
 
-export function sortMovieRecords(
-  movies: readonly MovieRecord[],
-  sort: MovieSort
-): MovieRecord[] {
+export function sortMovieRecords(movies: readonly MovieRecord[], sort: MovieSort): MovieRecord[] {
   return [...movies].sort((a, b) =>
     sort === 'title'
       ? a.title.localeCompare(b.title, 'ru')
@@ -78,11 +75,11 @@ export function sortMovieRecords(
 export function movieAdvancedFiltersActive(filters: MovieAdvancedFilters): boolean {
   return Boolean(
     filters.types.length ||
-      filters.genre ||
-      filters.year ||
-      filters.director ||
-      filters.actor ||
-      filters.minRating > 0 ||
-      filters.sort !== 'recent'
+    filters.genre ||
+    filters.year ||
+    filters.director ||
+    filters.actor ||
+    filters.minRating > 0 ||
+    filters.sort !== 'recent'
   )
 }

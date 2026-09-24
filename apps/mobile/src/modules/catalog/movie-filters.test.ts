@@ -69,12 +69,8 @@ describe('mobile movie advanced filters', () => {
   })
 
   it('applies the selected minimum star rating', () => {
-    expect(movieMatchesAdvancedFilters(movie({ rating: 7 }), { ...base, minRating: 8 })).toBe(
-      false
-    )
-    expect(movieMatchesAdvancedFilters(movie({ rating: 9 }), { ...base, minRating: 8 })).toBe(
-      true
-    )
+    expect(movieMatchesAdvancedFilters(movie({ rating: 7 }), { ...base, minRating: 8 })).toBe(false)
+    expect(movieMatchesAdvancedFilters(movie({ rating: 9 }), { ...base, minRating: 8 })).toBe(true)
   })
 
   it('collects unique searchable dropdown values', () => {

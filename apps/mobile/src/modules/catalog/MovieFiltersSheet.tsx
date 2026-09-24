@@ -55,11 +55,7 @@ function ToggleCard({
         borderWidth: 1,
         borderColor: active ? theme.accent + '80' : theme.border,
         borderRadius: 13,
-        backgroundColor: active
-          ? theme.accent + '16'
-          : pressed
-            ? theme.raised
-            : theme.surface,
+        backgroundColor: active ? theme.accent + '16' : pressed ? theme.raised : theme.surface,
         opacity: pressed ? 0.76 : 1
       })}
     >
@@ -100,9 +96,7 @@ function SearchableDropdown({
   const visibleOptions = useMemo(
     () =>
       normalizedSearch
-        ? options.filter((option) =>
-            option.toLocaleLowerCase('ru').includes(normalizedSearch)
-          )
+        ? options.filter((option) => option.toLocaleLowerCase('ru').includes(normalizedSearch))
         : options,
     [normalizedSearch, options]
   )
