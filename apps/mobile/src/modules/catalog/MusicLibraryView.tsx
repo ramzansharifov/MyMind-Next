@@ -115,7 +115,7 @@ function TrackCard({
         delayLongPress={380}
         style={({ pressed }) => ({
           minWidth: 0,
-          minHeight: 68,
+          minHeight: 60,
           paddingHorizontal: 14,
           paddingVertical: 12,
           flexDirection: 'row',
@@ -143,17 +143,9 @@ function TrackCard({
         </View>
 
         <View style={{ minWidth: 0, flex: 1 }}>
-          <Text
-            numberOfLines={1}
-            style={{ color: theme.text, fontSize: 14, lineHeight: 19, fontWeight: '700' }}
-          >
-            {item.title}
-          </Text>
-          <Text
-            numberOfLines={1}
-            style={{ marginTop: 3, color: theme.muted, fontSize: 12, lineHeight: 17 }}
-          >
-            {artist}
+          <Text numberOfLines={1} style={{ fontSize: 14, lineHeight: 19 }}>
+            <Text style={{ color: theme.text, fontWeight: '700' }}>{item.title}</Text>
+            <Text style={{ color: theme.muted, fontWeight: '500' }}> / {artist}</Text>
           </Text>
         </View>
       </Pressable>

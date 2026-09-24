@@ -28,7 +28,14 @@ import { movieFields, movieValues, normalizeMovieFormValues } from './catalog-fo
 import { CatalogJsonImportModal } from './CatalogJsonImportModal'
 import { MovieDetailView } from './MovieDetailView'
 import { MovieLibraryView } from './MovieLibraryView'
+import { MovieFiltersSheet } from './MovieFiltersSheet'
 import { MusicLibraryView, type MobileMusicView } from './MusicLibraryView'
+import {
+  movieAdvancedFiltersActive,
+  movieMatchesAdvancedFilters,
+  sortMovieRecords,
+  type MovieAdvancedFilters
+} from './movie-filters'
 import { movieRecordToUpdateInput } from './movie-presentation'
 import {
   musicFilterArtists,
@@ -80,13 +87,16 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
   )
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<MovieStatusFilter>('all')
-  const [sort, setSort] = useState('recent')
-  const [genre, setGenre] = useState('')
-  const [type, setType] = useState('')
-  const [year, setYear] = useState('')
-  const [director, setDirector] = useState('')
-  const [actor, setActor] = useState('')
-  const [minRating, setMinRating] = useState('')
+  const [movieAdvancedFilters, setMovieAdvancedFilters] = useState<MovieAdvancedFilters>({
+    types: [],
+    genre: '',
+    year: '',
+    director: '',
+    actor: '',
+    minRating: 0,
+    sort: 'recent'
+  })
+  const [movieFiltersOpen, setMovieFiltersOpen] = useState(false)
   const [musicArtist, setMusicArtist] = useState('')
   const [musicYear, setMusicYear] = useState('')
   const [playlistsView, setPlaylistsView] = useState(false)
@@ -218,41 +228,6 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
       }
     })
 
-  const movieFilters = (): void =>
-    setForm({
-      title: 'Фильтры и сортировка',
-      initial: { genre, type, year, director, actor, minRating, sort },
-      fields: [
-        textField('genre', 'Жанр'),
-        choiceField('type', 'Тип', [
-          { value: '', label: 'Все' },
-          { value: 'movie', label: 'Фильм' },
-          { value: 'series', label: 'Сериал' },
-          { value: 'cartoon', label: 'Мультфильм' },
-          { value: 'animated_series', label: 'Мультсериал' }
-        ]),
-        textField('year', 'Год; пусто — все'),
-        textField('director', 'Режиссёр'),
-        textField('actor', 'Актёр'),
-        textField('minRating', 'Минимальная оценка 1–10'),
-        choiceField('sort', 'Порядок', [
-          { value: 'recent', label: 'Недавно изменённые' },
-          { value: 'title', label: 'По названию' },
-          { value: 'rating', label: 'По оценке' },
-          { value: 'year', label: 'По году' }
-        ])
-      ],
-      save: (values) => {
-        setGenre(String(values.genre))
-        setType(String(values.type))
-        setYear(String(values.year))
-        setDirector(String(values.director))
-        setActor(String(values.actor))
-        setMinRating(String(values.minRating))
-        setSort(String(values.sort))
-      }
-    })
-
   const musicFilters = (): void => {
     const musicItems = (state.data?.items ?? []) as MusicItemRecord[]
     setForm({
@@ -290,52 +265,32 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
     }
   }
 
-  const movieItems = (mode === 'movies' ? ((state.data?.items ?? []) as MovieRecord[]) : [])
-    .filter((item) => {
-      const minRatingNumber = Number(minRating)
-      return (
-        (filter === 'all' || (filter === 'favorite' && item.favorite) || item.status === filter) &&
-        (!genre ||
-          item.genres.some((value) =>
-            value.toLocaleLowerCase().includes(genre.toLocaleLowerCase())
-          )) &&
-        (!type || item.type === type) &&
-        (!year || String(item.year) === year) &&
-        (!director || item.director.toLocaleLowerCase().includes(director.toLocaleLowerCase())) &&
-        (!actor ||
-          item.actors.some((name) =>
-            name.toLocaleLowerCase().includes(actor.toLocaleLowerCase())
-          )) &&
-        (!minRating ||
-          !Number.isFinite(minRatingNumber) ||
-          (item.rating ?? 0) >= minRatingNumber) &&
-        [
-          item.title,
-          item.description,
-          item.comments,
-          ...item.genres,
-          ...item.actors,
-          item.director,
-          item.originalTitle ?? ''
-        ]
-          .join(' ')
-          .toLocaleLowerCase()
-          .includes(query.toLocaleLowerCase())
-      )
-    })
-    .sort((a, b) =>
-      sort === 'title'
-        ? a.title.localeCompare(b.title, 'ru')
-        : sort === 'rating'
-          ? (b.rating ?? 0) - (a.rating ?? 0)
-          : sort === 'year'
-            ? (b.year ?? 0) - (a.year ?? 0)
-            : b.updatedAt - a.updatedAt
-    )
+  const allMovieItems = mode === 'movies' ? ((state.data?.items ?? []) as MovieRecord[]) : []
+  const normalizedMovieQuery = query.trim().toLocaleLowerCase('ru')
+  const movieItems = sortMovieRecords(
+    allMovieItems.filter((item) => {
+      const statusMatches =
+        filter === 'all' || (filter === 'favorite' && item.favorite) || item.status === filter
+      if (!statusMatches || !movieMatchesAdvancedFilters(item, movieAdvancedFilters)) return false
+      if (!normalizedMovieQuery) return true
 
-  const movieAdvancedFiltersActive = Boolean(
-    genre || type || year || director || actor || minRating || sort !== 'recent'
+      return [
+        item.title,
+        item.description,
+        item.comments,
+        ...item.genres,
+        ...item.actors,
+        item.director,
+        item.originalTitle ?? ''
+      ]
+        .join(' ')
+        .toLocaleLowerCase('ru')
+        .includes(normalizedMovieQuery)
+    }),
+    movieAdvancedFilters.sort
   )
+
+  const movieFiltersActive = movieAdvancedFiltersActive(movieAdvancedFilters)
 
   const musicItems = mode === 'music' ? ((state.data?.items ?? []) as MusicItemRecord[]) : []
   const musicPlaylists = mode === 'music' ? (state.data?.playlists ?? []) : []
@@ -471,9 +426,9 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel="Фильтры и сортировка"
-                  accessibilityState={{ selected: movieAdvancedFiltersActive }}
+                  accessibilityState={{ selected: movieFiltersActive }}
                   disabled={state.pending}
-                  onPress={movieFilters}
+                  onPress={() => setMovieFiltersOpen(true)}
                   style={({ pressed }) => ({
                     position: 'relative',
                     flex: 1,
@@ -482,7 +437,7 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
                     alignItems: 'center',
                     justifyContent: 'center',
                     borderRadius: 12,
-                    backgroundColor: movieAdvancedFiltersActive
+                    backgroundColor: movieFiltersActive
                       ? theme.accent + '18'
                       : pressed
                         ? theme.raised
@@ -492,10 +447,10 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
                 >
                   <SlidersHorizontal
                     size={19}
-                    strokeWidth={movieAdvancedFiltersActive ? 2.4 : 2}
-                    color={movieAdvancedFiltersActive ? theme.accent : theme.muted}
+                    strokeWidth={movieFiltersActive ? 2.4 : 2}
+                    color={movieFiltersActive ? theme.accent : theme.muted}
                   />
-                  {movieAdvancedFiltersActive ? (
+                  {movieFiltersActive ? (
                     <View
                       pointerEvents="none"
                       style={{
@@ -704,6 +659,14 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
         }
       />
       {form && <FormSheet spec={form} close={() => setForm(null)} />}
+      {mode === 'movies' && movieFiltersOpen ? (
+        <MovieFiltersSheet
+          movies={allMovieItems}
+          value={movieAdvancedFilters}
+          onClose={() => setMovieFiltersOpen(false)}
+          onApply={setMovieAdvancedFilters}
+        />
+      ) : null}
       {mode === 'movies' && jsonImportOpen && (
         <CatalogJsonImportModal
           mode="movies"
