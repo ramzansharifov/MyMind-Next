@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { MovieRecord } from '@mymind/contracts/movies'
+import type { MovieRecord, MovieType } from '@mymind/contracts/movies'
 
 import {
   collectMovieFilterOptions,
@@ -47,7 +47,7 @@ const base: MovieAdvancedFilters = {
 
 describe('mobile movie advanced filters', () => {
   it('supports selecting several movie types at once', () => {
-    const filters = { ...base, types: ['movie', 'series'] as const }
+    const filters = { ...base, types: ['movie', 'series'] as MovieType[] }
     expect(movieMatchesAdvancedFilters(movie({ type: 'movie' }), filters)).toBe(true)
     expect(movieMatchesAdvancedFilters(movie({ type: 'series' }), filters)).toBe(true)
     expect(movieMatchesAdvancedFilters(movie({ type: 'cartoon' }), filters)).toBe(false)
