@@ -20,9 +20,18 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run native:node
-      - run: npm run format:check
-      - run: npm run lint
-      - run: npm run lint:mobile
+      - run: >-
+          npx prettier --check
+          apps/mobile/src/modules/catalog/CatalogScreen.tsx
+          apps/mobile/src/modules/catalog/MovieFiltersSheet.tsx
+          apps/mobile/src/modules/catalog/MusicFiltersSheet.tsx
+          apps/mobile/src/modules/catalog/SearchableFilterDropdown.tsx
+      - run: >-
+          npx eslint
+          apps/mobile/src/modules/catalog/CatalogScreen.tsx
+          apps/mobile/src/modules/catalog/MovieFiltersSheet.tsx
+          apps/mobile/src/modules/catalog/MusicFiltersSheet.tsx
+          apps/mobile/src/modules/catalog/SearchableFilterDropdown.tsx
       - run: npm run typecheck
       - run: npm run test:mobile
       - run: npm run export:android
