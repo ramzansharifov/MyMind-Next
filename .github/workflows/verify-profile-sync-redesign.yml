@@ -33,6 +33,7 @@ jobs:
           apps/desktop/src/renderer/src/modules/settings/ProfileSyncSettingsPage.tsx
           apps/mobile/src/shared/sync/lanSyncClient.ts
           apps/mobile/src/app/MobileProfileSyncSettings.tsx
+          apps/mobile/src/app/mobile-scope.test.ts
       - name: Lint changed files
         run: >-
           npx eslint
@@ -43,6 +44,7 @@ jobs:
           apps/desktop/src/renderer/src/modules/settings/ProfileSyncSettingsPage.tsx
           apps/mobile/src/shared/sync/lanSyncClient.ts
           apps/mobile/src/app/MobileProfileSyncSettings.tsx
+          apps/mobile/src/app/mobile-scope.test.ts
       - run: npm run typecheck
       - run: npm run test:run
       - run: npm run test:mobile
