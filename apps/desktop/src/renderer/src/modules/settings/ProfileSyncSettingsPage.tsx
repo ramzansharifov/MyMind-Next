@@ -114,10 +114,7 @@ export function ProfileSyncSettingsPage(): React.JSX.Element {
 
   useEffect(() => {
     let active = true
-    void Promise.all([
-      window.api.profileSync.getProfile(),
-      window.api.profileSync.getLanStatus()
-    ])
+    void Promise.all([window.api.profileSync.getProfile(), window.api.profileSync.getLanStatus()])
       .then(([nextProfile, nextStatus]) => {
         if (!active) return
         setProfile(nextProfile)
