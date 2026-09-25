@@ -99,8 +99,8 @@ describe('TasksPage', () => {
     expect(screen.queryByText('Высокий')).not.toBeInTheDocument()
     const title = screen.getByText('Подготовить отчёт')
     expect(title).toBeInTheDocument()
-    expect(title).toHaveClass('whitespace-normal', 'break-words')
     expect(title).not.toHaveClass('truncate')
+    expect(title).toHaveStyle({ whiteSpace: 'normal', overflowWrap: 'anywhere' })
   })
 
   it('quick-adds a task into the selected group with neutral legacy metadata', async () => {
