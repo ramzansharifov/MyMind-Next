@@ -113,7 +113,26 @@ export function ProfileSyncSettingsPage(): React.JSX.Element {
   }
 
   useEffect(() => {
-    void load().catch((reason: unknown) => setError(messageFor(reason)))
+    let active = true
+    void Promise.all([
+      window.api.profileSync.getProfile(),
+      window.api.profileSync.getLanStatus()
+    ])
+      .then(([nextProfile, nextStatus]) => {
+        if (!active) return
+        setProfile(nextProfile)
+        setStatus(nextStatus)
+        setLogin(nextProfile?.login ?? '')
+        setName(nextProfile?.name ?? '')
+        setGender(nextProfile?.gender ?? null)
+      })
+      .catch((reason: unknown) => {
+        if (active) setError(messageFor(reason))
+      })
+
+    return () => {
+      active = false
+    }
   }, [])
 
   const create = async (): Promise<void> => {
