@@ -43,6 +43,21 @@ export const SYNC_MODULES = [
 
 export type SyncModule = (typeof SYNC_MODULES)[number]
 
+export const MOBILE_SYNC_MODULES = [
+  'notes',
+  'tasks',
+  'habits',
+  'nutrition',
+  'calendar',
+  'diary',
+  'movies',
+  'music',
+  'finance',
+  'passwords'
+] as const satisfies readonly SyncModule[]
+
+export type MobileSyncModule = (typeof MOBILE_SYNC_MODULES)[number]
+
 export interface SyncScope {
   modules: SyncModule[]
 }
@@ -63,6 +78,21 @@ export interface SyncModuleSummary {
   sent: number
   deleted: number
   conflicts: number
+}
+
+export interface SyncModuleInventory {
+  module: SyncModule
+  records: number
+  deleted: number
+}
+
+export interface SyncInventoryRequest {
+  modules: SyncModule[]
+}
+
+export interface SyncInventoryResponse {
+  generatedAt: number
+  modules: SyncModuleInventory[]
 }
 
 export interface SyncResult {

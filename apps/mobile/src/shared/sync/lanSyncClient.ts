@@ -5,14 +5,17 @@ import {
   LAN_SYNC_DEFAULT_PORT,
   LAN_SYNC_PORT_SPAN,
   LAN_SYNC_PROTOCOL_VERSION,
-  SYNC_MODULES,
+  MOBILE_SYNC_MODULES,
   type LanSyncDevice,
+  type MobileSyncModule,
   type SyncAssetDownloadChunk,
   type SyncAssetManifestEntry,
   type SyncAssetUploadProgress,
   type SyncChallengeResponse,
   type SyncCommitResponse,
+  type SyncInventoryResponse,
   type SyncModule,
+  type SyncModuleInventory,
   type SyncModuleSummary,
   type SyncPlanResponse,
   type SyncProofResponse,
@@ -32,7 +35,8 @@ import {
   applySyncSnapshot,
   captureSyncSnapshot,
   mergeSyncSnapshots,
-  reconcileSyncSnapshotForeignKeys
+  reconcileSyncSnapshotForeignKeys,
+  summarizeSyncInventory
 } from '@mymind/persistence/sync'
 import {
   cleanupMobileSyncAssetStage,
@@ -53,14 +57,22 @@ const DISCOVERY_CONCURRENCY = 20
 const MAX_DISCOVERY_HOSTS = 254
 const ASSET_CHUNK_BYTES = 1024 * 1024
 const SHA256_PATTERN = /^[0-9a-f]{64}$/
-export const MOBILE_SYNC_MODULES = SYNC_MODULES.filter(
-  (module): module is Exclude<SyncModule, 'workouts'> => module !== 'workouts'
-)
+const SUPPORTED_MODULES = new Set<SyncModule>(MOBILE_SYNC_MODULES)
 
-const SUPPORTED_MODULES = new Set<string>(MOBILE_SYNC_MODULES)
+export interface MobileSyncModulePreview {
+  module: MobileSyncModule
+  phone: SyncModuleInventory
+  computer: SyncModuleInventory
+}
+
+export interface MobileSyncPreview {
+  device: LanSyncDevice
+  modules: MobileSyncModulePreview[]
+}
 
 export interface MobileLanSyncClient {
   discover(manualHost?: string): Promise<LanSyncDevice[]>
+  preview(device: LanSyncDevice): Promise<MobileSyncPreview>
   sync(device: LanSyncDevice, modules: readonly SyncModule[]): Promise<SyncResult>
 }
 
@@ -315,6 +327,49 @@ function parseSummaries(value: unknown, modules: readonly SyncModule[]): SyncMod
       conflicts: input.conflicts
     }
   })
+}
+
+function parseInventory(value: unknown, modules: readonly SyncModule[]): SyncInventoryResponse {
+  const input = record(value)
+  if (
+    typeof input.generatedAt !== 'number' ||
+    !Number.isSafeInteger(input.generatedAt) ||
+    !Array.isArray(input.modules)
+  ) {
+    throw new Error('Некорректная сводка данных синхронизации')
+  }
+  const allowed = new Set(modules)
+  const seen = new Set<SyncModule>()
+  const inventory = input.modules.map((raw) => {
+    const item = record(raw)
+    if (
+      typeof item.module !== 'string' ||
+      !allowed.has(item.module as SyncModule) ||
+      seen.has(item.module as SyncModule) ||
+      typeof item.records !== 'number' ||
+      !Number.isSafeInteger(item.records) ||
+      item.records < 0 ||
+      typeof item.deleted !== 'number' ||
+      !Number.isSafeInteger(item.deleted) ||
+      item.deleted < 0
+    ) {
+      throw new Error('Некорректная сводка данных синхронизации')
+    }
+    const module = item.module as SyncModule
+    seen.add(module)
+    return {
+      module,
+      records: item.records,
+      deleted: item.deleted
+    }
+  })
+  if (inventory.length !== modules.length || modules.some((module) => !seen.has(module))) {
+    throw new Error('Компьютер вернул неполную сводку модулей')
+  }
+  return {
+    generatedAt: input.generatedAt,
+    modules: inventory
+  }
 }
 
 function parsePlan(value: unknown, modules: readonly SyncModule[]): SyncPlanResponse {
@@ -676,6 +731,45 @@ export function createMobileLanSyncClient(
       return [...byId.values()].sort((left, right) =>
         left.deviceName.localeCompare(right.deviceName, 'ru-RU')
       )
+    },
+
+    async preview(device) {
+      const modules = MOBILE_SYNC_MODULES.filter((module) => device.modules.includes(module))
+      if (modules.length === 0) {
+        throw new Error('У компьютера нет модулей, доступных для синхронизации с телефоном')
+      }
+
+      const session = await authenticate(device, profileRepository)
+      const baseUrl = `http://${device.host}:${device.port}/mymind-sync/v1`
+      try {
+        const localSnapshot = captureSyncSnapshot(database, modules)
+        const phoneByModule = new Map(
+          summarizeSyncInventory(localSnapshot).map((item) => [item.module, item])
+        )
+        const computerInventory = parseInventory(
+          await requestSecureJson(
+            baseUrl,
+            '/mymind-sync/v1/inventory',
+            session,
+            { modules },
+            REQUEST_TIMEOUT_MS
+          ),
+          modules
+        )
+        const computerByModule = new Map(
+          computerInventory.modules.map((item) => [item.module, item])
+        )
+        return {
+          device,
+          modules: modules.map((module) => ({
+            module,
+            phone: phoneByModule.get(module) ?? { module, records: 0, deleted: 0 },
+            computer: computerByModule.get(module) ?? { module, records: 0, deleted: 0 }
+          }))
+        }
+      } finally {
+        session.key.fill(0)
+      }
     },
 
     async sync(device, requestedModules) {

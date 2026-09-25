@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Text, TextInput, View } from 'react-native'
+import { Switch, Text, TextInput, View } from 'react-native'
 import {
   type LanSyncDevice,
   type LocalProfile,
+  type MobileSyncModule,
   type ProfileGender,
-  type SyncModule,
   type SyncResult
 } from '@mymind/contracts/profile-sync'
 
@@ -12,23 +12,65 @@ import { notifyDataChanged } from './changes'
 import { useServices } from './context'
 import { Button, ErrorState, Label } from '../shared/ui/primitives'
 import { WorkspaceNodeCard, WorkspacePanel } from '../shared/ui/Workspace'
+import { AppIcon, type AppIconName } from '../shared/ui/icons'
 import { useTheme } from '../shared/ui/theme'
 import { messageFor } from '../shared/ui/form-model'
-import { MOBILE_SYNC_MODULES } from '../shared/sync/lanSyncClient'
+import type { MobileSyncPreview } from '../shared/sync/lanSyncClient'
 
-type MobileSyncModule = Exclude<SyncModule, 'workouts'>
-
-const moduleLabels: Record<MobileSyncModule, string> = {
-  notes: 'Заметки',
-  tasks: 'Задачи',
-  habits: 'Привычки',
-  movies: 'Фильмы',
-  music: 'Музыка',
-  calendar: 'Календарь',
-  diary: 'Дневник',
-  nutrition: 'Питание',
-  finance: 'Финансы',
-  passwords: 'Пароли'
+const modulePresentation: Record<
+  MobileSyncModule,
+  { label: string; description: string; icon: AppIconName }
+> = {
+  notes: {
+    label: 'Заметки',
+    description: 'Заметки, группы и вложения',
+    icon: 'notes'
+  },
+  tasks: {
+    label: 'Задачи',
+    description: 'Задачи и группы задач',
+    icon: 'tasks'
+  },
+  habits: {
+    label: 'Привычки',
+    description: 'Привычки, группы и отметки выполнения',
+    icon: 'habits'
+  },
+  movies: {
+    label: 'Фильмы',
+    description: 'Фильмы, сериалы и их данные',
+    icon: 'movies'
+  },
+  music: {
+    label: 'Музыка',
+    description: 'Треки, плейлисты и состав плейлистов',
+    icon: 'music'
+  },
+  calendar: {
+    label: 'Календарь',
+    description: 'События, повторения и напоминания',
+    icon: 'calendar'
+  },
+  diary: {
+    label: 'Дневник',
+    description: 'Дневники, дни и записи',
+    icon: 'diary'
+  },
+  nutrition: {
+    label: 'Питание',
+    description: 'Продукты, рецепты, дневник, вода и цели',
+    icon: 'nutrition'
+  },
+  finance: {
+    label: 'Финансы',
+    description: 'Счета, операции, шаблоны, теги, лимиты и курсы',
+    icon: 'finance'
+  },
+  passwords: {
+    label: 'Пароли',
+    description: 'Хранилище, группы и записи паролей',
+    icon: 'passwords'
+  }
 }
 
 function resultText(result: SyncResult): string {
@@ -50,8 +92,9 @@ export function MobileProfileSyncSettings(): React.JSX.Element {
   const [manualHost, setManualHost] = useState('')
   const [devices, setDevices] = useState<LanSyncDevice[]>([])
   const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null)
+  const [preview, setPreview] = useState<MobileSyncPreview | null>(null)
   const [selectedModules, setSelectedModules] = useState<Set<MobileSyncModule>>(() => new Set())
-  const [busy, setBusy] = useState<'profile' | 'scan' | 'sync' | null>(null)
+  const [busy, setBusy] = useState<'profile' | 'scan' | 'preview' | 'sync' | null>(null)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
 
@@ -139,16 +182,16 @@ export function MobileProfileSyncSettings(): React.JSX.Element {
     setBusy('scan')
     setError('')
     setMessage('')
+    setPreview(null)
+    setSelectedModules(new Set())
+    setSelectedDeviceId(null)
     try {
       const found = await lanSync.discover(manualHost)
       setDevices(found)
-      setSelectedDeviceId((current) =>
-        found.some((device) => device.deviceId === current) ? current : (found[0]?.deviceId ?? null)
-      )
       setMessage(
         found.length
-          ? `Найдено устройств MyMind: ${found.length}.`
-          : 'В этой локальной сети устройства MyMind не найдены.'
+          ? `Найдено компьютеров MyMind: ${found.length}. Выберите компьютер для подключения.`
+          : 'В этой локальной сети компьютеры MyMind не найдены.'
       )
     } catch (reason) {
       setError(messageFor(reason))
@@ -157,8 +200,36 @@ export function MobileProfileSyncSettings(): React.JSX.Element {
     }
   }
 
-  const runSync = async (modules: readonly SyncModule[]): Promise<void> => {
-    if (busy || !selectedDevice) return
+  const connect = async (device: LanSyncDevice): Promise<void> => {
+    if (busy) return
+    setSelectedDeviceId(device.deviceId)
+    setPreview(null)
+    setSelectedModules(new Set())
+    setBusy('preview')
+    setError('')
+    setMessage('')
+    try {
+      const next = await lanSync.preview(device)
+      setPreview(next)
+      setSelectedModules(new Set(next.modules.map((item) => item.module)))
+      setMessage(`Подключено к «${device.deviceName}». Проверьте модули перед синхронизацией.`)
+    } catch (reason) {
+      setError(messageFor(reason))
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  const runSync = async (): Promise<void> => {
+    if (busy || !selectedDevice || !preview) return
+    const modules = preview.modules
+      .map((item) => item.module)
+      .filter((module) => selectedModules.has(module))
+    if (modules.length === 0) {
+      setError('Выберите хотя бы один модуль для этой синхронизации.')
+      return
+    }
+
     setBusy('sync')
     setError('')
     setMessage('')
@@ -166,6 +237,10 @@ export function MobileProfileSyncSettings(): React.JSX.Element {
       const result = await lanSync.sync(selectedDevice, modules)
       notifyDataChanged()
       setMessage(resultText(result))
+
+      const refreshed = await lanSync.preview(selectedDevice)
+      setPreview(refreshed)
+      setSelectedModules(new Set(refreshed.modules.map((item) => item.module)))
     } catch (reason) {
       setError(messageFor(reason))
     } finally {
@@ -183,11 +258,11 @@ export function MobileProfileSyncSettings(): React.JSX.Element {
   }
 
   const inputStyle = {
-    minHeight: 44,
+    minHeight: 46,
     borderWidth: 1,
     borderColor: theme.border,
-    borderRadius: 12,
-    paddingHorizontal: 12,
+    borderRadius: 14,
+    paddingHorizontal: 13,
     color: theme.text,
     backgroundColor: theme.background
   } as const
@@ -196,10 +271,46 @@ export function MobileProfileSyncSettings(): React.JSX.Element {
     <View style={{ gap: 14 }}>
       <WorkspacePanel
         title="Профиль"
-        description="Профиль нужен только для связи ваших устройств. Обязательны логин и пароль."
+        description="Локальный профиль связывает ваши устройства. Пароль остаётся только у вас."
         icon="settings"
       >
         <View style={{ gap: 12 }}>
+          {profile ? (
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 12,
+                padding: 12,
+                borderWidth: 1,
+                borderColor: theme.accent + '28',
+                borderRadius: 16,
+                backgroundColor: theme.accent + '0D'
+              }}
+            >
+              <View
+                style={{
+                  width: 44,
+                  height: 44,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: 14,
+                  backgroundColor: theme.accent + '18'
+                }}
+              >
+                <AppIcon name="brand" size={21} color={theme.accent} />
+              </View>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={{ color: theme.text, fontSize: 15, fontWeight: '700' }}>
+                  {profile.name?.trim() || profile.login}
+                </Text>
+                <Text style={{ marginTop: 3, color: theme.muted, fontSize: 12 }}>
+                  @{profile.login} · локальный профиль
+                </Text>
+              </View>
+            </View>
+          ) : null}
+
           <View style={{ gap: 6 }}>
             <Label title>Логин *</Label>
             <TextInput
@@ -262,12 +373,14 @@ export function MobileProfileSyncSettings(): React.JSX.Element {
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
               <Button
                 label="Сохранить имя и пол"
+                icon="check"
                 primary
                 disabled={Boolean(busy)}
                 onPress={() => void saveProfile()}
               />
               <Button
                 label="Сменить логин / пароль"
+                icon="passwords"
                 disabled={Boolean(busy) || !password}
                 onPress={() => void replaceCredentials()}
               />
@@ -275,8 +388,8 @@ export function MobileProfileSyncSettings(): React.JSX.Element {
           )}
 
           <Label muted>
-            Пароль не сохраняется в базе и не отправляется компьютеру. Оба устройства доказывают,
-            что знают одинаковый пароль, с помощью криптографического challenge-response.
+            Пароль не сохраняется в базе и не отправляется компьютеру. Устройства подтверждают
+            одинаковый пароль через защищённый challenge-response.
           </Label>
         </View>
       </WorkspacePanel>
@@ -284,8 +397,8 @@ export function MobileProfileSyncSettings(): React.JSX.Element {
       {profile ? (
         <WorkspacePanel
           title="Синхронизация по локальной сети"
-          description="Телефон и компьютер должны находиться в одной Wi-Fi / LAN сети."
-          icon="settings"
+          description="Найдите компьютер, подключитесь и выберите данные для текущего обмена."
+          icon="download"
         >
           <View style={{ gap: 12 }}>
             <View style={{ gap: 6 }}>
@@ -302,90 +415,203 @@ export function MobileProfileSyncSettings(): React.JSX.Element {
                 onChangeText={setManualHost}
               />
               <Label muted>
-                Обычно MyMind найдёт компьютер автоматически. IP нужен только если сеть блокирует
-                автоматический поиск. Если компьютер не находится, проверьте, что Windows разрешил
-                MyMind доступ к частной сети в брандмауэре.
+                Обычно MyMind находит компьютер сам. Ручной IP нужен только если локальная сеть
+                блокирует автоматический поиск.
               </Label>
             </View>
 
             <Button
-              label={busy === 'scan' ? 'Ищем устройства…' : 'Найти компьютеры MyMind'}
+              label={busy === 'scan' ? 'Ищем компьютеры…' : 'Найти компьютеры MyMind'}
+              icon="search"
               primary
               disabled={Boolean(busy)}
               onPress={() => void scan()}
             />
 
-            {devices.map((device) => (
-              <WorkspaceNodeCard
-                key={device.deviceId}
-                title={device.deviceName}
-                subtitle={`${device.host}:${device.port} · ${device.modules.length} общих модулей`}
-                leadingIcon="settings"
-                selected={selectedDeviceId === device.deviceId}
-                onPress={() => setSelectedDeviceId(device.deviceId)}
-              />
-            ))}
+            {devices.length ? (
+              <View style={{ gap: 4 }}>
+                <Label title>Компьютеры</Label>
+                {devices.map((device) => (
+                  <WorkspaceNodeCard
+                    key={device.deviceId}
+                    title={device.deviceName}
+                    subtitle={`${device.host}:${device.port} · ${device.modules.length} мобильных модулей`}
+                    leadingIcon="brand"
+                    selected={selectedDeviceId === device.deviceId}
+                    onPress={() => void connect(device)}
+                  />
+                ))}
+              </View>
+            ) : null}
 
-            {selectedDevice ? (
+            {busy === 'preview' && selectedDevice ? (
+              <View
+                style={{
+                  padding: 14,
+                  borderWidth: 1,
+                  borderColor: theme.accent + '32',
+                  borderRadius: 16,
+                  backgroundColor: theme.accent + '0B'
+                }}
+              >
+                <Text style={{ color: theme.text, fontSize: 13, fontWeight: '600' }}>
+                  Подключаемся к «{selectedDevice.deviceName}»…
+                </Text>
+                <Text style={{ marginTop: 4, color: theme.muted, fontSize: 12, lineHeight: 18 }}>
+                  Проверяем профиль и собираем сводку данных на телефоне и компьютере.
+                </Text>
+              </View>
+            ) : null}
+
+            {preview && selectedDevice ? (
               <View style={{ gap: 12 }}>
                 <View
                   style={{
                     height: 1,
-                    backgroundColor: theme.border,
-                    marginVertical: 2
+                    marginVertical: 2,
+                    backgroundColor: theme.border
                   }}
                 />
-                <Label title>Что синхронизировать</Label>
-                <Label muted>
-                  Для одного модуля просто выберите его ниже. Можно выбрать несколько, а для полного
-                  обмена используйте отдельную кнопку «Синхронизировать все данные».
-                </Label>
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                  {MOBILE_SYNC_MODULES.filter((module) =>
-                    selectedDevice.modules.includes(module)
-                  ).map((module) => (
-                    <Button
-                      key={module}
-                      label={moduleLabels[module]}
-                      selected={selectedModules.has(module)}
-                      disabled={Boolean(busy)}
-                      onPress={() => toggleModule(module)}
-                    />
-                  ))}
+
+                <View style={{ gap: 5 }}>
+                  <Text style={{ color: theme.text, fontSize: 16, fontWeight: '700' }}>
+                    Что синхронизировать
+                  </Text>
+                  <Text style={{ color: theme.muted, fontSize: 12.5, lineHeight: 18 }}>
+                    Включены все доступные мобильные модули. Выключите ненужные — выбор действует
+                    только для этого запуска.
+                  </Text>
                 </View>
 
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                <View style={{ flexDirection: 'row', gap: 8 }}>
                   <Button
-                    label={busy === 'sync' ? 'Синхронизация…' : 'Синхронизировать выбранные'}
-                    primary
+                    label="Выбрать всё"
+                    compact
+                    disabled={Boolean(busy) || selectedModules.size === preview.modules.length}
+                    onPress={() =>
+                      setSelectedModules(new Set(preview.modules.map((item) => item.module)))
+                    }
+                  />
+                  <Button
+                    label="Снять всё"
+                    compact
                     disabled={Boolean(busy) || selectedModules.size === 0}
-                    onPress={() =>
-                      void runSync(
-                        MOBILE_SYNC_MODULES.filter(
-                          (module) =>
-                            selectedModules.has(module) && selectedDevice.modules.includes(module)
-                        )
-                      )
-                    }
-                  />
-                  <Button
-                    label="Синхронизировать все данные"
-                    disabled={Boolean(busy)}
-                    onPress={() =>
-                      void runSync(
-                        MOBILE_SYNC_MODULES.filter((module) =>
-                          selectedDevice.modules.includes(module)
-                        )
-                      )
-                    }
+                    onPress={() => setSelectedModules(new Set())}
                   />
                 </View>
 
-                <Label muted>
-                  «Обучение», «Доски» и «Тренировки» являются desktop-only и здесь намеренно
-                  отсутствуют. Если хранилища паролей создавались независимо, MyMind остановит
-                  синхронизацию паролей вместо риска повредить vault.
-                </Label>
+                <View style={{ gap: 8 }}>
+                  {preview.modules.map((item) => {
+                    const meta = modulePresentation[item.module]
+                    const enabled = selectedModules.has(item.module)
+                    return (
+                      <View
+                        key={item.module}
+                        style={{
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          gap: 12,
+                          padding: 13,
+                          borderWidth: 1,
+                          borderColor: enabled ? theme.accent + '45' : theme.border,
+                          borderRadius: 16,
+                          backgroundColor: enabled ? theme.accent + '0B' : theme.surface,
+                          opacity: enabled ? 1 : 0.72
+                        }}
+                      >
+                        <View
+                          style={{
+                            width: 42,
+                            height: 42,
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            borderRadius: 13,
+                            backgroundColor: enabled ? theme.accent + '16' : theme.raised
+                          }}
+                        >
+                          <AppIcon
+                            name={meta.icon}
+                            size={19}
+                            color={enabled ? theme.accent : theme.muted}
+                          />
+                        </View>
+
+                        <View style={{ flex: 1, minWidth: 0 }}>
+                          <Text style={{ color: theme.text, fontSize: 14, fontWeight: '700' }}>
+                            {meta.label}
+                          </Text>
+                          <Text
+                            style={{
+                              marginTop: 2,
+                              color: theme.muted,
+                              fontSize: 11.5,
+                              lineHeight: 16
+                            }}
+                          >
+                            {meta.description}
+                          </Text>
+                          <Text
+                            style={{
+                              marginTop: 6,
+                              color: enabled ? theme.text : theme.muted,
+                              fontSize: 11.5,
+                              lineHeight: 16
+                            }}
+                          >
+                            Телефон: {item.phone.records} · Компьютер: {item.computer.records}
+                            {item.phone.deleted || item.computer.deleted
+                              ? ` · удалений: ${item.phone.deleted + item.computer.deleted}`
+                              : ''}
+                          </Text>
+                        </View>
+
+                        <Switch
+                          accessibilityLabel={`Синхронизация модуля «${meta.label}»`}
+                          value={enabled}
+                          disabled={Boolean(busy)}
+                          onValueChange={() => toggleModule(item.module)}
+                          trackColor={{
+                            false: theme.border,
+                            true: theme.accent + '75'
+                          }}
+                          thumbColor={enabled ? theme.accent : theme.muted}
+                        />
+                      </View>
+                    )
+                  })}
+                </View>
+
+                <Button
+                  label={
+                    busy === 'sync'
+                      ? 'Синхронизация…'
+                      : `Синхронизировать · ${selectedModules.size} из ${preview.modules.length}`
+                  }
+                  icon="download"
+                  primary
+                  disabled={Boolean(busy) || selectedModules.size === 0}
+                  onPress={() => void runSync()}
+                />
+
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'flex-start',
+                    gap: 9,
+                    padding: 12,
+                    borderWidth: 1,
+                    borderColor: theme.border,
+                    borderRadius: 14,
+                    backgroundColor: theme.background
+                  }}
+                >
+                  <AppIcon name="info" size={17} color={theme.accent} />
+                  <Text style={{ flex: 1, color: theme.muted, fontSize: 11.5, lineHeight: 17 }}>
+                    Здесь отображаются только модули, которые существуют на телефоне. Desktop-only
+                    разделы не могут попасть в мобильную синхронизацию. Для паролей дополнительно
+                    действует защита совместимости vault.
+                  </Text>
+                </View>
               </View>
             ) : null}
           </View>
