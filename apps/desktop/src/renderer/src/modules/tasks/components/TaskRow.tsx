@@ -99,19 +99,14 @@ export function TaskRow({
           <span className="relative block w-fit max-w-full">
             <span
               className={cn(
-                'block max-w-full truncate text-sm leading-5 font-semibold transition-colors',
-                completed ? 'text-[var(--app-muted)]' : 'text-[var(--app-text)]'
+                'block max-w-full whitespace-normal break-words text-sm leading-5 font-semibold transition-colors',
+                completed
+                  ? 'text-[var(--app-muted)] line-through decoration-emerald-300/65 decoration-1'
+                  : 'text-[var(--app-text)]'
               )}
             >
               {task.title}
             </span>
-            <motion.span
-              aria-hidden="true"
-              className="absolute top-1/2 right-0 left-0 h-px origin-left bg-emerald-300/65"
-              initial={false}
-              animate={{ opacity: completed ? 1 : 0, scaleX: completed ? 1 : 0 }}
-              transition={transition}
-            />
           </span>
 
           {group && (
