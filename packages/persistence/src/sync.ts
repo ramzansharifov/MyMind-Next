@@ -317,7 +317,7 @@ function canonicalKey(definition: SyncTableDefinition, row: Record<string, unkno
   return JSON.stringify(definition.keyColumns.map((column) => scalar(row[column])))
 }
 
-function intrinsicRowVersion(_row: Record<string, SyncScalar>): number {
+function intrinsicRowVersion(): number {
   // Revisions are logical, not wall-clock timestamps. Every pre-sync row starts at revision 1;
   // triggers increment from the last synchronized revision. This avoids clock skew between devices.
   return 1
@@ -360,7 +360,7 @@ function captureTable(
       const key = canonicalKey(definition, raw)
       return {
         key,
-        version: Math.max(intrinsicRowVersion(data), versions.get(key) ?? 0),
+        version: Math.max(intrinsicRowVersion(), versions.get(key) ?? 0),
         data
       }
     }),
