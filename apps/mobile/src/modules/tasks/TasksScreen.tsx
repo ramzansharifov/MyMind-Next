@@ -392,7 +392,6 @@ export function TasksScreen(): React.JSX.Element {
                     </View>
 
                     <Text
-                      numberOfLines={3}
                       style={{
                         flex: 1,
                         minWidth: 0,
