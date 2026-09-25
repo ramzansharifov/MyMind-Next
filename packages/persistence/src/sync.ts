@@ -1,6 +1,7 @@
 import type {
   SyncDataSnapshot,
   SyncModule,
+  SyncModuleInventory,
   SyncModuleSnapshot,
   SyncModuleSummary,
   SyncScalar,
@@ -1004,6 +1005,14 @@ function countDifferences(
     }
   }
   return { changed, deleted }
+}
+
+export function summarizeSyncInventory(snapshot: SyncDataSnapshot): SyncModuleInventory[] {
+  return snapshot.modules.map((module) => ({
+    module: module.module,
+    records: module.tables.reduce((sum, table) => sum + table.rows.length, 0),
+    deleted: module.tables.reduce((sum, table) => sum + table.tombstones.length, 0)
+  }))
 }
 
 export function summarizeSyncMerge(
