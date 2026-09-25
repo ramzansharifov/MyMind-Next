@@ -6,7 +6,7 @@ import {
   LAN_SYNC_DEFAULT_PORT,
   LAN_SYNC_PORT_SPAN,
   LAN_SYNC_PROTOCOL_VERSION,
-  SYNC_MODULES,
+  MOBILE_SYNC_MODULES,
   type LanSyncDevice,
   type SyncAssetDownloadChunk,
   type SyncAssetManifestEntry,
@@ -15,6 +15,8 @@ import {
   type SyncChallengeResponse,
   type SyncCommitResponse,
   type SyncDataSnapshot,
+  type SyncInventoryResponse,
+  type SyncModule,
   type SyncModuleSummary,
   type SyncPlanResponse,
   type SyncProofRequest,
@@ -39,6 +41,7 @@ import {
   ensureSyncInfrastructure,
   mergeSyncSnapshots,
   reconcileSyncSnapshotForeignKeys,
+  summarizeSyncInventory,
   summarizeSyncMerge
 } from '@mymind/persistence/sync'
 import type { LanSyncHostStatus } from '../../shared/contracts/profile-sync'
@@ -71,6 +74,7 @@ const AUTH_BLOCK_MS = 5 * 60_000
 const ACTIVE_CHALLENGE_LIMIT_PER_CLIENT = 8
 const MAX_SESSION_REQUEST_IDS = 20_000
 const SHA256_PATTERN = /^[0-9a-f]{64}$/
+const MOBILE_SYNC_MODULE_SET = new Set<SyncModule>(MOBILE_SYNC_MODULES)
 const BASE64_PATTERN = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/
 
 interface Challenge {
@@ -250,6 +254,7 @@ function cleanupSessions(sessions: Map<string, Session>, now = Date.now()): void
 
 function isProtectedPath(path: string): boolean {
   return (
+    path === '/mymind-sync/v1/inventory' ||
     path === '/mymind-sync/v1/plan' ||
     path === '/mymind-sync/v1/assets/upload' ||
     path === '/mymind-sync/v1/assets/download' ||
@@ -279,6 +284,27 @@ function record(value: unknown): Record<string, unknown> {
     throw new Error('Invalid sync request')
   }
   return value as Record<string, unknown>
+}
+
+function requireMobileModules(value: unknown): SyncModule[] {
+  const input = record(value)
+  if (!Array.isArray(input.modules)) throw new Error('Некорректный список модулей синхронизации')
+  const modules = [...new Set(input.modules)]
+  if (
+    modules.length === 0 ||
+    modules.some(
+      (module) => typeof module !== 'string' || !MOBILE_SYNC_MODULE_SET.has(module as SyncModule)
+    )
+  ) {
+    throw new Error('Можно синхронизировать только модули, доступные на телефоне')
+  }
+  return modules as SyncModule[]
+}
+
+function assertMobileModules(modules: readonly SyncModule[]): void {
+  if (modules.length === 0 || modules.some((module) => !MOBILE_SYNC_MODULE_SET.has(module))) {
+    throw new Error('Можно синхронизировать только модули, доступные на телефоне')
+  }
 }
 
 function parseChallengeRequest(value: unknown): SyncChallengeRequest {
@@ -550,7 +576,7 @@ export class LanSyncServer {
       port: this.port,
       protocolVersion: LAN_SYNC_PROTOCOL_VERSION,
       profileReady: getLocalProfile() !== null,
-      modules: [...SYNC_MODULES]
+      modules: [...MOBILE_SYNC_MODULES]
     }
   }
 
@@ -731,6 +757,36 @@ export class LanSyncServer {
       return
     }
 
+    if (request.method === 'POST' && url.pathname === '/mymind-sync/v1/inventory') {
+      const session = this.sessionFor(request)
+      if (!session) {
+        errorResponse(response, 401, 'Sync session is not authorized')
+        return
+      }
+      const modules = requireMobileModules(
+        await readSecureJson(request, session, 'POST', '/mymind-sync/v1/inventory', 32 * 1024)
+      )
+      const result = await mainOperationTracker.run(() => {
+        const database = desktopRepositoryRuntime.database() as SqlDatabasePort
+        const snapshot = captureSyncSnapshot(database, modules)
+        const inventory: SyncInventoryResponse = {
+          generatedAt: snapshot.generatedAt,
+          modules: summarizeSyncInventory(snapshot)
+        }
+        return inventory
+      })
+      secureJsonResponseForRequest(
+        request,
+        response,
+        200,
+        session,
+        'POST',
+        '/mymind-sync/v1/inventory',
+        result
+      )
+      return
+    }
+
     if (request.method === 'POST' && url.pathname === '/mymind-sync/v1/plan') {
       const session = this.sessionFor(request)
       if (!session) {
@@ -743,6 +799,7 @@ export class LanSyncServer {
       const remoteSnapshot = parseSyncDataSnapshot(raw.snapshot)
       const clientAssets = parseAssetManifest(raw.assets)
       const modules = remoteSnapshot.modules.map((module) => module.module)
+      assertMobileModules(modules)
 
       await this.prepareRenderer(modules)
       const prepared = await mainOperationTracker.run(async () => {
