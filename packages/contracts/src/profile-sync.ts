@@ -47,11 +47,11 @@ export const MOBILE_SYNC_MODULES = [
   'notes',
   'tasks',
   'habits',
-  'movies',
-  'music',
+  'nutrition',
   'calendar',
   'diary',
-  'nutrition',
+  'movies',
+  'music',
   'finance',
   'passwords'
 ] as const satisfies readonly SyncModule[]
