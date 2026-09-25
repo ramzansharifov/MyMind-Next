@@ -6,7 +6,7 @@ on:
       - feat/profile-sync-redesign-preview
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: verify-profile-sync-redesign
@@ -23,6 +23,18 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Format profile sync page
+        run: npx prettier --write apps/desktop/src/renderer/src/modules/settings/ProfileSyncSettingsPage.tsx
+      - name: Commit profile sync formatting when needed
+        shell: pwsh
+        run: |
+          if (-not (git diff --quiet)) {
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add apps/desktop/src/renderer/src/modules/settings/ProfileSyncSettingsPage.tsx
+            git commit -m "style: format profile sync page"
+            git push origin HEAD:feat/profile-sync-redesign-preview
+          }
       - name: Check changed file formatting
         run: >-
           npx prettier --check
