@@ -97,7 +97,10 @@ describe('TasksPage', () => {
     expect(screen.queryByRole('button', { name: 'Просрочено' })).not.toBeInTheDocument()
     expect(screen.queryByLabelText('Фильтр по приоритету')).not.toBeInTheDocument()
     expect(screen.queryByText('Высокий')).not.toBeInTheDocument()
-    expect(screen.getByText('Подготовить отчёт')).toBeInTheDocument()
+    const title = screen.getByText('Подготовить отчёт')
+    expect(title).toBeInTheDocument()
+    expect(title).not.toHaveClass('truncate')
+    expect(title).toHaveStyle({ whiteSpace: 'normal', overflowWrap: 'anywhere' })
   })
 
   it('quick-adds a task into the selected group with neutral legacy metadata', async () => {
