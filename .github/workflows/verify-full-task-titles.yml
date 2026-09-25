@@ -1,0 +1,36 @@
+name: Verify full task titles
+
+on:
+  push:
+    branches:
+      - fix/tasks-show-full-title
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run native:node
+      - run: >-
+          npx prettier --check
+          apps/mobile/src/modules/tasks/TasksScreen.tsx
+          apps/desktop/src/renderer/src/modules/tasks/components/TaskRow.tsx
+          apps/desktop/src/renderer/src/modules/tasks/TasksPage.test.tsx
+      - run: >-
+          npx eslint
+          apps/mobile/src/modules/tasks/TasksScreen.tsx
+          apps/desktop/src/renderer/src/modules/tasks/components/TaskRow.tsx
+          apps/desktop/src/renderer/src/modules/tasks/TasksPage.test.tsx
+      - run: npm run typecheck
+      - run: npm run test:run --workspace=mymind-next -- src/renderer/src/modules/tasks/TasksPage.test.tsx
+      - run: npm run test:mobile
+      - run: npm run export:android
