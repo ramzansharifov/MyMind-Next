@@ -173,9 +173,7 @@ export function ProfileSyncSettingsPage(): React.JSX.Element {
       const updated = await window.api.profileSync.replaceCredentials({ login, password })
       setProfile(updated)
       setPassword('')
-      setMessage(
-        'Логин и пароль синхронизации обновлены. На телефоне нужно указать те же данные.'
-      )
+      setMessage('Логин и пароль синхронизации обновлены. На телефоне нужно указать те же данные.')
     } catch (reason) {
       setError(messageFor(reason))
     } finally {
@@ -194,8 +192,8 @@ export function ProfileSyncSettingsPage(): React.JSX.Element {
       <ModuleHeader icon={UserRound} title="Профиль и синхронизация" />
 
       <section className="relative overflow-hidden rounded-3xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-sm">
-        <div className="pointer-events-none absolute -top-32 right-[-5%] size-80 rounded-full bg-accent-500/10 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-40 left-[12%] size-72 rounded-full bg-accent-500/5 blur-3xl" />
+        <div className="bg-accent-500/10 pointer-events-none absolute -top-32 right-[-5%] size-80 rounded-full blur-3xl" />
+        <div className="bg-accent-500/5 pointer-events-none absolute -bottom-40 left-[12%] size-72 rounded-full blur-3xl" />
 
         <header className="relative flex flex-wrap items-center justify-between gap-4 border-b border-[var(--app-border)] px-5 py-4">
           <div className="flex min-w-0 items-center gap-3">
@@ -450,8 +448,8 @@ export function ProfileSyncSettingsPage(): React.JSX.Element {
             <ShieldCheck className="text-accent-300 mt-0.5 size-4.5 shrink-0" />
             <p className="text-xs leading-5 text-[var(--app-muted)]">
               Телефон получает только те модули, которые существуют в мобильном приложении. Перед
-              каждым запуском на телефоне можно временно отключить любой модуль. «Обучение»,
-              «Доски» и другие desktop-only данные в мобильный sync-протокол не входят.
+              каждым запуском на телефоне можно временно отключить любой модуль. «Обучение», «Доски»
+              и другие desktop-only данные в мобильный sync-протокол не входят.
             </p>
           </div>
         </div>

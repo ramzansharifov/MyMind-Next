@@ -329,10 +329,7 @@ function parseSummaries(value: unknown, modules: readonly SyncModule[]): SyncMod
   })
 }
 
-function parseInventory(
-  value: unknown,
-  modules: readonly SyncModule[]
-): SyncInventoryResponse {
+function parseInventory(value: unknown, modules: readonly SyncModule[]): SyncInventoryResponse {
   const input = record(value)
   if (
     typeof input.generatedAt !== 'number' ||

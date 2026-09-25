@@ -213,9 +213,7 @@ export function MobileProfileSyncSettings(): React.JSX.Element {
       const next = await lanSync.preview(device)
       setPreview(next)
       setSelectedModules(new Set(next.modules.map((item) => item.module)))
-      setMessage(
-        `Подключено к «${device.deviceName}». Проверьте модули перед синхронизацией.`
-      )
+      setMessage(`Подключено к «${device.deviceName}». Проверьте модули перед синхронизацией.`)
     } catch (reason) {
       setError(messageFor(reason))
     } finally {

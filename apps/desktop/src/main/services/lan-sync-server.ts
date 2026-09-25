@@ -128,7 +128,10 @@ function privateRemoteAddress(value: string | undefined): boolean {
     )
   }
   const parts = normalized.split('.').map(Number)
-  if (parts.length !== 4 || parts.some((part) => !Number.isInteger(part) || part < 0 || part > 255)) {
+  if (
+    parts.length !== 4 ||
+    parts.some((part) => !Number.isInteger(part) || part < 0 || part > 255)
+  ) {
     return false
   }
   const [a, b] = parts
@@ -172,7 +175,6 @@ function jsonResponse(response: ServerResponse, status: number, value: unknown):
 function errorResponse(response: ServerResponse, status: number, message: string): void {
   jsonResponse(response, status, { error: message })
 }
-
 
 const secureRequestIds = new WeakMap<IncomingMessage, string>()
 
@@ -250,7 +252,6 @@ function cleanupSessions(sessions: Map<string, Session>, now = Date.now()): void
     sessions.delete(token)
   }
 }
-
 
 function isProtectedPath(path: string): boolean {
   return (
@@ -402,8 +403,7 @@ function decodeBase64(value: unknown): Buffer {
 function getOrCreateDeviceId(): string {
   const sqlite = getSqlite()
   const row = sqlite.prepare('SELECT value FROM app_meta WHERE key = ?').get(DEVICE_META_KEY) as
-    | { value: string }
-    | undefined
+    { value: string } | undefined
   if (row?.value) return row.value
   const value = randomUUID()
   sqlite
@@ -793,9 +793,7 @@ export class LanSyncServer {
         errorResponse(response, 401, 'Sync session is not authorized')
         return
       }
-      const raw = record(
-        await readSecureJson(request, session, 'POST', '/mymind-sync/v1/plan')
-      )
+      const raw = record(await readSecureJson(request, session, 'POST', '/mymind-sync/v1/plan'))
       const remoteSnapshot = parseSyncDataSnapshot(raw.snapshot)
       const clientAssets = parseAssetManifest(raw.assets)
       const modules = remoteSnapshot.modules.map((module) => module.module)
@@ -924,13 +922,7 @@ export class LanSyncServer {
         return
       }
       const raw = record(
-        await readSecureJson(
-          request,
-          session,
-          'POST',
-          '/mymind-sync/v1/assets/download',
-          64 * 1024
-        )
+        await readSecureJson(request, session, 'POST', '/mymind-sync/v1/assets/download', 64 * 1024)
       )
       const plan = this.planFor(session, raw.planId)
       if (!plan) {
@@ -1018,11 +1010,7 @@ export class LanSyncServer {
       )
       for (const baseline of plan.serverBaselineAssets) {
         const current = currentServerAssets.get(baseline.path)
-        if (
-          !current ||
-          current.size !== baseline.size ||
-          current.sha256 !== baseline.sha256
-        ) {
+        if (!current || current.size !== baseline.size || current.sha256 !== baseline.sha256) {
           throw new Error(
             `Файл «${baseline.fileName}» изменился на компьютере во время синхронизации. Повторите синхронизацию.`
           )
