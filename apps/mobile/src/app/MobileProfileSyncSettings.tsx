@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Switch, Text, TextInput, View } from 'react-native'
 import {
-  MOBILE_SYNC_MODULES,
   type LanSyncDevice,
   type LocalProfile,
   type MobileSyncModule,
