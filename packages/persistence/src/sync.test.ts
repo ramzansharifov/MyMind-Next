@@ -15,6 +15,7 @@ import {
   ensureSyncInfrastructure,
   mergeSyncSnapshots,
   reconcileSyncSnapshotForeignKeys,
+  summarizeSyncInventory,
   summarizeSyncMerge
 } from './sync'
 
@@ -143,6 +144,37 @@ describe('LAN sync snapshot merge', () => {
     } finally {
       left.close()
       right.close()
+    }
+  })
+
+  it('summarizes visible records and tombstones for a sync preview', () => {
+    const db = createDatabase()
+    try {
+      const database = adapt(db)
+      ensureSyncInfrastructure(database)
+
+      db.prepare(
+        `INSERT INTO task_groups(id, name, icon, color, position, created_at, updated_at)
+         VALUES ('group-preview', 'Работа', 'folder', 'violet', 0, 1, 1)`
+      ).run()
+      db.prepare(
+        `INSERT INTO tasks(
+          id, title, description, group_id, status, priority, due_date, due_time,
+          completed_at, created_at, updated_at
+        ) VALUES ('task-preview', 'Проверить sync', '', 'group-preview', 'active', 'normal', NULL, NULL, NULL, 1, 1)`
+      ).run()
+      db.prepare("DELETE FROM task_groups WHERE id = 'group-preview'").run()
+
+      const snapshot = captureSyncSnapshot(database, ['tasks'], 123)
+      expect(summarizeSyncInventory(snapshot)).toEqual([
+        {
+          module: 'tasks',
+          records: 1,
+          deleted: 1
+        }
+      ])
+    } finally {
+      db.close()
     }
   })
 
