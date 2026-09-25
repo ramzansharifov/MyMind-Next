@@ -628,5 +628,3 @@ export function MobileProfileSyncSettings(): React.JSX.Element {
     </View>
   )
 }
-
-export const MOBILE_PROFILE_SYNC_MODULES = MOBILE_SYNC_MODULES
