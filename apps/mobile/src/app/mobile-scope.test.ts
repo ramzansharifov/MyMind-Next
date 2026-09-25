@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { MOBILE_SYNC_MODULES } from '@mymind/contracts/profile-sync'
 
 import { navigationRoutes, routeIcons, routeTitles } from './navigation'
 
@@ -13,6 +14,14 @@ describe('mobile module scope', () => {
     expect(navigationRoutes).not.toContain('workouts')
     expect(routeTitles).not.toHaveProperty('workouts')
     expect(routeIcons).not.toHaveProperty('workouts')
+  })
+
+  it('allows sync only for modules that exist on the phone', () => {
+    const mobileDataRoutes = navigationRoutes.filter(
+      (route) => route !== 'home' && route !== 'settings'
+    )
+    expect([...MOBILE_SYNC_MODULES]).toEqual(mobileDataRoutes)
+    expect(MOBILE_SYNC_MODULES).not.toContain('workouts')
   })
 
   it('uses one direct module list without the old More tab', () => {
