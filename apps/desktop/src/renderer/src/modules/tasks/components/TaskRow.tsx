@@ -100,10 +100,16 @@ export function TaskRow({
             <span
               className={cn(
                 'block max-w-full whitespace-normal break-words text-sm leading-5 font-semibold transition-colors',
-                completed
-                  ? 'text-[var(--app-muted)] line-through decoration-emerald-300/65 decoration-1'
-                  : 'text-[var(--app-text)]'
+                completed ? 'text-[var(--app-muted)]' : 'text-[var(--app-text)]'
               )}
+              style={
+                completed
+                  ? {
+                      textDecorationLine: 'line-through',
+                      textDecorationColor: 'rgb(110 231 183 / 0.65)'
+                    }
+                  : undefined
+              }
             >
               {task.title}
             </span>
