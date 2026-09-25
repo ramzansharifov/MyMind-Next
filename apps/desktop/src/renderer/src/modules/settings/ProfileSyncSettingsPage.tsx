@@ -11,7 +11,8 @@ import {
   Server,
   ShieldCheck,
   UserRound,
-  Wifi
+  Wifi,
+  type LucideIcon
 } from 'lucide-react'
 import type { LocalProfile, ProfileGender } from '@mymind/contracts/profile-sync'
 import type { LanSyncHostStatus } from '../../../../shared/contracts/profile-sync'
@@ -43,7 +44,7 @@ function StatusCard({
   detail,
   active = false
 }: {
-  icon: React.ComponentType<{ className?: string }>
+  icon: LucideIcon
   label: string
   value: string
   detail: string
@@ -54,8 +55,8 @@ function StatusCard({
       className={[
         'flex min-h-20 items-center gap-3 rounded-2xl border px-4 py-3.5',
         active
-          ? 'border-accent-500/30 bg-accent-500/8'
-          : 'border-[var(--app-border)] bg-[var(--app-workspace)]/70'
+          ? 'border-accent-500/30 bg-accent-500/10'
+          : 'border-[var(--app-border)] bg-[var(--app-workspace)]'
       ].join(' ')}
     >
       <div
@@ -198,7 +199,7 @@ export function ProfileSyncSettingsPage(): React.JSX.Element {
 
         <header className="relative flex flex-wrap items-center justify-between gap-4 border-b border-[var(--app-border)] px-5 py-4">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="border-accent-500/20 bg-accent-500/12 text-accent-300 flex size-11 shrink-0 items-center justify-center rounded-2xl border">
+            <div className="border-accent-500/20 bg-accent-500/10 text-accent-300 flex size-11 shrink-0 items-center justify-center rounded-2xl border">
               <ShieldCheck className="size-5" />
             </div>
             <div className="min-w-0">
@@ -209,15 +210,15 @@ export function ProfileSyncSettingsPage(): React.JSX.Element {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)]/75 px-3 py-2 text-[11px] text-[var(--app-muted)]">
+          <div className="flex items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 py-2 text-[11px] text-[var(--app-muted)]">
             <LockKeyhole className="text-accent-300 size-3.5" />
             Пароль не хранится и не передаётся по сети
           </div>
         </header>
 
         <div className="relative grid gap-5 p-5 xl:grid-cols-[240px_minmax(0,1fr)]">
-          <aside className="flex min-h-64 flex-col items-center justify-center rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)]/70 px-5 py-6 text-center">
-            <div className="border-accent-500/25 bg-accent-500/14 text-accent-300 flex size-24 items-center justify-center rounded-[30px] border shadow-[0_14px_40px_rgba(16,185,129,0.08)]">
+          <aside className="flex min-h-64 flex-col items-center justify-center rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-5 py-6 text-center">
+            <div className="border-accent-500/25 bg-accent-500/10 text-accent-300 flex size-24 items-center justify-center rounded-[30px] border shadow-[0_14px_40px_rgba(16,185,129,0.08)]">
               <UserRound className="size-11" strokeWidth={1.7} />
             </div>
             <p className="mt-4 max-w-full truncate text-base font-semibold text-[var(--app-text)]">
@@ -226,7 +227,7 @@ export function ProfileSyncSettingsPage(): React.JSX.Element {
             <p className="mt-1 max-w-full truncate text-xs text-[var(--app-muted)]">
               {profile ? `@${profile.login}` : 'Профиль ещё не создан'}
             </p>
-            <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-emerald-400/15 bg-emerald-400/8 px-3 py-1.5 text-[11px] font-medium text-emerald-300">
+            <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-emerald-400/15 bg-emerald-400/10 px-3 py-1.5 text-[11px] font-medium text-emerald-300">
               <span className="size-1.5 rounded-full bg-emerald-300" />
               Локальное хранение
             </div>
@@ -235,7 +236,7 @@ export function ProfileSyncSettingsPage(): React.JSX.Element {
             </p>
           </aside>
 
-          <div className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-background)]/25 p-4">
+          <div className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-4">
             <div className="grid gap-4 md:grid-cols-2">
               <Field label="Логин *">
                 <div className="relative">
@@ -266,7 +267,7 @@ export function ProfileSyncSettingsPage(): React.JSX.Element {
                     type="button"
                     aria-label={showPassword ? 'Скрыть пароль' : 'Показать пароль'}
                     onClick={() => setShowPassword((value) => !value)}
-                    className="absolute top-1/2 right-2 flex size-8 -translate-y-1/2 items-center justify-center rounded-lg text-[var(--app-muted)] transition hover:bg-[var(--app-raised)] hover:text-[var(--app-text)]"
+                    className="absolute top-1/2 right-2 flex size-8 -translate-y-1/2 items-center justify-center rounded-lg text-[var(--app-muted)] transition hover:bg-[var(--app-surface-raised)] hover:text-[var(--app-text)]"
                   >
                     {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                   </button>
@@ -334,7 +335,7 @@ export function ProfileSyncSettingsPage(): React.JSX.Element {
                     type="button"
                     disabled={busy || !password}
                     onClick={() => void saveCredentials()}
-                    className="inline-flex h-10 items-center gap-2 rounded-xl border border-[var(--app-border-strong)] bg-[var(--app-workspace)] px-4 text-sm font-medium text-[var(--app-text)] transition hover:bg-[var(--app-raised)] disabled:opacity-45"
+                    className="inline-flex h-10 items-center gap-2 rounded-xl border border-[var(--app-border-strong)] bg-[var(--app-workspace)] px-4 text-sm font-medium text-[var(--app-text)] transition hover:bg-[var(--app-surface-raised)] disabled:opacity-45"
                   >
                     <KeyRound className="size-4" />
                     Сменить логин / пароль
@@ -346,13 +347,13 @@ export function ProfileSyncSettingsPage(): React.JSX.Element {
             {error ? (
               <div
                 role="alert"
-                className="mt-4 rounded-xl border border-red-400/20 bg-red-400/8 px-3.5 py-3 text-sm text-red-300"
+                className="mt-4 rounded-xl border border-red-400/20 bg-red-400/10 px-3.5 py-3 text-sm text-red-300"
               >
                 {error}
               </div>
             ) : null}
             {message ? (
-              <div className="mt-4 rounded-xl border border-emerald-400/20 bg-emerald-400/8 px-3.5 py-3 text-sm text-emerald-300">
+              <div className="mt-4 rounded-xl border border-emerald-400/20 bg-emerald-400/10 px-3.5 py-3 text-sm text-emerald-300">
                 {message}
               </div>
             ) : null}
@@ -363,7 +364,7 @@ export function ProfileSyncSettingsPage(): React.JSX.Element {
       <section className="overflow-hidden rounded-3xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-sm">
         <header className="flex flex-wrap items-center justify-between gap-4 border-b border-[var(--app-border)] px-5 py-4">
           <div className="flex items-center gap-3">
-            <div className="border-accent-500/20 bg-accent-500/12 text-accent-300 flex size-11 items-center justify-center rounded-2xl border">
+            <div className="border-accent-500/20 bg-accent-500/10 text-accent-300 flex size-11 items-center justify-center rounded-2xl border">
               <Wifi className="size-5" />
             </div>
             <div>
@@ -377,7 +378,7 @@ export function ProfileSyncSettingsPage(): React.JSX.Element {
             type="button"
             aria-label="Обновить состояние локальной сети"
             onClick={() => void load()}
-            className="inline-flex h-10 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 text-xs font-medium text-[var(--app-text)] transition hover:bg-[var(--app-raised)]"
+            className="inline-flex h-10 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 text-xs font-medium text-[var(--app-text)] transition hover:bg-[var(--app-surface-raised)]"
           >
             <RefreshCw className="size-4" />
             Обновить
@@ -430,7 +431,7 @@ export function ProfileSyncSettingsPage(): React.JSX.Element {
             </div>
           ) : null}
 
-          <div className="flex items-start gap-3 rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)]/65 px-4 py-3.5">
+          <div className="flex items-start gap-3 rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-4 py-3.5">
             <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[var(--app-surface)] text-[var(--app-muted)]">
               <Clock3 className="size-4" />
             </div>
@@ -445,7 +446,7 @@ export function ProfileSyncSettingsPage(): React.JSX.Element {
             </div>
           </div>
 
-          <div className="border-accent-500/15 bg-accent-500/7 flex items-start gap-3 rounded-2xl border px-4 py-3.5">
+          <div className="border-accent-500/15 bg-accent-500/10 flex items-start gap-3 rounded-2xl border px-4 py-3.5">
             <ShieldCheck className="text-accent-300 mt-0.5 size-4.5 shrink-0" />
             <p className="text-xs leading-5 text-[var(--app-muted)]">
               Телефон получает только те модули, которые существуют в мобильном приложении. Перед
