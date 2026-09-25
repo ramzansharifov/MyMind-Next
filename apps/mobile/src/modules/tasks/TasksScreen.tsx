@@ -1,5 +1,14 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
-import { FlatList, Pressable, ScrollView, Text, TextInput, View } from 'react-native'
+import {
+  FlatList,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  View
+} from 'react-native'
 import { type TaskGroupRecord, type TaskRecord } from '@mymind/contracts/tasks'
 import * as schema from '@mymind/core/validation/tasks'
 import { sortTasks } from '@mymind/core/tasks'
@@ -208,7 +217,10 @@ export function TasksScreen(): React.JSX.Element {
   })
 
   return (
-    <View style={{ flex: 1, minHeight: 0 }}>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={{ flex: 1, minHeight: 0 }}
+    >
       <View style={{ marginBottom: 12 }}>
         <SwipeTabBar
           items={STATUS_FILTERS}
@@ -593,6 +605,6 @@ export function TasksScreen(): React.JSX.Element {
       </AppDialog>
 
       {form && <FormSheet spec={form} close={() => setForm(null)} />}
-    </View>
+    </KeyboardAvoidingView>
   )
 }
