@@ -17,10 +17,11 @@ import {
 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
-import type {
-  MusicItemRecord,
-  MusicOverview,
-  MusicPlaylistRecord
+import {
+  musicItemArtist,
+  type MusicItemRecord,
+  type MusicOverview,
+  type MusicPlaylistRecord
 } from '../../../../../shared/contracts/music'
 import { AppSelect, type AppSelectOption } from '../../../shared/ui/AppSelect'
 
@@ -140,7 +141,7 @@ export function MusicLibraryNavigation({
   const activeFilterCount = Object.values(filters).filter((value) => value !== 'all').length
   const filterOptions = useMemo(
     () => ({
-      artists: uniqueSorted(items.map((item) => item.artist)),
+      artists: uniqueSorted(items.map((item) => musicItemArtist(item))),
       years: Array.from(
         new Set(items.flatMap((item) => (item.year === null ? [] : [item.year])))
       ).sort((a, b) => b - a)
@@ -418,7 +419,7 @@ function TrackGrid({
   return (
     <div className="grid grid-cols-3 gap-3 max-[960px]:grid-cols-2 max-[620px]:grid-cols-1">
       {items.map((item) => {
-        const artist = item.artist
+        const artist = musicItemArtist(item)
         const duration = formatDuration(item.durationSeconds)
         const youtubeSearchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(`${item.title} ${artist}`)}`
 
@@ -733,10 +734,10 @@ export function MusicLibraryContent({
       if (scope.kind === 'favorites' && !item.favorite) return false
       if (scope.kind === 'playlist' && !selectedPlaylist?.trackIds.includes(item.id)) return false
       if (scope.kind === 'playlists') return false
-      if (filters.artist !== 'all' && item.artist !== filters.artist) return false
+      if (filters.artist !== 'all' && musicItemArtist(item) !== filters.artist) return false
       if (filters.year !== 'all' && item.year?.toString() !== filters.year) return false
       if (!search) return true
-      return [item.title, item.artist].join(' ').toLocaleLowerCase('ru-RU').includes(search)
+      return [item.title, musicItemArtist(item)].join(' ').toLocaleLowerCase('ru-RU').includes(search)
     })
   }, [filters, overview.items, scope.kind, search, selectedPlaylist])
 
