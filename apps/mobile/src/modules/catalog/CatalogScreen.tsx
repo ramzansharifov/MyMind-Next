@@ -303,7 +303,10 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
     return playlist.trackIds.some((itemId) => {
       const item = musicItems.find((entry) => entry.id === itemId)
       return item
-        ? [item.title, item.artist].join(' ').toLocaleLowerCase('ru').includes(normalizedQuery)
+        ? [item.title, musicItemArtist(item)]
+            .join(' ')
+            .toLocaleLowerCase('ru')
+            .includes(normalizedQuery)
         : false
     })
   })
