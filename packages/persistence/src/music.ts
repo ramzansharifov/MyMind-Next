@@ -12,7 +12,6 @@ import type {
   SetMusicItemPlaylistsInput,
   UpdateMusicItemInput,
   UpdateMusicPlaylistInput,
-  UpsertMusicItemInput,
   UpsertMusicLibraryInput,
   UpsertMusicLibraryResult,
   UpsertMusicPlaylistInput
