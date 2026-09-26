@@ -77,6 +77,29 @@ describe('MusicPage dialogs', () => {
     expect(header?.contains(navigation)).toBe(true)
   })
 
+  it('нормализует старые artists[] записи до рендера фильтров', async () => {
+    mocks.listOverview.mockResolvedValue({
+      items: [
+        {
+          id: 'legacy-track',
+          title: 'Legacy Track',
+          artists: ['The Weeknd'],
+          year: 2020,
+          durationSeconds: 180,
+          favorite: false,
+          createdAt: 1,
+          updatedAt: 2
+        }
+      ],
+      playlists: []
+    } as unknown as MusicOverview)
+
+    render(<MusicPage />)
+
+    expect(await screen.findByText('Legacy Track')).toBeInTheDocument()
+    expect(screen.getByText('The Weeknd')).toBeInTheDocument()
+  })
+
   it('показывает полный JSON библиотеки и отдельного трека', async () => {
     const user = userEvent.setup()
     const playlist = {
