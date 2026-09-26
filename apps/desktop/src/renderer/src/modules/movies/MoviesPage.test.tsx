@@ -145,6 +145,29 @@ describe('MoviesPage', () => {
     expect(screen.getByRole('button', { name: 'Добавить' })).toBeDisabled()
   })
 
+  it('shows complete JSON for the whole library and an individual movie', async () => {
+    const user = userEvent.setup()
+    mocks.listOverview.mockResolvedValue({ movies: [movie] })
+    render(<MoviesPage />)
+
+    await screen.findByText('Интерстеллар')
+    await user.click(screen.getByRole('button', { name: 'JSON библиотеки' }))
+
+    const libraryJson = screen.getByRole('textbox', { name: 'JSON данных фильмов' })
+    expect(JSON.parse((libraryJson as HTMLTextAreaElement).value)).toEqual([movie])
+    expect((libraryJson as HTMLTextAreaElement).value).toContain('"createdAt": 1')
+    expect((libraryJson as HTMLTextAreaElement).value).toContain('"updatedAt": 2')
+
+    await user.click(screen.getByRole('button', { name: 'Закрыть' }))
+    await user.click(screen.getByRole('button', { name: 'Открыть фильм «Интерстеллар»' }))
+    await user.click(screen.getByRole('button', { name: 'JSON' }))
+
+    const movieJson = screen.getByRole('textbox', { name: 'JSON данных фильмов' })
+    const parsedMovie = JSON.parse((movieJson as HTMLTextAreaElement).value) as MovieRecord
+    expect(parsedMovie).toEqual(movie)
+    expect(Array.isArray(parsedMovie)).toBe(false)
+  })
+
   it('keeps the module header clean and puts movie actions into it', async () => {
     const user = userEvent.setup()
     mocks.listOverview.mockResolvedValue({ movies: [movie] })
