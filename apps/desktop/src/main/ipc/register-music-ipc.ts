@@ -11,7 +11,8 @@ import {
   musicWebSearchInputSchema,
   setMusicItemPlaylistsInputSchema,
   updateMusicItemInputSchema,
-  updateMusicPlaylistInputSchema
+  updateMusicPlaylistInputSchema,
+  upsertMusicLibraryInputSchema
 } from '../../shared/validation/music'
 import {
   createMusicItem,
@@ -22,6 +23,7 @@ import {
   getMusicItem,
   listMusicOverview,
   setMusicItemPlaylists,
+  upsertMusicLibrary,
   updateMusicItem,
   updateMusicPlaylist
 } from '../repositories/music.repository'
@@ -41,6 +43,11 @@ export function registerMusicIpcHandlers(): void {
   )
   ipcMain.handle(MUSIC_IPC_CHANNELS.createItems, (_event, rawInput: unknown) =>
     mainOperationTracker.run(() => createMusicItems(createMusicItemsInputSchema.parse(rawInput)))
+  )
+  ipcMain.handle(MUSIC_IPC_CHANNELS.upsertLibrary, (_event, rawInput: unknown) =>
+    mainOperationTracker.run(() =>
+      upsertMusicLibrary(upsertMusicLibraryInputSchema.parse(rawInput))
+    )
   )
   ipcMain.handle(MUSIC_IPC_CHANNELS.updateItem, (_event, rawInput: unknown) =>
     mainOperationTracker.run(() => updateMusicItem(updateMusicItemInputSchema.parse(rawInput)))

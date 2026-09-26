@@ -137,6 +137,17 @@ export const createMoviesInputSchema = z
   })
   .strict()
 
+export const upsertMovieInputSchema = movieBaseInputSchema
+  .extend({ id: movieSafeIdSchema.nullish() })
+  .strict()
+  .superRefine(validateMovieMetadata)
+
+export const upsertMoviesInputSchema = z
+  .object({
+    movies: z.array(upsertMovieInputSchema).min(1).max(100)
+  })
+  .strict()
+
 export const updateMovieInputSchema = movieBaseInputSchema
   .extend({ id: movieSafeIdSchema })
   .strict()

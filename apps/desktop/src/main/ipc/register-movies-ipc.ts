@@ -7,7 +7,8 @@ import {
   deleteMovieInputSchema,
   getMovieInputSchema,
   movieWebSearchInputSchema,
-  updateMovieInputSchema
+  updateMovieInputSchema,
+  upsertMoviesInputSchema
 } from '../../shared/validation/movies'
 import {
   createMovie,
@@ -15,7 +16,8 @@ import {
   deleteMovie,
   getMovie,
   listMoviesOverview,
-  updateMovie
+  updateMovie,
+  upsertMovies
 } from '../repositories/movies.repository'
 import { mainOperationTracker } from '../services/main-operation-tracker'
 
@@ -33,6 +35,9 @@ export function registerMoviesIpcHandlers(): void {
   )
   ipcMain.handle(MOVIES_IPC_CHANNELS.createMovies, (_event, rawInput: unknown) =>
     mainOperationTracker.run(() => createMovies(createMoviesInputSchema.parse(rawInput)))
+  )
+  ipcMain.handle(MOVIES_IPC_CHANNELS.upsertMovies, (_event, rawInput: unknown) =>
+    mainOperationTracker.run(() => upsertMovies(upsertMoviesInputSchema.parse(rawInput)))
   )
   ipcMain.handle(MOVIES_IPC_CHANNELS.updateMovie, (_event, rawInput: unknown) =>
     mainOperationTracker.run(() => updateMovie(updateMovieInputSchema.parse(rawInput)))

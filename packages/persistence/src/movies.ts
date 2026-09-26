@@ -8,7 +8,10 @@ import type {
   MovieStatus,
   MovieType,
   MoviesOverview,
-  UpdateMovieInput
+  UpdateMovieInput,
+  UpsertMovieInput,
+  UpsertMoviesInput,
+  UpsertMoviesResult
 } from '@mymind/contracts/movies'
 
 export function createMoviesRepository(runtime: RepositoryRuntime): MoviesRepository {
@@ -165,8 +168,8 @@ FROM movies`
     return findMovie(input.id)
   }
 
-  function insertMovie(input: CreateMovieInput): MovieRecord {
-    const id = randomUUID()
+  function insertMovie(input: CreateMovieInput, requestedId?: string | null): MovieRecord {
+    const id = requestedId ?? randomUUID()
     const now = runtime.now()
     getSqlite()
       .prepare(
@@ -209,6 +212,24 @@ FROM movies`
     return transaction(input.movies)
   }
 
+  function upsertMovies(input: UpsertMoviesInput): UpsertMoviesResult {
+    const transaction = getSqlite().transaction((movies: UpsertMovieInput[]) => {
+      let created = 0
+      let updated = 0
+      const records = movies.map((movie) => {
+        const { id, ...payload } = movie
+        if (id && findMovie(id)) {
+          updated += 1
+          return updateMovie({ id, ...payload })
+        }
+        created += 1
+        return insertMovie(payload, id)
+      })
+      return { movies: records, created, updated }
+    })
+    return transaction(input.movies)
+  }
+
   function updateMovie(input: UpdateMovieInput): MovieRecord {
     const existing = requireMovie(input.id)
     const now = runtime.now()
@@ -245,7 +266,15 @@ FROM movies`
     const result = getSqlite().prepare('DELETE FROM movies WHERE id = ?').run(input.id)
     return result.changes > 0
   }
-  return { listMoviesOverview, getMovie, createMovie, createMovies, updateMovie, deleteMovie }
+  return {
+    listMoviesOverview,
+    getMovie,
+    createMovie,
+    createMovies,
+    upsertMovies,
+    updateMovie,
+    deleteMovie
+  }
 }
 
 export interface MoviesRepository {
@@ -253,6 +282,7 @@ export interface MoviesRepository {
   getMovie(input: GetMovieInput): MovieRecord | null
   createMovie(input: CreateMovieInput): MovieRecord
   createMovies(input: CreateMoviesInput): MovieRecord[]
+  upsertMovies(input: UpsertMoviesInput): UpsertMoviesResult
   updateMovie(input: UpdateMovieInput): MovieRecord
   deleteMovie(input: DeleteMovieInput): boolean
 }

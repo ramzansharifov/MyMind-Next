@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { ScrollView, TextInput, View } from 'react-native'
-import type { CreateMovieInput } from '@mymind/contracts/movies'
-import type { CreateMusicItemInput } from '@mymind/contracts/music'
+import type { UpsertMovieInput } from '@mymind/contracts/movies'
+import type { UpsertMusicLibraryInput } from '@mymind/contracts/music'
 import { parseMoviesJson, parseMusicJson } from '@mymind/core/catalog-json-import'
 import { AppDialog } from '../../shared/ui/AppDialog'
 import { Button, ErrorState, Label } from '../../shared/ui/primitives'
@@ -38,8 +38,8 @@ const MUSIC_EXAMPLE = `[
 interface CatalogJsonImportModalProps {
   mode: 'movies' | 'music'
   close(): void
-  importMovies(items: CreateMovieInput[]): void | Promise<void>
-  importMusic(items: CreateMusicItemInput[]): void | Promise<void>
+  importMovies(items: UpsertMovieInput[]): void | Promise<void>
+  importMusic(input: UpsertMusicLibraryInput): void | Promise<void>
 }
 
 export function CatalogJsonImportModal({
@@ -61,8 +61,9 @@ export function CatalogJsonImportModal({
     [mode, value]
   )
   const error = submitError || parsed.error || ''
-  const title = mode === 'movies' ? 'Добавить фильмы из JSON' : 'Добавить музыку из JSON'
+  const title = mode === 'movies' ? 'Применить JSON фильмов' : 'Применить JSON музыки'
   const example = mode === 'movies' ? MOVIE_EXAMPLE : MUSIC_EXAMPLE
+  const importCount = parsed.items.length + (parsed.mode === 'music' ? parsed.playlists.length : 0)
 
   const requestClose = (): void => {
     if (busy) return
@@ -81,12 +82,17 @@ export function CatalogJsonImportModal({
   }
 
   const submit = async (): Promise<void> => {
-    if (busy || parsed.error || parsed.items.length === 0) return
+    if (
+      busy ||
+      parsed.error ||
+      (parsed.items.length === 0 && (parsed.mode === 'movies' || parsed.playlists.length === 0))
+    )
+      return
     setBusy(true)
     setSubmitError('')
     try {
       if (parsed.mode === 'movies') await importMovies(parsed.items)
-      else await importMusic(parsed.items)
+      else await importMusic({ items: parsed.items, playlists: parsed.playlists })
       setValue('')
       close()
     } catch (reason) {
@@ -103,7 +109,7 @@ export function CatalogJsonImportModal({
         if (!open) requestClose()
       }}
       title={title}
-      description="Один объект или массив до 100 записей. Проверка выполняется локально до записи в базу."
+      description="Существующий id обновляется, новый или отсутствующий id создаёт новую запись."
       icon={mode === 'movies' ? 'movies' : 'music'}
       presentation="sheet"
       busy={busy}
@@ -111,15 +117,9 @@ export function CatalogJsonImportModal({
         <>
           <Button label="Отмена" disabled={busy} onPress={requestClose} />
           <Button
-            label={
-              busy
-                ? 'Добавление…'
-                : parsed.items.length > 1
-                  ? `Добавить ${parsed.items.length}`
-                  : 'Добавить'
-            }
+            label={busy ? 'Применение…' : 'Применить JSON'}
             primary
-            disabled={busy || parsed.items.length === 0 || Boolean(parsed.error)}
+            disabled={busy || importCount === 0 || Boolean(parsed.error)}
             onPress={() => void submit()}
           />
         </>
@@ -167,8 +167,12 @@ export function CatalogJsonImportModal({
         />
 
         {error ? <ErrorState message={error} /> : null}
-        {!error && parsed.items.length > 0 ? (
-          <Label muted>Готово к добавлению: {parsed.items.length}</Label>
+        {!error && importCount > 0 ? (
+          <Label muted>
+            {parsed.mode === 'movies'
+              ? `Готово к применению: ${parsed.items.length}`
+              : `Готово: треков ${parsed.items.length}, плейлистов ${parsed.playlists.length}`}
+          </Label>
         ) : null}
       </ScrollView>
     </AppDialog>

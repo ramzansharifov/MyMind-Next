@@ -19,6 +19,21 @@ describe('catalog JSON import parsing', () => {
     ])
   })
 
+  it('preserves movie ids so exported JSON can update the same record', () => {
+    const result = parseMoviesJson(
+      JSON.stringify({
+        id: 'movie-existing',
+        title: 'Arrival',
+        createdAt: 10,
+        updatedAt: 20
+      })
+    )
+    expect(result.error).toBeNull()
+    expect(result.items[0]).toMatchObject({ id: 'movie-existing', title: 'Arrival' })
+    expect(result.items[0]).not.toHaveProperty('createdAt')
+    expect(result.items[0]).not.toHaveProperty('updatedAt')
+  })
+
   it('keeps episodic movie metadata', () => {
     const result = parseMoviesJson(
       JSON.stringify({
@@ -48,6 +63,55 @@ describe('catalog JSON import parsing', () => {
         year: null,
         durationSeconds: null,
         favorite: false
+      }
+    ])
+  })
+
+  it('accepts a full exported music overview and preserves ids and playlist links', () => {
+    const result = parseMusicJson(
+      JSON.stringify({
+        items: [
+          {
+            id: 'track-existing',
+            title: 'Blinding Lights',
+            artist: 'The Weeknd',
+            year: 2019,
+            durationSeconds: 200,
+            favorite: true,
+            createdAt: 1,
+            updatedAt: 2
+          }
+        ],
+        playlists: [
+          {
+            id: 'playlist-existing',
+            name: 'Favorites',
+            coverUrl: null,
+            trackIds: ['track-existing'],
+            createdAt: 3,
+            updatedAt: 4
+          }
+        ]
+      })
+    )
+
+    expect(result.error).toBeNull()
+    expect(result.items).toEqual([
+      {
+        id: 'track-existing',
+        title: 'Blinding Lights',
+        artist: 'The Weeknd',
+        year: 2019,
+        durationSeconds: 200,
+        favorite: true
+      }
+    ])
+    expect(result.playlists).toEqual([
+      {
+        id: 'playlist-existing',
+        name: 'Favorites',
+        coverUrl: null,
+        trackIds: ['track-existing']
       }
     ])
   })
@@ -86,7 +150,7 @@ describe('catalog JSON import parsing', () => {
       ])
     )
     expect(invalid.items).toEqual([])
-    expect(invalid.error).toMatch(/^Запись 2/)
+    expect(invalid.error).toMatch(/^Трек 2/)
   })
 
   it('rejects empty arrays and imports larger than the desktop limit', () => {
@@ -95,11 +159,11 @@ describe('catalog JSON import parsing', () => {
       parseMusicJson(
         JSON.stringify(Array.from({ length: 101 }, () => ({ title: 'x', artist: 'Artist' })))
       ).error
-    ).toBe('За один раз можно добавить до 100 записей')
+    ).toBe('За один раз можно обработать до 100 треков')
   })
 
   it('treats blank input as an idle editor rather than an error', () => {
     expect(parseMoviesJson('   ')).toEqual({ items: [], error: null })
-    expect(parseMusicJson('')).toEqual({ items: [], error: null })
+    expect(parseMusicJson('')).toEqual({ items: [], playlists: [], error: null })
   })
 })

@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   getMovie: vi.fn(),
   createMovie: vi.fn(),
   createMovies: vi.fn(),
+  upsertMovies: vi.fn(),
   updateMovie: vi.fn(),
   deleteMovie: vi.fn(),
   searchWeb: vi.fn()
@@ -46,7 +47,7 @@ beforeEach(() => {
   mocks.listOverview.mockResolvedValue({ movies: [] })
   mocks.getMovie.mockResolvedValue(null)
   mocks.createMovie.mockResolvedValue(movie)
-  mocks.createMovies.mockResolvedValue([movie])
+  mocks.upsertMovies.mockResolvedValue({ movies: [movie], created: 1, updated: 0 })
   mocks.updateMovie.mockImplementation(async (input) => ({ ...movie, ...input, updatedAt: 3 }))
   mocks.deleteMovie.mockResolvedValue(true)
   mocks.searchWeb.mockResolvedValue(undefined)
@@ -69,7 +70,14 @@ describe('MoviesPage', () => {
       rating: null,
       status: 'watchlist'
     }
-    mocks.createMovies.mockResolvedValue([movie, secondMovie])
+    mocks.upsertMovies.mockResolvedValue({
+      movies: [movie, secondMovie],
+      created: 2,
+      updated: 0
+    })
+    mocks.listOverview
+      .mockResolvedValueOnce({ movies: [] })
+      .mockResolvedValue({ movies: [movie, secondMovie] })
 
     render(<MoviesPage />)
     await screen.findByText('Библиотека пока пустая')
@@ -83,11 +91,11 @@ describe('MoviesPage', () => {
       }
     })
 
-    expect(screen.getByText('Готово к добавлению: 2')).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Добавить 2 фильма' }))
+    expect(screen.getByText('Готово к применению: 2')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Применить JSON' }))
 
-    await waitFor(() => expect(mocks.createMovies).toHaveBeenCalledOnce())
-    expect(mocks.createMovies).toHaveBeenCalledWith({
+    await waitFor(() => expect(mocks.upsertMovies).toHaveBeenCalledOnce())
+    expect(mocks.upsertMovies).toHaveBeenCalledWith({
       movies: [
         expect.objectContaining({ title: 'Интерстеллар', type: 'movie' }),
         expect.objectContaining({
@@ -105,6 +113,31 @@ describe('MoviesPage', () => {
     expect(screen.getByText('Мультсериал')).toBeInTheDocument()
   })
 
+  it('preserves exported ids when applying JSON updates', async () => {
+    const user = userEvent.setup()
+    render(<MoviesPage />)
+    await screen.findByText('Библиотека пока пустая')
+    await user.click(screen.getByRole('button', { name: 'Из JSON' }))
+
+    fireEvent.change(screen.getByRole('textbox', { name: 'JSON фильмов' }), {
+      target: {
+        value: JSON.stringify({
+          id: 'movie-existing',
+          title: 'Updated movie',
+          createdAt: 1,
+          updatedAt: 2
+        })
+      }
+    })
+    await user.click(screen.getByRole('button', { name: 'Применить JSON' }))
+
+    await waitFor(() =>
+      expect(mocks.upsertMovies).toHaveBeenCalledWith({
+        movies: [expect.objectContaining({ id: 'movie-existing', title: 'Updated movie' })]
+      })
+    )
+  })
+
   it('keeps JSON import backward-compatible by defaulting omitted type to movie', async () => {
     const user = userEvent.setup()
     render(<MoviesPage />)
@@ -114,10 +147,10 @@ describe('MoviesPage', () => {
     fireEvent.change(screen.getByRole('textbox', { name: 'JSON фильмов' }), {
       target: { value: '{"title":"Дюна"}' }
     })
-    await user.click(screen.getByRole('button', { name: 'Добавить' }))
+    await user.click(screen.getByRole('button', { name: 'Применить JSON' }))
 
     await waitFor(() =>
-      expect(mocks.createMovies).toHaveBeenCalledWith({
+      expect(mocks.upsertMovies).toHaveBeenCalledWith({
         movies: [
           expect.objectContaining({
             title: 'Дюна',
@@ -142,7 +175,7 @@ describe('MoviesPage', () => {
     })
 
     expect(await screen.findByText(/Тип должен быть одним из/)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Добавить' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Применить JSON' })).toBeDisabled()
   })
 
   it('shows complete JSON for the whole library and an individual movie', async () => {

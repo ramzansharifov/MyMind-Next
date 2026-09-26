@@ -373,7 +373,7 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
               title: `JSON · ${selectedMovie.title}`,
               description: 'Полная сохранённая запись этого фильма',
               json: stringifyMovieJson(selectedMovie),
-              note: 'Полная сохранённая запись MyMind, включая id, createdAt и updatedAt. Служебные поля игнорируются текущим JSON-импортом, поэтому этот объект можно использовать для повторного импорта.',
+              note: 'Оставьте id, чтобы повторная вставка JSON обновила именно этот фильм. createdAt и updatedAt при импорте не подменяют локальные временные метки.',
               accessibilityLabel: 'JSON данных фильма'
             })
           }
@@ -437,7 +437,7 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
                       title: 'JSON библиотеки',
                       description: `Полные сохранённые данные всех фильмов · ${allMovieItems.length}`,
                       json: stringifyMovieJson(allMovieItems),
-                      note: 'Полная сохранённая библиотека MyMind. Служебные поля id, createdAt и updatedAt игнорируются текущим JSON-импортом.',
+                      note: 'JSON библиотеки можно вставить обратно: фильмы с существующим id обновятся, новые записи создадутся. createdAt и updatedAt не подменяют локальные временные метки.',
                       accessibilityLabel: 'JSON данных фильмов'
                     })
                   }
@@ -536,7 +536,7 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
                       title: 'JSON музыкальной библиотеки',
                       description: `Полные данные: ${musicItems.length} записей · ${musicPlaylists.length} плейлистов`,
                       json: stringifyMusicJson({ items: musicItems, playlists: musicPlaylists }),
-                      note: 'MusicOverview содержит реальные данные треков и плейлистов. Обложка есть только у плейлиста; связи с треками хранятся в его trackIds.',
+                      note: 'Полный MusicOverview можно вставить обратно целиком: существующие id обновятся, новые создадутся, а trackIds восстановят состав плейлистов.',
                       accessibilityLabel: 'JSON данных музыки'
                     })
                   }
@@ -650,7 +650,7 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
                 title: `JSON · ${item.title}`,
                 description: 'Полная сохранённая запись этого трека',
                 json: stringifyMusicJson(item),
-                note: 'Трек содержит только название, исполнителя, год, длительность и признак избранного. id, createdAt и updatedAt являются служебными полями MyMind.',
+                note: 'Оставьте id, чтобы повторная вставка JSON обновила именно этот трек. createdAt и updatedAt при импорте не подменяют локальные временные метки.',
                 accessibilityLabel: 'JSON данных трека'
               })
             }
@@ -659,7 +659,7 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
                 title: `JSON · ${playlist.name}`,
                 description: 'Полная сохранённая запись этого плейлиста',
                 json: stringifyMusicJson(playlist),
-                note: 'Плейлист содержит название, необязательную обложку и trackIds — связи с треками. id, createdAt и updatedAt являются служебными полями MyMind.',
+                note: 'Оставьте id, чтобы обновить этот же плейлист. trackIds задают его состав при импорте.',
                 accessibilityLabel: 'JSON данных плейлиста'
               })
             }
@@ -765,11 +765,11 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
           mode={mode}
           close={() => setJsonImportOpen(false)}
           importMovies={(importedItems) => {
-            services.movies.createMovies({ movies: importedItems })
+            services.movies.upsertMovies({ movies: importedItems })
             state.refresh()
           }}
-          importMusic={(importedItems) => {
-            services.music.createMusicItems({ items: importedItems })
+          importMusic={(input) => {
+            services.music.upsertMusicLibrary(input)
             state.refresh()
           }}
         />

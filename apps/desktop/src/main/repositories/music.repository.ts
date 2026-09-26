@@ -6,6 +6,7 @@ export const {
   getMusicItem,
   createMusicItem,
   createMusicItems,
+  upsertMusicLibrary,
   updateMusicItem,
   deleteMusicItem,
   createMusicPlaylist,

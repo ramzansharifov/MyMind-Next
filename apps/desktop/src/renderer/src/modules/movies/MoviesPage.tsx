@@ -24,7 +24,8 @@ import type {
   CreateMovieInput,
   MovieRecord,
   MovieType,
-  UpdateMovieInput
+  UpdateMovieInput,
+  UpsertMovieInput
 } from '../../../../shared/contracts/movies'
 import { AppSelect, type AppSelectOption } from '../../shared/ui/AppSelect'
 import { DeleteConfirmationDialog } from '../../shared/ui/DeleteConfirmationDialog'
@@ -345,12 +346,12 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
     }
   }
 
-  async function importMovies(inputs: CreateMovieInput[]): Promise<void> {
+  async function importMovies(inputs: UpsertMovieInput[]): Promise<void> {
     setIsSaving(true)
     setError(null)
     try {
-      const created = await moviesClient.createMovies({ movies: inputs })
-      setMovies((current) => [...created, ...current])
+      await moviesClient.upsertMovies({ movies: inputs })
+      await loadOverview()
     } catch (reason) {
       setError(errorMessage(reason))
       throw reason
