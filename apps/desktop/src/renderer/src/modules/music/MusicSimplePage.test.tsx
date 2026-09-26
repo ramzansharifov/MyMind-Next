@@ -42,6 +42,7 @@ beforeEach(() => {
   mocks.getItem.mockResolvedValue(null)
   mocks.createItem.mockResolvedValue(createdTrack)
   mocks.createItems.mockResolvedValue([createdTrack])
+  mocks.upsertLibrary.mockResolvedValue({ items: [createdTrack], playlists: [], createdItems: 1, updatedItems: 0, createdPlaylists: 0, updatedPlaylists: 0 })
   mocks.updateItem.mockResolvedValue(createdTrack)
   mocks.deleteItem.mockResolvedValue(true)
   mocks.createPlaylist.mockResolvedValue({
@@ -139,7 +140,7 @@ describe('MusicPage dialogs', () => {
     expect((playlistJson as HTMLTextAreaElement).value).toContain('"coverUrl"')
   })
 
-  it('импортирует музыкальные записи из JSON', async () => {
+  it('применяет музыкальные записи из JSON через upsert', async () => {
     const user = userEvent.setup()
     render(<MusicPage />)
 
@@ -152,17 +153,18 @@ describe('MusicPage dialogs', () => {
       }
     })
 
-    await user.click(screen.getByRole('button', { name: 'Добавить' }))
+    await user.click(screen.getByRole('button', { name: 'Применить · 1' }))
 
     await waitFor(() =>
-      expect(mocks.createItems).toHaveBeenCalledWith({
+      expect(mocks.upsertLibrary).toHaveBeenCalledWith({
         items: [
           expect.objectContaining({
             title: 'Blinding Lights',
             artist: 'The Weeknd',
             year: 2019
           })
-        ]
+        ],
+        playlists: []
       })
     )
   })
