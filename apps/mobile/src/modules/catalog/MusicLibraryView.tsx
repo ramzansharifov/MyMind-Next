@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { FlatList, Image, Pressable, Text, View } from 'react-native'
-import type { MusicItemRecord, MusicPlaylistRecord } from '@mymind/contracts/music'
+import { musicItemArtist, type MusicItemRecord, type MusicPlaylistRecord } from '@mymind/contracts/music'
 import {
   ArrowLeft,
   Braces,
@@ -104,7 +104,7 @@ function TrackCard({
 }): React.JSX.Element {
   const theme = useTheme()
   const [actionsOpen, setActionsOpen] = useState(false)
-  const artist = item.artist
+  const artist = musicItemArtist(item)
   const duration = formatMusicDuration(item.durationSeconds)
   const details = [artist, item.year !== null ? String(item.year) : '', duration]
     .filter(Boolean)
