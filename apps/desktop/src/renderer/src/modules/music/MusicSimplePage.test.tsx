@@ -41,7 +41,6 @@ beforeEach(() => {
   mocks.listOverview.mockResolvedValue(emptyOverview)
   mocks.getItem.mockResolvedValue(null)
   mocks.createItem.mockResolvedValue(createdTrack)
-  mocks.upsertLibrary.mockResolvedValue([createdTrack])
   mocks.upsertLibrary.mockResolvedValue({
     overview: { items: [createdTrack], playlists: [] },
     itemsCreated: 1,
@@ -169,7 +168,8 @@ describe('MusicPage dialogs', () => {
             artist: 'The Weeknd',
             year: 2019
           })
-        ]
+        ],
+        playlists: []
       })
     )
   })
