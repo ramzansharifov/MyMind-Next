@@ -695,8 +695,7 @@ export function MusicPage({ resourceId, onResourceHandled }: MusicPageProps): Re
       title: `JSON · ${item.title}`,
       description: 'Полная сохранённая запись этого трека',
       value: item,
-      note:
-        'Это полный MusicItemRecord, включая id, createdAt и updatedAt. Служебные поля игнорируются текущим JSON-импортом, поэтому этот объект можно использовать как источник для повторного импорта.'
+      note: 'Это полный MusicItemRecord, включая id, createdAt и updatedAt. Служебные поля игнорируются текущим JSON-импортом, поэтому этот объект можно использовать как источник для повторного импорта.'
     })
   }
 
@@ -705,8 +704,7 @@ export function MusicPage({ resourceId, onResourceHandled }: MusicPageProps): Re
       title: 'JSON музыкальной библиотеки',
       description: `Полные данные: ${overview.items.length} записей · ${overview.playlists.length} плейлистов`,
       value: overview,
-      note:
-        'Это полный MusicOverview: items содержит музыкальные записи, playlists — плейлисты и их trackIds. Для повторного импорта записей используйте массив items; текущий импорт не восстанавливает плейлисты автоматически.'
+      note: 'Это полный MusicOverview: items содержит музыкальные записи, playlists — плейлисты и их trackIds. Для повторного импорта записей используйте массив items; текущий импорт не восстанавливает плейлисты автоматически.'
     })
   }
 

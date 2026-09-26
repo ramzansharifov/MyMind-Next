@@ -124,8 +124,7 @@ describe('MusicPage dialogs', () => {
 
     fireEvent.change(screen.getByRole('textbox', { name: 'JSON музыки' }), {
       target: {
-        value:
-          '{"title":"Blinding Lights","type":"track","artists":["The Weeknd"],"year":2019}'
+        value: '{"title":"Blinding Lights","type":"track","artists":["The Weeknd"],"year":2019}'
       }
     })
 

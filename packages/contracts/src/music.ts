@@ -123,6 +123,8 @@ export interface MusicApi {
   searchWeb(input: MusicWebSearchInput): Promise<void>
 }
 
-export function stringifyMusicJson(value: MusicItemRecord | MusicPlaylistRecord | MusicOverview): string {
+export function stringifyMusicJson(
+  value: MusicItemRecord | MusicPlaylistRecord | MusicOverview
+): string {
   return JSON.stringify(value, null, 2) ?? ''
 }

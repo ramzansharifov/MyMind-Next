@@ -372,8 +372,7 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
               title: `JSON · ${selectedMovie.title}`,
               description: 'Полная сохранённая запись этого фильма',
               json: stringifyMovieJson(selectedMovie),
-              note:
-                'Полная сохранённая запись MyMind, включая id, createdAt и updatedAt. Служебные поля игнорируются текущим JSON-импортом, поэтому этот объект можно использовать для повторного импорта.',
+              note: 'Полная сохранённая запись MyMind, включая id, createdAt и updatedAt. Служебные поля игнорируются текущим JSON-импортом, поэтому этот объект можно использовать для повторного импорта.',
               accessibilityLabel: 'JSON данных фильма'
             })
           }
@@ -437,8 +436,7 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
                       title: 'JSON библиотеки',
                       description: `Полные сохранённые данные всех фильмов · ${allMovieItems.length}`,
                       json: stringifyMovieJson(allMovieItems),
-                      note:
-                        'Полная сохранённая библиотека MyMind. Служебные поля id, createdAt и updatedAt игнорируются текущим JSON-импортом.',
+                      note: 'Полная сохранённая библиотека MyMind. Служебные поля id, createdAt и updatedAt игнорируются текущим JSON-импортом.',
                       accessibilityLabel: 'JSON данных фильмов'
                     })
                   }
@@ -537,8 +535,7 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
                       title: 'JSON музыкальной библиотеки',
                       description: `Полные данные: ${musicItems.length} записей · ${musicPlaylists.length} плейлистов`,
                       json: stringifyMusicJson({ items: musicItems, playlists: musicPlaylists }),
-                      note:
-                        'Полный MusicOverview: items содержит музыкальные записи, playlists — плейлисты и их trackIds. Для повторного импорта записей используйте массив items; текущий импорт не восстанавливает плейлисты автоматически.',
+                      note: 'Полный MusicOverview: items содержит музыкальные записи, playlists — плейлисты и их trackIds. Для повторного импорта записей используйте массив items; текущий импорт не восстанавливает плейлисты автоматически.',
                       accessibilityLabel: 'JSON данных музыки'
                     })
                   }
@@ -652,8 +649,7 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
                 title: `JSON · ${item.title}`,
                 description: 'Полная сохранённая запись этого трека',
                 json: stringifyMusicJson(item),
-                note:
-                  'Полный MusicItemRecord, включая id, createdAt и updatedAt. Служебные поля игнорируются текущим JSON-импортом, поэтому этот объект можно использовать для повторного импорта.',
+                note: 'Полный MusicItemRecord, включая id, createdAt и updatedAt. Служебные поля игнорируются текущим JSON-импортом, поэтому этот объект можно использовать для повторного импорта.',
                 accessibilityLabel: 'JSON данных трека'
               })
             }
