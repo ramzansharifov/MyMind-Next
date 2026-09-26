@@ -433,6 +433,8 @@ const api: MyMindApi = {
       invokeWithSuccess(MOVIES_IPC_CHANNELS.createMovie, 'Фильм добавлен', input),
     createMovies: (input) =>
       invokeWithSuccess(MOVIES_IPC_CHANNELS.createMovies, 'Фильмы добавлены', input),
+    upsertMovies: (input) =>
+      invokeWithSuccess(MOVIES_IPC_CHANNELS.upsertMovies, 'JSON фильмов применён', input),
     updateMovie: (input) =>
       invokeWithSuccess(MOVIES_IPC_CHANNELS.updateMovie, 'Изменения фильма сохранены', input),
     deleteMovie: (input) =>
@@ -446,6 +448,8 @@ const api: MyMindApi = {
     createItem: (input) => invokeWithSuccess(MUSIC_IPC_CHANNELS.createItem, 'Трек добавлен', input),
     createItems: (input) =>
       invokeWithSuccess(MUSIC_IPC_CHANNELS.createItems, 'Треки добавлены', input),
+    upsertLibrary: (input) =>
+      invokeWithSuccess(MUSIC_IPC_CHANNELS.upsertLibrary, 'JSON музыки применён', input),
     updateItem: (input) =>
       invokeWithSuccess(MUSIC_IPC_CHANNELS.updateItem, 'Изменения трека сохранены', input),
     deleteItem: (input) => invokeWithSuccess(MUSIC_IPC_CHANNELS.deleteItem, 'Трек удалён', input),
