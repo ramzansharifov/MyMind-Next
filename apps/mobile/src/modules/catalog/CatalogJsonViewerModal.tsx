@@ -1,7 +1,6 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { Platform, ScrollView, Text, View } from 'react-native'
 import * as Clipboard from 'expo-clipboard'
-import { stringifyMovieJson, type MovieRecord } from '@mymind/contracts/movies'
 
 import { AppDialog } from '../../shared/ui/AppDialog'
 import { Button } from '../../shared/ui/primitives'
@@ -10,18 +9,21 @@ import { useTheme } from '../../shared/ui/theme'
 export function CatalogJsonViewerModal({
   title,
   description,
-  value,
+  json,
+  note,
+  accessibilityLabel,
   close
 }: {
   title: string
   description: string
-  value: MovieRecord | readonly MovieRecord[]
+  json: string
+  note: string
+  accessibilityLabel: string
   close(): void
 }): React.JSX.Element {
   const theme = useTheme()
   const [copied, setCopied] = useState(false)
   const [copyError, setCopyError] = useState('')
-  const json = useMemo(() => stringifyMovieJson(value), [value])
 
   const copy = async (): Promise<void> => {
     setCopyError('')
@@ -66,11 +68,7 @@ export function CatalogJsonViewerModal({
             backgroundColor: theme.background
           }}
         >
-          <Text style={{ color: theme.muted, fontSize: 11.5, lineHeight: 17 }}>
-            Полная сохранённая запись MyMind, включая id, createdAt и updatedAt. Эти служебные поля
-            игнорируются текущим JSON-импортом, поэтому скопированные данные можно использовать и
-            для повторного импорта.
-          </Text>
+          <Text style={{ color: theme.muted, fontSize: 11.5, lineHeight: 17 }}>{note}</Text>
         </View>
 
         <ScrollView
@@ -87,7 +85,7 @@ export function CatalogJsonViewerModal({
         >
           <Text
             selectable
-            accessibilityLabel="JSON данных фильмов"
+            accessibilityLabel={accessibilityLabel}
             style={{
               color: theme.text,
               fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',

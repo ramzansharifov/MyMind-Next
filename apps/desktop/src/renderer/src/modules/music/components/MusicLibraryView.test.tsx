@@ -62,6 +62,7 @@ const handlers = {
   onScopeChange: vi.fn(),
   onOpenTrack: vi.fn(),
   onToggleFavorite: vi.fn(),
+  onViewTrackJson: vi.fn(),
   onDeleteTrack: vi.fn(),
   onEditPlaylist: vi.fn(),
   onDeletePlaylist: vi.fn(),

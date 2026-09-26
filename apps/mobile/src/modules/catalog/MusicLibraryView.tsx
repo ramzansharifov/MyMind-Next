@@ -27,6 +27,7 @@ interface MusicLibraryViewProps {
   emptyBecauseFilter: boolean
   onRefresh(): void
   onOpenTrack(item: MusicItemRecord): void
+  onViewJson(item: MusicItemRecord): void
   onToggleFavorite(item: MusicItemRecord): void
   onSearchWeb(item: MusicItemRecord): void
   onDeleteTrack(item: MusicItemRecord): void
@@ -87,12 +88,14 @@ function IconAction({
 function TrackCard({
   item,
   onOpen,
+  onViewJson,
   onToggleFavorite,
   onSearchWeb,
   onDelete
 }: {
   item: MusicItemRecord
   onOpen(): void
+  onViewJson(): void
   onToggleFavorite(): void
   onSearchWeb(): void
   onDelete(): void
@@ -160,6 +163,12 @@ function TrackCard({
             label: 'Открыть на YouTube',
             icon: 'play',
             onPress: onSearchWeb
+          },
+          {
+            key: 'json',
+            label: 'JSON',
+            icon: 'json',
+            onPress: onViewJson
           },
           {
             key: 'favorite',
@@ -341,6 +350,7 @@ export function MusicLibraryView({
   emptyBecauseFilter,
   onRefresh,
   onOpenTrack,
+  onViewJson,
   onToggleFavorite,
   onSearchWeb,
   onDeleteTrack,
@@ -404,6 +414,7 @@ export function MusicLibraryView({
         <TrackCard
           item={item}
           onOpen={() => onOpenTrack(item)}
+          onViewJson={() => onViewJson(item)}
           onToggleFavorite={() => onToggleFavorite(item)}
           onSearchWeb={() => onSearchWeb(item)}
           onDelete={() => onDeleteTrack(item)}
