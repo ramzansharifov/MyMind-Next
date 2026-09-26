@@ -351,7 +351,7 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
     setError(null)
     try {
       await moviesClient.upsertMovies({ movies: inputs })
-      await refresh()
+      await loadOverview()
     } catch (reason) {
       setError(errorMessage(reason))
       throw reason
