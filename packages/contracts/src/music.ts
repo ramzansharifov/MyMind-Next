@@ -124,9 +124,13 @@ export function normalizeMusicItemRecord(value: unknown): MusicItemRecord {
         : null,
     favorite: source.favorite === true,
     createdAt:
-      typeof source.createdAt === 'number' && Number.isFinite(source.createdAt) ? source.createdAt : 0,
+      typeof source.createdAt === 'number' && Number.isFinite(source.createdAt)
+        ? source.createdAt
+        : 0,
     updatedAt:
-      typeof source.updatedAt === 'number' && Number.isFinite(source.updatedAt) ? source.updatedAt : 0
+      typeof source.updatedAt === 'number' && Number.isFinite(source.updatedAt)
+        ? source.updatedAt
+        : 0
   }
 }
 
@@ -144,9 +148,13 @@ export function normalizeMusicPlaylistRecord(value: unknown): MusicPlaylistRecor
       ? source.trackIds.filter((trackId): trackId is string => typeof trackId === 'string')
       : [],
     createdAt:
-      typeof source.createdAt === 'number' && Number.isFinite(source.createdAt) ? source.createdAt : 0,
+      typeof source.createdAt === 'number' && Number.isFinite(source.createdAt)
+        ? source.createdAt
+        : 0,
     updatedAt:
-      typeof source.updatedAt === 'number' && Number.isFinite(source.updatedAt) ? source.updatedAt : 0
+      typeof source.updatedAt === 'number' && Number.isFinite(source.updatedAt)
+        ? source.updatedAt
+        : 0
   }
 }
 
