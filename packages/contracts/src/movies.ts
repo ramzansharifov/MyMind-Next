@@ -92,5 +92,5 @@ export interface MoviesApi {
 }
 
 export function stringifyMovieJson(value: MovieRecord | readonly MovieRecord[]): string {
-  return JSON.stringify(value, null, 2)
+  return JSON.stringify(value, null, 2) ?? ''
 }
