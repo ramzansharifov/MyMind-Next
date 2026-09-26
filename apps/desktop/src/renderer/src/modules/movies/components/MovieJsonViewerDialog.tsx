@@ -1,5 +1,5 @@
 import { Braces, Check, Copy } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 
 import { stringifyMovieJson, type MovieRecord } from '../../../../../shared/contracts/movies'
 import { AppDialog } from '../../../shared/ui/AppDialog'
@@ -22,13 +22,6 @@ export function MovieJsonViewerDialog({
   const [copied, setCopied] = useState(false)
   const [copyError, setCopyError] = useState<string | null>(null)
   const json = useMemo(() => stringifyMovieJson(value), [value])
-
-  useEffect(() => {
-    if (!open) {
-      setCopied(false)
-      setCopyError(null)
-    }
-  }, [open])
 
   async function copyJson(): Promise<void> {
     setCopyError(null)
