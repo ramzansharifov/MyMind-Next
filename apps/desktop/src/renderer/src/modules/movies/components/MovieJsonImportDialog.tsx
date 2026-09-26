@@ -92,7 +92,7 @@ export function MovieJsonImportDialog({
             onClick={() => void submit()}
           >
             {busy && <LoaderCircle className="size-4 animate-spin" />}
-            'Применить JSON'
+            Применить JSON
           </button>
         </>
       }
@@ -150,7 +150,7 @@ export function MovieJsonImportDialog({
           {error}
         </div>
       ) : parsed.items.length > 0 ? (
-        <div className="text-xs text-emerald-300">Готово к добавлению: {parsed.items.length}</div>
+        <div className="text-xs text-emerald-300">Готово к применению: {parsed.items.length}</div>
       ) : null}
     </AppDialog>
   )
