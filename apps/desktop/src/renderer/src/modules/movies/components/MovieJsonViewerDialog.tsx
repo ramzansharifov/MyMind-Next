@@ -66,9 +66,10 @@ export function MovieJsonViewerDialog({
         Это полная сохранённая запись MyMind: включая служебные поля
         <code className="mx-1 text-[var(--app-text)]">id</code>,
         <code className="mx-1 text-[var(--app-text)]">createdAt</code>и
-        <code className="ml-1 text-[var(--app-text)]">updatedAt</code>. Текущий импорт JSON
-        проигнорирует эти служебные поля, поэтому скопированные данные можно использовать и как
-        источник для повторного импорта.
+        <code className="ml-1 text-[var(--app-text)]">updatedAt</code>. При повторной вставке
+        сохранённый <code className="mx-1 text-[var(--app-text)]">id</code> обновит именно эту
+        запись; <code className="text-[var(--app-text)]">createdAt</code> и
+        <code className="ml-1 text-[var(--app-text)]">updatedAt</code> не перезаписываются из JSON.
       </div>
 
       <textarea
