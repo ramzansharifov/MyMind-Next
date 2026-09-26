@@ -1,0 +1,44 @@
+name: Verify music legacy normalization
+
+on:
+  push:
+    branches:
+      - fix/music-legacy-runtime-normalization
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: windows-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Check formatting
+        run: >-
+          npx prettier --check
+          packages/contracts/src/music.ts
+          packages/contracts/src/music.test.ts
+          apps/desktop/src/renderer/src/modules/music/api/music-client.ts
+          apps/desktop/src/renderer/src/modules/music/MusicSimplePage.tsx
+          apps/desktop/src/renderer/src/modules/music/components/MusicLibraryView.tsx
+          apps/mobile/src/modules/catalog/CatalogScreen.tsx
+      - name: Lint changed files
+        run: >-
+          npx eslint
+          packages/contracts/src/music.ts
+          packages/contracts/src/music.test.ts
+          apps/desktop/src/renderer/src/modules/music/api/music-client.ts
+          apps/desktop/src/renderer/src/modules/music/MusicSimplePage.tsx
+          apps/desktop/src/renderer/src/modules/music/components/MusicLibraryView.tsx
+          apps/mobile/src/modules/catalog/CatalogScreen.tsx
+      - run: npm run typecheck
+      - run: npm run test:mobile
+      - run: npm run test:run --workspace=mymind-next -- src/renderer/src/modules/music/MusicSimplePage.test.tsx src/renderer/src/modules/music/components/MusicLibraryView.test.tsx
+      - run: npm run build:bundle
+      - run: npm run export:android
