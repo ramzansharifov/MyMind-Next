@@ -13,6 +13,8 @@ import {
 } from 'lucide-react-native'
 import { stringifyMovieJson, type MovieRecord } from '@mymind/contracts/movies'
 import {
+  musicItemArtist,
+  normalizeMusicOverview,
   stringifyMusicJson,
   type MusicItemRecord,
   type MusicPlaylistRecord
@@ -274,8 +276,15 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
 
   const movieFiltersActive = movieAdvancedFiltersActive(movieAdvancedFilters)
 
-  const musicItems = mode === 'music' ? ((state.data?.items ?? []) as MusicItemRecord[]) : []
-  const musicPlaylists = mode === 'music' ? (state.data?.playlists ?? []) : []
+  const musicOverview =
+    mode === 'music'
+      ? normalizeMusicOverview({
+          items: (state.data?.items ?? []) as MusicItemRecord[],
+          playlists: state.data?.playlists ?? []
+        })
+      : { items: [], playlists: [] }
+  const musicItems = musicOverview.items
+  const musicPlaylists = musicOverview.playlists
   const selectedPlaylist = playlistId
     ? (musicPlaylists.find((playlist) => playlist.id === playlistId) ?? null)
     : null
@@ -283,10 +292,10 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
   const visibleMusicItems = musicItems.filter((item) => {
     if (filter === 'favorite' && !item.favorite) return false
     if (playlistId && !selectedPlaylist?.trackIds.includes(item.id)) return false
-    if (musicArtist && item.artist !== musicArtist) return false
+    if (musicArtist && musicItemArtist(item) !== musicArtist) return false
     if (musicYear && item.year?.toString() !== musicYear) return false
     if (!normalizedQuery) return true
-    return [item.title, item.artist].join(' ').toLocaleLowerCase('ru').includes(normalizedQuery)
+    return [item.title, musicItemArtist(item)].join(' ').toLocaleLowerCase('ru').includes(normalizedQuery)
   })
   const visiblePlaylists = musicPlaylists.filter((playlist) => {
     if (!normalizedQuery) return true
