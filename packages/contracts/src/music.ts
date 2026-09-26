@@ -23,6 +23,57 @@ export interface MusicOverview {
   playlists: MusicPlaylistRecord[]
 }
 
+export function musicItemArtist(value: unknown): string {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return ''
+  const source = value as { artist?: unknown; artists?: unknown }
+
+  if (typeof source.artist === 'string' && source.artist.trim()) {
+    return source.artist.trim()
+  }
+
+  if (Array.isArray(source.artists)) {
+    const legacyArtist = source.artists.find(
+      (artist): artist is string => typeof artist === 'string' && artist.trim() !== ''
+    )
+    return legacyArtist?.trim() ?? ''
+  }
+
+  return ''
+}
+
+export function normalizeMusicItemRecord(value: MusicItemRecord): MusicItemRecord {
+  const source = value as MusicItemRecord & {
+    artists?: unknown
+    coverUrl?: unknown
+    album?: unknown
+    genres?: unknown
+    description?: unknown
+    status?: unknown
+    rating?: unknown
+    comments?: unknown
+    trackCount?: unknown
+    type?: unknown
+  }
+
+  return {
+    id: source.id,
+    title: source.title,
+    artist: musicItemArtist(source),
+    year: source.year ?? null,
+    durationSeconds: source.durationSeconds ?? null,
+    favorite: Boolean(source.favorite),
+    createdAt: source.createdAt,
+    updatedAt: source.updatedAt
+  }
+}
+
+export function normalizeMusicOverview(value: MusicOverview): MusicOverview {
+  return {
+    items: value.items.map(normalizeMusicItemRecord),
+    playlists: value.playlists
+  }
+}
+
 export interface CreateMusicItemInput {
   title: string
   artist: string
@@ -102,5 +153,12 @@ export interface MusicApi {
 export function stringifyMusicJson(
   value: MusicItemRecord | MusicPlaylistRecord | MusicOverview
 ): string {
-  return JSON.stringify(value, null, 2) ?? ''
+  const normalized =
+    'items' in value && 'playlists' in value
+      ? normalizeMusicOverview(value)
+      : 'trackIds' in value
+        ? value
+        : normalizeMusicItemRecord(value)
+
+  return JSON.stringify(normalized, null, 2) ?? ''
 }
