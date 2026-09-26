@@ -16,19 +16,10 @@ function track(overrides: Partial<MusicItemRecord> = {}): MusicItemRecord {
   return {
     id: 'track-1',
     title: 'Blinding Lights',
-    type: 'track',
+    artist: 'The Weeknd',
     year: 2020,
-    coverUrl: null,
-    artists: ['The Weeknd'],
-    album: '',
     durationSeconds: 200,
-    trackCount: null,
-    genres: [],
-    description: '',
-    status: 'listened',
     favorite: false,
-    rating: null,
-    comments: '',
     createdAt: 1,
     updatedAt: 2,
     ...overrides
@@ -46,34 +37,23 @@ describe('mobile music presentation helpers', () => {
     expect(Number.isNaN(parseMusicDuration('3:99'))).toBe(true)
   })
 
-  it('builds the same simplified track payload as the current desktop dialog', () => {
-    const input = musicTrackInputFromDraft(
-      {
-        title: '  Blinding Lights  ',
-        artist: ' The Weeknd ',
-        year: '2020',
-        duration: '3:20',
-        favorite: true
-      },
-      track({ status: 'want_to_listen', rating: 8, coverUrl: 'https://example.com/old.jpg' })
-    )
+  it('builds exactly the simplified track payload used by the editor', () => {
+    const input = musicTrackInputFromDraft({
+      title: '  Blinding Lights  ',
+      artist: ' The Weeknd ',
+      year: '2020',
+      duration: '3:20',
+      favorite: true
+    })
 
     expect(input).toEqual({
       title: 'Blinding Lights',
-      type: 'track',
+      artist: 'The Weeknd',
       year: 2020,
-      coverUrl: null,
-      artists: ['The Weeknd'],
-      album: '',
       durationSeconds: 200,
-      trackCount: null,
-      genres: [],
-      description: '',
-      status: 'want_to_listen',
-      favorite: true,
-      rating: null,
-      comments: ''
+      favorite: true
     })
+    expect(input).not.toHaveProperty('coverUrl')
   })
 
   it('requires both title and artist for the simplified track editor', () => {
@@ -98,7 +78,7 @@ describe('mobile music presentation helpers', () => {
   })
 
   it('maps records into strict update payloads without persistence timestamps', () => {
-    const record = track({ favorite: true, rating: 9 })
+    const record = track({ favorite: true })
     const input = musicRecordToUpdateInput(record)
 
     expect(input).not.toHaveProperty('createdAt')
@@ -110,16 +90,17 @@ describe('mobile music presentation helpers', () => {
     expect(musicYoutubeSearchUrl(track())).toBe(
       'https://www.youtube.com/results?search_query=Blinding%20Lights%20The%20Weeknd'
     )
-    expect(musicYoutubeSearchUrl(track({ title: 'Молитва', artists: ['БИ-2'] }))).toBe(
+    expect(musicYoutubeSearchUrl(track({ title: 'Молитва', artist: 'БИ-2' }))).toBe(
       'https://www.youtube.com/results?search_query=%D0%9C%D0%BE%D0%BB%D0%B8%D1%82%D0%B2%D0%B0%20%D0%91%D0%98-2'
     )
   })
 
   it('derives stable artist and year filter choices from existing records', () => {
     const items = [
-      track({ id: '1', artists: ['Zed', 'Alpha'], year: 2024 }),
-      track({ id: '2', artists: ['Alpha'], year: 2020 }),
-      track({ id: '3', artists: ['Beta'], year: 2024 })
+      track({ id: '1', artist: 'Zed', year: 2024 }),
+      track({ id: '2', artist: 'Alpha', year: 2020 }),
+      track({ id: '3', artist: 'Beta', year: 2024 }),
+      track({ id: '4', artist: 'Alpha', year: null })
     ]
 
     expect(musicFilterArtists(items)).toEqual(['Alpha', 'Beta', 'Zed'])
