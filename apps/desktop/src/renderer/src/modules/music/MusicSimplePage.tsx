@@ -90,7 +90,7 @@ function playlistIdsForTrack(playlists: MusicPlaylistRecord[], itemId: string): 
 function draftFromItem(item: MusicItemRecord | null, playlists: MusicPlaylistRecord[]): TrackDraft {
   return {
     title: item?.title ?? '',
-    artist: item?.artists[0] ?? '',
+    artist: item?.artist ?? '',
     year: item?.year?.toString() ?? '',
     duration: formatDurationInput(item?.durationSeconds ?? null),
     favorite: item?.favorite ?? false,
@@ -98,28 +98,13 @@ function draftFromItem(item: MusicItemRecord | null, playlists: MusicPlaylistRec
   }
 }
 
-function itemInputFromDraft(
-  draft: TrackDraft,
-  previous: MusicItemRecord | null
-): CreateMusicItemInput {
-  const durationSeconds = parseDuration(draft.duration)
-  const artist = draft.artist.trim()
-
+function itemInputFromDraft(draft: TrackDraft): CreateMusicItemInput {
   return {
     title: draft.title,
-    type: 'track',
+    artist: draft.artist,
     year: draft.year.trim() ? Number.parseInt(draft.year, 10) : null,
-    coverUrl: null,
-    artists: artist ? [artist] : [],
-    album: '',
-    durationSeconds,
-    trackCount: null,
-    genres: [],
-    description: '',
-    status: previous?.status ?? 'listened',
-    favorite: draft.favorite,
-    rating: null,
-    comments: ''
+    durationSeconds: parseDuration(draft.duration),
+    favorite: draft.favorite
   }
 }
 
@@ -127,19 +112,10 @@ function updateInputWithFavorite(item: MusicItemRecord, favorite: boolean): Upda
   return {
     id: item.id,
     title: item.title,
-    type: item.type,
+    artist: item.artist,
     year: item.year,
-    coverUrl: item.coverUrl,
-    artists: item.artists,
-    album: item.album,
     durationSeconds: item.durationSeconds,
-    trackCount: item.trackCount,
-    genres: item.genres,
-    description: item.description,
-    status: item.status,
-    favorite,
-    rating: item.rating,
-    comments: item.comments
+    favorite
   }
 }
 
@@ -191,7 +167,7 @@ function TrackDialog({
       return
     }
 
-    const parsed = createMusicItemInputSchema.safeParse(itemInputFromDraft(draft, item))
+    const parsed = createMusicItemInputSchema.safeParse(itemInputFromDraft(draft))
     if (!parsed.success) {
       setError(parsed.error.issues[0]?.message ?? 'Проверьте данные формы')
       return
@@ -220,7 +196,7 @@ function TrackDialog({
                     {item ? 'Редактировать трек' : 'Новый трек'}
                   </Dialog.Title>
                   <Dialog.Description className="mt-1 text-xs leading-5 text-[var(--app-muted)]">
-                    Только нужные данные — без отдельной страницы и без обложки трека.
+                    Название, исполнитель, год, длительность, избранное и плейлисты.
                   </Dialog.Description>
                 </div>
               </div>
@@ -690,6 +666,16 @@ export function MusicPage({ resourceId, onResourceHandled }: MusicPageProps): Re
     setPlaylistDialogOpen(true)
   }
 
+  function openPlaylistJson(playlist: MusicPlaylistRecord): void {
+    setJsonView({
+      title: `JSON · ${playlist.name}`,
+      description: 'Полная сохранённая запись этого плейлиста',
+      value: playlist,
+      note:
+        'Плейлист содержит название, необязательную обложку и trackIds — связи с треками. id, createdAt и updatedAt являются служебными полями MyMind.'
+    })
+  }
+
   function openTrackJson(item: MusicItemRecord): void {
     setJsonView({
       title: `JSON · ${item.title}`,
@@ -728,7 +714,7 @@ export function MusicPage({ resourceId, onResourceHandled }: MusicPageProps): Re
     setIsSaving(true)
     setError(null)
     try {
-      const input = itemInputFromDraft(draft, trackDialogItem)
+      const input = itemInputFromDraft(draft)
       const parsed = createMusicItemInputSchema.parse(input)
       const saved = trackDialogItem
         ? await musicClient.updateItem({ ...parsed, id: trackDialogItem.id })
@@ -895,6 +881,7 @@ export function MusicPage({ resourceId, onResourceHandled }: MusicPageProps): Re
         onOpenTrack={openTrackEditor}
         onToggleFavorite={(item) => void toggleFavorite(item)}
         onViewTrackJson={openTrackJson}
+        onViewPlaylistJson={openPlaylistJson}
         onDeleteTrack={setDeleteTarget}
         onEditPlaylist={openPlaylistEditor}
         onDeletePlaylist={setPlaylistDeleteTarget}
