@@ -3,6 +3,7 @@ import * as Popover from '@radix-ui/react-popover'
 import * as Tabs from '@radix-ui/react-tabs'
 import {
   ArrowLeft,
+  Braces,
   Heart,
   ListMusic,
   Music2,
@@ -53,6 +54,7 @@ interface MusicLibraryContentProps {
   onScopeChange: (scope: MusicLibraryScope) => void
   onOpenTrack: (itemId: string) => void
   onToggleFavorite: (item: MusicItemRecord) => void
+  onViewTrackJson: (item: MusicItemRecord) => void
   onDeleteTrack: (item: MusicItemRecord) => void
   onEditPlaylist: (playlist: MusicPlaylistRecord) => void
   onDeletePlaylist: (playlist: MusicPlaylistRecord) => void
@@ -386,6 +388,7 @@ function TrackGrid({
   emptyDescription,
   onOpenTrack,
   onToggleFavorite,
+  onViewTrackJson,
   onDeleteTrack,
   onAddTrack
 }: {
@@ -395,6 +398,7 @@ function TrackGrid({
   emptyDescription?: string
   onOpenTrack: (itemId: string) => void
   onToggleFavorite: (item: MusicItemRecord) => void
+  onViewTrackJson: (item: MusicItemRecord) => void
   onDeleteTrack: (item: MusicItemRecord) => void
   onAddTrack: () => void
 }): React.JSX.Element {
@@ -469,6 +473,16 @@ function TrackGrid({
                   >
                     <Play aria-hidden="true" className="size-3.5" />
                   </a>
+                </Tooltip>
+                <Tooltip content={`Показать JSON трека «${item.title}»`} side="top">
+                  <button
+                    type="button"
+                    aria-label={`JSON трека «${item.title}»`}
+                    className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] outline-none hover:bg-[var(--app-surface)] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-[var(--app-accent-500)]/35"
+                    onClick={() => onViewTrackJson(item)}
+                  >
+                    <Braces aria-hidden="true" className="size-3.5" />
+                  </button>
                 </Tooltip>
                 <Tooltip content={`Редактировать трек «${item.title}»`} side="top">
                   <button
@@ -687,6 +701,7 @@ export function MusicLibraryContent({
   onScopeChange,
   onOpenTrack,
   onToggleFavorite,
+  onViewTrackJson,
   onDeleteTrack,
   onEditPlaylist,
   onDeletePlaylist,
@@ -801,6 +816,7 @@ export function MusicLibraryContent({
           emptyDescription={hasActiveTrackFilter ? undefined : 'Добавьте трек в эту подборку.'}
           onOpenTrack={onOpenTrack}
           onToggleFavorite={onToggleFavorite}
+          onViewTrackJson={onViewTrackJson}
           onDeleteTrack={onDeleteTrack}
           onAddTrack={onAddTrack}
         />
