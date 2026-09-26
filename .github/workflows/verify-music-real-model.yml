@@ -28,6 +28,7 @@ jobs:
           packages/core/src/catalog-json-import.ts
           packages/core/src/catalog-json-import.test.ts
           packages/persistence/src/music.ts
+          packages/persistence/src/mobile-schema.test.ts
           apps/desktop/src/main/database/schema/music.ts
           apps/desktop/src/main/repositories/music.repository.test.ts
           apps/desktop/src/renderer/src/modules/music/MusicSimplePage.tsx
@@ -39,6 +40,7 @@ jobs:
           apps/desktop/src/shared/validation/music.test.ts
           apps/mobile/src/modules/catalog/CatalogJsonImportModal.tsx
           apps/mobile/src/modules/catalog/CatalogScreen.tsx
+          apps/mobile/src/modules/catalog/catalog-forms.ts
           apps/mobile/src/modules/catalog/MusicLibraryView.tsx
           apps/mobile/src/modules/catalog/music-presentation.ts
           apps/mobile/src/modules/catalog/music-presentation.test.ts
@@ -48,7 +50,7 @@ jobs:
           if (-not (git diff --quiet)) {
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add packages/contracts/src/music.ts packages/contracts/src/music.test.ts packages/core/src/validation/music.ts packages/core/src/catalog-json-import.ts packages/core/src/catalog-json-import.test.ts packages/persistence/src/music.ts apps/desktop/src/main/database/schema/music.ts apps/desktop/src/main/repositories/music.repository.test.ts apps/desktop/src/renderer/src/modules/music/MusicSimplePage.tsx apps/desktop/src/renderer/src/modules/music/MusicSimplePage.test.tsx apps/desktop/src/renderer/src/modules/music/components/MusicJsonImportDialog.tsx apps/desktop/src/renderer/src/modules/music/components/MusicJsonViewerDialog.tsx apps/desktop/src/renderer/src/modules/music/components/MusicLibraryView.tsx apps/desktop/src/renderer/src/modules/music/components/MusicLibraryView.test.tsx apps/desktop/src/shared/validation/music.test.ts apps/mobile/src/modules/catalog/CatalogJsonImportModal.tsx apps/mobile/src/modules/catalog/CatalogScreen.tsx apps/mobile/src/modules/catalog/MusicLibraryView.tsx apps/mobile/src/modules/catalog/music-presentation.ts apps/mobile/src/modules/catalog/music-presentation.test.ts
+            git add packages/contracts/src/music.ts packages/contracts/src/music.test.ts packages/core/src/validation/music.ts packages/core/src/catalog-json-import.ts packages/core/src/catalog-json-import.test.ts packages/persistence/src/music.ts packages/persistence/src/mobile-schema.test.ts apps/desktop/src/main/database/schema/music.ts apps/desktop/src/main/repositories/music.repository.test.ts apps/desktop/src/renderer/src/modules/music/MusicSimplePage.tsx apps/desktop/src/renderer/src/modules/music/MusicSimplePage.test.tsx apps/desktop/src/renderer/src/modules/music/components/MusicJsonImportDialog.tsx apps/desktop/src/renderer/src/modules/music/components/MusicJsonViewerDialog.tsx apps/desktop/src/renderer/src/modules/music/components/MusicLibraryView.tsx apps/desktop/src/renderer/src/modules/music/components/MusicLibraryView.test.tsx apps/desktop/src/shared/validation/music.test.ts apps/mobile/src/modules/catalog/CatalogJsonImportModal.tsx apps/mobile/src/modules/catalog/CatalogScreen.tsx apps/mobile/src/modules/catalog/catalog-forms.ts apps/mobile/src/modules/catalog/MusicLibraryView.tsx apps/mobile/src/modules/catalog/music-presentation.ts apps/mobile/src/modules/catalog/music-presentation.test.ts
             git commit -m "style: format simplified music model"
             git push origin HEAD:refactor/music-real-data-model
           }
