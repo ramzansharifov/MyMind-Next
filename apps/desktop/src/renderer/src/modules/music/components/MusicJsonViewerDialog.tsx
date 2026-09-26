@@ -4,7 +4,8 @@ import { useMemo, useState } from 'react'
 import {
   stringifyMusicJson,
   type MusicItemRecord,
-  type MusicOverview
+  type MusicOverview,
+  type MusicPlaylistRecord
 } from '../../../../../shared/contracts/music'
 import { AppDialog } from '../../../shared/ui/AppDialog'
 
@@ -12,7 +13,7 @@ interface MusicJsonViewerDialogProps {
   open: boolean
   title: string
   description: string
-  value: MusicItemRecord | MusicOverview
+  value: MusicItemRecord | MusicPlaylistRecord | MusicOverview
   note: string
   onOpenChange(open: boolean): void
 }
