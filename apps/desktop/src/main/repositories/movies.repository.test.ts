@@ -11,7 +11,8 @@ import {
   deleteMovie,
   getMovie,
   listMoviesOverview,
-  updateMovie
+  updateMovie,
+  upsertMovies
 } from './movies.repository'
 
 let root = ''
@@ -147,6 +148,92 @@ describe('movies repository', () => {
     expect(listMoviesOverview().movies).toHaveLength(0)
   })
 
+  it('updates an exported movie by id without creating a duplicate', () => {
+    const existing = createMovie({
+      title: 'Arrival',
+      originalTitle: 'Arrival',
+      type: 'movie',
+      year: 2016,
+      posterUrl: null,
+      director: 'Denis Villeneuve',
+      runtimeMinutes: 116,
+      genres: ['Фантастика'],
+      actors: [],
+      description: '',
+      status: 'watchlist',
+      favorite: false,
+      rating: null,
+      comments: ''
+    })
+
+    const result = upsertMovies({
+      movies: [
+        {
+          id: existing.id,
+          title: 'Прибытие',
+          originalTitle: 'Arrival',
+          type: 'movie',
+          year: 2016,
+          posterUrl: null,
+          director: 'Denis Villeneuve',
+          runtimeMinutes: 116,
+          seasonCount: null,
+          episodesPerSeason: null,
+          episodeRuntimeMinutes: null,
+          genres: ['Фантастика', 'Драма'],
+          actors: ['Amy Adams'],
+          description: 'Обновлённое описание',
+          status: 'watched',
+          favorite: true,
+          rating: 9,
+          comments: 'Обновлено через JSON'
+        }
+      ]
+    })
+
+    expect(result.created).toBe(0)
+    expect(result.updated).toBe(1)
+    expect(result.movies[0]).toMatchObject({
+      id: existing.id,
+      title: 'Прибытие',
+      favorite: true,
+      rating: 9,
+      comments: 'Обновлено через JSON',
+      createdAt: existing.createdAt
+    })
+    expect(listMoviesOverview().movies).toHaveLength(1)
+  })
+
+  it('preserves a supplied id for a new movie', () => {
+    const result = upsertMovies({
+      movies: [
+        {
+          id: 'movie-imported-1',
+          title: 'Dune',
+          originalTitle: null,
+          type: 'movie',
+          year: 2021,
+          posterUrl: null,
+          director: '',
+          runtimeMinutes: 155,
+          seasonCount: null,
+          episodesPerSeason: null,
+          episodeRuntimeMinutes: null,
+          genres: [],
+          actors: [],
+          description: '',
+          status: 'watchlist',
+          favorite: false,
+          rating: null,
+          comments: ''
+        }
+      ]
+    })
+
+    expect(result.created).toBe(1)
+    expect(result.updated).toBe(0)
+    expect(result.movies[0]?.id).toBe('movie-imported-1')
+  })
   it('clears rating outside watched state', () => {
     const movie = createMovie({
       title: 'Dune',
