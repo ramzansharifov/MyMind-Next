@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  normalizeMusicItemRecord,
+  normalizeMusicOverview,
   stringifyMusicJson,
   type MusicItemRecord,
   type MusicOverview,
@@ -26,6 +28,51 @@ const playlist: MusicPlaylistRecord = {
   createdAt: 789,
   updatedAt: 999
 }
+
+describe('music runtime compatibility', () => {
+  it('normalizes pre-migration artists arrays into the new artist field', () => {
+    const legacy = {
+      id: 'legacy-track',
+      title: 'Legacy Track',
+      artists: [' Legacy Artist '],
+      year: 2020,
+      durationSeconds: 180,
+      favorite: true,
+      createdAt: 10,
+      updatedAt: 20
+    }
+
+    expect(normalizeMusicItemRecord(legacy)).toEqual({
+      id: 'legacy-track',
+      title: 'Legacy Track',
+      artist: 'Legacy Artist',
+      year: 2020,
+      durationSeconds: 180,
+      favorite: true,
+      createdAt: 10,
+      updatedAt: 20
+    })
+
+    expect(normalizeMusicOverview({ items: [legacy], playlists: [] }).items[0]?.artist).toBe(
+      'Legacy Artist'
+    )
+  })
+
+  it('keeps records without an old artist value safe instead of crashing the UI', () => {
+    expect(
+      normalizeMusicItemRecord({
+        id: 'legacy-empty',
+        title: 'Unknown artist',
+        artists: [],
+        year: null,
+        durationSeconds: null,
+        favorite: false,
+        createdAt: 1,
+        updatedAt: 1
+      }).artist
+    ).toBe('')
+  })
+})
 
 describe('stringifyMusicJson', () => {
   it('serializes only the real public fields of one track', () => {
