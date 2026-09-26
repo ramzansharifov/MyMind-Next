@@ -11,7 +11,11 @@ import type {
   MusicPlaylistRecord,
   SetMusicItemPlaylistsInput,
   UpdateMusicItemInput,
-  UpdateMusicPlaylistInput
+  UpdateMusicPlaylistInput,
+  UpsertMusicItemInput,
+  UpsertMusicLibraryInput,
+  UpsertMusicLibraryResult,
+  UpsertMusicPlaylistInput
 } from '@mymind/contracts/music'
 
 export function createMusicRepository(runtime: RepositoryRuntime): MusicRepository {
@@ -165,8 +169,8 @@ FROM music_items`
     return findItem(input.id)
   }
 
-  function insertItem(input: CreateMusicItemInput): MusicItemRecord {
-    const id = randomUUID()
+  function insertItem(input: CreateMusicItemInput, preferredId?: string): MusicItemRecord {
+    const id = preferredId ?? randomUUID()
     const now = runtime.now()
     getSqlite()
       .prepare(
@@ -238,8 +242,15 @@ FROM music_items`
     return result.changes > 0
   }
 
-  function createMusicPlaylist(input: CreateMusicPlaylistInput): MusicPlaylistRecord {
-    const id = randomUUID()
+  function identityText(value: string): string {
+    return value.trim().toLocaleLowerCase('ru-RU')
+  }
+
+  function insertPlaylist(
+    input: CreateMusicPlaylistInput,
+    preferredId?: string
+  ): MusicPlaylistRecord {
+    const id = preferredId ?? randomUUID()
     const now = runtime.now()
     getSqlite()
       .prepare(
@@ -248,6 +259,133 @@ FROM music_items`
       )
       .run(id, input.name, input.coverUrl ?? null, now, now)
     return requirePlaylist(id)
+  }
+
+  function upsertMusicLibrary(input: UpsertMusicLibraryInput): UpsertMusicLibraryResult {
+    const db = getSqlite()
+    const transaction = db.transaction(
+      (payload: UpsertMusicLibraryInput): UpsertMusicLibraryResult => {
+        const currentItems = new Map(listMusicOverview().items.map((item) => [item.id, item]))
+        const currentPlaylists = new Map(listPlaylists().map((playlist) => [playlist.id, playlist]))
+        const seenItemIds = new Set<string>()
+        const seenPlaylistIds = new Set<string>()
+        const savedItems: MusicItemRecord[] = []
+        const savedPlaylists: MusicPlaylistRecord[] = []
+        let createdItems = 0
+        let updatedItems = 0
+        let createdPlaylists = 0
+        let updatedPlaylists = 0
+
+        for (const item of payload.items) {
+          const explicitId = item.id ?? null
+          if (explicitId) {
+            if (seenItemIds.has(explicitId)) {
+              throw new Error(`JSON содержит повторяющийся id трека: ${explicitId}`)
+            }
+            seenItemIds.add(explicitId)
+          }
+
+          let existing = explicitId ? currentItems.get(explicitId) ?? null : null
+          if (!existing && !explicitId) {
+            const matches = [...currentItems.values()].filter(
+              (candidate) =>
+                identityText(candidate.title) === identityText(item.title) &&
+                identityText(candidate.artist) === identityText(item.artist) &&
+                candidate.year === item.year
+            )
+            if (matches.length === 1) existing = matches[0]!
+            if (matches.length > 1) {
+              throw new Error(
+                `Найдено несколько треков «${item.title}» того же исполнителя и года. Используйте JSON с id.`
+              )
+            }
+          }
+
+          const itemPayload: CreateMusicItemInput = {
+            title: item.title,
+            artist: item.artist,
+            year: item.year,
+            durationSeconds: item.durationSeconds,
+            favorite: item.favorite
+          }
+          const saved = existing
+            ? updateMusicItem({ id: existing.id, ...itemPayload })
+            : insertItem(itemPayload, explicitId ?? undefined)
+          currentItems.set(saved.id, saved)
+          savedItems.push(saved)
+          if (existing) updatedItems += 1
+          else createdItems += 1
+        }
+
+        for (const playlist of payload.playlists) {
+          const explicitId = playlist.id ?? null
+          if (explicitId) {
+            if (seenPlaylistIds.has(explicitId)) {
+              throw new Error(`JSON содержит повторяющийся id плейлиста: ${explicitId}`)
+            }
+            seenPlaylistIds.add(explicitId)
+          }
+
+          let existing = explicitId ? currentPlaylists.get(explicitId) ?? null : null
+          if (!existing && !explicitId) {
+            const matches = [...currentPlaylists.values()].filter(
+              (candidate) => identityText(candidate.name) === identityText(playlist.name)
+            )
+            if (matches.length === 1) existing = matches[0]!
+            if (matches.length > 1) {
+              throw new Error(
+                `Найдено несколько плейлистов «${playlist.name}». Используйте JSON с id.`
+              )
+            }
+          }
+
+          const playlistPayload: CreateMusicPlaylistInput = {
+            name: playlist.name,
+            coverUrl: playlist.coverUrl ?? null
+          }
+          const saved = existing
+            ? updateMusicPlaylist({ id: existing.id, ...playlistPayload })
+            : insertPlaylist(playlistPayload, explicitId ?? undefined)
+          currentPlaylists.set(saved.id, saved)
+
+          const missingTrackId = playlist.trackIds.find((trackId) => !findItem(trackId))
+          if (missingTrackId) {
+            throw new Error(
+              `Плейлист «${playlist.name}» ссылается на неизвестный trackId: ${missingTrackId}`
+            )
+          }
+
+          db.prepare('DELETE FROM music_playlist_items WHERE playlist_id = ?').run(saved.id)
+          const insertMembership = db.prepare(
+            `INSERT INTO music_playlist_items (playlist_id, music_item_id, created_at)
+             VALUES (?, ?, ?)`
+          )
+          const now = runtime.now()
+          for (const trackId of playlist.trackIds) {
+            insertMembership.run(saved.id, trackId, now)
+          }
+
+          savedPlaylists.push(requirePlaylist(saved.id))
+          if (existing) updatedPlaylists += 1
+          else createdPlaylists += 1
+        }
+
+        return {
+          items: savedItems,
+          playlists: savedPlaylists,
+          createdItems,
+          updatedItems,
+          createdPlaylists,
+          updatedPlaylists
+        }
+      }
+    )
+
+    return transaction(input)
+  }
+
+  function createMusicPlaylist(input: CreateMusicPlaylistInput): MusicPlaylistRecord {
+    return insertPlaylist(input)
   }
 
   function updateMusicPlaylist(input: UpdateMusicPlaylistInput): MusicPlaylistRecord {
@@ -289,6 +427,7 @@ FROM music_items`
     getMusicItem,
     createMusicItem,
     createMusicItems,
+    upsertMusicLibrary,
     updateMusicItem,
     deleteMusicItem,
     createMusicPlaylist,
@@ -303,6 +442,7 @@ export interface MusicRepository {
   getMusicItem(input: GetMusicItemInput): MusicItemRecord | null
   createMusicItem(input: CreateMusicItemInput): MusicItemRecord
   createMusicItems(input: CreateMusicItemsInput): MusicItemRecord[]
+  upsertMusicLibrary(input: UpsertMusicLibraryInput): UpsertMusicLibraryResult
   updateMusicItem(input: UpdateMusicItemInput): MusicItemRecord
   deleteMusicItem(input: DeleteMusicItemInput): boolean
   createMusicPlaylist(input: CreateMusicPlaylistInput): MusicPlaylistRecord
