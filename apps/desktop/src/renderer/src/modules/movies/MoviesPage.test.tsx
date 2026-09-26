@@ -72,6 +72,9 @@ describe('MoviesPage', () => {
       status: 'watchlist'
     }
     mocks.upsertMovies.mockResolvedValue({ movies: [movie, secondMovie], created: 2, updated: 0 })
+    mocks.listOverview
+      .mockResolvedValueOnce({ movies: [] })
+      .mockResolvedValueOnce({ movies: [movie, secondMovie] })
 
     render(<MoviesPage />)
     await screen.findByText('Библиотека пока пустая')
@@ -119,7 +122,7 @@ describe('MoviesPage', () => {
     await user.click(screen.getByRole('button', { name: 'Применить · 1' }))
 
     await waitFor(() =>
-      expect(mocks.createMovies).toHaveBeenCalledWith({
+      expect(mocks.upsertMovies).toHaveBeenCalledWith({
         movies: [
           expect.objectContaining({
             title: 'Дюна',
@@ -144,7 +147,7 @@ describe('MoviesPage', () => {
     })
 
     expect(await screen.findByText(/Тип должен быть одним из/)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Добавить' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Применить · 0' })).toBeDisabled()
   })
 
   it('shows complete JSON for the whole library and an individual movie', async () => {
