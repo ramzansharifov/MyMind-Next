@@ -14,6 +14,7 @@ import {
   getMusicItem,
   listMusicOverview,
   setMusicItemPlaylists,
+  upsertMusicLibrary,
   updateMusicItem,
   updateMusicPlaylist
 } from './music.repository'
@@ -214,6 +215,66 @@ describe('music repository', () => {
 
     expect(deleteMusicItem({ id: trackA.id })).toBe(true)
     expect(listMusicOverview().playlists[0]?.trackIds).toEqual([])
+  })
+
+  it('upserts a full exported library and restores playlist membership', () => {
+    const existingTrack = createMusicItem({
+      title: 'Old title',
+      artist: 'Artist',
+      year: 2020,
+      durationSeconds: 180,
+      favorite: false
+    })
+    const existingPlaylist = createMusicPlaylist({ name: 'Old playlist', coverUrl: null })
+    setMusicItemPlaylists({ itemId: existingTrack.id, playlistIds: [existingPlaylist.id] })
+
+    const result = upsertMusicLibrary({
+      items: [
+        {
+          id: existingTrack.id,
+          title: 'Updated title',
+          artist: 'Artist',
+          year: 2021,
+          durationSeconds: 181,
+          favorite: true
+        },
+        {
+          id: 'track-json-new',
+          title: 'New track',
+          artist: 'New Artist',
+          year: null,
+          durationSeconds: null,
+          favorite: false
+        }
+      ],
+      playlists: [
+        {
+          id: existingPlaylist.id,
+          name: 'Updated playlist',
+          coverUrl: 'https://example.com/cover.jpg',
+          trackIds: [existingTrack.id, 'track-json-new']
+        }
+      ]
+    })
+
+    expect(result.itemsCreated).toBe(1)
+    expect(result.itemsUpdated).toBe(1)
+    expect(result.playlistsCreated).toBe(0)
+    expect(result.playlistsUpdated).toBe(1)
+    expect(result.overview.items).toHaveLength(2)
+    expect(getMusicItem({ id: existingTrack.id })).toMatchObject({
+      title: 'Updated title',
+      year: 2021,
+      favorite: true
+    })
+    expect(result.overview.playlists).toEqual([
+      expect.objectContaining({
+        id: existingPlaylist.id,
+        name: 'Updated playlist',
+        coverUrl: 'https://example.com/cover.jpg',
+        trackIds: [existingTrack.id, 'track-json-new']
+      })
+    ])
   })
 
   it('deletes tracks permanently', () => {
