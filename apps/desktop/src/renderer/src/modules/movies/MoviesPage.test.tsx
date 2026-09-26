@@ -47,7 +47,6 @@ beforeEach(() => {
   mocks.listOverview.mockResolvedValue({ movies: [] })
   mocks.getMovie.mockResolvedValue(null)
   mocks.createMovie.mockResolvedValue(movie)
-  mocks.upsertMovies.mockResolvedValue([movie])
   mocks.upsertMovies.mockResolvedValue({ movies: [movie], created: 1, updated: 0 })
   mocks.updateMovie.mockImplementation(async (input) => ({ ...movie, ...input, updatedAt: 3 }))
   mocks.deleteMovie.mockResolvedValue(true)
@@ -71,7 +70,14 @@ describe('MoviesPage', () => {
       rating: null,
       status: 'watchlist'
     }
-    mocks.upsertMovies.mockResolvedValue([movie, secondMovie])
+    mocks.upsertMovies.mockResolvedValue({
+      movies: [movie, secondMovie],
+      created: 2,
+      updated: 0
+    })
+    mocks.listOverview
+      .mockResolvedValueOnce({ movies: [] })
+      .mockResolvedValue({ movies: [movie, secondMovie] })
 
     render(<MoviesPage />)
     await screen.findByText('Библиотека пока пустая')
@@ -105,6 +111,31 @@ describe('MoviesPage', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(screen.getByText('Аркейн')).toBeInTheDocument()
     expect(screen.getByText('Мультсериал')).toBeInTheDocument()
+  })
+
+  it('preserves exported ids when applying JSON updates', async () => {
+    const user = userEvent.setup()
+    render(<MoviesPage />)
+    await screen.findByText('Библиотека пока пустая')
+    await user.click(screen.getByRole('button', { name: 'Из JSON' }))
+
+    fireEvent.change(screen.getByRole('textbox', { name: 'JSON фильмов' }), {
+      target: {
+        value: JSON.stringify({
+          id: 'movie-existing',
+          title: 'Updated movie',
+          createdAt: 1,
+          updatedAt: 2
+        })
+      }
+    })
+    await user.click(screen.getByRole('button', { name: 'Применить JSON' }))
+
+    await waitFor(() =>
+      expect(mocks.upsertMovies).toHaveBeenCalledWith({
+        movies: [expect.objectContaining({ id: 'movie-existing', title: 'Updated movie' })]
+      })
+    )
   })
 
   it('keeps JSON import backward-compatible by defaulting omitted type to movie', async () => {
