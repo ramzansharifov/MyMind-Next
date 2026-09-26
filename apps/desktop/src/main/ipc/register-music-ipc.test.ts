@@ -19,6 +19,7 @@ vi.mock('../repositories/music.repository', () => ({
   getMusicItem: vi.fn(),
   createMusicItem: vi.fn(),
   createMusicItems: vi.fn(),
+  upsertMusicLibrary: vi.fn(),
   updateMusicItem: vi.fn(),
   deleteMusicItem: vi.fn(),
   createMusicPlaylist: vi.fn(),
