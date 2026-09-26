@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { ScrollView, TextInput, View } from 'react-native'
-import type { CreateMovieInput } from '@mymind/contracts/movies'
-import type { CreateMusicItemInput } from '@mymind/contracts/music'
+import type { UpsertMovieInput } from '@mymind/contracts/movies'
+import type { UpsertMusicLibraryInput } from '@mymind/contracts/music'
 import { parseMoviesJson, parseMusicJson } from '@mymind/core/catalog-json-import'
 import { AppDialog } from '../../shared/ui/AppDialog'
 import { Button, ErrorState, Label } from '../../shared/ui/primitives'
@@ -38,8 +38,8 @@ const MUSIC_EXAMPLE = `[
 interface CatalogJsonImportModalProps {
   mode: 'movies' | 'music'
   close(): void
-  importMovies(items: CreateMovieInput[]): void | Promise<void>
-  importMusic(items: CreateMusicItemInput[]): void | Promise<void>
+  importMovies(items: UpsertMovieInput[]): void | Promise<void>
+  importMusic(input: UpsertMusicLibraryInput): void | Promise<void>
 }
 
 export function CatalogJsonImportModal({
@@ -61,7 +61,7 @@ export function CatalogJsonImportModal({
     [mode, value]
   )
   const error = submitError || parsed.error || ''
-  const title = mode === 'movies' ? 'Добавить фильмы из JSON' : 'Добавить музыку из JSON'
+  const title = mode === 'movies' ? 'Применить JSON фильмов' : 'Применить JSON музыки'
   const example = mode === 'movies' ? MOVIE_EXAMPLE : MUSIC_EXAMPLE
 
   const requestClose = (): void => {
@@ -81,12 +81,17 @@ export function CatalogJsonImportModal({
   }
 
   const submit = async (): Promise<void> => {
-    if (busy || parsed.error || parsed.items.length === 0) return
+    if (
+      busy ||
+      parsed.error ||
+      (parsed.items.length === 0 && (parsed.mode === 'movies' || parsed.playlists.length === 0))
+    )
+      return
     setBusy(true)
     setSubmitError('')
     try {
       if (parsed.mode === 'movies') await importMovies(parsed.items)
-      else await importMusic(parsed.items)
+      else await importMusic({ items: parsed.items, playlists: parsed.playlists })
       setValue('')
       close()
     } catch (reason) {
