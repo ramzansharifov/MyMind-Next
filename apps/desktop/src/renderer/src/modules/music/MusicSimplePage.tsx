@@ -671,8 +671,7 @@ export function MusicPage({ resourceId, onResourceHandled }: MusicPageProps): Re
       title: `JSON · ${playlist.name}`,
       description: 'Полная сохранённая запись этого плейлиста',
       value: playlist,
-      note:
-        'Плейлист содержит название, необязательную обложку и trackIds — связи с треками. id, createdAt и updatedAt являются служебными полями MyMind.'
+      note: 'Плейлист содержит название, необязательную обложку и trackIds — связи с треками. id, createdAt и updatedAt являются служебными полями MyMind.'
     })
   }
 

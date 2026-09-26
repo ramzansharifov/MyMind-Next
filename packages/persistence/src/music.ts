@@ -57,7 +57,9 @@ FROM music_items`
     try {
       const parsed = JSON.parse(value) as unknown
       if (!Array.isArray(parsed)) return ''
-      const artist = parsed.find((item): item is string => typeof item === 'string' && item.trim() !== '')
+      const artist = parsed.find(
+        (item): item is string => typeof item === 'string' && item.trim() !== ''
+      )
       return artist?.trim() ?? ''
     } catch {
       return ''
@@ -123,8 +125,7 @@ FROM music_items`
 
   function findItem(id: string): MusicItemRecord | null {
     const row = getSqlite().prepare(`${MUSIC_SELECT} WHERE id = ?`).get(id) as
-      | MusicItemRow
-      | undefined
+      MusicItemRow | undefined
     return row ? mapItem(row) : null
   }
 
