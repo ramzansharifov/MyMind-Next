@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   getItem: vi.fn(),
   createItem: vi.fn(),
   createItems: vi.fn(),
+  upsertLibrary: vi.fn(),
   updateItem: vi.fn(),
   deleteItem: vi.fn(),
   createPlaylist: vi.fn(),
@@ -40,7 +41,14 @@ beforeEach(() => {
   mocks.listOverview.mockResolvedValue(emptyOverview)
   mocks.getItem.mockResolvedValue(null)
   mocks.createItem.mockResolvedValue(createdTrack)
-  mocks.createItems.mockResolvedValue([createdTrack])
+  mocks.upsertLibrary.mockResolvedValue([createdTrack])
+  mocks.upsertLibrary.mockResolvedValue({
+    overview: { items: [createdTrack], playlists: [] },
+    itemsCreated: 1,
+    itemsUpdated: 0,
+    playlistsCreated: 0,
+    playlistsUpdated: 0
+  })
   mocks.updateItem.mockResolvedValue(createdTrack)
   mocks.deleteItem.mockResolvedValue(true)
   mocks.createPlaylist.mockResolvedValue({
@@ -151,10 +159,10 @@ describe('MusicPage dialogs', () => {
       }
     })
 
-    await user.click(screen.getByRole('button', { name: 'Добавить' }))
+    await user.click(screen.getByRole('button', { name: 'Применить JSON' }))
 
     await waitFor(() =>
-      expect(mocks.createItems).toHaveBeenCalledWith({
+      expect(mocks.upsertLibrary).toHaveBeenCalledWith({
         items: [
           expect.objectContaining({
             title: 'Blinding Lights',
