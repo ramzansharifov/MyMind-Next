@@ -765,11 +765,11 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
           mode={mode}
           close={() => setJsonImportOpen(false)}
           importMovies={(importedItems) => {
-            services.movies.createMovies({ movies: importedItems })
+            services.movies.upsertMovies({ movies: importedItems })
             state.refresh()
           }}
-          importMusic={(importedItems) => {
-            services.music.createMusicItems({ items: importedItems })
+          importMusic={(input) => {
+            services.music.upsertMusicLibrary(input)
             state.refresh()
           }}
         />
