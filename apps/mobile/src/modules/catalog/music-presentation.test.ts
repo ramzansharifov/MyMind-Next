@@ -95,6 +95,28 @@ describe('mobile music presentation helpers', () => {
     )
   })
 
+  it('normalizes legacy artists[] records before using them in mobile helpers', () => {
+    const legacy = {
+      id: 'legacy-mobile',
+      title: 'Legacy Track',
+      artists: ['Legacy Artist'],
+      year: 2021,
+      durationSeconds: 181,
+      favorite: true,
+      createdAt: 1,
+      updatedAt: 2
+    } as unknown as MusicItemRecord
+
+    expect(musicFilterArtists([legacy])).toEqual(['Legacy Artist'])
+    expect(musicTrackDraftFromItem(legacy)).toEqual({
+      title: 'Legacy Track',
+      artist: 'Legacy Artist',
+      year: '2021',
+      duration: '3:01',
+      favorite: true
+    })
+  })
+
   it('derives stable artist and year filter choices from existing records', () => {
     const items = [
       track({ id: '1', artist: 'Zed', year: 2024 }),
