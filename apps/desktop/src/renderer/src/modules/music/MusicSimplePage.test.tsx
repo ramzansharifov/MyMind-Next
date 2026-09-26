@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   listOverview: vi.fn(),
   getItem: vi.fn(),
   createItem: vi.fn(),
+  createItems: vi.fn(),
   updateItem: vi.fn(),
   deleteItem: vi.fn(),
   createPlaylist: vi.fn(),
@@ -48,6 +49,7 @@ beforeEach(() => {
   mocks.listOverview.mockResolvedValue(emptyOverview)
   mocks.getItem.mockResolvedValue(null)
   mocks.createItem.mockResolvedValue(createdTrack)
+  mocks.createItems.mockResolvedValue([createdTrack])
   mocks.updateItem.mockResolvedValue(createdTrack)
   mocks.deleteItem.mockResolvedValue(true)
   mocks.createPlaylist.mockResolvedValue({
@@ -82,6 +84,65 @@ describe('MusicPage dialogs', () => {
     expect(header).not.toBeNull()
     expect(navigation).not.toBeNull()
     expect(header?.contains(navigation)).toBe(true)
+  })
+
+  it('показывает полный JSON библиотеки и отдельного трека', async () => {
+    const user = userEvent.setup()
+    const playlist = {
+      id: 'playlist-1',
+      name: 'Дорога',
+      coverUrl: null,
+      trackIds: [createdTrack.id],
+      createdAt: 2,
+      updatedAt: 3
+    }
+    const overview: MusicOverview = { items: [createdTrack], playlists: [playlist] }
+    mocks.listOverview.mockResolvedValue(overview)
+
+    render(<MusicPage />)
+
+    await screen.findByText('Blinding Lights')
+    await user.click(screen.getByRole('button', { name: 'JSON библиотеки' }))
+
+    const libraryJson = screen.getByRole('textbox', { name: 'JSON данных музыки' })
+    expect(JSON.parse((libraryJson as HTMLTextAreaElement).value)).toEqual(overview)
+    expect((libraryJson as HTMLTextAreaElement).value).toContain('"trackIds"')
+
+    await user.click(screen.getByRole('button', { name: 'Закрыть' }))
+    await user.click(screen.getByRole('button', { name: 'JSON трека «Blinding Lights»' }))
+
+    const trackJson = screen.getByRole('textbox', { name: 'JSON данных музыки' })
+    expect(JSON.parse((trackJson as HTMLTextAreaElement).value)).toEqual(createdTrack)
+  })
+
+  it('импортирует музыкальные записи из JSON', async () => {
+    const user = userEvent.setup()
+    render(<MusicPage />)
+
+    await screen.findByRole('heading', { name: 'Музыка' })
+    await user.click(screen.getByRole('button', { name: 'Из JSON' }))
+
+    fireEvent.change(screen.getByRole('textbox', { name: 'JSON музыки' }), {
+      target: {
+        value:
+          '{"title":"Blinding Lights","type":"track","artists":["The Weeknd"],"year":2019}'
+      }
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Добавить' }))
+
+    await waitFor(() =>
+      expect(mocks.createItems).toHaveBeenCalledWith({
+        items: [
+          expect.objectContaining({
+            title: 'Blinding Lights',
+            type: 'track',
+            artists: ['The Weeknd'],
+            year: 2019
+          })
+        ]
+      })
+    )
   })
 
   it('добавляет трек через модальное окно и всегда сохраняет его без обложки', async () => {
