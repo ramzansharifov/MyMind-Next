@@ -15,7 +15,8 @@ import {
   listMusicOverview,
   setMusicItemPlaylists,
   updateMusicItem,
-  updateMusicPlaylist
+  updateMusicPlaylist,
+  upsertMusicLibrary
 } from './music.repository'
 
 let root = ''
@@ -216,6 +217,103 @@ describe('music repository', () => {
     expect(listMusicOverview().playlists[0]?.trackIds).toEqual([])
   })
 
+  it('updates tracks, playlists and memberships by exported ids without duplicates', () => {
+    const trackA = createMusicItem({
+      title: 'Track A',
+      artist: 'Artist A',
+      year: 2020,
+      durationSeconds: 180,
+      favorite: false
+    })
+    const trackB = createMusicItem({
+      title: 'Track B',
+      artist: 'Artist B',
+      year: 2021,
+      durationSeconds: 200,
+      favorite: false
+    })
+    const playlist = createMusicPlaylist({ name: 'Старое название', coverUrl: null })
+    setMusicItemPlaylists({ itemId: trackA.id, playlistIds: [playlist.id] })
+
+    const result = upsertMusicLibrary({
+      items: [
+        {
+          id: trackA.id,
+          title: 'Track A Updated',
+          artist: 'Artist A',
+          year: 2020,
+          durationSeconds: 181,
+          favorite: true
+        },
+        {
+          id: trackB.id,
+          title: 'Track B',
+          artist: 'Artist B',
+          year: 2021,
+          durationSeconds: 200,
+          favorite: true
+        }
+      ],
+      playlists: [
+        {
+          id: playlist.id,
+          name: 'Новое название',
+          coverUrl: 'https://example.com/new.jpg',
+          trackIds: [trackB.id]
+        }
+      ]
+    })
+
+    expect(result.createdItems).toBe(0)
+    expect(result.updatedItems).toBe(2)
+    expect(result.createdPlaylists).toBe(0)
+    expect(result.updatedPlaylists).toBe(1)
+
+    const overview = listMusicOverview()
+    expect(overview.items).toHaveLength(2)
+    expect(overview.items.find((item) => item.id === trackA.id)).toMatchObject({
+      title: 'Track A Updated',
+      favorite: true,
+      createdAt: trackA.createdAt
+    })
+    expect(overview.playlists).toHaveLength(1)
+    expect(overview.playlists[0]).toMatchObject({
+      id: playlist.id,
+      name: 'Новое название',
+      coverUrl: 'https://example.com/new.jpg',
+      trackIds: [trackB.id]
+    })
+  })
+
+  it('preserves explicit ids for new tracks and playlists in one import', () => {
+    const result = upsertMusicLibrary({
+      items: [
+        {
+          id: 'track-imported-1',
+          title: 'Imported Track',
+          artist: 'Imported Artist',
+          year: 2026,
+          durationSeconds: 210,
+          favorite: false
+        }
+      ],
+      playlists: [
+        {
+          id: 'playlist-imported-1',
+          name: 'Imported Playlist',
+          coverUrl: null,
+          trackIds: ['track-imported-1']
+        }
+      ]
+    })
+
+    expect(result.createdItems).toBe(1)
+    expect(result.createdPlaylists).toBe(1)
+    expect(listMusicOverview()).toMatchObject({
+      items: [{ id: 'track-imported-1' }],
+      playlists: [{ id: 'playlist-imported-1', trackIds: ['track-imported-1'] }]
+    })
+  })
   it('deletes tracks permanently', () => {
     const item = createMusicItem({
       title: 'Discovery',
