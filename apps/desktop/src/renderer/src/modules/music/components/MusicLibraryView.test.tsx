@@ -10,38 +10,20 @@ const overview: MusicOverview = {
     {
       id: 'track-1',
       title: 'Blinding Lights',
-      type: 'track',
+      artist: 'The Weeknd',
       year: 2020,
-      coverUrl: null,
-      artists: ['The Weeknd'],
-      album: '',
       durationSeconds: 200,
-      trackCount: null,
-      genres: [],
-      description: '',
-      status: 'listened',
       favorite: true,
-      rating: null,
-      comments: '',
       createdAt: 1,
       updatedAt: 1
     },
     {
       id: 'track-2',
       title: 'Get Lucky',
-      type: 'track',
+      artist: 'Daft Punk',
       year: 2013,
-      coverUrl: null,
-      artists: ['Daft Punk', 'Pharrell Williams'],
-      album: '',
       durationSeconds: 369,
-      trackCount: null,
-      genres: [],
-      description: '',
-      status: 'listened',
       favorite: false,
-      rating: null,
-      comments: '',
       createdAt: 2,
       updatedAt: 2
     }
@@ -63,6 +45,7 @@ const handlers = {
   onOpenTrack: vi.fn(),
   onToggleFavorite: vi.fn(),
   onViewTrackJson: vi.fn(),
+  onViewPlaylistJson: vi.fn(),
   onDeleteTrack: vi.fn(),
   onEditPlaylist: vi.fn(),
   onDeletePlaylist: vi.fn(),
@@ -166,6 +149,9 @@ describe('MusicLibraryView', () => {
     expect(screen.queryByText(/Подборки с собственной обложкой/)).not.toBeInTheDocument()
     expect(screen.queryByText('Обложка добавлена')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Новый плейлист' })).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'JSON плейлиста «Ночная дорога»' })
+    ).toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: 'Редактировать плейлист «Ночная дорога»' })
     ).toBeInTheDocument()

@@ -1,5 +1,4 @@
 import type { MovieRecord } from '@mymind/contracts/movies'
-import type { MusicItemRecord } from '@mymind/contracts/music'
 import { choiceField, textField, type FormField, type FormValues } from '../../shared/ui/form-model'
 
 const commonFields: FormField[] = [
@@ -43,29 +42,8 @@ export const movieFields: FormField[] = [
     visibleWhen: { key: 'type', oneOf: ['series', 'animated_series'] }
   },
   ...commonFields.map((field) =>
-    field.key === 'rating'
-      ? { ...field, visibleWhen: { key: 'status', equals: 'watched' } }
-      : field
+    field.key === 'rating' ? { ...field, visibleWhen: { key: 'status', equals: 'watched' } } : field
   )
-]
-export const musicFields: FormField[] = [
-  textField('title', 'Название'),
-  choiceField('type', 'Тип', [
-    { value: 'track', label: 'Трек' },
-    { value: 'album', label: 'Альбом' },
-    { value: 'ep', label: 'EP' },
-    { value: 'single', label: 'Сингл' }
-  ]),
-  choiceField('status', 'Статус', [
-    { value: 'want_to_listen', label: 'Хочу послушать' },
-    { value: 'listened', label: 'Прослушано' }
-  ]),
-  textField('coverUrl', 'Ссылка на обложку'),
-  textField('artists', 'Исполнители', 'list', 'Через запятую'),
-  textField('album', 'Альбом'),
-  textField('durationSeconds', 'Длительность, секунды', 'nullableNumber'),
-  textField('trackCount', 'Количество треков', 'nullableNumber'),
-  ...commonFields
 ]
 export function movieValues(item?: MovieRecord): FormValues {
   return {
@@ -88,25 +66,6 @@ export function movieValues(item?: MovieRecord): FormValues {
     comments: item?.comments ?? ''
   }
 }
-export function musicValues(item?: MusicItemRecord): FormValues {
-  return {
-    title: item?.title ?? '',
-    type: item?.type ?? 'track',
-    status: item?.status ?? 'want_to_listen',
-    coverUrl: item?.coverUrl ?? null,
-    artists: item?.artists ?? [],
-    album: item?.album ?? '',
-    durationSeconds: item?.durationSeconds ?? null,
-    trackCount: item?.trackCount ?? null,
-    year: item?.year ?? null,
-    genres: item?.genres ?? [],
-    description: item?.description ?? '',
-    favorite: item?.favorite ?? false,
-    rating: item?.rating ?? null,
-    comments: item?.comments ?? ''
-  }
-}
-
 export function normalizeMovieFormValues(values: FormValues): FormValues {
   const episodic = values.type === 'series' || values.type === 'animated_series'
   return {

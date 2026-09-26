@@ -1,13 +1,11 @@
 import { index, integer, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 
-import type { MusicStatus, MusicType } from '../../../shared/contracts/music'
-
 export const musicItems = sqliteTable(
   'music_items',
   {
     id: text('id').primaryKey(),
     title: text('title').notNull(),
-    type: text('type').$type<MusicType>().notNull().default('track'),
+    type: text('type').notNull().default('track'),
     year: integer('year'),
     coverUrl: text('cover_url'),
     artistsJson: text('artists_json').notNull().default('[]'),
@@ -16,7 +14,7 @@ export const musicItems = sqliteTable(
     trackCount: integer('track_count'),
     genresJson: text('genres_json').notNull().default('[]'),
     description: text('description').notNull().default(''),
-    status: text('status').$type<MusicStatus>().notNull().default('want_to_listen'),
+    status: text('status').notNull().default('want_to_listen'),
     favorite: integer('favorite', { mode: 'boolean' }).notNull().default(false),
     rating: integer('rating'),
     comments: text('comments').notNull().default(''),

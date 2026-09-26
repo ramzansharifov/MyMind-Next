@@ -28,15 +28,10 @@ const MOVIE_EXAMPLE = `[
 const MUSIC_EXAMPLE = `[
   {
     "title": "Blinding Lights",
-    "type": "track",
+    "artist": "The Weeknd",
     "year": 2019,
-    "artists": ["The Weeknd"],
-    "album": "After Hours",
     "durationSeconds": 200,
-    "genres": ["Synth-pop", "R&B"],
-    "status": "listened",
-    "favorite": true,
-    "rating": 9
+    "favorite": true
   }
 ]`
 
@@ -153,7 +148,7 @@ export function CatalogJsonImportModal({
           placeholder={
             mode === 'movies'
               ? '[{ "title": "Аркейн", "type": "animated_series" }]'
-              : '[{ "title": "Blinding Lights", "type": "track" }]'
+              : '[{ "title": "Blinding Lights", "artist": "The Weeknd" }]'
           }
           placeholderTextColor={theme.muted}
           style={{

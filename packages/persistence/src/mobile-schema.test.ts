@@ -233,7 +233,7 @@ describe('mobile schema and shared repositories', () => {
     }
   })
 
-  it('stores complete catalog metadata and removes playlist membership, not tracks', () => {
+  it('stores catalog data and removes playlist membership, not tracks', () => {
     const db = new Database(':memory:')
     try {
       initialize(db)
@@ -266,26 +266,34 @@ describe('mobile schema and shared repositories', () => {
       const track = music.createMusicItem(
         createMusicItemInputSchema.parse({
           title: 'Трек',
-          type: 'track',
+          artist: 'Артист',
           year: null,
-          coverUrl: null,
-          artists: ['Артист'],
-          album: '',
           durationSeconds: 180,
-          trackCount: null,
-          genres: [],
-          description: '',
-          status: 'listened',
-          favorite: false,
-          rating: 9,
-          comments: ''
+          favorite: false
         })
       )
-      const playlist = music.createMusicPlaylist({ name: 'Плейлист' })
+      expect(track).toMatchObject({
+        title: 'Трек',
+        artist: 'Артист',
+        durationSeconds: 180,
+        favorite: false
+      })
+      expect(track).not.toHaveProperty('coverUrl')
+
+      const playlist = music.createMusicPlaylist({
+        name: 'Плейлист',
+        coverUrl: 'https://example.com/playlist.jpg'
+      })
       music.setMusicItemPlaylists({ itemId: track.id, playlistIds: [playlist.id] })
-      expect(music.listMusicOverview().playlists[0].trackIds).toEqual([track.id])
+      expect(music.listMusicOverview().playlists[0]).toMatchObject({
+        coverUrl: 'https://example.com/playlist.jpg',
+        trackIds: [track.id]
+      })
       music.deleteMusicPlaylist({ id: playlist.id })
-      expect(music.getMusicItem({ id: track.id })).toMatchObject({ title: 'Трек' })
+      expect(music.getMusicItem({ id: track.id })).toMatchObject({
+        title: 'Трек',
+        artist: 'Артист'
+      })
     } finally {
       db.close()
     }

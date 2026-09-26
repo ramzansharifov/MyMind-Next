@@ -197,16 +197,13 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
       ],
       save: (values) => {
         const input = musicSchema.createMusicItemInputSchema.parse(
-          musicTrackInputFromDraft(
-            {
-              title: String(values.title ?? ''),
-              artist: String(values.artist ?? ''),
-              year: String(values.year ?? ''),
-              duration: String(values.duration ?? ''),
-              favorite: Boolean(values.favorite)
-            },
-            item
-          )
+          musicTrackInputFromDraft({
+            title: String(values.title ?? ''),
+            artist: String(values.artist ?? ''),
+            year: String(values.year ?? ''),
+            duration: String(values.duration ?? ''),
+            favorite: Boolean(values.favorite)
+          })
         )
         const saved = item
           ? services.music.updateMusicItem({ ...input, id: item.id })
@@ -286,10 +283,10 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
   const visibleMusicItems = musicItems.filter((item) => {
     if (filter === 'favorite' && !item.favorite) return false
     if (playlistId && !selectedPlaylist?.trackIds.includes(item.id)) return false
-    if (musicArtist && !item.artists.includes(musicArtist)) return false
+    if (musicArtist && item.artist !== musicArtist) return false
     if (musicYear && item.year?.toString() !== musicYear) return false
     if (!normalizedQuery) return true
-    return [item.title, ...item.artists].join(' ').toLocaleLowerCase('ru').includes(normalizedQuery)
+    return [item.title, item.artist].join(' ').toLocaleLowerCase('ru').includes(normalizedQuery)
   })
   const visiblePlaylists = musicPlaylists.filter((playlist) => {
     if (!normalizedQuery) return true
@@ -297,7 +294,7 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
     return playlist.trackIds.some((itemId) => {
       const item = musicItems.find((entry) => entry.id === itemId)
       return item
-        ? [item.title, ...item.artists].join(' ').toLocaleLowerCase('ru').includes(normalizedQuery)
+        ? [item.title, item.artist].join(' ').toLocaleLowerCase('ru').includes(normalizedQuery)
         : false
     })
   })
@@ -535,7 +532,7 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
                       title: 'JSON музыкальной библиотеки',
                       description: `Полные данные: ${musicItems.length} записей · ${musicPlaylists.length} плейлистов`,
                       json: stringifyMusicJson({ items: musicItems, playlists: musicPlaylists }),
-                      note: 'Полный MusicOverview: items содержит музыкальные записи, playlists — плейлисты и их trackIds. Для повторного импорта записей используйте массив items; текущий импорт не восстанавливает плейлисты автоматически.',
+                      note: 'MusicOverview содержит реальные данные треков и плейлистов. Обложка есть только у плейлиста; связи с треками хранятся в его trackIds.',
                       accessibilityLabel: 'JSON данных музыки'
                     })
                   }
@@ -649,8 +646,17 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
                 title: `JSON · ${item.title}`,
                 description: 'Полная сохранённая запись этого трека',
                 json: stringifyMusicJson(item),
-                note: 'Полный MusicItemRecord, включая id, createdAt и updatedAt. Служебные поля игнорируются текущим JSON-импортом, поэтому этот объект можно использовать для повторного импорта.',
+                note: 'Трек содержит только название, исполнителя, год, длительность и признак избранного. id, createdAt и updatedAt являются служебными полями MyMind.',
                 accessibilityLabel: 'JSON данных трека'
+              })
+            }
+            onViewPlaylistJson={(playlist) =>
+              setJsonView({
+                title: `JSON · ${playlist.name}`,
+                description: 'Полная сохранённая запись этого плейлиста',
+                json: stringifyMusicJson(playlist),
+                note: 'Плейлист содержит название, необязательную обложку и trackIds — связи с треками. id, createdAt и updatedAt являются служебными полями MyMind.',
+                accessibilityLabel: 'JSON данных плейлиста'
               })
             }
             onToggleFavorite={(item) => updateMusic({ ...item, favorite: !item.favorite })}

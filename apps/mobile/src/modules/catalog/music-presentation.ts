@@ -52,17 +52,14 @@ export function parseMusicDuration(value: string): number | null {
 export function musicTrackDraftFromItem(item?: MusicItemRecord): MobileMusicTrackDraft {
   return {
     title: item?.title ?? '',
-    artist: item?.artists[0] ?? '',
+    artist: item?.artist ?? '',
     year: item?.year?.toString() ?? '',
     duration: formatMusicDuration(item?.durationSeconds ?? null) ?? '',
     favorite: item?.favorite ?? false
   }
 }
 
-export function musicTrackInputFromDraft(
-  draft: MobileMusicTrackDraft,
-  previous?: MusicItemRecord
-): CreateMusicItemInput {
+export function musicTrackInputFromDraft(draft: MobileMusicTrackDraft): CreateMusicItemInput {
   const title = draft.title.trim()
   const artist = draft.artist.trim()
   if (!title) throw new Error('Введите название трека')
@@ -78,19 +75,10 @@ export function musicTrackInputFromDraft(
 
   return {
     title,
-    type: 'track',
+    artist,
     year,
-    coverUrl: null,
-    artists: [artist],
-    album: '',
     durationSeconds,
-    trackCount: null,
-    genres: [],
-    description: '',
-    status: previous?.status ?? 'listened',
-    favorite: draft.favorite,
-    rating: null,
-    comments: ''
+    favorite: draft.favorite
   }
 }
 
@@ -98,33 +86,23 @@ export function musicRecordToUpdateInput(item: MusicItemRecord): UpdateMusicItem
   return {
     id: item.id,
     title: item.title,
-    type: item.type,
+    artist: item.artist,
     year: item.year,
-    coverUrl: item.coverUrl,
-    artists: item.artists,
-    album: item.album,
     durationSeconds: item.durationSeconds,
-    trackCount: item.trackCount,
-    genres: item.genres,
-    description: item.description,
-    status: item.status,
-    favorite: item.favorite,
-    rating: item.rating,
-    comments: item.comments
+    favorite: item.favorite
   }
 }
 
-export function musicYoutubeSearchUrl(item: Pick<MusicItemRecord, 'title' | 'artists'>): string {
-  const artist = item.artists[0] || 'Исполнитель не указан'
+export function musicYoutubeSearchUrl(item: Pick<MusicItemRecord, 'title' | 'artist'>): string {
   return `https://www.youtube.com/results?search_query=${encodeURIComponent(
-    `${item.title} ${artist}`
+    `${item.title} ${item.artist}`
   )}`
 }
 
 export function musicFilterArtists(items: readonly MusicItemRecord[]): string[] {
-  return Array.from(
-    new Set(items.flatMap((item) => item.artists.map((artist) => artist.trim())).filter(Boolean))
-  ).sort((a, b) => a.localeCompare(b, 'ru'))
+  return Array.from(new Set(items.map((item) => item.artist.trim()).filter(Boolean))).sort((a, b) =>
+    a.localeCompare(b, 'ru')
+  )
 }
 
 export function musicFilterYears(items: readonly MusicItemRecord[]): number[] {

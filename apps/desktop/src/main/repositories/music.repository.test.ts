@@ -40,125 +40,143 @@ afterAll(async () => {
 })
 
 describe('music repository', () => {
-  it('persists metadata, arrays and personal rating', () => {
+  it('exposes only real track fields while keeping legacy columns internal', () => {
     const item = createMusicItem({
       title: 'Blinding Lights',
-      type: 'track',
+      artist: 'The Weeknd',
       year: 2019,
-      coverUrl: 'https://example.com/blinding-lights.jpg',
-      artists: ['The Weeknd'],
-      album: 'After Hours',
       durationSeconds: 200,
-      trackCount: null,
-      genres: ['Synth-pop', 'R&B'],
-      description: 'Трек из альбома After Hours.',
-      status: 'listened',
-      favorite: true,
-      rating: 9,
-      comments: 'Добавить в дорожный плейлист.'
+      favorite: true
     })
 
     expect(getMusicItem({ id: item.id })).toEqual(item)
-    expect(listMusicOverview().items).toEqual([item])
-  })
+    expect(item).toMatchObject({
+      title: 'Blinding Lights',
+      artist: 'The Weeknd',
+      year: 2019,
+      durationSeconds: 200,
+      favorite: true
+    })
+    expect(item).not.toHaveProperty('coverUrl')
+    expect(item).not.toHaveProperty('album')
+    expect(item).not.toHaveProperty('status')
+    expect(item).not.toHaveProperty('rating')
 
-  it('creates multiple music types in one transaction and rolls back on failure', () => {
-    const base = {
-      year: null,
-      coverUrl: null,
-      artists: [] as string[],
+    const row = getSqlite()
+      .prepare(
+        `SELECT type, cover_url, artists_json, album, track_count, genres_json,
+                description, status, rating, comments
+         FROM music_items
+         WHERE id = ?`
+      )
+      .get(item.id) as Record<string, unknown>
+
+    expect(row).toEqual({
+      type: 'track',
+      cover_url: null,
+      artists_json: '["The Weeknd"]',
       album: '',
-      durationSeconds: null,
-      trackCount: null,
-      genres: [] as string[],
+      track_count: null,
+      genres_json: '[]',
       description: '',
-      status: 'want_to_listen' as const,
-      favorite: false,
+      status: 'listened',
       rating: null,
       comments: ''
-    }
+    })
+  })
 
+  it('creates multiple tracks in one transaction and rolls back on failure', () => {
     const created = createMusicItems({
       items: [
-        { ...base, title: 'Track A', type: 'track' },
-        { ...base, title: 'Album B', type: 'album', trackCount: 12 }
+        {
+          title: 'Track A',
+          artist: 'Artist A',
+          year: null,
+          durationSeconds: null,
+          favorite: false
+        },
+        {
+          title: 'Track B',
+          artist: 'Artist B',
+          year: 2020,
+          durationSeconds: 180,
+          favorite: true
+        }
       ]
     })
 
-    expect(created.map((item) => [item.title, item.type])).toEqual([
-      ['Track A', 'track'],
-      ['Album B', 'album']
+    expect(created.map((item) => [item.title, item.artist])).toEqual([
+      ['Track A', 'Artist A'],
+      ['Track B', 'Artist B']
     ])
-    expect(created[1]?.trackCount).toBe(12)
     expect(listMusicOverview().items).toHaveLength(2)
 
     getSqlite().exec('DELETE FROM music_items;')
     expect(() =>
       createMusicItems({
         items: [
-          { ...base, title: 'Will roll back', type: 'track' },
-          { ...base, title: null as unknown as string, type: 'single' }
+          {
+            title: 'Will roll back',
+            artist: 'Artist',
+            year: null,
+            durationSeconds: null,
+            favorite: false
+          },
+          {
+            title: null as unknown as string,
+            artist: 'Artist',
+            year: null,
+            durationSeconds: null,
+            favorite: false
+          }
         ]
       })
     ).toThrow()
     expect(listMusicOverview().items).toHaveLength(0)
   })
 
-  it('clears rating when an item returns to want-to-listen', () => {
+  it('updates only the real track fields', () => {
     const item = createMusicItem({
       title: 'Midnight City',
-      type: 'track',
+      artist: 'M83',
       year: 2011,
-      coverUrl: null,
-      artists: ['M83'],
-      album: 'Hurry Up, We’re Dreaming',
       durationSeconds: 244,
-      trackCount: null,
-      genres: ['Synth-pop'],
-      description: '',
-      status: 'listened',
-      favorite: false,
-      rating: 8,
-      comments: ''
+      favorite: false
     })
 
-    const updated = updateMusicItem({ ...item, status: 'want_to_listen', rating: 8 })
-    expect(updated.status).toBe('want_to_listen')
-    expect(updated.rating).toBeNull()
+    const updated = updateMusicItem({
+      id: item.id,
+      title: 'Midnight City (Edit)',
+      artist: 'M83',
+      year: 2011,
+      durationSeconds: 245,
+      favorite: true
+    })
+
+    expect(updated).toMatchObject({
+      id: item.id,
+      title: 'Midnight City (Edit)',
+      artist: 'M83',
+      durationSeconds: 245,
+      favorite: true
+    })
+    expect(updated).not.toHaveProperty('coverUrl')
   })
 
-  it('stores playlists, covers and track membership independently from tracks', () => {
+  it('stores playlist covers and track membership independently from tracks', () => {
     const trackA = createMusicItem({
       title: 'Track A',
-      type: 'track',
+      artist: 'Artist A',
       year: 2026,
-      coverUrl: null,
-      artists: ['Artist A'],
-      album: '',
       durationSeconds: 180,
-      trackCount: null,
-      genres: [],
-      description: '',
-      status: 'listened',
-      favorite: false,
-      rating: null,
-      comments: ''
+      favorite: false
     })
     const trackB = createMusicItem({
       title: 'Track B',
-      type: 'track',
+      artist: 'Artist B',
       year: null,
-      coverUrl: null,
-      artists: ['Artist B'],
-      album: '',
       durationSeconds: null,
-      trackCount: null,
-      genres: [],
-      description: '',
-      status: 'listened',
-      favorite: true,
-      rating: null,
-      comments: ''
+      favorite: true
     })
 
     const road = createMusicPlaylist({
@@ -198,22 +216,13 @@ describe('music repository', () => {
     expect(listMusicOverview().playlists[0]?.trackIds).toEqual([])
   })
 
-  it('deletes music permanently', () => {
+  it('deletes tracks permanently', () => {
     const item = createMusicItem({
       title: 'Discovery',
-      type: 'album',
+      artist: 'Daft Punk',
       year: 2001,
-      coverUrl: null,
-      artists: ['Daft Punk'],
-      album: '',
       durationSeconds: null,
-      trackCount: 14,
-      genres: ['House'],
-      description: '',
-      status: 'want_to_listen',
-      favorite: false,
-      rating: null,
-      comments: ''
+      favorite: false
     })
 
     expect(deleteMusicItem({ id: item.id })).toBe(true)
