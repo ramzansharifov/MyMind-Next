@@ -674,7 +674,7 @@ export function MusicPage({ resourceId, onResourceHandled }: MusicPageProps): Re
       title: `JSON · ${playlist.name}`,
       description: 'Полная сохранённая запись этого плейлиста',
       value: playlist,
-      note: 'Плейлист содержит название, необязательную обложку и trackIds — связи с треками. id, createdAt и updatedAt являются служебными полями MyMind.'
+      note: 'Оставьте id, чтобы обновить этот же плейлист. trackIds задают его состав при повторной вставке JSON; createdAt и updatedAt не подменяют локальные временные метки.'
     })
   }
 
@@ -683,7 +683,7 @@ export function MusicPage({ resourceId, onResourceHandled }: MusicPageProps): Re
       title: `JSON · ${item.title}`,
       description: 'Полная сохранённая запись этого трека',
       value: item,
-      note: 'Это полный MusicItemRecord, включая id, createdAt и updatedAt. Служебные поля игнорируются текущим JSON-импортом, поэтому этот объект можно использовать как источник для повторного импорта.'
+      note: 'Оставьте id, чтобы повторная вставка JSON обновила именно этот трек. createdAt и updatedAt не подменяют локальные временные метки.'
     })
   }
 
@@ -692,7 +692,7 @@ export function MusicPage({ resourceId, onResourceHandled }: MusicPageProps): Re
       title: 'JSON музыкальной библиотеки',
       description: `Полные данные: ${currentOverview.items.length} записей · ${currentOverview.playlists.length} плейлистов`,
       value: currentOverview,
-      note: 'Это полный MusicOverview: items содержит музыкальные записи, playlists — плейлисты и их trackIds. Для повторного импорта записей используйте массив items; текущий импорт не восстанавливает плейлисты автоматически.'
+      note: 'Этот MusicOverview можно вставить обратно целиком: существующие id обновятся, новые создадутся, а trackIds восстановят состав плейлистов.'
     })
   }
 
