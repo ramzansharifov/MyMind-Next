@@ -2,6 +2,7 @@ import { Tooltip } from '../../shared/ui/tooltip'
 import * as Checkbox from '@radix-ui/react-checkbox'
 import * as Dialog from '@radix-ui/react-dialog'
 import {
+  Braces,
   Check,
   Disc3,
   Heart,
@@ -32,6 +33,8 @@ import { DeleteConfirmationDialog } from '../../shared/ui/DeleteConfirmationDial
 import { ModuleHeader } from '../../shared/ui/ModuleHeader'
 import { StandardModulePage } from '../../shared/ui/StandardModulePage'
 import { musicClient } from './api/music-client'
+import { MusicJsonImportDialog } from './components/MusicJsonImportDialog'
+import { MusicJsonViewerDialog } from './components/MusicJsonViewerDialog'
 import {
   MusicLibraryContent,
   MusicLibraryNavigation,
@@ -609,6 +612,13 @@ export function MusicPage({ resourceId, onResourceHandled }: MusicPageProps): Re
   const [trackDialogItem, setTrackDialogItem] = useState<MusicItemRecord | null>(null)
   const [playlistDialogOpen, setPlaylistDialogOpen] = useState(false)
   const [playlistDialogItem, setPlaylistDialogItem] = useState<MusicPlaylistRecord | null>(null)
+  const [jsonImportOpen, setJsonImportOpen] = useState(false)
+  const [jsonView, setJsonView] = useState<{
+    title: string
+    description: string
+    value: MusicItemRecord | MusicOverview
+    note: string
+  } | null>(null)
 
   const refreshOverview = useCallback(async (): Promise<MusicOverview> => {
     const next = await musicClient.listOverview()
@@ -680,6 +690,26 @@ export function MusicPage({ resourceId, onResourceHandled }: MusicPageProps): Re
     setPlaylistDialogOpen(true)
   }
 
+  function openTrackJson(item: MusicItemRecord): void {
+    setJsonView({
+      title: `JSON · ${item.title}`,
+      description: 'Полная сохранённая запись этого трека',
+      value: item,
+      note:
+        'Это полный MusicItemRecord, включая id, createdAt и updatedAt. Служебные поля игнорируются текущим JSON-импортом, поэтому этот объект можно использовать как источник для повторного импорта.'
+    })
+  }
+
+  function openLibraryJson(): void {
+    setJsonView({
+      title: 'JSON музыкальной библиотеки',
+      description: `Полные данные: ${overview.items.length} записей · ${overview.playlists.length} плейлистов`,
+      value: overview,
+      note:
+        'Это полный MusicOverview: items содержит музыкальные записи, playlists — плейлисты и их trackIds. Для повторного импорта записей используйте массив items; текущий импорт не восстанавливает плейлисты автоматически.'
+    })
+  }
+
   async function toggleFavorite(item: MusicItemRecord): Promise<void> {
     setIsSaving(true)
     setError(null)
@@ -709,6 +739,20 @@ export function MusicPage({ resourceId, onResourceHandled }: MusicPageProps): Re
       await refreshOverview()
       setTrackDialogOpen(false)
       setTrackDialogItem(null)
+    } catch (reason) {
+      setError(errorMessage(reason))
+      throw reason
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  async function importMusic(items: CreateMusicItemInput[]): Promise<void> {
+    setIsSaving(true)
+    setError(null)
+    try {
+      await musicClient.createItems({ items })
+      await refreshOverview()
     } catch (reason) {
       setError(errorMessage(reason))
       throw reason
@@ -795,6 +839,20 @@ export function MusicPage({ resourceId, onResourceHandled }: MusicPageProps): Re
             <button
               type="button"
               className="inline-flex h-11 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-4 text-sm font-medium text-[var(--app-text)] transition-colors hover:bg-[var(--app-control-hover)]"
+              onClick={openLibraryJson}
+            >
+              <Braces className="size-4" /> JSON библиотеки
+            </button>
+            <button
+              type="button"
+              className="inline-flex h-11 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-4 text-sm font-medium text-[var(--app-text)] transition-colors hover:bg-[var(--app-control-hover)]"
+              onClick={() => setJsonImportOpen(true)}
+            >
+              <Braces className="size-4" /> Из JSON
+            </button>
+            <button
+              type="button"
+              className="inline-flex h-11 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-4 text-sm font-medium text-[var(--app-text)] transition-colors hover:bg-[var(--app-control-hover)]"
               onClick={openNewPlaylist}
             >
               <ListMusic className="size-4" /> Новый плейлист
@@ -838,12 +896,33 @@ export function MusicPage({ resourceId, onResourceHandled }: MusicPageProps): Re
         onScopeChange={setScope}
         onOpenTrack={openTrackEditor}
         onToggleFavorite={(item) => void toggleFavorite(item)}
+        onViewTrackJson={openTrackJson}
         onDeleteTrack={setDeleteTarget}
         onEditPlaylist={openPlaylistEditor}
         onDeletePlaylist={setPlaylistDeleteTarget}
         onCreatePlaylist={openNewPlaylist}
         onAddTrack={openNewTrack}
       />
+
+      <MusicJsonImportDialog
+        open={jsonImportOpen}
+        busy={isSaving}
+        onOpenChange={setJsonImportOpen}
+        onImport={importMusic}
+      />
+
+      {jsonView ? (
+        <MusicJsonViewerDialog
+          open
+          title={jsonView.title}
+          description={jsonView.description}
+          value={jsonView.value}
+          note={jsonView.note}
+          onOpenChange={(open) => {
+            if (!open) setJsonView(null)
+          }}
+        />
+      ) : null}
 
       <TrackDialog
         key={`track-${trackDialogItem?.id ?? 'new'}-${trackDialogOpen ? 'open' : 'closed'}`}
