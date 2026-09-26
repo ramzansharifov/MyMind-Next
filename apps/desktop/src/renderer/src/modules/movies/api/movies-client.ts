@@ -7,7 +7,9 @@ import type {
   MovieWebSearchInput,
   MoviesApi,
   MoviesOverview,
-  UpdateMovieInput
+  UpdateMovieInput,
+  UpsertMoviesInput,
+  UpsertMoviesResult
 } from '../../../../../shared/contracts/movies'
 
 function getMoviesApi(): MoviesApi {
@@ -29,6 +31,9 @@ export const moviesClient = {
   },
   createMovies(input: CreateMoviesInput): Promise<MovieRecord[]> {
     return getMoviesApi().createMovies(input)
+  },
+  upsertMovies(input: UpsertMoviesInput): Promise<UpsertMoviesResult> {
+    return getMoviesApi().upsertMovies(input)
   },
   updateMovie(input: UpdateMovieInput): Promise<MovieRecord> {
     return getMoviesApi().updateMovie(input)
