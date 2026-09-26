@@ -60,21 +60,15 @@ function movieCandidate(value: unknown): unknown {
 function musicCandidate(value: unknown): unknown {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return value
   const source = value as Record<string, unknown>
+  const legacyArtists = Array.isArray(source.artists)
+    ? source.artists.filter((artist): artist is string => typeof artist === 'string')
+    : []
   return {
     title: source.title,
-    type: source.type ?? 'track',
+    artist: source.artist ?? legacyArtists[0] ?? '',
     year: source.year ?? null,
-    coverUrl: source.coverUrl ?? null,
-    artists: source.artists ?? [],
-    album: source.album ?? '',
     durationSeconds: source.durationSeconds ?? null,
-    trackCount: source.trackCount ?? null,
-    genres: source.genres ?? [],
-    description: source.description ?? '',
-    status: source.status ?? 'want_to_listen',
-    favorite: source.favorite ?? false,
-    rating: source.rating ?? null,
-    comments: source.comments ?? ''
+    favorite: source.favorite ?? false
   }
 }
 
