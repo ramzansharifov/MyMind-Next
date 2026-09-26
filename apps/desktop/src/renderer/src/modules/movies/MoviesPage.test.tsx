@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   getMovie: vi.fn(),
   createMovie: vi.fn(),
   createMovies: vi.fn(),
+  upsertMovies: vi.fn(),
   updateMovie: vi.fn(),
   deleteMovie: vi.fn(),
   searchWeb: vi.fn()
