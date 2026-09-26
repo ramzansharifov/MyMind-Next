@@ -4,49 +4,39 @@ import { createMusicItemInputSchema, updateMusicItemInputSchema } from './music'
 
 const validItem = {
   title: 'Blinding Lights',
-  type: 'track' as const,
+  artist: 'The Weeknd',
   year: 2019,
-  coverUrl: 'https://example.com/cover.jpg',
-  artists: ['The Weeknd'],
-  album: 'After Hours',
   durationSeconds: 200,
-  trackCount: null,
-  genres: ['Synth-pop'],
-  description: '',
-  status: 'listened' as const,
-  favorite: true,
-  rating: 9,
-  comments: ''
+  favorite: true
 }
 
 describe('music validation', () => {
-  it('accepts supported types and normalizes duplicate lists', () => {
+  it('accepts and trims the real track fields', () => {
     const parsed = createMusicItemInputSchema.parse({
       ...validItem,
-      type: 'album',
-      artists: ['The Weeknd', 'The Weeknd'],
-      genres: ['R&B', 'R&B']
+      title: '  Blinding Lights  ',
+      artist: '  The Weeknd  '
     })
 
-    expect(parsed.type).toBe('album')
-    expect(parsed.artists).toEqual(['The Weeknd'])
-    expect(parsed.genres).toEqual(['R&B'])
+    expect(parsed).toEqual(validItem)
   })
 
-  it('rejects unsupported music types', () => {
+  it('requires an artist and rejects obsolete track metadata', () => {
+    expect(() => createMusicItemInputSchema.parse({ ...validItem, artist: '' })).toThrow()
     expect(() =>
-      createMusicItemInputSchema.parse({ ...validItem, type: 'podcast' })
+      createMusicItemInputSchema.parse({
+        ...validItem,
+        coverUrl: 'https://example.com/track.jpg'
+      })
     ).toThrow()
   })
 
-  it('does not allow a rating before listening', () => {
-    const parsed = createMusicItemInputSchema.safeParse({
-      ...validItem,
-      status: 'want_to_listen',
-      rating: 9
-    })
-
-    expect(parsed.success).toBe(false)
+  it('validates optional year and duration ranges', () => {
+    expect(() => createMusicItemInputSchema.parse({ ...validItem, year: 1700 })).toThrow()
+    expect(() => createMusicItemInputSchema.parse({ ...validItem, durationSeconds: 0 })).toThrow()
+    expect(
+      createMusicItemInputSchema.parse({ ...validItem, year: null, durationSeconds: null })
+    ).toMatchObject({ year: null, durationSeconds: null })
   })
 
   it('validates update identifiers together with the full payload', () => {
