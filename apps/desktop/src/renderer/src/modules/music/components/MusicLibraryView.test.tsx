@@ -78,31 +78,42 @@ describe('MusicLibraryView', () => {
     expect(screen.getByRole('combobox', { name: 'Год' })).toBeInTheDocument()
   })
 
-  it('не падает на старой runtime-записи с artists вместо artist', async () => {
-    const user = userEvent.setup()
+  it('не падает на старой runtime-записи с artists вместо artist', () => {
     const legacyItem = {
       ...overview.items[0],
       artist: undefined,
       artists: ['The Weeknd']
     } as unknown as MusicOverview['items'][number]
+    const legacyOverview: MusicOverview = {
+      ...overview,
+      items: [legacyItem]
+    }
 
     render(
-      <MusicLibraryNavigation
-        items={[legacyItem]}
-        scope={{ kind: 'all' }}
-        query=""
-        filters={{ artist: 'all', year: 'all' }}
-        onQueryChange={vi.fn()}
-        onScopeChange={vi.fn()}
-        onFiltersChange={vi.fn()}
-      />
+      <>
+        <MusicLibraryNavigation
+          items={legacyOverview.items}
+          scope={{ kind: 'all' }}
+          query=""
+          filters={{ artist: 'all', year: 'all' }}
+          onQueryChange={vi.fn()}
+          onScopeChange={vi.fn()}
+          onFiltersChange={vi.fn()}
+        />
+        <MusicLibraryContent
+          overview={legacyOverview}
+          scope={{ kind: 'all' }}
+          query=""
+          filters={{ artist: 'The Weeknd', year: 'all' }}
+          isSaving={false}
+          {...handlers}
+        />
+      </>
     )
 
-    await user.click(screen.getByRole('button', { name: 'Фильтры библиотеки' }))
-    const artistSelect = screen.getByRole('combobox', { name: 'Исполнитель' })
-    expect(artistSelect).toBeInTheDocument()
-    await user.click(artistSelect)
-    expect(await screen.findByRole('option', { name: 'The Weeknd' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Фильтры библиотеки' })).toBeInTheDocument()
+    expect(screen.getByText('Blinding Lights')).toBeInTheDocument()
+    expect(screen.getByText('The Weeknd')).toBeInTheDocument()
   })
 
   it('фильтрует треки по исполнителю и году', () => {
