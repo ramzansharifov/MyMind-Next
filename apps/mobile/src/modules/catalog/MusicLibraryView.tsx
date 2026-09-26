@@ -3,6 +3,7 @@ import { FlatList, Image, Pressable, Text, View } from 'react-native'
 import type { MusicItemRecord, MusicPlaylistRecord } from '@mymind/contracts/music'
 import {
   ArrowLeft,
+  Braces,
   Heart,
   ListMusic,
   Music2,
@@ -28,6 +29,7 @@ interface MusicLibraryViewProps {
   onRefresh(): void
   onOpenTrack(item: MusicItemRecord): void
   onViewJson(item: MusicItemRecord): void
+  onViewPlaylistJson(playlist: MusicPlaylistRecord): void
   onToggleFavorite(item: MusicItemRecord): void
   onSearchWeb(item: MusicItemRecord): void
   onDeleteTrack(item: MusicItemRecord): void
@@ -102,7 +104,7 @@ function TrackCard({
 }): React.JSX.Element {
   const theme = useTheme()
   const [actionsOpen, setActionsOpen] = useState(false)
-  const artist = item.artists[0] || 'Исполнитель не указан'
+  const artist = item.artist
   const duration = formatMusicDuration(item.durationSeconds)
   const details = [artist, item.year !== null ? String(item.year) : '', duration]
     .filter(Boolean)
@@ -228,11 +230,13 @@ function PlaylistCover({ playlist }: { playlist: MusicPlaylistRecord }): React.J
 function PlaylistCard({
   playlist,
   onOpen,
+  onViewJson,
   onEdit,
   onDelete
 }: {
   playlist: MusicPlaylistRecord
   onOpen(): void
+  onViewJson(): void
   onEdit(): void
   onDelete(): void
 }): React.JSX.Element {
@@ -275,6 +279,11 @@ function PlaylistCard({
         </View>
       </Pressable>
       <View style={{ flexDirection: 'row', gap: 1 }}>
+        <IconAction
+          label={`JSON плейлиста «${playlist.name}»`}
+          icon={Braces}
+          onPress={onViewJson}
+        />
         <IconAction label={`Изменить плейлист «${playlist.name}»`} icon={Pencil} onPress={onEdit} />
         <IconAction
           label={`Удалить плейлист «${playlist.name}»`}
@@ -290,11 +299,13 @@ function PlaylistCard({
 function PlaylistHeader({
   selectedPlaylist,
   onBackToPlaylists,
+  onViewJson,
   onEditPlaylist,
   onDeletePlaylist
 }: {
   selectedPlaylist: MusicPlaylistRecord
   onBackToPlaylists(): void
+  onViewJson(playlist: MusicPlaylistRecord): void
   onEditPlaylist(playlist: MusicPlaylistRecord): void
   onDeletePlaylist(playlist: MusicPlaylistRecord): void
 }): React.JSX.Element {
@@ -326,6 +337,11 @@ function PlaylistHeader({
       </Text>
       <View style={{ flexDirection: 'row', gap: 1 }}>
         <IconAction
+          label={`JSON плейлиста «${selectedPlaylist.name}»`}
+          icon={Braces}
+          onPress={() => onViewJson(selectedPlaylist)}
+        />
+        <IconAction
           label={`Редактировать плейлист «${selectedPlaylist.name}»`}
           icon={Pencil}
           onPress={() => onEditPlaylist(selectedPlaylist)}
@@ -351,6 +367,7 @@ export function MusicLibraryView({
   onRefresh,
   onOpenTrack,
   onViewJson,
+  onViewPlaylistJson,
   onToggleFavorite,
   onSearchWeb,
   onDeleteTrack,
@@ -374,6 +391,7 @@ export function MusicLibraryView({
       <PlaylistHeader
         selectedPlaylist={selectedPlaylist}
         onBackToPlaylists={onBackToPlaylists}
+        onViewJson={onViewPlaylistJson}
         onEditPlaylist={onEditPlaylist}
         onDeletePlaylist={onDeletePlaylist}
       />
@@ -393,6 +411,7 @@ export function MusicLibraryView({
           <PlaylistCard
             playlist={playlist}
             onOpen={() => onOpenPlaylist(playlist)}
+            onViewJson={() => onViewPlaylistJson(playlist)}
             onEdit={() => onEditPlaylist(playlist)}
             onDelete={() => onDeletePlaylist(playlist)}
           />
