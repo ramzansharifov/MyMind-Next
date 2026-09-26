@@ -89,9 +89,9 @@ export function MusicJsonImportDialog({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="text-xs leading-5 text-[var(--app-muted)]">
           Можно вставить трек, массив треков, плейлист или полный JSON библиотеки. Существующий
-          <code> id </code> обновляется, новый id создаётся. Для трека обязательные поля: <code>title</code> и{' '}
-          <code>artist</code>. Дополнительно: <code>year</code>, <code>durationSeconds</code> и{' '}
-          <code>favorite</code>.
+          <code> id </code> обновляется, новый id создаётся. Для трека обязательные поля:{' '}
+          <code>title</code> и <code>artist</code>. Дополнительно: <code>year</code>,{' '}
+          <code>durationSeconds</code> и <code>favorite</code>.
         </span>
         <div className="flex gap-2">
           <button
@@ -134,7 +134,9 @@ export function MusicJsonImportDialog({
           {error}
         </div>
       ) : parsed.items.length > 0 ? (
-        <div className="text-xs text-emerald-300">Готово: треков {parsed.items.length}, плейлистов {parsed.playlists.length}</div>
+        <div className="text-xs text-emerald-300">
+          Готово: треков {parsed.items.length}, плейлистов {parsed.playlists.length}
+        </div>
       ) : null}
     </AppDialog>
   )

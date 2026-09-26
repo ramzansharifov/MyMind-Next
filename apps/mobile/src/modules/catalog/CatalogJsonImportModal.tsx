@@ -63,8 +63,7 @@ export function CatalogJsonImportModal({
   const error = submitError || parsed.error || ''
   const title = mode === 'movies' ? 'Применить JSON фильмов' : 'Применить JSON музыки'
   const example = mode === 'movies' ? MOVIE_EXAMPLE : MUSIC_EXAMPLE
-  const importCount =
-    parsed.items.length + (parsed.mode === 'music' ? parsed.playlists.length : 0)
+  const importCount = parsed.items.length + (parsed.mode === 'music' ? parsed.playlists.length : 0)
 
   const requestClose = (): void => {
     if (busy) return
