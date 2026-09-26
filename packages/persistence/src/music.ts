@@ -11,7 +11,11 @@ import type {
   MusicPlaylistRecord,
   SetMusicItemPlaylistsInput,
   UpdateMusicItemInput,
-  UpdateMusicPlaylistInput
+  UpdateMusicPlaylistInput,
+  UpsertMusicItemInput,
+  UpsertMusicLibraryInput,
+  UpsertMusicLibraryResult,
+  UpsertMusicPlaylistInput
 } from '@mymind/contracts/music'
 
 export function createMusicRepository(runtime: RepositoryRuntime): MusicRepository {
@@ -165,8 +169,8 @@ FROM music_items`
     return findItem(input.id)
   }
 
-  function insertItem(input: CreateMusicItemInput): MusicItemRecord {
-    const id = randomUUID()
+  function insertItem(input: CreateMusicItemInput, requestedId?: string | null): MusicItemRecord {
+    const id = requestedId ?? randomUUID()
     const now = runtime.now()
     getSqlite()
       .prepare(
@@ -205,6 +209,69 @@ FROM music_items`
     return transaction(input.items)
   }
 
+  function upsertMusicLibrary(input: UpsertMusicLibraryInput): UpsertMusicLibraryResult {
+    const transaction = getSqlite().transaction(
+      (payload: UpsertMusicLibraryInput): UpsertMusicLibraryResult => {
+        let itemsCreated = 0
+        let itemsUpdated = 0
+        let playlistsCreated = 0
+        let playlistsUpdated = 0
+
+        for (const item of payload.items) {
+          const { id, ...record } = item
+          if (id && findItem(id)) {
+            itemsUpdated += 1
+            updateMusicItem({ id, ...record })
+          } else {
+            itemsCreated += 1
+            insertItem(record, id)
+          }
+        }
+
+        const playlistIds = new Map<UpsertMusicPlaylistInput, string>()
+        for (const playlist of payload.playlists) {
+          const { id, trackIds: _trackIds, ...record } = playlist
+          if (id && findPlaylist(id)) {
+            playlistsUpdated += 1
+            updateMusicPlaylist({ id, ...record })
+            playlistIds.set(playlist, id)
+          } else {
+            playlistsCreated += 1
+            const created = insertPlaylist(record, id)
+            playlistIds.set(playlist, created.id)
+          }
+        }
+
+        const db = getSqlite()
+        const deleteMemberships = db.prepare(
+          'DELETE FROM music_playlist_items WHERE playlist_id = ?'
+        )
+        const insertMembership = db.prepare(
+          `INSERT INTO music_playlist_items (playlist_id, music_item_id, created_at)
+           VALUES (?, ?, ?)`
+        )
+        for (const playlist of payload.playlists) {
+          const playlistId = playlistIds.get(playlist)
+          if (!playlistId) throw new Error('Не удалось определить плейлист для импорта')
+          const uniqueTrackIds = Array.from(new Set(playlist.trackIds))
+          uniqueTrackIds.forEach((trackId) => requireItem(trackId))
+          deleteMemberships.run(playlistId)
+          const now = runtime.now()
+          uniqueTrackIds.forEach((trackId) => insertMembership.run(playlistId, trackId, now))
+        }
+
+        return {
+          overview: listMusicOverview(),
+          itemsCreated,
+          itemsUpdated,
+          playlistsCreated,
+          playlistsUpdated
+        }
+      }
+    )
+    return transaction(input)
+  }
+
   function updateMusicItem(input: UpdateMusicItemInput): MusicItemRecord {
     requireItem(input.id)
     const now = runtime.now()
@@ -238,8 +305,11 @@ FROM music_items`
     return result.changes > 0
   }
 
-  function createMusicPlaylist(input: CreateMusicPlaylistInput): MusicPlaylistRecord {
-    const id = randomUUID()
+  function insertPlaylist(
+    input: CreateMusicPlaylistInput,
+    requestedId?: string | null
+  ): MusicPlaylistRecord {
+    const id = requestedId ?? randomUUID()
     const now = runtime.now()
     getSqlite()
       .prepare(
@@ -248,6 +318,10 @@ FROM music_items`
       )
       .run(id, input.name, input.coverUrl ?? null, now, now)
     return requirePlaylist(id)
+  }
+
+  function createMusicPlaylist(input: CreateMusicPlaylistInput): MusicPlaylistRecord {
+    return insertPlaylist(input)
   }
 
   function updateMusicPlaylist(input: UpdateMusicPlaylistInput): MusicPlaylistRecord {
@@ -289,6 +363,7 @@ FROM music_items`
     getMusicItem,
     createMusicItem,
     createMusicItems,
+    upsertMusicLibrary,
     updateMusicItem,
     deleteMusicItem,
     createMusicPlaylist,
@@ -303,6 +378,7 @@ export interface MusicRepository {
   getMusicItem(input: GetMusicItemInput): MusicItemRecord | null
   createMusicItem(input: CreateMusicItemInput): MusicItemRecord
   createMusicItems(input: CreateMusicItemsInput): MusicItemRecord[]
+  upsertMusicLibrary(input: UpsertMusicLibraryInput): UpsertMusicLibraryResult
   updateMusicItem(input: UpdateMusicItemInput): MusicItemRecord
   deleteMusicItem(input: DeleteMusicItemInput): boolean
   createMusicPlaylist(input: CreateMusicPlaylistInput): MusicPlaylistRecord
