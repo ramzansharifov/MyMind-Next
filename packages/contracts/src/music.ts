@@ -78,6 +78,30 @@ export interface CreateMusicItemsInput {
   items: CreateMusicItemInput[]
 }
 
+export interface UpsertMusicItemInput extends CreateMusicItemInput {
+  id?: string | null
+}
+
+export interface UpsertMusicPlaylistInput {
+  id?: string | null
+  name: string
+  coverUrl?: string | null
+  trackIds: string[]
+}
+
+export interface UpsertMusicLibraryInput {
+  items: UpsertMusicItemInput[]
+  playlists: UpsertMusicPlaylistInput[]
+}
+
+export interface UpsertMusicLibraryResult {
+  overview: MusicOverview
+  itemsCreated: number
+  itemsUpdated: number
+  playlistsCreated: number
+  playlistsUpdated: number
+}
+
 export interface GetMusicItemInput {
   id: string
 }
@@ -115,6 +139,7 @@ export const MUSIC_IPC_CHANNELS = {
   getItem: 'music:get-item',
   createItem: 'music:create-item',
   createItems: 'music:create-items',
+  upsertLibrary: 'music:upsert-library',
   updateItem: 'music:update-item',
   deleteItem: 'music:delete-item',
   createPlaylist: 'music:create-playlist',
@@ -129,6 +154,7 @@ export interface MusicApi {
   getItem(input: GetMusicItemInput): Promise<MusicItemRecord | null>
   createItem(input: CreateMusicItemInput): Promise<MusicItemRecord>
   createItems(input: CreateMusicItemsInput): Promise<MusicItemRecord[]>
+  upsertLibrary(input: UpsertMusicLibraryInput): Promise<UpsertMusicLibraryResult>
   updateItem(input: UpdateMusicItemInput): Promise<MusicItemRecord>
   deleteItem(input: DeleteMusicItemInput): Promise<boolean>
   createPlaylist(input: CreateMusicPlaylistInput): Promise<MusicPlaylistRecord>
