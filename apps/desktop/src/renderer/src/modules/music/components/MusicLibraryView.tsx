@@ -58,7 +58,6 @@ interface MusicLibraryContentProps {
   onViewPlaylistJson: (playlist: MusicPlaylistRecord) => void
   onDeleteTrack: (item: MusicItemRecord) => void
   onEditPlaylist: (playlist: MusicPlaylistRecord) => void
-  onViewPlaylistJson: (playlist: MusicPlaylistRecord) => void
   onDeletePlaylist: (playlist: MusicPlaylistRecord) => void
   onCreatePlaylist: () => void
   onAddTrack: () => void
