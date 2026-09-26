@@ -31,9 +31,11 @@ type LegacyMusicItemRecord = Omit<MusicItemRecord, 'artist'> & {
 export function normalizeMusicItemRecord(
   value: MusicItemRecord | LegacyMusicItemRecord
 ): MusicItemRecord {
-  const legacyArtist = Array.isArray(value.artists)
-    ? value.artists.find((artist) => typeof artist === 'string' && artist.trim() !== '')
-    : undefined
+  const legacyArtists =
+    'artists' in value && Array.isArray(value.artists)
+      ? value.artists.filter((artist: unknown): artist is string => typeof artist === 'string')
+      : []
+  const legacyArtist = legacyArtists.find((artist) => artist.trim() !== '')
   const artist =
     typeof value.artist === 'string' && value.artist.trim() !== ''
       ? value.artist
