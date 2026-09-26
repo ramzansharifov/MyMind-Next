@@ -1,7 +1,8 @@
-import type {
-  CreateMusicItemInput,
-  MusicItemRecord,
-  UpdateMusicItemInput
+import {
+  musicItemArtist,
+  type CreateMusicItemInput,
+  type MusicItemRecord,
+  type UpdateMusicItemInput
 } from '@mymind/contracts/music'
 
 export interface MobileMusicTrackDraft {
@@ -52,7 +53,7 @@ export function parseMusicDuration(value: string): number | null {
 export function musicTrackDraftFromItem(item?: MusicItemRecord): MobileMusicTrackDraft {
   return {
     title: item?.title ?? '',
-    artist: item?.artist ?? '',
+    artist: item ? musicItemArtist(item) : '',
     year: item?.year?.toString() ?? '',
     duration: formatMusicDuration(item?.durationSeconds ?? null) ?? '',
     favorite: item?.favorite ?? false
@@ -86,7 +87,7 @@ export function musicRecordToUpdateInput(item: MusicItemRecord): UpdateMusicItem
   return {
     id: item.id,
     title: item.title,
-    artist: item.artist,
+    artist: musicItemArtist(item),
     year: item.year,
     durationSeconds: item.durationSeconds,
     favorite: item.favorite
@@ -95,12 +96,12 @@ export function musicRecordToUpdateInput(item: MusicItemRecord): UpdateMusicItem
 
 export function musicYoutubeSearchUrl(item: Pick<MusicItemRecord, 'title' | 'artist'>): string {
   return `https://www.youtube.com/results?search_query=${encodeURIComponent(
-    `${item.title} ${item.artist}`
+    `${item.title} ${musicItemArtist(item)}`
   )}`
 }
 
 export function musicFilterArtists(items: readonly MusicItemRecord[]): string[] {
-  return Array.from(new Set(items.map((item) => item.artist.trim()).filter(Boolean))).sort((a, b) =>
+  return Array.from(new Set(items.map((item) => musicItemArtist(item)).filter(Boolean))).sort((a, b) =>
     a.localeCompare(b, 'ru')
   )
 }
