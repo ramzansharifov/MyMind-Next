@@ -13,6 +13,7 @@ import {
 } from 'lucide-react-native'
 import { stringifyMovieJson, type MovieRecord } from '@mymind/contracts/movies'
 import {
+  normalizeMusicItemRecord,
   stringifyMusicJson,
   type MusicItemRecord,
   type MusicPlaylistRecord
@@ -274,7 +275,10 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
 
   const movieFiltersActive = movieAdvancedFiltersActive(movieAdvancedFilters)
 
-  const musicItems = mode === 'music' ? ((state.data?.items ?? []) as MusicItemRecord[]) : []
+  const musicItems =
+    mode === 'music'
+      ? ((state.data?.items ?? []) as MusicItemRecord[]).map(normalizeMusicItemRecord)
+      : []
   const musicPlaylists = mode === 'music' ? (state.data?.playlists ?? []) : []
   const selectedPlaylist = playlistId
     ? (musicPlaylists.find((playlist) => playlist.id === playlistId) ?? null)
