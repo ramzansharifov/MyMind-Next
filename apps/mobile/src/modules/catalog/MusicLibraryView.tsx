@@ -1,6 +1,10 @@
 import { useState } from 'react'
 import { FlatList, Image, Pressable, Text, View } from 'react-native'
-import { musicItemArtist, type MusicItemRecord, type MusicPlaylistRecord } from '@mymind/contracts/music'
+import {
+  musicItemArtist,
+  type MusicItemRecord,
+  type MusicPlaylistRecord
+} from '@mymind/contracts/music'
 import {
   ArrowLeft,
   Braces,

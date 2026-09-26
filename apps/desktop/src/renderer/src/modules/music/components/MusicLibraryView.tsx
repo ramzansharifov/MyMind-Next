@@ -737,7 +737,10 @@ export function MusicLibraryContent({
       if (filters.artist !== 'all' && musicItemArtist(item) !== filters.artist) return false
       if (filters.year !== 'all' && item.year?.toString() !== filters.year) return false
       if (!search) return true
-      return [item.title, musicItemArtist(item)].join(' ').toLocaleLowerCase('ru-RU').includes(search)
+      return [item.title, musicItemArtist(item)]
+        .join(' ')
+        .toLocaleLowerCase('ru-RU')
+        .includes(search)
     })
   }, [filters, overview.items, scope.kind, search, selectedPlaylist])
 

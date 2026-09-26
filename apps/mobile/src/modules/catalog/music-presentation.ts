@@ -101,8 +101,8 @@ export function musicYoutubeSearchUrl(item: Pick<MusicItemRecord, 'title' | 'art
 }
 
 export function musicFilterArtists(items: readonly MusicItemRecord[]): string[] {
-  return Array.from(new Set(items.map((item) => musicItemArtist(item)).filter(Boolean))).sort((a, b) =>
-    a.localeCompare(b, 'ru')
+  return Array.from(new Set(items.map((item) => musicItemArtist(item)).filter(Boolean))).sort(
+    (a, b) => a.localeCompare(b, 'ru')
   )
 }
 

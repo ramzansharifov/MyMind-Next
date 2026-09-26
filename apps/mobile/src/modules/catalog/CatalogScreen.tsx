@@ -295,7 +295,10 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
     if (musicArtist && musicItemArtist(item) !== musicArtist) return false
     if (musicYear && item.year?.toString() !== musicYear) return false
     if (!normalizedQuery) return true
-    return [item.title, musicItemArtist(item)].join(' ').toLocaleLowerCase('ru').includes(normalizedQuery)
+    return [item.title, musicItemArtist(item)]
+      .join(' ')
+      .toLocaleLowerCase('ru')
+      .includes(normalizedQuery)
   })
   const visiblePlaylists = musicPlaylists.filter((playlist) => {
     if (!normalizedQuery) return true
