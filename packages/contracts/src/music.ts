@@ -122,3 +122,7 @@ export interface MusicApi {
   setItemPlaylists(input: SetMusicItemPlaylistsInput): Promise<MusicPlaylistRecord[]>
   searchWeb(input: MusicWebSearchInput): Promise<void>
 }
+
+export function stringifyMusicJson(value: MusicItemRecord | MusicPlaylistRecord | MusicOverview): string {
+  return JSON.stringify(value, null, 2) ?? ''
+}
