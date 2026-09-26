@@ -18,6 +18,7 @@ import {
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import {
+  normalizeMusicItemRecord,
   normalizeMusicOverview,
   type CreateMusicItemInput,
   type CreateMusicPlaylistInput,
@@ -588,6 +589,10 @@ export function MusicPage({ resourceId, onResourceHandled }: MusicPageProps): Re
   const [playlistDeleteTarget, setPlaylistDeleteTarget] = useState<MusicPlaylistRecord | null>(null)
   const [trackDialogOpen, setTrackDialogOpen] = useState(false)
   const [trackDialogItem, setTrackDialogItem] = useState<MusicItemRecord | null>(null)
+  const currentTrackDialogItem = useMemo(
+    () => (trackDialogItem ? normalizeMusicItemRecord(trackDialogItem) : null),
+    [trackDialogItem]
+  )
   const [playlistDialogOpen, setPlaylistDialogOpen] = useState(false)
   const [playlistDialogItem, setPlaylistDialogItem] = useState<MusicPlaylistRecord | null>(null)
   const [jsonImportOpen, setJsonImportOpen] = useState(false)
@@ -913,7 +918,7 @@ export function MusicPage({ resourceId, onResourceHandled }: MusicPageProps): Re
       <TrackDialog
         key={`track-${trackDialogItem?.id ?? 'new'}-${trackDialogOpen ? 'open' : 'closed'}`}
         open={trackDialogOpen}
-        item={trackDialogItem}
+        item={currentTrackDialogItem}
         playlists={currentOverview.playlists}
         busy={isSaving}
         onOpenChange={(open) => {
