@@ -856,6 +856,7 @@ export function MusicLibraryContent({
         }
         onOpenTrack={onOpenTrack}
         onToggleFavorite={onToggleFavorite}
+        onViewTrackJson={onViewTrackJson}
         onDeleteTrack={onDeleteTrack}
         onAddTrack={onAddTrack}
       />
