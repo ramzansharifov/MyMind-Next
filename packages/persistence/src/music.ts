@@ -230,7 +230,11 @@ FROM music_items`
 
         const playlistIds = new Map<UpsertMusicPlaylistInput, string>()
         for (const playlist of payload.playlists) {
-          const { id, trackIds: _trackIds, ...record } = playlist
+          const { id } = playlist
+          const record: CreateMusicPlaylistInput = {
+            name: playlist.name,
+            coverUrl: playlist.coverUrl ?? null
+          }
           if (id && findPlaylist(id)) {
             playlistsUpdated += 1
             updateMusicPlaylist({ id, ...record })
