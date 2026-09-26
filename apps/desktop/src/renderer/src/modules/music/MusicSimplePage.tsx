@@ -24,7 +24,8 @@ import {
   MusicItemRecord,
   MusicOverview,
   MusicPlaylistRecord,
-  UpdateMusicItemInput
+  UpdateMusicItemInput,
+  type UpsertMusicLibraryInput
 } from '../../../../shared/contracts/music'
 import {
   createMusicItemInputSchema,
