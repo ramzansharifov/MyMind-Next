@@ -59,6 +59,20 @@ export interface CreateMoviesInput {
   movies: CreateMovieInput[]
 }
 
+export interface UpsertMovieInput extends CreateMovieInput {
+  id?: string | null
+}
+
+export interface UpsertMoviesInput {
+  movies: UpsertMovieInput[]
+}
+
+export interface UpsertMoviesResult {
+  movies: MovieRecord[]
+  created: number
+  updated: number
+}
+
 export interface GetMovieInput {
   id: string
 }
@@ -76,6 +90,7 @@ export const MOVIES_IPC_CHANNELS = {
   getMovie: 'movies:get-movie',
   createMovie: 'movies:create-movie',
   createMovies: 'movies:create-movies',
+  upsertMovies: 'movies:upsert-movies',
   updateMovie: 'movies:update-movie',
   deleteMovie: 'movies:delete-movie',
   searchWeb: 'movies:search-web'
@@ -86,6 +101,7 @@ export interface MoviesApi {
   getMovie(input: GetMovieInput): Promise<MovieRecord | null>
   createMovie(input: CreateMovieInput): Promise<MovieRecord>
   createMovies(input: CreateMoviesInput): Promise<MovieRecord[]>
+  upsertMovies(input: UpsertMoviesInput): Promise<UpsertMoviesResult>
   updateMovie(input: UpdateMovieInput): Promise<MovieRecord>
   deleteMovie(input: DeleteMovieInput): Promise<boolean>
   searchWeb(input: MovieWebSearchInput): Promise<void>
