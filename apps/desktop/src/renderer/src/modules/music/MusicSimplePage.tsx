@@ -17,8 +17,9 @@ import {
 } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 
-import type {
-  CreateMusicItemInput,
+import {
+  normalizeMusicOverview,
+  type CreateMusicItemInput,
   CreateMusicPlaylistInput,
   MusicItemRecord,
   MusicOverview,
@@ -596,6 +597,8 @@ export function MusicPage({ resourceId, onResourceHandled }: MusicPageProps): Re
     note: string
   } | null>(null)
 
+  const currentOverview = normalizeMusicOverview(overview)
+
   const refreshOverview = useCallback(async (): Promise<MusicOverview> => {
     const next = await musicClient.listOverview()
     setOverview(next)
@@ -650,7 +653,7 @@ export function MusicPage({ resourceId, onResourceHandled }: MusicPageProps): Re
   }
 
   function openTrackEditor(itemId: string): void {
-    const item = overview.items.find((entry) => entry.id === itemId)
+    const item = currentOverview.items.find((entry) => entry.id === itemId)
     if (!item) return
     setTrackDialogItem(item)
     setTrackDialogOpen(true)
@@ -687,8 +690,8 @@ export function MusicPage({ resourceId, onResourceHandled }: MusicPageProps): Re
   function openLibraryJson(): void {
     setJsonView({
       title: 'JSON музыкальной библиотеки',
-      description: `Полные данные: ${overview.items.length} записей · ${overview.playlists.length} плейлистов`,
-      value: overview,
+      description: `Полные данные: ${currentOverview.items.length} записей · ${currentOverview.playlists.length} плейлистов`,
+      value: currentOverview,
       note: 'Это полный MusicOverview: items содержит музыкальные записи, playlists — плейлисты и их trackIds. Для повторного импорта записей используйте массив items; текущий импорт не восстанавливает плейлисты автоматически.'
     })
   }
@@ -851,7 +854,7 @@ export function MusicPage({ resourceId, onResourceHandled }: MusicPageProps): Re
         }
       >
         <MusicLibraryNavigation
-          items={overview.items}
+          items={currentOverview.items}
           scope={scope}
           query={query}
           filters={filters}
@@ -871,7 +874,7 @@ export function MusicPage({ resourceId, onResourceHandled }: MusicPageProps): Re
       )}
 
       <MusicLibraryContent
-        overview={overview}
+        overview={currentOverview}
         scope={scope}
         query={query}
         filters={filters}
@@ -912,7 +915,7 @@ export function MusicPage({ resourceId, onResourceHandled }: MusicPageProps): Re
         key={`track-${trackDialogItem?.id ?? 'new'}-${trackDialogOpen ? 'open' : 'closed'}`}
         open={trackDialogOpen}
         item={trackDialogItem}
-        playlists={overview.playlists}
+        playlists={currentOverview.playlists}
         busy={isSaving}
         onOpenChange={(open) => {
           setTrackDialogOpen(open)

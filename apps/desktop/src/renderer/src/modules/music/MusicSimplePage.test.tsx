@@ -77,6 +77,29 @@ describe('MusicPage dialogs', () => {
     expect(header?.contains(navigation)).toBe(true)
   })
 
+  it('не падает на старой записи с artists после hot reload', async () => {
+    mocks.listOverview.mockResolvedValue({
+      items: [
+        {
+          id: 'legacy-track',
+          title: 'Legacy track',
+          artists: ['Legacy Artist'],
+          year: 2020,
+          durationSeconds: 180,
+          favorite: false,
+          createdAt: 1,
+          updatedAt: 2
+        }
+      ],
+      playlists: []
+    })
+
+    render(<MusicPage />)
+
+    expect(await screen.findByText('Legacy track')).toBeInTheDocument()
+    expect(screen.getByText('Legacy Artist')).toBeInTheDocument()
+  })
+
   it('показывает полный JSON библиотеки и отдельного трека', async () => {
     const user = userEvent.setup()
     const playlist = {

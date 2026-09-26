@@ -23,6 +23,45 @@ export interface MusicOverview {
   playlists: MusicPlaylistRecord[]
 }
 
+type LegacyMusicItemRecord = Omit<MusicItemRecord, 'artist'> & {
+  artist?: string
+  artists?: readonly string[]
+}
+
+export function normalizeMusicItemRecord(
+  value: MusicItemRecord | LegacyMusicItemRecord
+): MusicItemRecord {
+  const legacyArtists =
+    'artists' in value && Array.isArray(value.artists)
+      ? value.artists.filter((artist: unknown): artist is string => typeof artist === 'string')
+      : []
+  const legacyArtist = legacyArtists.find((artist) => artist.trim() !== '')
+  const artist =
+    typeof value.artist === 'string' && value.artist.trim() !== ''
+      ? value.artist
+      : (legacyArtist ?? '')
+
+  return {
+    id: value.id,
+    title: value.title,
+    artist: artist.trim(),
+    year: value.year,
+    durationSeconds: value.durationSeconds,
+    favorite: value.favorite,
+    createdAt: value.createdAt,
+    updatedAt: value.updatedAt
+  }
+}
+
+export function normalizeMusicOverview(
+  value: MusicOverview | (Omit<MusicOverview, 'items'> & { items: LegacyMusicItemRecord[] })
+): MusicOverview {
+  return {
+    items: value.items.map(normalizeMusicItemRecord),
+    playlists: value.playlists
+  }
+}
+
 export interface CreateMusicItemInput {
   title: string
   artist: string

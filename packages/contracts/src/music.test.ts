@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  normalizeMusicItemRecord,
+  normalizeMusicOverview,
   stringifyMusicJson,
   type MusicItemRecord,
   type MusicOverview,
@@ -57,5 +59,52 @@ describe('stringifyMusicJson', () => {
     }
 
     expect(JSON.parse(stringifyMusicJson(overview))).toEqual(overview)
+  })
+})
+
+describe('legacy music runtime normalization', () => {
+  it('converts the old artists array into the current artist field', () => {
+    const legacy = {
+      id: 'legacy-track',
+      title: 'Legacy track',
+      artists: ['  Legacy Artist  '],
+      year: 2020,
+      durationSeconds: 180,
+      favorite: false,
+      createdAt: 1,
+      updatedAt: 2
+    }
+
+    expect(normalizeMusicItemRecord(legacy)).toEqual({
+      id: 'legacy-track',
+      title: 'Legacy track',
+      artist: 'Legacy Artist',
+      year: 2020,
+      durationSeconds: 180,
+      favorite: false,
+      createdAt: 1,
+      updatedAt: 2
+    })
+  })
+
+  it('normalizes retained legacy items inside a music overview', () => {
+    const normalized = normalizeMusicOverview({
+      items: [
+        {
+          id: 'legacy-track',
+          title: 'Legacy track',
+          artists: ['Legacy Artist'],
+          year: null,
+          durationSeconds: null,
+          favorite: true,
+          createdAt: 1,
+          updatedAt: 2
+        }
+      ],
+      playlists: [playlist]
+    })
+
+    expect(normalized.items[0]?.artist).toBe('Legacy Artist')
+    expect(normalized.playlists).toEqual([playlist])
   })
 })
