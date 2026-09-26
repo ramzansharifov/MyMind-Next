@@ -88,14 +88,23 @@ describe('movies repository', () => {
       episodeRuntimeMinutes: 42
     })
 
-    const {
-      seasonCount: _seasonCount,
-      episodesPerSeason: _episodesPerSeason,
-      episodeRuntimeMinutes: _episodeRuntimeMinutes,
-      createdAt: _createdAt,
-      updatedAt: _updatedAt,
-      ...updateInput
-    } = series
+    const updateInput = {
+      id: series.id,
+      title: series.title,
+      originalTitle: series.originalTitle,
+      type: series.type,
+      year: series.year,
+      posterUrl: series.posterUrl,
+      director: series.director,
+      runtimeMinutes: series.runtimeMinutes,
+      genres: series.genres,
+      actors: series.actors,
+      description: series.description,
+      status: series.status,
+      favorite: series.favorite,
+      rating: series.rating,
+      comments: series.comments
+    }
     const updated = updateMovie({ ...updateInput, favorite: true })
 
     expect(updated).toMatchObject({
