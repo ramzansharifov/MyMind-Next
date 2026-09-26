@@ -20,11 +20,11 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   normalizeMusicOverview,
   type CreateMusicItemInput,
-  CreateMusicPlaylistInput,
-  MusicItemRecord,
-  MusicOverview,
-  MusicPlaylistRecord,
-  UpdateMusicItemInput
+  type CreateMusicPlaylistInput,
+  type MusicItemRecord,
+  type MusicOverview,
+  type MusicPlaylistRecord,
+  type UpdateMusicItemInput
 } from '../../../../shared/contracts/music'
 import {
   createMusicItemInputSchema,
