@@ -27,6 +27,7 @@ interface MovieDetailViewProps {
   onBack(): void
   onEdit(): void
   onDelete(): void
+  onViewJson(): void
   onUpdate(movie: MovieRecord): void
   onSearchWeb(query: string): void
 }
@@ -96,6 +97,7 @@ export function MovieDetailView({
   onBack,
   onEdit,
   onDelete,
+  onViewJson,
   onUpdate,
   onSearchWeb
 }: MovieDetailViewProps): React.JSX.Element {
@@ -157,6 +159,7 @@ export function MovieDetailView({
           onPress={() => onSearchWeb(`Смотреть фильм ${movie.title}`)}
           disabled={busy}
         />
+        <IconButton label="JSON" icon="json" ghost onPress={onViewJson} disabled={busy} />
         <IconButton label="Изменить" icon="edit" ghost onPress={onEdit} disabled={busy} />
         <IconButton label="Удалить" icon="delete" danger ghost disabled={busy} onPress={onDelete} />
       </View>

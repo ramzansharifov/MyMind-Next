@@ -90,3 +90,7 @@ export interface MoviesApi {
   deleteMovie(input: DeleteMovieInput): Promise<boolean>
   searchWeb(input: MovieWebSearchInput): Promise<void>
 }
+
+export function stringifyMovieJson(value: MovieRecord | readonly MovieRecord[]): string {
+  return JSON.stringify(value, null, 2) ?? ''
+}

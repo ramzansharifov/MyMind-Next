@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react'
 import { Linking, Pressable, View } from 'react-native'
 import {
   Bookmark,
+  Braces,
   Check,
   Film,
   Heart,
@@ -26,6 +27,7 @@ import { SwipeTabBar } from '../../shared/ui/SwipeTabBar'
 import { useSwipeTabFeedback } from '../../shared/ui/useSwipeTabFeedback'
 import { movieFields, movieValues, normalizeMovieFormValues } from './catalog-forms'
 import { CatalogJsonImportModal } from './CatalogJsonImportModal'
+import { CatalogJsonViewerModal } from './CatalogJsonViewerModal'
 import { MovieDetailView } from './MovieDetailView'
 import { MovieLibraryView } from './MovieLibraryView'
 import { MovieFiltersSheet } from './MovieFiltersSheet'
@@ -104,6 +106,11 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
   const [selectedMovieId, setSelectedMovieId] = useState<string | null>(null)
   const [form, setForm] = useState<FormSpec | null>(null)
   const [jsonImportOpen, setJsonImportOpen] = useState(false)
+  const [jsonView, setJsonView] = useState<{
+    title: string
+    description: string
+    value: MovieRecord | MovieRecord[]
+  } | null>(null)
   const [webError, setWebError] = useState('')
   const [movieSwipeFeedback, showMovieSwipeFeedback] = useSwipeTabFeedback<MovieStatusFilter>()
   const [musicSwipeFeedback, showMusicSwipeFeedback] = useSwipeTabFeedback<MusicTopTab>()
@@ -354,12 +361,27 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
               setSelectedMovieId(null)
             })
           }
+          onViewJson={() =>
+            setJsonView({
+              title: `JSON · ${selectedMovie.title}`,
+              description: 'Полная сохранённая запись этого фильма',
+              value: selectedMovie
+            })
+          }
           onUpdate={updateMovie}
           onSearchWeb={(searchQuery) => {
             void webSearch(searchQuery)
           }}
         />
         {form && <FormSheet spec={form} close={() => setForm(null)} />}
+        {jsonView ? (
+          <CatalogJsonViewerModal
+            title={jsonView.title}
+            description={jsonView.description}
+            value={jsonView.value}
+            close={() => setJsonView(null)}
+          />
+        ) : null}
       </View>
     )
   }
@@ -395,6 +417,30 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
                     backgroundColor: theme.border
                   }}
                 />
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="JSON библиотеки"
+                  disabled={state.pending}
+                  onPress={() =>
+                    setJsonView({
+                      title: 'JSON библиотеки',
+                      description: `Полные сохранённые данные всех фильмов · ${allMovieItems.length}`,
+                      value: [...allMovieItems]
+                    })
+                  }
+                  style={({ pressed }) => ({
+                    flex: 1,
+                    minWidth: 0,
+                    height: 40,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderRadius: 12,
+                    backgroundColor: pressed ? theme.raised : 'transparent',
+                    opacity: state.pending ? 0.45 : pressed ? 0.72 : 1
+                  })}
+                >
+                  <Braces size={19} strokeWidth={2} color={theme.muted} />
+                </Pressable>
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel="Фильтры и сортировка"
@@ -664,6 +710,14 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
           }}
         />
       )}
+      {mode === 'movies' && jsonView ? (
+        <CatalogJsonViewerModal
+          title={jsonView.title}
+          description={jsonView.description}
+          value={jsonView.value}
+          close={() => setJsonView(null)}
+        />
+      ) : null}
     </View>
   )
 }
