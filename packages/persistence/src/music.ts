@@ -9,8 +9,6 @@ import type {
   MusicItemRecord,
   MusicOverview,
   MusicPlaylistRecord,
-  MusicStatus,
-  MusicType,
   SetMusicItemPlaylistsInput,
   UpdateMusicItemInput,
   UpdateMusicPlaylistInput
@@ -19,22 +17,14 @@ import type {
 export function createMusicRepository(runtime: RepositoryRuntime): MusicRepository {
   const getSqlite = runtime.database
   const randomUUID = runtime.createId
+
   interface MusicItemRow {
     id: string
     title: string
-    type: MusicType
     year: number | null
-    cover_url: string | null
     artists_json: string
-    album: string
     duration_seconds: number | null
-    track_count: number | null
-    genres_json: string
-    description: string
-    status: MusicStatus
     favorite: number
-    rating: number | null
-    comments: string
     created_at: number
     updated_at: number
   }
@@ -55,31 +45,22 @@ export function createMusicRepository(runtime: RepositoryRuntime): MusicReposito
   const MUSIC_SELECT = `SELECT
   id,
   title,
-  type,
   year,
-  cover_url,
   artists_json,
-  album,
   duration_seconds,
-  track_count,
-  genres_json,
-  description,
-  status,
   favorite,
-  rating,
-  comments,
   created_at,
   updated_at
 FROM music_items`
 
-  function parseStringList(value: string): string[] {
+  function legacyArtist(value: string): string {
     try {
       const parsed = JSON.parse(value) as unknown
-      return Array.isArray(parsed)
-        ? parsed.filter((item): item is string => typeof item === 'string')
-        : []
+      if (!Array.isArray(parsed)) return ''
+      const artist = parsed.find((item): item is string => typeof item === 'string' && item.trim() !== '')
+      return artist?.trim() ?? ''
     } catch {
-      return []
+      return ''
     }
   }
 
@@ -87,19 +68,10 @@ FROM music_items`
     return {
       id: row.id,
       title: row.title,
-      type: row.type,
+      artist: legacyArtist(row.artists_json),
       year: row.year,
-      coverUrl: row.cover_url,
-      artists: parseStringList(row.artists_json),
-      album: row.album,
       durationSeconds: row.duration_seconds,
-      trackCount: row.track_count,
-      genres: parseStringList(row.genres_json),
-      description: row.description,
-      status: row.status,
       favorite: Boolean(row.favorite),
-      rating: row.status === 'listened' ? row.rating : null,
-      comments: row.comments,
       createdAt: row.created_at,
       updatedAt: row.updated_at
     }
@@ -151,7 +123,8 @@ FROM music_items`
 
   function findItem(id: string): MusicItemRecord | null {
     const row = getSqlite().prepare(`${MUSIC_SELECT} WHERE id = ?`).get(id) as
-      MusicItemRow | undefined
+      | MusicItemRow
+      | undefined
     return row ? mapItem(row) : null
   }
 
@@ -161,22 +134,22 @@ FROM music_items`
     return item
   }
 
-  function payload(input: CreateMusicItemInput | UpdateMusicItemInput): readonly unknown[] {
+  function legacyPayload(input: CreateMusicItemInput | UpdateMusicItemInput): readonly unknown[] {
     return [
       input.title,
-      input.type,
+      'track',
       input.year,
-      input.coverUrl,
-      JSON.stringify(input.artists),
-      input.album,
+      null,
+      JSON.stringify([input.artist]),
+      '',
       input.durationSeconds,
-      input.trackCount,
-      JSON.stringify(input.genres),
-      input.description,
-      input.status,
+      null,
+      '[]',
+      '',
+      'listened',
       input.favorite ? 1 : 0,
-      input.status === 'listened' ? input.rating : null,
-      input.comments
+      null,
+      ''
     ]
   }
 
@@ -216,7 +189,7 @@ FROM music_items`
         updated_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       )
-      .run(id, ...payload(input), now, now)
+      .run(id, ...legacyPayload(input), now, now)
     return requireItem(id)
   }
 
@@ -254,7 +227,7 @@ FROM music_items`
         updated_at = ?
        WHERE id = ?`
       )
-      .run(...payload(input), now, input.id)
+      .run(...legacyPayload(input), now, input.id)
     return requireItem(input.id)
   }
 
@@ -309,6 +282,7 @@ FROM music_items`
 
     return listPlaylists()
   }
+
   return {
     listMusicOverview,
     getMusicItem,
