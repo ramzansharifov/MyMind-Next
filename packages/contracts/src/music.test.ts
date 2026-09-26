@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  musicItemArtist,
+  normalizeMusicItemRecord,
   stringifyMusicJson,
   type MusicItemRecord,
   type MusicOverview,
@@ -26,6 +28,40 @@ const playlist: MusicPlaylistRecord = {
   createdAt: 789,
   updatedAt: 999
 }
+
+describe('legacy music runtime compatibility', () => {
+  const legacyTrack = {
+    id: 'legacy-track',
+    title: 'Legacy Track',
+    artists: [' Legacy Artist '],
+    year: 2020,
+    durationSeconds: 180,
+    favorite: false,
+    coverUrl: 'https://example.com/old.jpg',
+    album: 'Old Album',
+    createdAt: 10,
+    updatedAt: 20
+  } as unknown as MusicItemRecord
+
+  it('reads the old artists array when artist is missing', () => {
+    expect(musicItemArtist(legacyTrack)).toBe('Legacy Artist')
+  })
+
+  it('normalizes old runtime records into the current public shape', () => {
+    expect(normalizeMusicItemRecord(legacyTrack)).toEqual({
+      id: 'legacy-track',
+      title: 'Legacy Track',
+      artist: 'Legacy Artist',
+      year: 2020,
+      durationSeconds: 180,
+      favorite: false,
+      createdAt: 10,
+      updatedAt: 20
+    })
+    expect(stringifyMusicJson(legacyTrack)).not.toContain('coverUrl')
+    expect(stringifyMusicJson(legacyTrack)).not.toContain('album')
+  })
+})
 
 describe('stringifyMusicJson', () => {
   it('serializes only the real public fields of one track', () => {
