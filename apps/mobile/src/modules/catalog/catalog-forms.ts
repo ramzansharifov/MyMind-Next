@@ -42,9 +42,7 @@ export const movieFields: FormField[] = [
     visibleWhen: { key: 'type', oneOf: ['series', 'animated_series'] }
   },
   ...commonFields.map((field) =>
-    field.key === 'rating'
-      ? { ...field, visibleWhen: { key: 'status', equals: 'watched' } }
-      : field
+    field.key === 'rating' ? { ...field, visibleWhen: { key: 'status', equals: 'watched' } } : field
   )
 ]
 export function movieValues(item?: MovieRecord): FormValues {
