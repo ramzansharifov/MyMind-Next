@@ -1,0 +1,76 @@
+name: Verify music legacy compatibility
+
+on:
+  push:
+    branches:
+      - refactor/music-real-data-model
+
+permissions:
+  contents: write
+
+concurrency:
+  group: verify-music-legacy-compatibility
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Format changed compatibility files
+        run: >-
+          npx prettier --write
+          packages/contracts/src/music.ts
+          packages/contracts/src/music.test.ts
+          apps/desktop/src/renderer/src/modules/music/api/music-client.ts
+          apps/desktop/src/renderer/src/modules/music/MusicSimplePage.tsx
+          apps/desktop/src/renderer/src/modules/music/MusicSimplePage.test.tsx
+          apps/desktop/src/renderer/src/modules/music/components/MusicLibraryView.tsx
+          apps/mobile/src/modules/catalog/music-presentation.ts
+          apps/mobile/src/modules/catalog/music-presentation.test.ts
+      - name: Commit formatting when needed
+        shell: pwsh
+        run: |
+          if (-not (git diff --quiet)) {
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add packages/contracts/src/music.ts packages/contracts/src/music.test.ts apps/desktop/src/renderer/src/modules/music/api/music-client.ts apps/desktop/src/renderer/src/modules/music/MusicSimplePage.tsx apps/desktop/src/renderer/src/modules/music/MusicSimplePage.test.tsx apps/desktop/src/renderer/src/modules/music/components/MusicLibraryView.tsx apps/mobile/src/modules/catalog/music-presentation.ts apps/mobile/src/modules/catalog/music-presentation.test.ts
+            git commit -m "style: format music compatibility fix"
+            git push origin HEAD:refactor/music-real-data-model
+          }
+      - name: Check changed formatting
+        run: >-
+          npx prettier --check
+          packages/contracts/src/music.ts
+          packages/contracts/src/music.test.ts
+          apps/desktop/src/renderer/src/modules/music/api/music-client.ts
+          apps/desktop/src/renderer/src/modules/music/MusicSimplePage.tsx
+          apps/desktop/src/renderer/src/modules/music/MusicSimplePage.test.tsx
+          apps/desktop/src/renderer/src/modules/music/components/MusicLibraryView.tsx
+          apps/mobile/src/modules/catalog/music-presentation.ts
+          apps/mobile/src/modules/catalog/music-presentation.test.ts
+      - name: Lint changed files
+        run: >-
+          npx eslint
+          packages/contracts/src/music.ts
+          packages/contracts/src/music.test.ts
+          apps/desktop/src/renderer/src/modules/music/api/music-client.ts
+          apps/desktop/src/renderer/src/modules/music/MusicSimplePage.tsx
+          apps/desktop/src/renderer/src/modules/music/MusicSimplePage.test.tsx
+          apps/desktop/src/renderer/src/modules/music/components/MusicLibraryView.tsx
+          apps/mobile/src/modules/catalog/music-presentation.ts
+          apps/mobile/src/modules/catalog/music-presentation.test.ts
+      - run: npm run typecheck
+      - name: Run focused desktop music tests
+        run: >-
+          npm run test:run --workspace=mymind-next --
+          src/renderer/src/modules/music/MusicSimplePage.test.tsx
+      - run: npm run test:mobile
+      - run: npm run build:bundle
+      - run: npm run export:android
