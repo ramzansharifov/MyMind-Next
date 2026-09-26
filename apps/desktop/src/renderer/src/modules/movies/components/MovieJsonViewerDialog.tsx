@@ -1,10 +1,7 @@
 import { Braces, Check, Copy } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
-import {
-  stringifyMovieJson,
-  type MovieRecord
-} from '../../../../../shared/contracts/movies'
+import { stringifyMovieJson, type MovieRecord } from '../../../../../shared/contracts/movies'
 import { AppDialog } from '../../../shared/ui/AppDialog'
 
 interface MovieJsonViewerDialogProps {

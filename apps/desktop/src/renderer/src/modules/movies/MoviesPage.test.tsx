@@ -189,7 +189,10 @@ describe('MoviesPage', () => {
     await user.click(screen.getAllByRole('button', { name: 'Добавить фильм' })[0])
 
     expect(screen.getByRole('heading', { name: 'Добавить фильм' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Тип: Фильм' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: 'Тип: Фильм' })).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    )
     expect(screen.getByRole('button', { name: 'Тип: Сериал' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Тип: Мультфильм' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Тип: Мультсериал' })).toBeInTheDocument()
@@ -258,7 +261,10 @@ describe('MoviesPage', () => {
     await user.click(await screen.findByRole('button', { name: 'Открыть фильм «Интерстеллар»' }))
     await user.click(screen.getByRole('button', { name: 'Изменить' }))
     expect(screen.getByRole('heading', { name: 'Редактировать фильм' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Тип: Фильм' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: 'Тип: Фильм' })).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    )
     expect(screen.getByDisplayValue('Matthew McConaughey, Anne Hathaway')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'К фильму' }))
     expect(screen.getByRole('button', { name: 'Изменить' })).toBeInTheDocument()
@@ -333,7 +339,9 @@ describe('MoviesPage', () => {
 
     await user.click(watchlist)
     expect(mocks.updateMovie).not.toHaveBeenCalled()
-    expect(screen.getByRole('heading', { name: 'Вернуть в «Хочу посмотреть»?' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', { name: 'Вернуть в «Хочу посмотреть»?' })
+    ).toBeInTheDocument()
     expect(screen.getByText('Текущая оценка будет удалена')).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Отмена' }))

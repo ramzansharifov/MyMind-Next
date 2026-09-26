@@ -1,10 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Platform, ScrollView, Text, View } from 'react-native'
 import * as Clipboard from 'expo-clipboard'
-import {
-  stringifyMovieJson,
-  type MovieRecord
-} from '@mymind/contracts/movies'
+import { stringifyMovieJson, type MovieRecord } from '@mymind/contracts/movies'
 
 import { AppDialog } from '../../shared/ui/AppDialog'
 import { Button } from '../../shared/ui/primitives'
