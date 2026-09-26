@@ -55,8 +55,10 @@ interface MusicLibraryContentProps {
   onOpenTrack: (itemId: string) => void
   onToggleFavorite: (item: MusicItemRecord) => void
   onViewTrackJson: (item: MusicItemRecord) => void
+  onViewPlaylistJson: (playlist: MusicPlaylistRecord) => void
   onDeleteTrack: (item: MusicItemRecord) => void
   onEditPlaylist: (playlist: MusicPlaylistRecord) => void
+  onViewPlaylistJson: (playlist: MusicPlaylistRecord) => void
   onDeletePlaylist: (playlist: MusicPlaylistRecord) => void
   onCreatePlaylist: () => void
   onAddTrack: () => void
@@ -139,7 +141,7 @@ export function MusicLibraryNavigation({
   const activeFilterCount = Object.values(filters).filter((value) => value !== 'all').length
   const filterOptions = useMemo(
     () => ({
-      artists: uniqueSorted(items.flatMap((item) => item.artists)),
+      artists: uniqueSorted(items.map((item) => item.artist)),
       years: Array.from(
         new Set(items.flatMap((item) => (item.year === null ? [] : [item.year])))
       ).sort((a, b) => b - a)
@@ -417,7 +419,7 @@ function TrackGrid({
   return (
     <div className="grid grid-cols-3 gap-3 max-[960px]:grid-cols-2 max-[620px]:grid-cols-1">
       {items.map((item) => {
-        const artist = item.artists[0] || 'Исполнитель не указан'
+        const artist = item.artist
         const duration = formatDuration(item.durationSeconds)
         const youtubeSearchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(`${item.title} ${artist}`)}`
 
@@ -573,6 +575,7 @@ function PlaylistGrid({
   emptyDescription,
   onOpenPlaylist,
   onEditPlaylist,
+  onViewPlaylistJson,
   onDeletePlaylist,
   onCreatePlaylist
 }: {
@@ -631,6 +634,16 @@ function PlaylistGrid({
             </button>
 
             <div className="flex shrink-0 items-center gap-1">
+              <Tooltip content={`Показать JSON плейлиста «${playlist.name}»`} side="top">
+                <button
+                  type="button"
+                  aria-label={`JSON плейлиста «${playlist.name}»`}
+                  className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-surface)] hover:text-[var(--app-text)]"
+                  onClick={() => onViewPlaylistJson(playlist)}
+                >
+                  <Braces className="size-3.5" />
+                </button>
+              </Tooltip>
               <Tooltip content={`Редактировать плейлист «${playlist.name}»`} side="top">
                 <button
                   type="button"
@@ -702,6 +715,7 @@ export function MusicLibraryContent({
   onOpenTrack,
   onToggleFavorite,
   onViewTrackJson,
+  onViewPlaylistJson,
   onDeleteTrack,
   onEditPlaylist,
   onDeletePlaylist,
@@ -719,10 +733,10 @@ export function MusicLibraryContent({
       if (scope.kind === 'favorites' && !item.favorite) return false
       if (scope.kind === 'playlist' && !selectedPlaylist?.trackIds.includes(item.id)) return false
       if (scope.kind === 'playlists') return false
-      if (filters.artist !== 'all' && !item.artists.includes(filters.artist)) return false
+      if (filters.artist !== 'all' && item.artist !== filters.artist) return false
       if (filters.year !== 'all' && item.year?.toString() !== filters.year) return false
       if (!search) return true
-      return [item.title, ...item.artists].join(' ').toLocaleLowerCase('ru-RU').includes(search)
+      return [item.title, item.artist].join(' ').toLocaleLowerCase('ru-RU').includes(search)
     })
   }, [filters, overview.items, scope.kind, search, selectedPlaylist])
 
@@ -736,7 +750,7 @@ export function MusicLibraryContent({
       return playlist.trackIds.some((itemId) => {
         const item = overview.items.find((entry) => entry.id === itemId)
         return item
-          ? [item.title, ...item.artists].join(' ').toLocaleLowerCase('ru-RU').includes(search)
+          ? [item.title, item.artist].join(' ').toLocaleLowerCase('ru-RU').includes(search)
           : false
       })
     })
@@ -756,6 +770,7 @@ export function MusicLibraryContent({
           emptyDescription={search ? undefined : 'Создайте первую подборку треков.'}
           onOpenPlaylist={(playlistId) => onScopeChange({ kind: 'playlist', playlistId })}
           onEditPlaylist={onEditPlaylist}
+          onViewPlaylistJson={onViewPlaylistJson}
           onDeletePlaylist={onDeletePlaylist}
           onCreatePlaylist={onCreatePlaylist}
         />
@@ -786,6 +801,16 @@ export function MusicLibraryContent({
         }}
         toolbar={
           <>
+            <Tooltip content={`Показать JSON плейлиста «${selectedPlaylist.name}»`} side="top">
+              <button
+                type="button"
+                aria-label={`JSON плейлиста «${selectedPlaylist.name}»`}
+                className="flex size-8 items-center justify-center rounded-lg border border-[var(--app-border)] bg-[var(--app-workspace)] text-[var(--app-muted)] hover:text-[var(--app-text)]"
+                onClick={() => onViewPlaylistJson(selectedPlaylist)}
+              >
+                <Braces className="size-3.5" />
+              </button>
+            </Tooltip>
             <Tooltip content={`Редактировать плейлист «${selectedPlaylist.name}»`} side="top">
               <button
                 type="button"
