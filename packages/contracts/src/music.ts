@@ -1,25 +1,10 @@
-export const MUSIC_STATUSES = ['want_to_listen', 'listened'] as const
-export const MUSIC_TYPES = ['track', 'album', 'ep', 'single'] as const
-
-export type MusicStatus = (typeof MUSIC_STATUSES)[number]
-export type MusicType = (typeof MUSIC_TYPES)[number]
-
 export interface MusicItemRecord {
   id: string
   title: string
-  type: MusicType
+  artist: string
   year: number | null
-  coverUrl: string | null
-  artists: string[]
-  album: string
   durationSeconds: number | null
-  trackCount: number | null
-  genres: string[]
-  description: string
-  status: MusicStatus
   favorite: boolean
-  rating: number | null
-  comments: string
   createdAt: number
   updatedAt: number
 }
@@ -40,19 +25,10 @@ export interface MusicOverview {
 
 export interface CreateMusicItemInput {
   title: string
-  type: MusicType
+  artist: string
   year: number | null
-  coverUrl: string | null
-  artists: string[]
-  album: string
   durationSeconds: number | null
-  trackCount: number | null
-  genres: string[]
-  description: string
-  status: MusicStatus
   favorite: boolean
-  rating: number | null
-  comments: string
 }
 
 export interface UpdateMusicItemInput extends CreateMusicItemInput {
