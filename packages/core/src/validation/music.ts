@@ -34,6 +34,32 @@ export const createMusicItemsInputSchema = z
   .object({ items: z.array(createMusicItemInputSchema).min(1).max(100) })
   .strict()
 
+export const upsertMusicItemInputSchema = musicBaseInputSchema
+  .extend({ id: musicSafeIdSchema.nullish() })
+  .strict()
+
+export const upsertMusicPlaylistInputSchema = z
+  .object({
+    id: musicSafeIdSchema.nullish(),
+    name: z.string().trim().min(1, 'Введите название плейлиста').max(120),
+    coverUrl: coverUrlSchema.optional().default(null),
+    trackIds: z
+      .array(musicSafeIdSchema)
+      .max(1000)
+      .transform((ids) => Array.from(new Set(ids)))
+  })
+  .strict()
+
+export const upsertMusicLibraryInputSchema = z
+  .object({
+    items: z.array(upsertMusicItemInputSchema).max(100),
+    playlists: z.array(upsertMusicPlaylistInputSchema).max(100)
+  })
+  .strict()
+  .refine((input) => input.items.length > 0 || input.playlists.length > 0, {
+    message: 'JSON не содержит треков или плейлистов'
+  })
+
 export const updateMusicItemInputSchema = musicBaseInputSchema
   .extend({ id: musicSafeIdSchema })
   .strict()
