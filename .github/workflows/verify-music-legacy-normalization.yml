@@ -8,6 +8,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: verify-music-legacy-normalization
+  cancel-in-progress: true
+
 jobs:
   verify:
     runs-on: windows-latest
