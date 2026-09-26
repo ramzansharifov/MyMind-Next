@@ -35,7 +35,9 @@ export function normalizeMusicItemRecord(
     ? value.artists.find((artist) => typeof artist === 'string' && artist.trim() !== '')
     : undefined
   const artist =
-    typeof value.artist === 'string' && value.artist.trim() !== '' ? value.artist : legacyArtist ?? ''
+    typeof value.artist === 'string' && value.artist.trim() !== ''
+      ? value.artist
+      : (legacyArtist ?? '')
 
   return {
     id: value.id,

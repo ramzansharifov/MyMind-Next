@@ -62,7 +62,6 @@ describe('stringifyMusicJson', () => {
   })
 })
 
-
 describe('legacy music runtime normalization', () => {
   it('converts the old artists array into the current artist field', () => {
     const legacy = {
