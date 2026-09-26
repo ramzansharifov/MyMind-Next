@@ -78,6 +78,31 @@ describe('MusicLibraryView', () => {
     expect(screen.getByRole('combobox', { name: 'Год' })).toBeInTheDocument()
   })
 
+  it('не падает на старой runtime-записи с artists вместо artist', async () => {
+    const user = userEvent.setup()
+    const legacyItem = {
+      ...overview.items[0],
+      artist: undefined,
+      artists: ['The Weeknd']
+    } as unknown as MusicOverview['items'][number]
+
+    render(
+      <MusicLibraryNavigation
+        items={[legacyItem]}
+        scope={{ kind: 'all' }}
+        query=""
+        filters={{ artist: 'all', year: 'all' }}
+        onQueryChange={vi.fn()}
+        onScopeChange={vi.fn()}
+        onFiltersChange={vi.fn()}
+      />
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Фильтры библиотеки' }))
+    expect(screen.getByRole('combobox', { name: 'Исполнитель' })).toBeInTheDocument()
+    expect(screen.getByText('The Weeknd')).toBeInTheDocument()
+  })
+
   it('фильтрует треки по исполнителю и году', () => {
     const { rerender } = render(
       <MusicLibraryContent
