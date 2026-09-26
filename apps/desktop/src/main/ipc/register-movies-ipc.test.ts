@@ -19,6 +19,7 @@ vi.mock('../repositories/movies.repository', () => ({
   getMovie: vi.fn(),
   createMovie: vi.fn(),
   createMovies: vi.fn(),
+  upsertMovies: vi.fn(),
   updateMovie: vi.fn(),
   deleteMovie: vi.fn()
 }))
