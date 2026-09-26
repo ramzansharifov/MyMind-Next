@@ -99,6 +99,71 @@ export interface MusicApi {
   searchWeb(input: MusicWebSearchInput): Promise<void>
 }
 
+export function normalizeMusicItemRecord(value: unknown): MusicItemRecord {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw new Error('Некорректная музыкальная запись')
+  }
+
+  const source = value as Record<string, unknown>
+  const legacyArtists = Array.isArray(source.artists)
+    ? source.artists.filter((artist): artist is string => typeof artist === 'string')
+    : []
+  const artist =
+    typeof source.artist === 'string'
+      ? source.artist.trim()
+      : (legacyArtists.find((candidate) => candidate.trim())?.trim() ?? '')
+
+  return {
+    id: typeof source.id === 'string' ? source.id : '',
+    title: typeof source.title === 'string' ? source.title : '',
+    artist,
+    year: typeof source.year === 'number' && Number.isFinite(source.year) ? source.year : null,
+    durationSeconds:
+      typeof source.durationSeconds === 'number' && Number.isFinite(source.durationSeconds)
+        ? source.durationSeconds
+        : null,
+    favorite: source.favorite === true,
+    createdAt:
+      typeof source.createdAt === 'number' && Number.isFinite(source.createdAt) ? source.createdAt : 0,
+    updatedAt:
+      typeof source.updatedAt === 'number' && Number.isFinite(source.updatedAt) ? source.updatedAt : 0
+  }
+}
+
+export function normalizeMusicPlaylistRecord(value: unknown): MusicPlaylistRecord {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw new Error('Некорректный плейлист')
+  }
+
+  const source = value as Record<string, unknown>
+  return {
+    id: typeof source.id === 'string' ? source.id : '',
+    name: typeof source.name === 'string' ? source.name : '',
+    coverUrl: typeof source.coverUrl === 'string' ? source.coverUrl : null,
+    trackIds: Array.isArray(source.trackIds)
+      ? source.trackIds.filter((trackId): trackId is string => typeof trackId === 'string')
+      : [],
+    createdAt:
+      typeof source.createdAt === 'number' && Number.isFinite(source.createdAt) ? source.createdAt : 0,
+    updatedAt:
+      typeof source.updatedAt === 'number' && Number.isFinite(source.updatedAt) ? source.updatedAt : 0
+  }
+}
+
+export function normalizeMusicOverview(value: unknown): MusicOverview {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return { items: [], playlists: [] }
+  }
+
+  const source = value as Record<string, unknown>
+  return {
+    items: Array.isArray(source.items) ? source.items.map(normalizeMusicItemRecord) : [],
+    playlists: Array.isArray(source.playlists)
+      ? source.playlists.map(normalizeMusicPlaylistRecord)
+      : []
+  }
+}
+
 export function stringifyMusicJson(
   value: MusicItemRecord | MusicPlaylistRecord | MusicOverview
 ): string {
