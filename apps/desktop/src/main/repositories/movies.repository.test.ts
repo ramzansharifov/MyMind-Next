@@ -11,7 +11,8 @@ import {
   deleteMovie,
   getMovie,
   listMoviesOverview,
-  updateMovie
+  updateMovie,
+  upsertMovies
 } from './movies.repository'
 
 let root = ''
@@ -145,6 +146,48 @@ describe('movies repository', () => {
       })
     ).toThrow()
     expect(listMoviesOverview().movies).toHaveLength(0)
+  })
+
+  it('upserts exported JSON ids without creating duplicates', () => {
+    const base = {
+      originalTitle: null,
+      type: 'movie' as const,
+      year: 2024,
+      posterUrl: null,
+      director: '',
+      runtimeMinutes: 120,
+      genres: [],
+      actors: [],
+      description: '',
+      status: 'watchlist' as const,
+      favorite: false,
+      rating: null,
+      comments: ''
+    }
+
+    const existing = createMovie({ ...base, title: 'Before' })
+    const originalCreatedAt = existing.createdAt
+
+    const result = upsertMovies({
+      movies: [
+        { ...base, id: existing.id, title: 'After', favorite: true },
+        { ...base, id: 'movie-imported-id', title: 'New from JSON' }
+      ]
+    })
+
+    expect(result.created).toBe(1)
+    expect(result.updated).toBe(1)
+    expect(listMoviesOverview().movies).toHaveLength(2)
+    expect(getMovie({ id: existing.id })).toMatchObject({
+      id: existing.id,
+      title: 'After',
+      favorite: true,
+      createdAt: originalCreatedAt
+    })
+    expect(getMovie({ id: 'movie-imported-id' })).toMatchObject({
+      id: 'movie-imported-id',
+      title: 'New from JSON'
+    })
   })
 
   it('clears rating outside watched state', () => {
