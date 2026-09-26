@@ -13,7 +13,9 @@ import {
   MusicWebSearchInput,
   SetMusicItemPlaylistsInput,
   UpdateMusicItemInput,
-  UpdateMusicPlaylistInput
+  UpdateMusicPlaylistInput,
+  UpsertMusicLibraryInput,
+  UpsertMusicLibraryResult
 } from '../../../../../shared/contracts/music'
 
 export const musicClient = {
@@ -29,6 +31,13 @@ export const musicClient = {
   },
   async createItems(input: CreateMusicItemsInput): Promise<MusicItemRecord[]> {
     return (await window.api.music.createItems(input)).map(normalizeMusicItemRecord)
+  },
+  async upsertLibrary(input: UpsertMusicLibraryInput): Promise<UpsertMusicLibraryResult> {
+    const result = await window.api.music.upsertLibrary(input)
+    return {
+      ...result,
+      overview: normalizeMusicOverview(result.overview)
+    }
   },
   async updateItem(input: UpdateMusicItemInput): Promise<MusicItemRecord> {
     return normalizeMusicItemRecord(await window.api.music.updateItem(input))
