@@ -733,11 +733,11 @@ export function MusicPage({ resourceId, onResourceHandled }: MusicPageProps): Re
     }
   }
 
-  async function importMusic(items: CreateMusicItemInput[]): Promise<void> {
+  async function importMusic(input: UpsertMusicLibraryInput): Promise<void> {
     setIsSaving(true)
     setError(null)
     try {
-      await musicClient.createItems({ items })
+      await musicClient.upsertLibrary(input)
       await refreshOverview()
     } catch (reason) {
       setError(errorMessage(reason))
