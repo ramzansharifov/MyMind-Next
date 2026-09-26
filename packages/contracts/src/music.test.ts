@@ -10,19 +10,10 @@ import {
 const item: MusicItemRecord = {
   id: 'track-json-1',
   title: 'Blinding Lights',
-  type: 'track',
+  artist: 'The Weeknd',
   year: 2019,
-  coverUrl: 'https://example.com/blinding-lights.jpg',
-  artists: ['The Weeknd'],
-  album: 'After Hours',
   durationSeconds: 200,
-  trackCount: null,
-  genres: ['Synth-pop', 'R&B'],
-  description: 'Описание',
-  status: 'listened',
   favorite: true,
-  rating: 9,
-  comments: 'Комментарий',
   createdAt: 123,
   updatedAt: 456
 }
@@ -37,16 +28,26 @@ const playlist: MusicPlaylistRecord = {
 }
 
 describe('stringifyMusicJson', () => {
-  it('keeps every persisted field for one music item', () => {
+  it('serializes only the real public fields of one track', () => {
     const parsed = JSON.parse(stringifyMusicJson(item)) as MusicItemRecord
 
     expect(parsed).toEqual(item)
     expect(parsed).toMatchObject({
       id: 'track-json-1',
+      title: 'Blinding Lights',
+      artist: 'The Weeknd',
       createdAt: 123,
-      updatedAt: 456,
-      album: 'After Hours'
+      updatedAt: 456
     })
+    expect(parsed).not.toHaveProperty('coverUrl')
+    expect(parsed).not.toHaveProperty('album')
+    expect(parsed).not.toHaveProperty('genres')
+    expect(parsed).not.toHaveProperty('rating')
+    expect(parsed).not.toHaveProperty('status')
+  })
+
+  it('keeps playlist cover and track relations', () => {
+    expect(JSON.parse(stringifyMusicJson(playlist))).toEqual(playlist)
   })
 
   it('serializes the complete music overview including playlists', () => {
