@@ -34,6 +34,7 @@ import { moviesClient } from './api/movies-client'
 import { MovieDetail } from './components/MovieDetail'
 import { MovieFormPage } from './components/MovieFormPage'
 import { MovieJsonImportDialog } from './components/MovieJsonImportDialog'
+import { MovieJsonViewerDialog } from './components/MovieJsonViewerDialog'
 import { MOVIE_TYPE_OPTIONS, movieTypeLabel } from './movie-types'
 
 type MovieFilter = 'all' | 'watchlist' | 'watched' | 'favorites'
@@ -186,6 +187,11 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
     useState<MovieAdvancedFilters>(EMPTY_ADVANCED_FILTERS)
   const [deleteTarget, setDeleteTarget] = useState<MovieRecord | null>(null)
   const [jsonImportOpen, setJsonImportOpen] = useState(false)
+  const [jsonView, setJsonView] = useState<{
+    title: string
+    description: string
+    value: MovieRecord | MovieRecord[]
+  } | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -411,6 +417,19 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
           <button
             type="button"
             className="inline-flex h-11 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-4 text-sm font-medium text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
+            onClick={() =>
+              setJsonView({
+                title: 'JSON библиотеки',
+                description: `Полные сохранённые данные всех фильмов · ${movies.length}`,
+                value: [...movies]
+              })
+            }
+          >
+            <Braces className="size-4" /> JSON библиотеки
+          </button>
+          <button
+            type="button"
+            className="inline-flex h-11 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-4 text-sm font-medium text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
             onClick={() => setJsonImportOpen(true)}
           >
             <Braces className="size-4" /> Из JSON
@@ -465,6 +484,20 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
             onClick={() => setView({ kind: 'library' })}
           >
             <ArrowLeft className="size-4" /> К библиотеке
+          </button>
+          <button
+            type="button"
+            disabled={isSaving}
+            className="inline-flex h-10 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 text-sm font-medium text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] disabled:opacity-50"
+            onClick={() =>
+              setJsonView({
+                title: `JSON · ${activeMovie.title}`,
+                description: 'Полная сохранённая запись этого фильма',
+                value: activeMovie
+              })
+            }
+          >
+            <Braces className="size-4" /> JSON
           </button>
           <button
             type="button"
@@ -854,6 +887,18 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
         onOpenChange={setJsonImportOpen}
         onImport={importMovies}
       />
+
+      {jsonView ? (
+        <MovieJsonViewerDialog
+          open
+          title={jsonView.title}
+          description={jsonView.description}
+          value={jsonView.value}
+          onOpenChange={(open) => {
+            if (!open) setJsonView(null)
+          }}
+        />
+      ) : null}
 
       <DeleteConfirmationDialog
         open={deleteTarget !== null}
