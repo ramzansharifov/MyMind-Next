@@ -11,8 +11,12 @@ import {
   SlidersHorizontal,
   type LucideIcon
 } from 'lucide-react-native'
-import type { MovieRecord } from '@mymind/contracts/movies'
-import type { MusicItemRecord, MusicPlaylistRecord } from '@mymind/contracts/music'
+import { stringifyMovieJson, type MovieRecord } from '@mymind/contracts/movies'
+import {
+  stringifyMusicJson,
+  type MusicItemRecord,
+  type MusicPlaylistRecord
+} from '@mymind/contracts/music'
 import * as moviesSchema from '@mymind/core/validation/movies'
 import * as musicSchema from '@mymind/core/validation/music'
 import { useServices } from '../../app/context'
@@ -109,7 +113,9 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
   const [jsonView, setJsonView] = useState<{
     title: string
     description: string
-    value: MovieRecord | MovieRecord[]
+    json: string
+    note: string
+    accessibilityLabel: string
   } | null>(null)
   const [webError, setWebError] = useState('')
   const [movieSwipeFeedback, showMovieSwipeFeedback] = useSwipeTabFeedback<MovieStatusFilter>()
@@ -365,7 +371,10 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
             setJsonView({
               title: `JSON · ${selectedMovie.title}`,
               description: 'Полная сохранённая запись этого фильма',
-              value: selectedMovie
+              json: stringifyMovieJson(selectedMovie),
+              note:
+                'Полная сохранённая запись MyMind, включая id, createdAt и updatedAt. Служебные поля игнорируются текущим JSON-импортом, поэтому этот объект можно использовать для повторного импорта.',
+              accessibilityLabel: 'JSON данных фильма'
             })
           }
           onUpdate={updateMovie}
@@ -378,7 +387,9 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
           <CatalogJsonViewerModal
             title={jsonView.title}
             description={jsonView.description}
-            value={jsonView.value}
+            json={jsonView.json}
+            note={jsonView.note}
+            accessibilityLabel={jsonView.accessibilityLabel}
             close={() => setJsonView(null)}
           />
         ) : null}
@@ -425,7 +436,10 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
                     setJsonView({
                       title: 'JSON библиотеки',
                       description: `Полные сохранённые данные всех фильмов · ${allMovieItems.length}`,
-                      value: [...allMovieItems]
+                      json: stringifyMovieJson(allMovieItems),
+                      note:
+                        'Полная сохранённая библиотека MyMind. Служебные поля id, createdAt и updatedAt игнорируются текущим JSON-импортом.',
+                      accessibilityLabel: 'JSON данных фильмов'
                     })
                   }
                   style={({ pressed }) => ({
@@ -514,6 +528,33 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
                     backgroundColor: theme.border
                   }}
                 />
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="JSON музыкальной библиотеки"
+                  disabled={state.pending}
+                  onPress={() =>
+                    setJsonView({
+                      title: 'JSON музыкальной библиотеки',
+                      description: `Полные данные: ${musicItems.length} записей · ${musicPlaylists.length} плейлистов`,
+                      json: stringifyMusicJson({ items: musicItems, playlists: musicPlaylists }),
+                      note:
+                        'Полный MusicOverview: items содержит музыкальные записи, playlists — плейлисты и их trackIds. Для повторного импорта записей используйте массив items; текущий импорт не восстанавливает плейлисты автоматически.',
+                      accessibilityLabel: 'JSON данных музыки'
+                    })
+                  }
+                  style={({ pressed }) => ({
+                    flex: 1,
+                    minWidth: 0,
+                    height: 40,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderRadius: 12,
+                    backgroundColor: pressed ? theme.raised : 'transparent',
+                    opacity: state.pending ? 0.45 : pressed ? 0.72 : 1
+                  })}
+                >
+                  <Braces size={19} strokeWidth={2} color={theme.muted} />
+                </Pressable>
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel="Фильтры музыки"
@@ -606,6 +647,16 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
             emptyBecauseFilter={musicEmptyBecauseFilter}
             onRefresh={state.refresh}
             onOpenTrack={editTrack}
+            onViewJson={(item) =>
+              setJsonView({
+                title: `JSON · ${item.title}`,
+                description: 'Полная сохранённая запись этого трека',
+                json: stringifyMusicJson(item),
+                note:
+                  'Полный MusicItemRecord, включая id, createdAt и updatedAt. Служебные поля игнорируются текущим JSON-импортом, поэтому этот объект можно использовать для повторного импорта.',
+                accessibilityLabel: 'JSON данных трека'
+              })
+            }
             onToggleFavorite={(item) => updateMusic({ ...item, favorite: !item.favorite })}
             onSearchWeb={(item) => {
               setWebError('')
@@ -672,6 +723,13 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
                   description: 'Создать плейлист и затем добавить в него треки',
                   icon: 'folder',
                   onPress: () => editPlaylist()
+                },
+                {
+                  key: 'music-json',
+                  label: 'Из JSON',
+                  description: 'Импортировать одну или несколько музыкальных записей',
+                  icon: 'json',
+                  onPress: () => setJsonImportOpen(true)
                 }
               ]
         }
@@ -696,9 +754,9 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
           }}
         />
       ) : null}
-      {mode === 'movies' && jsonImportOpen && (
+      {jsonImportOpen ? (
         <CatalogJsonImportModal
-          mode="movies"
+          mode={mode}
           close={() => setJsonImportOpen(false)}
           importMovies={(importedItems) => {
             services.movies.createMovies({ movies: importedItems })
@@ -709,12 +767,14 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
             state.refresh()
           }}
         />
-      )}
-      {mode === 'movies' && jsonView ? (
+      ) : null}
+      {jsonView ? (
         <CatalogJsonViewerModal
           title={jsonView.title}
           description={jsonView.description}
-          value={jsonView.value}
+          json={jsonView.json}
+          note={jsonView.note}
+          accessibilityLabel={jsonView.accessibilityLabel}
           close={() => setJsonView(null)}
         />
       ) : null}
