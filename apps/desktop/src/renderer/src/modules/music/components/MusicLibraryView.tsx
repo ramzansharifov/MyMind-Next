@@ -584,6 +584,7 @@ function PlaylistGrid({
   emptyDescription?: string
   onOpenPlaylist: (playlistId: string) => void
   onEditPlaylist: (playlist: MusicPlaylistRecord) => void
+  onViewPlaylistJson: (playlist: MusicPlaylistRecord) => void
   onDeletePlaylist: (playlist: MusicPlaylistRecord) => void
   onCreatePlaylist: () => void
 }): React.JSX.Element {
