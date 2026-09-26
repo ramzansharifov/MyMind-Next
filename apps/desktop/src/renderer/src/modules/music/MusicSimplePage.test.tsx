@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   getItem: vi.fn(),
   createItem: vi.fn(),
   createItems: vi.fn(),
+  upsertLibrary: vi.fn(),
   updateItem: vi.fn(),
   deleteItem: vi.fn(),
   createPlaylist: vi.fn(),
