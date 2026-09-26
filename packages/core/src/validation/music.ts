@@ -34,6 +34,10 @@ export const createMusicItemsInputSchema = z
   .object({ items: z.array(createMusicItemInputSchema).min(1).max(100) })
   .strict()
 
+export const upsertMusicItemInputSchema = musicBaseInputSchema
+  .extend({ id: musicSafeIdSchema.nullish() })
+  .strict()
+
 export const updateMusicItemInputSchema = musicBaseInputSchema
   .extend({ id: musicSafeIdSchema })
   .strict()
@@ -53,9 +57,25 @@ const musicPlaylistFieldsSchema = z.object({
 })
 
 export const createMusicPlaylistInputSchema = musicPlaylistFieldsSchema.strict()
+export const upsertMusicPlaylistInputSchema = musicPlaylistFieldsSchema
+  .extend({
+    id: musicSafeIdSchema.nullish(),
+    trackIds: z.array(musicSafeIdSchema).max(10_000).transform((ids) => Array.from(new Set(ids)))
+  })
+  .strict()
 export const updateMusicPlaylistInputSchema = musicPlaylistFieldsSchema
   .extend({ id: musicSafeIdSchema })
   .strict()
+
+export const upsertMusicLibraryInputSchema = z
+  .object({
+    items: z.array(upsertMusicItemInputSchema).max(100),
+    playlists: z.array(upsertMusicPlaylistInputSchema).max(100)
+  })
+  .strict()
+  .refine((value) => value.items.length > 0 || value.playlists.length > 0, {
+    message: 'JSON не содержит музыкальных записей или плейлистов'
+  })
 export const deleteMusicPlaylistInputSchema = z.object({ id: musicSafeIdSchema }).strict()
 export const setMusicItemPlaylistsInputSchema = z
   .object({
