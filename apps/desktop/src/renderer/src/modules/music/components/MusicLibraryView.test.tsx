@@ -99,8 +99,10 @@ describe('MusicLibraryView', () => {
     )
 
     await user.click(screen.getByRole('button', { name: 'Фильтры библиотеки' }))
-    expect(screen.getByRole('combobox', { name: 'Исполнитель' })).toBeInTheDocument()
-    expect(screen.getByText('The Weeknd')).toBeInTheDocument()
+    const artistSelect = screen.getByRole('combobox', { name: 'Исполнитель' })
+    expect(artistSelect).toBeInTheDocument()
+    await user.click(artistSelect)
+    expect(await screen.findByRole('option', { name: 'The Weeknd' })).toBeInTheDocument()
   })
 
   it('фильтрует треки по исполнителю и году', () => {
