@@ -63,6 +63,8 @@ export function CatalogJsonImportModal({
   const error = submitError || parsed.error || ''
   const title = mode === 'movies' ? 'Применить JSON фильмов' : 'Применить JSON музыки'
   const example = mode === 'movies' ? MOVIE_EXAMPLE : MUSIC_EXAMPLE
+  const importCount =
+    parsed.items.length + (parsed.mode === 'music' ? parsed.playlists.length : 0)
 
   const requestClose = (): void => {
     if (busy) return
@@ -108,7 +110,7 @@ export function CatalogJsonImportModal({
         if (!open) requestClose()
       }}
       title={title}
-      description="Один объект или массив до 100 записей. Проверка выполняется локально до записи в базу."
+      description="Существующий id обновляется, новый или отсутствующий id создаёт новую запись."
       icon={mode === 'movies' ? 'movies' : 'music'}
       presentation="sheet"
       busy={busy}
@@ -116,15 +118,9 @@ export function CatalogJsonImportModal({
         <>
           <Button label="Отмена" disabled={busy} onPress={requestClose} />
           <Button
-            label={
-              busy
-                ? 'Добавление…'
-                : parsed.items.length > 1
-                  ? `Добавить ${parsed.items.length}`
-                  : 'Добавить'
-            }
+            label={busy ? 'Применение…' : 'Применить JSON'}
             primary
-            disabled={busy || parsed.items.length === 0 || Boolean(parsed.error)}
+            disabled={busy || importCount === 0 || Boolean(parsed.error)}
             onPress={() => void submit()}
           />
         </>
@@ -172,8 +168,12 @@ export function CatalogJsonImportModal({
         />
 
         {error ? <ErrorState message={error} /> : null}
-        {!error && parsed.items.length > 0 ? (
-          <Label muted>Готово к добавлению: {parsed.items.length}</Label>
+        {!error && importCount > 0 ? (
+          <Label muted>
+            {parsed.mode === 'movies'
+              ? `Готово к применению: ${parsed.items.length}`
+              : `Готово: треков ${parsed.items.length}, плейлистов ${parsed.playlists.length}`}
+          </Label>
         ) : null}
       </ScrollView>
     </AppDialog>
