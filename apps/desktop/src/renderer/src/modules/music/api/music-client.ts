@@ -3,18 +3,18 @@ import {
   normalizeMusicOverview,
   normalizeMusicPlaylistRecord,
   type CreateMusicItemInput,
-  CreateMusicItemsInput,
-  CreateMusicPlaylistInput,
-  DeleteMusicItemInput,
-  DeleteMusicPlaylistInput,
-  GetMusicItemInput,
-  MusicItemRecord,
-  MusicOverview,
-  MusicPlaylistRecord,
-  MusicWebSearchInput,
-  SetMusicItemPlaylistsInput,
-  UpdateMusicItemInput,
-  UpdateMusicPlaylistInput
+  type CreateMusicItemsInput,
+  type CreateMusicPlaylistInput,
+  type DeleteMusicItemInput,
+  type DeleteMusicPlaylistInput,
+  type GetMusicItemInput,
+  type MusicItemRecord,
+  type MusicOverview,
+  type MusicPlaylistRecord,
+  type MusicWebSearchInput,
+  type SetMusicItemPlaylistsInput,
+  type UpdateMusicItemInput,
+  type UpdateMusicPlaylistInput
 } from '../../../../../shared/contracts/music'
 
 export const musicClient = {
