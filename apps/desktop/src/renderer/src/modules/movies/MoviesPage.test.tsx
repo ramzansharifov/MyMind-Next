@@ -48,6 +48,7 @@ beforeEach(() => {
   mocks.getMovie.mockResolvedValue(null)
   mocks.createMovie.mockResolvedValue(movie)
   mocks.createMovies.mockResolvedValue([movie])
+  mocks.upsertMovies.mockResolvedValue({ movies: [movie], created: 1, updated: 0 })
   mocks.updateMovie.mockImplementation(async (input) => ({ ...movie, ...input, updatedAt: 3 }))
   mocks.deleteMovie.mockResolvedValue(true)
   mocks.searchWeb.mockResolvedValue(undefined)
@@ -70,7 +71,7 @@ describe('MoviesPage', () => {
       rating: null,
       status: 'watchlist'
     }
-    mocks.createMovies.mockResolvedValue([movie, secondMovie])
+    mocks.upsertMovies.mockResolvedValue({ movies: [movie, secondMovie], created: 2, updated: 0 })
 
     render(<MoviesPage />)
     await screen.findByText('Библиотека пока пустая')
@@ -84,11 +85,11 @@ describe('MoviesPage', () => {
       }
     })
 
-    expect(screen.getByText('Готово к добавлению: 2')).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Добавить 2 фильма' }))
+    expect(screen.getByText('Готово к применению: 2')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Применить · 2' }))
 
-    await waitFor(() => expect(mocks.createMovies).toHaveBeenCalledOnce())
-    expect(mocks.createMovies).toHaveBeenCalledWith({
+    await waitFor(() => expect(mocks.upsertMovies).toHaveBeenCalledOnce())
+    expect(mocks.upsertMovies).toHaveBeenCalledWith({
       movies: [
         expect.objectContaining({ title: 'Интерстеллар', type: 'movie' }),
         expect.objectContaining({
@@ -115,7 +116,7 @@ describe('MoviesPage', () => {
     fireEvent.change(screen.getByRole('textbox', { name: 'JSON фильмов' }), {
       target: { value: '{"title":"Дюна"}' }
     })
-    await user.click(screen.getByRole('button', { name: 'Добавить' }))
+    await user.click(screen.getByRole('button', { name: 'Применить · 1' }))
 
     await waitFor(() =>
       expect(mocks.createMovies).toHaveBeenCalledWith({
