@@ -6,7 +6,7 @@ on:
       - fix/music-legacy-runtime-normalization
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   verify:
@@ -19,6 +19,18 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Format compatibility files
+        run: npx prettier --write packages/contracts/src/music.ts packages/contracts/src/music.test.ts apps/desktop/src/renderer/src/modules/music/MusicSimplePage.test.tsx
+      - name: Commit formatting when needed
+        shell: pwsh
+        run: |
+          if (-not (git diff --quiet)) {
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add packages/contracts/src/music.ts packages/contracts/src/music.test.ts apps/desktop/src/renderer/src/modules/music/MusicSimplePage.test.tsx
+            git commit -m "style: format music compatibility fix"
+            git push origin HEAD:fix/music-legacy-runtime-normalization
+          }
       - name: Check formatting
         run: >-
           npx prettier --check
