@@ -592,7 +592,7 @@ export function MusicPage({ resourceId, onResourceHandled }: MusicPageProps): Re
   const [jsonView, setJsonView] = useState<{
     title: string
     description: string
-    value: MusicItemRecord | MusicOverview
+    value: MusicItemRecord | MusicPlaylistRecord | MusicOverview
     note: string
   } | null>(null)
 
