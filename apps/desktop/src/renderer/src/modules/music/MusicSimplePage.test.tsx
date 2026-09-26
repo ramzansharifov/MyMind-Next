@@ -27,19 +27,10 @@ const emptyOverview: MusicOverview = { items: [], playlists: [] }
 const createdTrack: MusicItemRecord = {
   id: 'track-1',
   title: 'Blinding Lights',
-  type: 'track',
+  artist: 'The Weeknd',
   year: 2020,
-  coverUrl: null,
-  artists: ['The Weeknd'],
-  album: '',
   durationSeconds: 200,
-  trackCount: null,
-  genres: [],
-  description: '',
-  status: 'listened',
   favorite: false,
-  rating: null,
-  comments: '',
   createdAt: 1,
   updatedAt: 1
 }
@@ -113,6 +104,15 @@ describe('MusicPage dialogs', () => {
 
     const trackJson = screen.getByRole('textbox', { name: 'JSON данных музыки' })
     expect(JSON.parse((trackJson as HTMLTextAreaElement).value)).toEqual(createdTrack)
+    expect((trackJson as HTMLTextAreaElement).value).not.toContain('"coverUrl"')
+
+    await user.click(screen.getByRole('button', { name: 'Закрыть' }))
+    await user.click(screen.getByRole('tab', { name: 'Плейлисты' }))
+    await user.click(screen.getByRole('button', { name: 'JSON плейлиста «Дорога»' }))
+
+    const playlistJson = screen.getByRole('textbox', { name: 'JSON данных музыки' })
+    expect(JSON.parse((playlistJson as HTMLTextAreaElement).value)).toEqual(playlist)
+    expect((playlistJson as HTMLTextAreaElement).value).toContain('"coverUrl"')
   })
 
   it('импортирует музыкальные записи из JSON', async () => {
@@ -124,7 +124,7 @@ describe('MusicPage dialogs', () => {
 
     fireEvent.change(screen.getByRole('textbox', { name: 'JSON музыки' }), {
       target: {
-        value: '{"title":"Blinding Lights","type":"track","artists":["The Weeknd"],"year":2019}'
+        value: '{"title":"Blinding Lights","artist":"The Weeknd","year":2019}'
       }
     })
 
@@ -135,8 +135,7 @@ describe('MusicPage dialogs', () => {
         items: [
           expect.objectContaining({
             title: 'Blinding Lights',
-            type: 'track',
-            artists: ['The Weeknd'],
+            artist: 'The Weeknd',
             year: 2019
           })
         ]
@@ -144,7 +143,7 @@ describe('MusicPage dialogs', () => {
     )
   })
 
-  it('добавляет трек через модальное окно и всегда сохраняет его без обложки', async () => {
+  it('сохраняет только данные, которые есть в форме трека', async () => {
     const user = userEvent.setup()
     render(<MusicPage />)
 
@@ -164,8 +163,7 @@ describe('MusicPage dialogs', () => {
       expect(mocks.createItem).toHaveBeenCalledWith(
         expect.objectContaining({
           title: 'Blinding Lights',
-          artists: ['The Weeknd'],
-          coverUrl: null
+          artist: 'The Weeknd'
         })
       )
     })
