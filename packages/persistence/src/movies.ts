@@ -8,7 +8,10 @@ import type {
   MovieStatus,
   MovieType,
   MoviesOverview,
-  UpdateMovieInput
+  UpdateMovieInput,
+  UpsertMovieInput,
+  UpsertMoviesInput,
+  UpsertMoviesResult
 } from '@mymind/contracts/movies'
 
 export function createMoviesRepository(runtime: RepositoryRuntime): MoviesRepository {
@@ -165,8 +168,8 @@ FROM movies`
     return findMovie(input.id)
   }
 
-  function insertMovie(input: CreateMovieInput): MovieRecord {
-    const id = randomUUID()
+  function insertMovie(input: CreateMovieInput, preferredId?: string): MovieRecord {
+    const id = preferredId ?? randomUUID()
     const now = runtime.now()
     getSqlite()
       .prepare(
@@ -209,6 +212,79 @@ FROM movies`
     return transaction(input.movies)
   }
 
+  function identityText(value: string): string {
+    return value.trim().toLocaleLowerCase('ru-RU')
+  }
+
+  function upsertMovies(input: UpsertMoviesInput): UpsertMoviesResult {
+    const db = getSqlite()
+    const transaction = db.transaction((movies: UpsertMovieInput[]) => {
+      const current = new Map(listMoviesOverview().movies.map((movie) => [movie.id, movie]))
+      const seenExplicitIds = new Set<string>()
+      const result: MovieRecord[] = []
+      let created = 0
+      let updated = 0
+
+      for (const movie of movies) {
+        const explicitId = movie.id ?? null
+        if (explicitId) {
+          if (seenExplicitIds.has(explicitId)) {
+            throw new Error(`JSON содержит повторяющийся id фильма: ${explicitId}`)
+          }
+          seenExplicitIds.add(explicitId)
+        }
+
+        let existing = explicitId ? current.get(explicitId) ?? null : null
+        if (!existing && !explicitId) {
+          const matches = [...current.values()].filter(
+            (candidate) =>
+              identityText(candidate.title) === identityText(movie.title) &&
+              candidate.type === movie.type &&
+              candidate.year === movie.year
+          )
+          if (matches.length === 1) existing = matches[0]!
+          if (matches.length > 1) {
+            throw new Error(
+              `Найдено несколько фильмов «${movie.title}» с тем же типом и годом. Используйте JSON с id.`
+            )
+          }
+        }
+
+        const payload: CreateMovieInput = {
+          title: movie.title,
+          originalTitle: movie.originalTitle,
+          type: movie.type,
+          year: movie.year,
+          posterUrl: movie.posterUrl,
+          director: movie.director,
+          runtimeMinutes: movie.runtimeMinutes,
+          seasonCount: movie.seasonCount,
+          episodesPerSeason: movie.episodesPerSeason,
+          episodeRuntimeMinutes: movie.episodeRuntimeMinutes,
+          genres: movie.genres,
+          actors: movie.actors,
+          description: movie.description,
+          status: movie.status,
+          favorite: movie.favorite,
+          rating: movie.rating,
+          comments: movie.comments
+        }
+
+        const saved = existing
+          ? updateMovie({ id: existing.id, ...payload })
+          : insertMovie(payload, explicitId ?? undefined)
+        current.set(saved.id, saved)
+        result.push(saved)
+        if (existing) updated += 1
+        else created += 1
+      }
+
+      return { movies: result, created, updated }
+    })
+
+    return transaction(input.movies)
+  }
+
   function updateMovie(input: UpdateMovieInput): MovieRecord {
     const existing = requireMovie(input.id)
     const now = runtime.now()
@@ -245,7 +321,15 @@ FROM movies`
     const result = getSqlite().prepare('DELETE FROM movies WHERE id = ?').run(input.id)
     return result.changes > 0
   }
-  return { listMoviesOverview, getMovie, createMovie, createMovies, updateMovie, deleteMovie }
+  return {
+    listMoviesOverview,
+    getMovie,
+    createMovie,
+    createMovies,
+    upsertMovies,
+    updateMovie,
+    deleteMovie
+  }
 }
 
 export interface MoviesRepository {
@@ -253,6 +337,7 @@ export interface MoviesRepository {
   getMovie(input: GetMovieInput): MovieRecord | null
   createMovie(input: CreateMovieInput): MovieRecord
   createMovies(input: CreateMoviesInput): MovieRecord[]
+  upsertMovies(input: UpsertMoviesInput): UpsertMoviesResult
   updateMovie(input: UpdateMovieInput): MovieRecord
   deleteMovie(input: DeleteMovieInput): boolean
 }
