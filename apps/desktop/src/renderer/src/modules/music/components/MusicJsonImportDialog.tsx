@@ -2,7 +2,7 @@ import { Tooltip } from '../../../shared/ui/tooltip'
 import { Braces, LoaderCircle, RotateCcw } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
-import type { CreateMusicItemInput } from '../../../../../shared/contracts/music'
+import type { UpsertMusicLibraryInput } from '../../../../../shared/contracts/music'
 import { parseMusicJson } from '@mymind/core/catalog-json-import'
 import { AppDialog } from '../../../shared/ui/AppDialog'
 
@@ -10,18 +10,10 @@ interface MusicJsonImportDialogProps {
   open: boolean
   busy: boolean
   onOpenChange: (open: boolean) => void
-  onImport: (items: CreateMusicItemInput[]) => Promise<void>
+  onImport: (input: UpsertMusicLibraryInput) => Promise<void>
 }
 
-const EXAMPLE_JSON = `[
-  {
-    "title": "Blinding Lights",
-    "artist": "The Weeknd",
-    "year": 2019,
-    "durationSeconds": 200,
-    "favorite": true
-  }
-]`
+const EXAMPLE_JSON = `{"items":[{"id":"track-example-1","title":"Blinding Lights","artist":"The Weeknd","year":2019,"durationSeconds":200,"favorite":true}],"playlists":[{"id":"playlist-example-1","name":"Избранное","coverUrl":null,"trackIds":["track-example-1"]}]}`
 
 export function MusicJsonImportDialog({
   open,
@@ -32,16 +24,17 @@ export function MusicJsonImportDialog({
   const [value, setValue] = useState('')
   const [submitError, setSubmitError] = useState<string | null>(null)
   const parsed = useMemo(() => parseMusicJson(value), [value])
+  const total = parsed.items.length + parsed.playlists.length
 
   async function submit(): Promise<void> {
-    if (parsed.error || parsed.items.length === 0) return
+    if (parsed.error || total === 0) return
     setSubmitError(null)
     try {
-      await onImport(parsed.items)
+      await onImport({ items: parsed.items, playlists: parsed.playlists })
       setValue('')
       onOpenChange(false)
     } catch (reason) {
-      setSubmitError(reason instanceof Error ? reason.message : 'Не удалось добавить музыку')
+      setSubmitError(reason instanceof Error ? reason.message : 'Не удалось применить JSON музыки')
     }
   }
 
@@ -55,8 +48,8 @@ export function MusicJsonImportDialog({
         if (!nextOpen) setSubmitError(null)
         onOpenChange(nextOpen)
       }}
-      title="Добавить музыку из JSON"
-      description="Быстрое добавление одного или нескольких треков"
+      title="Применить JSON музыки"
+      description="Обновление треков и плейлистов без создания дублей"
       icon={<Braces />}
       size="xl"
       bodyClassName="space-y-3"
@@ -72,21 +65,22 @@ export function MusicJsonImportDialog({
           </button>
           <button
             type="button"
-            disabled={busy || parsed.items.length === 0 || Boolean(parsed.error)}
+            disabled={busy || total === 0 || Boolean(parsed.error)}
             className="bg-accent-500 hover:bg-accent-400 inline-flex h-10 items-center gap-2 rounded-xl px-4 text-sm font-semibold text-white transition-colors disabled:cursor-not-allowed disabled:opacity-45"
             onClick={() => void submit()}
           >
             {busy && <LoaderCircle className="size-4 animate-spin" />}
-            {parsed.items.length > 1 ? `Добавить ${parsed.items.length}` : 'Добавить'}
+            {busy ? 'Применение…' : `Применить · ${total}`}
           </button>
         </>
       }
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="text-xs leading-5 text-[var(--app-muted)]">
-          Один объект или массив до 100 треков. Обязательные поля: <code>title</code> и{' '}
-          <code>artist</code>. Дополнительно: <code>year</code>, <code>durationSeconds</code> и{' '}
-          <code>favorite</code>.
+        <span className="max-w-3xl text-xs leading-5 text-[var(--app-muted)]">
+          Можно вставить один трек, массив треков, отдельный плейлист или полный{' '}
+          <code>MusicOverview</code> с <code>items</code> и <code>playlists</code>. Существующий{' '}
+          <code>id</code> обновляется на месте; новые id сохраняются, поэтому{' '}
+          <code>trackIds</code> остаются валидными.
         </span>
         <div className="flex gap-2">
           <button
@@ -116,7 +110,7 @@ export function MusicJsonImportDialog({
         aria-label="JSON музыки"
         autoFocus
         spellCheck={false}
-        placeholder='[{ "title": "Blinding Lights", "artist": "The Weeknd", "year": 2019 }]'
+        placeholder='{"items":[{"id":"...","title":"Blinding Lights","artist":"The Weeknd"}],"playlists":[]}'
         className="focus:border-accent-500/45 focus:ring-accent-500/15 min-h-[360px] w-full resize-y rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-4 font-mono text-[13px] leading-6 text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)] focus:ring-2"
         onChange={(event) => {
           setValue(event.target.value)
@@ -128,8 +122,10 @@ export function MusicJsonImportDialog({
         <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-3.5 py-2.5 text-sm text-red-300">
           {error}
         </div>
-      ) : parsed.items.length > 0 ? (
-        <div className="text-xs text-emerald-300">Готово к добавлению: {parsed.items.length}</div>
+      ) : total > 0 ? (
+        <div className="text-xs text-emerald-300">
+          Готово: {parsed.items.length} треков · {parsed.playlists.length} плейлистов
+        </div>
       ) : null}
     </AppDialog>
   )
