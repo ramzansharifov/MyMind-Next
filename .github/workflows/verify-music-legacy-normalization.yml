@@ -23,6 +23,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - run: npm run native:node
       - name: Format compatibility files
         run: npx prettier --write packages/contracts/src/music.ts packages/contracts/src/music.test.ts apps/desktop/src/renderer/src/modules/music/MusicSimplePage.test.tsx
       - name: Commit formatting when needed
