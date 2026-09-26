@@ -1,7 +1,8 @@
-import type {
-  CreateMusicItemInput,
-  MusicItemRecord,
-  UpdateMusicItemInput
+import {
+  normalizeMusicItemRecord,
+  type CreateMusicItemInput,
+  type MusicItemRecord,
+  type UpdateMusicItemInput
 } from '@mymind/contracts/music'
 
 export interface MobileMusicTrackDraft {
@@ -50,12 +51,13 @@ export function parseMusicDuration(value: string): number | null {
 }
 
 export function musicTrackDraftFromItem(item?: MusicItemRecord): MobileMusicTrackDraft {
+  const normalized = item ? normalizeMusicItemRecord(item) : null
   return {
-    title: item?.title ?? '',
-    artist: item?.artist ?? '',
-    year: item?.year?.toString() ?? '',
-    duration: formatMusicDuration(item?.durationSeconds ?? null) ?? '',
-    favorite: item?.favorite ?? false
+    title: normalized?.title ?? '',
+    artist: normalized?.artist ?? '',
+    year: normalized?.year?.toString() ?? '',
+    duration: formatMusicDuration(normalized?.durationSeconds ?? null) ?? '',
+    favorite: normalized?.favorite ?? false
   }
 }
 
@@ -83,26 +85,36 @@ export function musicTrackInputFromDraft(draft: MobileMusicTrackDraft): CreateMu
 }
 
 export function musicRecordToUpdateInput(item: MusicItemRecord): UpdateMusicItemInput {
+  const normalized = normalizeMusicItemRecord(item)
   return {
-    id: item.id,
-    title: item.title,
-    artist: item.artist,
-    year: item.year,
-    durationSeconds: item.durationSeconds,
-    favorite: item.favorite
+    id: normalized.id,
+    title: normalized.title,
+    artist: normalized.artist,
+    year: normalized.year,
+    durationSeconds: normalized.durationSeconds,
+    favorite: normalized.favorite
   }
 }
 
 export function musicYoutubeSearchUrl(item: Pick<MusicItemRecord, 'title' | 'artist'>): string {
+  const normalized = normalizeMusicItemRecord({
+    ...item,
+    id: '',
+    year: null,
+    durationSeconds: null,
+    favorite: false,
+    createdAt: 0,
+    updatedAt: 0
+  })
   return `https://www.youtube.com/results?search_query=${encodeURIComponent(
-    `${item.title} ${item.artist}`
+    `${normalized.title} ${normalized.artist}`
   )}`
 }
 
 export function musicFilterArtists(items: readonly MusicItemRecord[]): string[] {
-  return Array.from(new Set(items.map((item) => item.artist.trim()).filter(Boolean))).sort((a, b) =>
-    a.localeCompare(b, 'ru')
-  )
+  return Array.from(
+    new Set(items.map((item) => normalizeMusicItemRecord(item).artist).filter(Boolean))
+  ).sort((a, b) => a.localeCompare(b, 'ru'))
 }
 
 export function musicFilterYears(items: readonly MusicItemRecord[]): number[] {
