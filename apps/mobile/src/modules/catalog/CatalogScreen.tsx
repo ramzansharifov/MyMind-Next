@@ -373,7 +373,7 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
               title: `JSON · ${selectedMovie.title}`,
               description: 'Полная сохранённая запись этого фильма',
               json: stringifyMovieJson(selectedMovie),
-              note: 'Полная сохранённая запись MyMind, включая id, createdAt и updatedAt. Служебные поля игнорируются текущим JSON-импортом, поэтому этот объект можно использовать для повторного импорта.',
+              note: 'Полная сохранённая запись MyMind. При повторной вставке тот же id обновит именно этот фильм; createdAt и updatedAt из JSON не перезаписываются.',
               accessibilityLabel: 'JSON данных фильма'
             })
           }
@@ -437,7 +437,7 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
                       title: 'JSON библиотеки',
                       description: `Полные сохранённые данные всех фильмов · ${allMovieItems.length}`,
                       json: stringifyMovieJson(allMovieItems),
-                      note: 'Полная сохранённая библиотека MyMind. Служебные поля id, createdAt и updatedAt игнорируются текущим JSON-импортом.',
+                      note: 'Полная библиотека MyMind. Вставьте этот JSON обратно после изменений: существующие id обновятся, новые фильмы добавятся.',
                       accessibilityLabel: 'JSON данных фильмов'
                     })
                   }
@@ -536,7 +536,7 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
                       title: 'JSON музыкальной библиотеки',
                       description: `Полные данные: ${musicItems.length} записей · ${musicPlaylists.length} плейлистов`,
                       json: stringifyMusicJson({ items: musicItems, playlists: musicPlaylists }),
-                      note: 'MusicOverview содержит реальные данные треков и плейлистов. Обложка есть только у плейлиста; связи с треками хранятся в его trackIds.',
+                      note: 'MusicOverview содержит треки и плейлисты. Весь JSON можно вставить обратно: существующие id обновятся, новые записи добавятся, trackIds применятся.',
                       accessibilityLabel: 'JSON данных музыки'
                     })
                   }
@@ -710,7 +710,7 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
                 {
                   key: 'movie-json',
                   label: 'Из JSON',
-                  description: 'Импортировать одну или несколько записей',
+                  description: 'Обновить существующие или добавить новые записи',
                   icon: 'json',
                   onPress: () => setJsonImportOpen(true)
                 }
@@ -733,7 +733,7 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
                 {
                   key: 'music-json',
                   label: 'Из JSON',
-                  description: 'Импортировать одну или несколько музыкальных записей',
+                  description: 'Обновить существующие или добавить новые треки и плейлисты',
                   icon: 'json',
                   onPress: () => setJsonImportOpen(true)
                 }
