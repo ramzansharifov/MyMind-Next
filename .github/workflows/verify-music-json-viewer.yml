@@ -6,7 +6,7 @@ on:
       - feat/music-json-viewer
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: verify-music-json-viewer
@@ -23,6 +23,23 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Format changed music JSON files
+        run: >-
+          npx prettier --write
+          packages/contracts/src/music.ts
+          apps/desktop/src/renderer/src/modules/music/MusicSimplePage.tsx
+          apps/desktop/src/renderer/src/modules/music/MusicSimplePage.test.tsx
+          apps/mobile/src/modules/catalog/CatalogScreen.tsx
+      - name: Commit formatting when needed
+        shell: pwsh
+        run: |
+          if (-not (git diff --quiet)) {
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add packages/contracts/src/music.ts apps/desktop/src/renderer/src/modules/music/MusicSimplePage.tsx apps/desktop/src/renderer/src/modules/music/MusicSimplePage.test.tsx apps/mobile/src/modules/catalog/CatalogScreen.tsx
+            git commit -m "style: format music JSON viewer"
+            git push origin HEAD:feat/music-json-viewer
+          }
       - name: Check changed file formatting
         run: >-
           npx prettier --check
