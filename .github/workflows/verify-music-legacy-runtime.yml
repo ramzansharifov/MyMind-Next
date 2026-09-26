@@ -1,0 +1,75 @@
+name: Verify music legacy runtime fix
+
+on:
+  push:
+    branches:
+      - fix/music-legacy-runtime-shape
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: windows-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Format changed files
+        run: >-
+          npx prettier --write
+          packages/contracts/src/music.ts
+          packages/contracts/src/music.test.ts
+          apps/desktop/src/renderer/src/modules/music/MusicSimplePage.tsx
+          apps/desktop/src/renderer/src/modules/music/components/MusicLibraryView.tsx
+          apps/desktop/src/renderer/src/modules/music/components/MusicLibraryView.test.tsx
+          apps/mobile/src/modules/catalog/CatalogScreen.tsx
+          apps/mobile/src/modules/catalog/MusicLibraryView.tsx
+          apps/mobile/src/modules/catalog/music-presentation.ts
+          apps/mobile/src/modules/catalog/music-presentation.test.ts
+      - name: Commit formatting when needed
+        shell: pwsh
+        run: |
+          if (-not (git diff --quiet)) {
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add packages/contracts/src/music.ts packages/contracts/src/music.test.ts apps/desktop/src/renderer/src/modules/music/MusicSimplePage.tsx apps/desktop/src/renderer/src/modules/music/components/MusicLibraryView.tsx apps/desktop/src/renderer/src/modules/music/components/MusicLibraryView.test.tsx apps/mobile/src/modules/catalog/CatalogScreen.tsx apps/mobile/src/modules/catalog/MusicLibraryView.tsx apps/mobile/src/modules/catalog/music-presentation.ts apps/mobile/src/modules/catalog/music-presentation.test.ts
+            git commit -m "style: format music legacy runtime fix"
+            git push origin HEAD:fix/music-legacy-runtime-shape
+          }
+      - name: Check changed file formatting
+        run: >-
+          npx prettier --check
+          packages/contracts/src/music.ts
+          packages/contracts/src/music.test.ts
+          apps/desktop/src/renderer/src/modules/music/MusicSimplePage.tsx
+          apps/desktop/src/renderer/src/modules/music/components/MusicLibraryView.tsx
+          apps/desktop/src/renderer/src/modules/music/components/MusicLibraryView.test.tsx
+          apps/mobile/src/modules/catalog/CatalogScreen.tsx
+          apps/mobile/src/modules/catalog/MusicLibraryView.tsx
+          apps/mobile/src/modules/catalog/music-presentation.ts
+          apps/mobile/src/modules/catalog/music-presentation.test.ts
+      - name: Lint changed files
+        run: >-
+          npx eslint
+          packages/contracts/src/music.ts
+          packages/contracts/src/music.test.ts
+          apps/desktop/src/renderer/src/modules/music/MusicSimplePage.tsx
+          apps/desktop/src/renderer/src/modules/music/components/MusicLibraryView.tsx
+          apps/desktop/src/renderer/src/modules/music/components/MusicLibraryView.test.tsx
+          apps/mobile/src/modules/catalog/CatalogScreen.tsx
+          apps/mobile/src/modules/catalog/MusicLibraryView.tsx
+          apps/mobile/src/modules/catalog/music-presentation.ts
+          apps/mobile/src/modules/catalog/music-presentation.test.ts
+      - run: npm run typecheck
+      - name: Run desktop music regression tests
+        run: >-
+          npm run test:run --workspace=mymind-next --
+          src/renderer/src/modules/music/components/MusicLibraryView.test.tsx
+      - run: npm run test:mobile
+      - run: npm run build:bundle
+      - run: npm run export:android
