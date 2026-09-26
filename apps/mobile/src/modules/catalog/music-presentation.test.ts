@@ -95,6 +95,19 @@ describe('mobile music presentation helpers', () => {
     )
   })
 
+  it('supports old runtime records that still contain artists arrays', () => {
+    const legacy = {
+      ...track(),
+      artist: undefined,
+      artists: ['The Weeknd']
+    } as unknown as MusicItemRecord
+
+    expect(musicTrackDraftFromItem(legacy).artist).toBe('The Weeknd')
+    expect(musicFilterArtists([legacy])).toEqual(['The Weeknd'])
+    expect(musicRecordToUpdateInput(legacy).artist).toBe('The Weeknd')
+    expect(musicYoutubeSearchUrl(legacy)).toContain('The%20Weeknd')
+  })
+
   it('derives stable artist and year filter choices from existing records', () => {
     const items = [
       track({ id: '1', artist: 'Zed', year: 2024 }),
