@@ -47,6 +47,7 @@ jobs:
           packages/contracts/src/music.test.ts
           apps/desktop/src/renderer/src/modules/music/MusicSimplePage.tsx
           apps/desktop/src/renderer/src/modules/music/MusicSimplePage.test.tsx
+          apps/desktop/src/renderer/src/modules/music/components/MusicLibraryView.test.tsx
           apps/desktop/src/renderer/src/modules/music/components/MusicLibraryView.tsx
           apps/desktop/src/renderer/src/modules/music/components/MusicJsonViewerDialog.tsx
           apps/mobile/src/modules/catalog/CatalogJsonViewerModal.tsx
@@ -65,7 +66,7 @@ jobs:
           apps/mobile/src/modules/catalog/CatalogScreen.tsx
           apps/mobile/src/modules/catalog/MusicLibraryView.tsx
       - run: npm run typecheck
-      - run: npm run test:run --workspace=mymind-next -- src/renderer/src/modules/music/MusicSimplePage.test.tsx
+      - run: npm run test:run --workspace=mymind-next -- src/renderer/src/modules/music/MusicSimplePage.test.tsx src/renderer/src/modules/music/components/MusicLibraryView.test.tsx
       - run: npm run test:mobile
       - run: npm run build:bundle
       - run: npm run export:android
