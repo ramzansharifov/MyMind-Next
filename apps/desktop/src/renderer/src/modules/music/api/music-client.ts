@@ -1,5 +1,8 @@
-import type {
-  CreateMusicItemInput,
+import {
+  normalizeMusicItemRecord,
+  normalizeMusicOverview,
+  normalizeMusicPlaylistRecord,
+  type CreateMusicItemInput,
   CreateMusicItemsInput,
   CreateMusicPlaylistInput,
   DeleteMusicItemInput,
@@ -15,35 +18,36 @@ import type {
 } from '../../../../../shared/contracts/music'
 
 export const musicClient = {
-  listOverview(): Promise<MusicOverview> {
-    return window.api.music.listOverview()
+  async listOverview(): Promise<MusicOverview> {
+    return normalizeMusicOverview(await window.api.music.listOverview())
   },
-  getItem(input: GetMusicItemInput): Promise<MusicItemRecord | null> {
-    return window.api.music.getItem(input)
+  async getItem(input: GetMusicItemInput): Promise<MusicItemRecord | null> {
+    const item = await window.api.music.getItem(input)
+    return item ? normalizeMusicItemRecord(item) : null
   },
-  createItem(input: CreateMusicItemInput): Promise<MusicItemRecord> {
-    return window.api.music.createItem(input)
+  async createItem(input: CreateMusicItemInput): Promise<MusicItemRecord> {
+    return normalizeMusicItemRecord(await window.api.music.createItem(input))
   },
-  createItems(input: CreateMusicItemsInput): Promise<MusicItemRecord[]> {
-    return window.api.music.createItems(input)
+  async createItems(input: CreateMusicItemsInput): Promise<MusicItemRecord[]> {
+    return (await window.api.music.createItems(input)).map(normalizeMusicItemRecord)
   },
-  updateItem(input: UpdateMusicItemInput): Promise<MusicItemRecord> {
-    return window.api.music.updateItem(input)
+  async updateItem(input: UpdateMusicItemInput): Promise<MusicItemRecord> {
+    return normalizeMusicItemRecord(await window.api.music.updateItem(input))
   },
   deleteItem(input: DeleteMusicItemInput): Promise<boolean> {
     return window.api.music.deleteItem(input)
   },
-  createPlaylist(input: CreateMusicPlaylistInput): Promise<MusicPlaylistRecord> {
-    return window.api.music.createPlaylist(input)
+  async createPlaylist(input: CreateMusicPlaylistInput): Promise<MusicPlaylistRecord> {
+    return normalizeMusicPlaylistRecord(await window.api.music.createPlaylist(input))
   },
-  updatePlaylist(input: UpdateMusicPlaylistInput): Promise<MusicPlaylistRecord> {
-    return window.api.music.updatePlaylist(input)
+  async updatePlaylist(input: UpdateMusicPlaylistInput): Promise<MusicPlaylistRecord> {
+    return normalizeMusicPlaylistRecord(await window.api.music.updatePlaylist(input))
   },
   deletePlaylist(input: DeleteMusicPlaylistInput): Promise<boolean> {
     return window.api.music.deletePlaylist(input)
   },
-  setItemPlaylists(input: SetMusicItemPlaylistsInput): Promise<MusicPlaylistRecord[]> {
-    return window.api.music.setItemPlaylists(input)
+  async setItemPlaylists(input: SetMusicItemPlaylistsInput): Promise<MusicPlaylistRecord[]> {
+    return (await window.api.music.setItemPlaylists(input)).map(normalizeMusicPlaylistRecord)
   },
   searchWeb(input: MusicWebSearchInput): Promise<void> {
     return window.api.music.searchWeb(input)
