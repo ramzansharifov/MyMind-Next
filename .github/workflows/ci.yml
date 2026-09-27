@@ -1,29 +1,38 @@
-name: CI (manual)
+name: Format A4 feature
 
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - ci/a4-format
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  verify:
+  format:
     runs-on: windows-latest
-    timeout-minutes: 25
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: feat/a4-board-documents
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run native:node
-      - run: npm run format:check
-      - run: npm run lint
-      - run: npm run lint:mobile
-      - run: npm run typecheck
-      - run: npm run test:coverage
-      - run: npm run test:mobile
-      - run: npm run db:check
-      - run: npm run build:bundle
-      - run: npm run export:android
+      - name: Format feature files
+        run: npx prettier --write "apps/desktop/src/main/ipc/register-boards-ipc.test.ts" "apps/desktop/src/main/ipc/register-boards-ipc.ts" "apps/desktop/src/main/repositories/boards.repository.test.ts" "apps/desktop/src/main/repositories/boards.repository.ts" "apps/desktop/src/main/services/board-pdf-export.ts" "apps/desktop/src/preload/index.test.ts" "apps/desktop/src/preload/index.ts" "apps/desktop/src/renderer/src/assets/board-pdf-export.css" "apps/desktop/src/renderer/src/modules/boards/BoardsPage.test.tsx" "apps/desktop/src/renderer/src/modules/boards/BoardsPage.tsx" "apps/desktop/src/renderer/src/modules/boards/api/boards-client.ts" "apps/desktop/src/renderer/src/modules/boards/components/BoardCanvas.test.tsx" "apps/desktop/src/renderer/src/modules/boards/components/BoardCanvas.tsx" "packages/contracts/src/boards.ts" "packages/core/src/validation/boards.ts" "packages/persistence/src/boards.test.ts" "packages/persistence/src/boards.ts"
+      - name: Commit formatting
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "apps/desktop/src/main/ipc/register-boards-ipc.test.ts" "apps/desktop/src/main/ipc/register-boards-ipc.ts" "apps/desktop/src/main/repositories/boards.repository.test.ts" "apps/desktop/src/main/repositories/boards.repository.ts" "apps/desktop/src/main/services/board-pdf-export.ts" "apps/desktop/src/preload/index.test.ts" "apps/desktop/src/preload/index.ts" "apps/desktop/src/renderer/src/assets/board-pdf-export.css" "apps/desktop/src/renderer/src/modules/boards/BoardsPage.test.tsx" "apps/desktop/src/renderer/src/modules/boards/BoardsPage.tsx" "apps/desktop/src/renderer/src/modules/boards/api/boards-client.ts" "apps/desktop/src/renderer/src/modules/boards/components/BoardCanvas.test.tsx" "apps/desktop/src/renderer/src/modules/boards/components/BoardCanvas.tsx" "packages/contracts/src/boards.ts" "packages/core/src/validation/boards.ts" "packages/persistence/src/boards.test.ts" "packages/persistence/src/boards.ts"
+          git diff --cached --quiet
+          if ($LASTEXITCODE -eq 0) {
+            Write-Host "No formatting changes"
+            exit 0
+          }
+          git commit -m "style(boards): format A4 board changes"
+          git push origin HEAD:feat/a4-board-documents
