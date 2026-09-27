@@ -2,6 +2,7 @@ import {
   ArrowLeft,
   Check,
   Clock3,
+  FileText,
   Folder,
   FolderPlus,
   LayoutDashboard,
@@ -20,6 +21,7 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useState, type ReactNo
 import type { StudyFolderIconName } from '../../../../shared/contracts/study'
 import {
   BOARD_SYSTEM_ROOT_ID,
+  type BoardCanvasMode,
   type BoardNode,
   type BoardNodeType,
   type MoveBoardNodeInput
@@ -69,6 +71,7 @@ export function BoardsPage({
   const [error, setError] = useState<string | null>(null)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [createRequest, setCreateRequest] = useState<BoardCreateRequest | null>(null)
+  const [createCanvasMode, setCreateCanvasMode] = useState<BoardCanvasMode>('infinite')
   const [renameTarget, setRenameTarget] = useState<BoardNode | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<BoardNode | null>(null)
   const [dialogValue, setDialogValue] = useState('')
@@ -163,10 +166,12 @@ export function BoardsPage({
       const created = await boardsClient.createNode({
         type: createRequest.type,
         parentId: createRequest.parentId,
-        title: dialogValue.trim()
+        title: dialogValue.trim(),
+        ...(createRequest.type === 'board' ? { canvasMode: createCanvasMode } : {})
       })
       await refreshNodes()
       setCreateRequest(null)
+      setCreateCanvasMode('infinite')
       setDialogValue('')
       await openNode(created.id)
     } catch (reason: unknown) {
@@ -243,6 +248,7 @@ export function BoardsPage({
 
   function startCreate(type: BoardNodeType, parentId: string | null): void {
     setCreateRequest({ type, parentId })
+    setCreateCanvasMode('infinite')
     setDialogValue(type === 'folder' ? 'Новая папка' : 'Новая доска')
   }
 
@@ -372,8 +378,16 @@ export function BoardsPage({
         confirmLabel="Создать"
         isSubmitting={isSubmitting}
         onValueChange={setDialogValue}
+        extraContent={
+          createRequest?.type === 'board' ? (
+            <BoardCanvasModeSelector value={createCanvasMode} onChange={setCreateCanvasMode} />
+          ) : undefined
+        }
         onOpenChange={(open) => {
-          if (!open && !isSubmitting) setCreateRequest(null)
+          if (!open && !isSubmitting) {
+            setCreateRequest(null)
+            setCreateCanvasMode('infinite')
+          }
         }}
         onConfirm={() => void createNode()}
       />
@@ -989,6 +1003,7 @@ function BoardWorkspace({
           <Suspense fallback={<BoardCanvasLoadingFallback />}>
             <BoardCanvas
               boardId={node.id}
+              title={node.title}
               focusMode={focusMode}
               onFocusModeChange={onFocusModeChange}
               onSaveStateChange={onSaveStateChange}
@@ -1037,6 +1052,7 @@ function BoardTextDialog({
   confirmLabel,
   isSubmitting,
   onValueChange,
+  extraContent,
   onOpenChange,
   onConfirm
 }: {
@@ -1046,6 +1062,7 @@ function BoardTextDialog({
   confirmLabel: string
   isSubmitting: boolean
   onValueChange: (value: string) => void
+  extraContent?: ReactNode
   onOpenChange: (open: boolean) => void
   onConfirm: () => void
 }): React.JSX.Element {
@@ -1070,6 +1087,7 @@ function BoardTextDialog({
           if (event.key === 'Enter' && canConfirm) onConfirm()
         }}
       />
+      {extraContent}
       <div className="mt-5 flex justify-end gap-2 border-t border-[var(--app-border)] pt-4">
         <button
           type="button"
@@ -1090,6 +1108,69 @@ function BoardTextDialog({
         </button>
       </div>
     </AppDialog>
+  )
+}
+
+function BoardCanvasModeSelector({
+  value,
+  onChange
+}: {
+  value: BoardCanvasMode
+  onChange: (value: BoardCanvasMode) => void
+}): React.JSX.Element {
+  const options: Array<{
+    value: BoardCanvasMode
+    title: string
+    description: string
+    icon: ReactNode
+  }> = [
+    {
+      value: 'infinite',
+      title: 'Бесконечная',
+      description: 'Свободный холст без границ',
+      icon: <LayoutDashboard aria-hidden="true" className="size-4" />
+    },
+    {
+      value: 'a4',
+      title: 'A4-документ',
+      description: 'Несколько листов A4 с экспортом в PDF',
+      icon: <FileText aria-hidden="true" className="size-4" />
+    }
+  ]
+
+  return (
+    <div className="mt-4">
+      <p className="mb-2 text-xs font-medium text-[var(--app-muted)]">Формат доски</p>
+      <div className="grid grid-cols-2 gap-2 max-[520px]:grid-cols-1">
+        {options.map((option) => {
+          const active = option.value === value
+          return (
+            <button
+              key={option.value}
+              type="button"
+              aria-pressed={active}
+              className={cn(
+                'rounded-xl border px-3 py-3 text-left transition-colors',
+                active
+                  ? 'border-[var(--app-accent-500)]/55 bg-[var(--app-accent-500)]/10'
+                  : 'border-[var(--app-border)] bg-[var(--app-workspace)] hover:bg-[var(--app-control-hover)]'
+              )}
+              onClick={() => onChange(option.value)}
+            >
+              <span className="flex items-center gap-2 text-sm font-medium text-[var(--app-text)]">
+                <span className={active ? 'text-[var(--app-accent-300)]' : 'text-[var(--app-muted)]'}>
+                  {option.icon}
+                </span>
+                {option.title}
+              </span>
+              <span className="mt-1 block text-xs leading-5 text-[var(--app-muted)]">
+                {option.description}
+              </span>
+            </button>
+          )
+        })}
+      </div>
+    </div>
   )
 }
 
