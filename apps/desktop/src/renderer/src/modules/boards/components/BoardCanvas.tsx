@@ -11,6 +11,8 @@ import {
   react,
   Tldraw,
   TldrawUiButton,
+  useEditor,
+  useValue,
   type Editor,
   type TLComponents,
   type TLEditorSnapshot,
@@ -54,10 +56,9 @@ const A4_PAGE_BOX = new Box(
 const a4BoardOptions: Partial<TldrawOptions> = {
   maxPages: BOARD_A4_MAX_PAGES,
   camera: {
-    zoomSteps: [1, 1.25, 1.5, 2, 3, 4, 6, 8],
     constraints: {
       bounds: { ...BOARD_A4_BOUNDS },
-      padding: { x: 0, y: 0 },
+      padding: { x: 28, y: 28 },
       origin: { x: 0.5, y: 0.5 },
       initialZoom: 'fit-max',
       baseZoom: 'fit-max',
@@ -178,7 +179,41 @@ function BoardCanvasQuickActions(props: TLUiQuickActionsProps): React.JSX.Elemen
 }
 
 function A4PageBackground(): React.JSX.Element {
-  return <div className="pointer-events-none absolute inset-0 bg-white" aria-hidden="true" />
+  const editor = useEditor()
+  const paper = useValue(
+    'A4 paper bounds',
+    () => {
+      const topLeft = editor.pageToViewport({ x: BOARD_A4_BOUNDS.x, y: BOARD_A4_BOUNDS.y })
+      const zoom = editor.getZoomLevel()
+
+      return {
+        left: topLeft.x,
+        top: topLeft.y,
+        width: BOARD_A4_BOUNDS.w * zoom,
+        height: BOARD_A4_BOUNDS.h * zoom
+      }
+    },
+    [editor]
+  )
+
+  return (
+    <div
+      className="pointer-events-none absolute inset-0 bg-[var(--app-workspace)]"
+      aria-hidden="true"
+    >
+      <div
+        data-board-a4-page-boundary
+        className="absolute bg-white shadow-[0_22px_60px_rgba(0,0,0,0.28)]"
+        style={{
+          left: paper.left,
+          top: paper.top,
+          width: paper.width,
+          height: paper.height,
+          border: '1px solid rgba(148, 163, 184, 0.55)'
+        }}
+      />
+    </div>
+  )
 }
 
 export function BoardCanvas({
@@ -359,7 +394,7 @@ export function BoardCanvas({
 
       if (canvasMode === 'a4') {
         renameDefaultA4Pages(editor)
-        editor.zoomToBounds(A4_PAGE_BOX, { inset: 0, immediate: true })
+        editor.zoomToBounds(A4_PAGE_BOX, { inset: 28, immediate: true })
       }
 
       return () => {
@@ -522,64 +557,36 @@ export function BoardCanvas({
           data-board-fullscreen={isFullscreen}
           data-board-focus-mode={focusMode}
           className={cn(
-            'mymind-board-canvas relative h-full min-h-0 w-full overflow-hidden bg-[var(--app-workspace)]',
-            canvasMode !== 'a4' && 'tldraw__editor',
+            'mymind-board-canvas tldraw__editor relative h-full min-h-0 w-full overflow-hidden bg-[var(--app-workspace)]',
             isLocalFullscreen && 'app-fullscreen-bounds fixed z-40 h-auto w-screen'
           )}
         >
-          {canvasMode === 'a4' ? (
-            <div
-              data-board-a4-stage
-              className="flex h-full min-h-0 w-full items-center justify-center overflow-hidden bg-slate-300 p-5"
-              style={{ containerType: 'size' }}
-            >
-              <div
-                data-board-a4-page-surface
-                className="tldraw__editor relative overflow-hidden bg-white shadow-[0_18px_60px_rgba(15,23,42,0.28)] ring-1 ring-slate-400"
-                style={{
-                  width: 'min(calc(100cqw - 40px), calc(70.707cqh - 28.283px))',
-                  aspectRatio: '210 / 297'
-                }}
+          <Tldraw
+            key={`${boardId}:${canvasMode}`}
+            store={store}
+            assetUrls={assetUrls}
+            colorScheme={canvasMode === 'a4' ? 'light' : resolvedTheme}
+            components={canvasMode === 'a4' ? a4BoardCanvasComponents : boardCanvasComponents}
+            options={canvasMode === 'a4' ? a4BoardOptions : infiniteBoardOptions}
+            onMount={handleEditorMount}
+          />
+          {canvasMode !== 'a4' && (
+            <div className="absolute top-3 left-1/2 z-[1000] -translate-x-1/2">
+              <button
+                type="button"
+                aria-label="Перевести эту доску в A4"
+                disabled={isConvertingToA4}
+                className="flex items-center gap-2 rounded-full border border-[var(--app-border)] bg-[var(--app-surface-raised)]/95 px-3 py-1.5 text-xs font-semibold text-[var(--app-text)] shadow-lg backdrop-blur transition-colors hover:bg-[var(--app-control-hover)] disabled:cursor-wait disabled:opacity-60"
+                onClick={convertToA4}
               >
-                <Tldraw
-                  key={`${boardId}:a4`}
-                  store={store}
-                  assetUrls={assetUrls}
-                  colorScheme="light"
-                  components={a4BoardCanvasComponents}
-                  options={a4BoardOptions}
-                  onMount={handleEditorMount}
-                />
-              </div>
+                {isConvertingToA4 ? (
+                  <LoaderCircle aria-hidden="true" className="size-3.5 animate-spin" />
+                ) : (
+                  <FileText aria-hidden="true" className="size-3.5" />
+                )}
+                Сделать A4
+              </button>
             </div>
-          ) : (
-            <>
-              <Tldraw
-                key={`${boardId}:infinite`}
-                store={store}
-                assetUrls={assetUrls}
-                colorScheme={resolvedTheme}
-                components={boardCanvasComponents}
-                options={infiniteBoardOptions}
-                onMount={handleEditorMount}
-              />
-              <div className="absolute top-3 left-1/2 z-[1000] -translate-x-1/2">
-                <button
-                  type="button"
-                  aria-label="Перевести эту доску в A4"
-                  disabled={isConvertingToA4}
-                  className="flex items-center gap-2 rounded-full border border-[var(--app-border)] bg-[var(--app-surface-raised)]/95 px-3 py-1.5 text-xs font-semibold text-[var(--app-text)] shadow-lg backdrop-blur transition-colors hover:bg-[var(--app-control-hover)] disabled:cursor-wait disabled:opacity-60"
-                  onClick={convertToA4}
-                >
-                  {isConvertingToA4 ? (
-                    <LoaderCircle aria-hidden="true" className="size-3.5 animate-spin" />
-                  ) : (
-                    <FileText aria-hidden="true" className="size-3.5" />
-                  )}
-                  Сделать A4
-                </button>
-              </div>
-            </>
           )}
           {exportError && (
             <div
@@ -612,7 +619,7 @@ function installA4EditorConstraints(editor: Editor): () => void {
       const pageIndex = editor.getPages().findIndex((candidate) => candidate.id === page.id)
       editor.renamePage(page, `Лист ${pageIndex + 1}`)
     }
-    editor.zoomToBounds(A4_PAGE_BOX, { inset: 0, immediate: true })
+    editor.zoomToBounds(A4_PAGE_BOX, { inset: 28, immediate: true })
   })
 
   return () => {

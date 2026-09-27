@@ -53,14 +53,23 @@ vi.mock('tldraw', () => ({
   defaultShapeUtils: [],
   getSnapshot: vi.fn(() => ({})),
   react: vi.fn(() => testHarness.stopListening),
+  useEditor: vi.fn(() => ({
+    pageToViewport: ({ x, y }: { x: number; y: number }) => ({ x: x + 24, y: y + 24 }),
+    getZoomLevel: () => 0.5
+  })),
+  useValue: vi.fn((_name: string, getter: () => unknown) => getter()),
   Tldraw: ({
     components,
     onMount
   }: {
-    components?: { QuickActions?: (props: { children?: ReactNode }) => ReactElement }
+    components?: {
+      QuickActions?: (props: { children?: ReactNode }) => ReactElement
+      Background?: () => ReactElement
+    }
     onMount?: (editor: unknown) => void
   }) => {
     const QuickActions = components?.QuickActions
+    const Background = components?.Background
     onMount?.({
       getCurrentPageId: () => 'page:1',
       getPages: () => [{ id: 'page:1', name: 'Page 1' }],
@@ -88,7 +97,12 @@ vi.mock('tldraw', () => ({
       zoomToBounds: testHarness.zoomToBounds
     })
 
-    return <div data-testid="tldraw-canvas">{QuickActions ? <QuickActions /> : null}</div>
+    return (
+      <div data-testid="tldraw-canvas">
+        {Background ? <Background /> : null}
+        {QuickActions ? <QuickActions /> : null}
+      </div>
+    )
   },
   TldrawUiButton: ({
     children,
@@ -191,14 +205,16 @@ describe('BoardCanvas A4 mode', () => {
     )
 
     expect(workspace).toHaveAttribute('data-board-canvas-mode', 'a4')
-    expect(workspace.querySelector('[data-board-a4-stage]')).toBeInTheDocument()
-    expect(workspace.querySelector('[data-board-a4-page-surface]')).toBeInTheDocument()
+    expect(workspace).toHaveClass('tldraw__editor')
+    expect(workspace.querySelector('[data-board-a4-page-boundary]')).toBeInTheDocument()
+    expect(workspace.querySelector('[data-board-a4-stage]')).not.toBeInTheDocument()
+    expect(workspace.querySelector('[data-board-a4-page-surface]')).not.toBeInTheDocument()
     expect(testHarness.flushQueue).toHaveBeenCalled()
     expect(testHarness.renamePage).toHaveBeenCalledWith({ id: 'page:1', name: 'Page 1' }, 'Лист 1')
     expect(testHarness.zoomToBounds).toHaveBeenCalled()
   })
 
-  it('renders A4 as the editor surface instead of a rectangle inside an infinite canvas', async () => {
+  it('renders A4 boundaries directly on the full main tldraw canvas', async () => {
     testHarness.getDocument.mockResolvedValueOnce({
       snapshot: {
         __mymindBoard: { version: 1, canvasMode: 'a4' },
@@ -209,17 +225,16 @@ describe('BoardCanvas A4 mode', () => {
     render(<BoardCanvas boardId="board-a4" title="Листы" />)
 
     const workspace = await screen.findByRole('region', { name: 'Холст доски' })
-    const stage = workspace.querySelector('[data-board-a4-stage]')
-    const pageSurface = workspace.querySelector('[data-board-a4-page-surface]')
+    const boundary = workspace.querySelector('[data-board-a4-page-boundary]')
 
     expect(workspace).toHaveAttribute('data-board-canvas-mode', 'a4')
-    expect(workspace).not.toHaveClass('tldraw__editor')
-    expect(stage).toBeInTheDocument()
-    expect(pageSurface).toBeInTheDocument()
-    expect(pageSurface).toHaveClass('tldraw__editor', 'overflow-hidden', 'bg-white')
+    expect(workspace).toHaveClass('tldraw__editor')
+    expect(boundary).toBeInTheDocument()
+    expect(workspace.querySelector('[data-board-a4-stage]')).not.toBeInTheDocument()
+    expect(workspace.querySelector('[data-board-a4-page-surface]')).not.toBeInTheDocument()
     expect(testHarness.zoomToBounds).toHaveBeenCalledWith(
       expect.anything(),
-      expect.objectContaining({ inset: 0, immediate: true })
+      expect.objectContaining({ inset: 28, immediate: true })
     )
     expect(testHarness.registerBeforeCreateHandler).toHaveBeenCalledWith(
       'shape',
