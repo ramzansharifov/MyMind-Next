@@ -141,6 +141,7 @@ export interface EnsureNoteBoardInput {
 }
 
 export interface ExportBoardPdfInput {
+  nodeId: string
   title: string
 }
 
