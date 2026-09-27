@@ -608,7 +608,7 @@ function installA4EditorConstraints(editor: Editor): () => void {
     fitStoredShapeInsideA4(editor, shape)
   )
   const unregisterPageCreate = editor.sideEffects.registerAfterCreateHandler('page', (page) => {
-    if (/^Page \\d+$/.test(page.name)) {
+    if (/^Page \d+$/.test(page.name)) {
       const pageIndex = editor.getPages().findIndex((candidate) => candidate.id === page.id)
       editor.renamePage(page, `Лист ${pageIndex + 1}`)
     }
@@ -656,7 +656,7 @@ function fitStoredShapeInsideA4(editor: Editor, shape: TLShape): void {
 
 function renameDefaultA4Pages(editor: Editor): void {
   editor.getPages().forEach((page, index) => {
-    if (/^Page \\d+$/.test(page.name)) {
+    if (/^Page \d+$/.test(page.name)) {
       editor.renamePage(page, `Лист ${index + 1}`)
     }
   })
@@ -727,7 +727,7 @@ function prepareEditorForA4(editor: Editor): void {
   pages.forEach((page, index) => {
     editor.setCurrentPage(page.id)
 
-    if (/^Page \\d+$/.test(page.name)) {
+    if (/^Page \d+$/.test(page.name)) {
       editor.renamePage(page, `Лист ${index + 1}`)
     }
 
