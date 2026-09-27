@@ -17,12 +17,26 @@ const testHarness = vi.hoisted(() => ({
   renamePage: vi.fn(),
   resizeToBounds: vi.fn(),
   setCurrentPage: vi.fn(),
+  updatePage: vi.fn(),
+  updateShapes: vi.fn(),
+  moveShapesToPage: vi.fn(),
+  deletePage: vi.fn(),
+  getPageShapeIds: vi.fn(),
   registerBeforeCreateHandler: vi.fn(),
   registerBeforeChangeHandler: vi.fn(),
   registerAfterCreateHandler: vi.fn(),
   unregisterBeforeCreate: vi.fn(),
   unregisterBeforeChange: vi.fn(),
-  unregisterAfterCreate: vi.fn()
+  unregisterAfterCreate: vi.fn(),
+  pages: [{ id: 'page:1', name: 'Page 1', meta: {} }] as Array<{
+    id: string
+    name: string
+    meta: Record<string, unknown>
+  }>,
+  currentPageId: 'page:1',
+  shapes: new Map<string, Record<string, unknown>>(),
+  pageShapeIds: {} as Record<string, string[]>,
+  activeEditor: null as Record<string, unknown> | null
 }))
 
 vi.mock('@tldraw/assets/imports.vite', () => ({
@@ -37,6 +51,14 @@ vi.mock('tldraw', () => ({
       public w: number,
       public h: number
     ) {}
+
+    get maxX(): number {
+      return this.x + this.w
+    }
+
+    get maxY(): number {
+      return this.y + this.h
+    }
   },
   createTLStore: vi.fn(() => ({
     history: {
@@ -53,10 +75,7 @@ vi.mock('tldraw', () => ({
   defaultShapeUtils: [],
   getSnapshot: vi.fn(() => ({})),
   react: vi.fn(() => testHarness.stopListening),
-  useEditor: vi.fn(() => ({
-    pageToViewport: ({ x, y }: { x: number; y: number }) => ({ x: x + 24, y: y + 24 }),
-    getZoomLevel: () => 0.5
-  })),
+  useEditor: vi.fn(() => testHarness.activeEditor),
   useValue: vi.fn((_name: string, getter: () => unknown) => getter()),
   Tldraw: ({
     components,
@@ -70,15 +89,41 @@ vi.mock('tldraw', () => ({
   }) => {
     const QuickActions = components?.QuickActions
     const Background = components?.Background
-    onMount?.({
-      getCurrentPageId: () => 'page:1',
-      getPages: () => [{ id: 'page:1', name: 'Page 1' }],
-      getPage: () => ({ id: 'page:1', name: 'Page 1' }),
-      sideEffects: {
-        registerBeforeCreateHandler: testHarness.registerBeforeCreateHandler,
-        registerBeforeChangeHandler: testHarness.registerBeforeChangeHandler,
-        registerAfterCreateHandler: testHarness.registerAfterCreateHandler
+
+    const editor = {
+      run: (callback: () => void) => callback(),
+      getCurrentPageId: () => testHarness.currentPageId,
+      getCurrentPage: () =>
+        testHarness.pages.find((page) => page.id === testHarness.currentPageId) ??
+        testHarness.pages[0],
+      getPages: () => testHarness.pages,
+      getPage: (pageId: string) => testHarness.pages.find((page) => page.id === pageId),
+      setCurrentPage: (page: string | { id: string }) => {
+        testHarness.currentPageId = typeof page === 'string' ? page : page.id
+        testHarness.setCurrentPage(page)
       },
+      updatePage: (partial: { id: string; meta?: Record<string, unknown>; name?: string }) => {
+        const page = testHarness.pages.find((candidate) => candidate.id === partial.id)
+        if (page) {
+          if (partial.meta) page.meta = partial.meta
+          if (partial.name) page.name = partial.name
+        }
+        testHarness.updatePage(partial)
+      },
+      renamePage: (page: string | { id: string }, name: string) => {
+        const pageId = typeof page === 'string' ? page : page.id
+        const existing = testHarness.pages.find((candidate) => candidate.id === pageId)
+        if (existing) existing.name = name
+        testHarness.renamePage(page, name)
+      },
+      getPageShapeIds: (pageId: string) => {
+        testHarness.getPageShapeIds(pageId)
+        return new Set(testHarness.pageShapeIds[pageId] ?? [])
+      },
+      getCurrentPageShapeIds: () =>
+        new Set(testHarness.pageShapeIds[testHarness.currentPageId] ?? []),
+      getCurrentPageBounds: () => undefined,
+      getShape: (shapeId: string) => testHarness.shapes.get(shapeId),
       getShapeUtil: () => ({
         getGeometry: (shape: { props?: { w?: number; h?: number } }) => {
           const w = shape.props?.w ?? 100
@@ -88,14 +133,42 @@ vi.mock('tldraw', () => ({
           }
         }
       }),
-      setCurrentPage: testHarness.setCurrentPage,
-      renamePage: testHarness.renamePage,
-      getCurrentPageShapeIds: () => new Set(),
-      getCurrentPageBounds: () => undefined,
-      getShape: () => undefined,
+      getShapePageBounds: () => undefined,
+      moveShapesToPage: (shapeIds: string[], targetPageId: string) => {
+        shapeIds.forEach((shapeId) => {
+          const shape = testHarness.shapes.get(shapeId)
+          if (shape) testHarness.shapes.set(shapeId, { ...shape, parentId: targetPageId })
+        })
+        testHarness.currentPageId = targetPageId
+        testHarness.moveShapesToPage(shapeIds, targetPageId)
+      },
+      updateShapes: (updates: Array<Record<string, unknown>>) => {
+        updates.forEach((update) => {
+          const id = update.id as string
+          const shape = testHarness.shapes.get(id)
+          if (shape) testHarness.shapes.set(id, { ...shape, ...update })
+        })
+        testHarness.updateShapes(updates)
+      },
+      deletePage: (pageId: string) => {
+        testHarness.pages = testHarness.pages.filter((page) => page.id !== pageId)
+        delete testHarness.pageShapeIds[pageId]
+        testHarness.deletePage(pageId)
+      },
       resizeToBounds: testHarness.resizeToBounds,
-      zoomToBounds: testHarness.zoomToBounds
-    })
+      zoomToBounds: testHarness.zoomToBounds,
+      getViewportPageBounds: () => ({ x: -200, y: -200, w: 1400, h: 5200, maxY: 5000 }),
+      pageToViewport: ({ x, y }: { x: number; y: number }) => ({ x: x + 24, y: y + 24 }),
+      getZoomLevel: () => 0.5,
+      sideEffects: {
+        registerBeforeCreateHandler: testHarness.registerBeforeCreateHandler,
+        registerBeforeChangeHandler: testHarness.registerBeforeChangeHandler,
+        registerAfterCreateHandler: testHarness.registerAfterCreateHandler
+      }
+    }
+
+    testHarness.activeEditor = editor
+    onMount?.(editor)
 
     return (
       <div data-testid="tldraw-canvas">
@@ -172,6 +245,16 @@ beforeEach(() => {
   testHarness.renamePage.mockReset()
   testHarness.resizeToBounds.mockReset()
   testHarness.setCurrentPage.mockReset()
+  testHarness.updatePage.mockReset()
+  testHarness.updateShapes.mockReset()
+  testHarness.moveShapesToPage.mockReset()
+  testHarness.deletePage.mockReset()
+  testHarness.getPageShapeIds.mockReset()
+  testHarness.pages = [{ id: 'page:1', name: 'Page 1', meta: {} }]
+  testHarness.currentPageId = 'page:1'
+  testHarness.shapes = new Map()
+  testHarness.pageShapeIds = {}
+  testHarness.activeEditor = null
   testHarness.registerBeforeCreateHandler.mockReset()
   testHarness.registerBeforeChangeHandler.mockReset()
   testHarness.registerAfterCreateHandler.mockReset()
