@@ -8,6 +8,7 @@ import { AppErrorBoundary } from '../../app/AppErrorBoundary'
 
 const testHarness = vi.hoisted(() => ({
   listNodes: vi.fn(),
+  createNode: vi.fn(),
   moveNode: vi.fn(),
   loadBoardCanvas: vi.fn(),
   requestAppModuleNavigation: vi.fn()
@@ -16,7 +17,7 @@ const testHarness = vi.hoisted(() => ({
 vi.mock('./api/boards-client', () => ({
   boardsClient: {
     listNodes: testHarness.listNodes,
-    createNode: vi.fn(),
+    createNode: testHarness.createNode,
     renameNode: vi.fn(),
     deleteNode: vi.fn(),
     updateExpansion: vi.fn(),
@@ -67,6 +68,7 @@ const boardNode: BoardNode = {
 
 beforeEach(() => {
   testHarness.listNodes.mockReset()
+  testHarness.createNode.mockReset()
   testHarness.moveNode.mockReset()
   testHarness.requestAppModuleNavigation.mockReset()
   testHarness.loadBoardCanvas.mockReset()
@@ -131,6 +133,41 @@ describe('BoardsPage', () => {
     expect(sidebar).toHaveAttribute('data-collapsed', 'true')
     expect(screen.getByRole('button', { name: 'Показать дерево досок' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Главная досок' })).toBeInTheDocument()
+  })
+
+  it('creates an A4 document when that format is selected', async () => {
+    const user = userEvent.setup()
+    vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    const a4Board: BoardNode = {
+      ...boardNode,
+      id: 'a4-board',
+      title: 'Конспект A4'
+    }
+
+    testHarness.listNodes
+      .mockResolvedValueOnce([systemFolder])
+      .mockResolvedValueOnce([systemFolder, a4Board])
+    testHarness.createNode.mockResolvedValueOnce(a4Board)
+
+    render(<BoardsPage />)
+
+    await screen.findByRole('heading', { name: 'Доски', level: 1 })
+    await user.click(screen.getByRole('button', { name: 'Новая доска' }))
+    await user.click(screen.getByRole('button', { name: /A4-документ/ }))
+
+    const titleInput = screen.getByDisplayValue('Новая доска')
+    await user.clear(titleInput)
+    await user.type(titleInput, 'Конспект A4')
+    await user.click(screen.getByRole('button', { name: 'Создать' }))
+
+    await waitFor(() =>
+      expect(testHarness.createNode).toHaveBeenCalledWith({
+        type: 'board',
+        parentId: null,
+        title: 'Конспект A4',
+        canvasMode: 'a4'
+      })
+    )
   })
 
   it('matches the study workspace layout, data cards, and search behavior', async () => {
