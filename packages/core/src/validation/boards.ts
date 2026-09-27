@@ -113,5 +113,6 @@ export const ensureNoteBoardInputSchema = z.object({
 })
 
 export const exportBoardPdfInputSchema = z.object({
+  nodeId: boardSafeIdSchema,
   title: z.string().trim().min(1).max(BOARD_DOCUMENT_LIMITS.maxTitleLength)
 })
