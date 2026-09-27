@@ -293,11 +293,27 @@ describe('BoardCanvas A4 mode', () => {
     expect(workspace.querySelector('[data-board-a4-stage]')).not.toBeInTheDocument()
     expect(workspace.querySelector('[data-board-a4-page-surface]')).not.toBeInTheDocument()
     expect(testHarness.flushQueue).toHaveBeenCalled()
-    expect(testHarness.renamePage).toHaveBeenCalledWith({ id: 'page:1', name: 'Page 1' }, 'Лист 1')
+    expect(testHarness.renamePage).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'page:1' }),
+      'A4'
+    )
+    expect(testHarness.updatePage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'page:1',
+        meta: expect.objectContaining({ mymindA4PageCount: 1 })
+      })
+    )
     expect(testHarness.zoomToBounds).toHaveBeenCalled()
   })
 
-  it('renders A4 boundaries directly on the full main tldraw canvas', async () => {
+  it('renders multiple A4 sheets one after another on the same canvas', async () => {
+    testHarness.pages = [
+      {
+        id: 'page:1',
+        name: 'A4',
+        meta: { mymindA4PageCount: 3 }
+      }
+    ]
     testHarness.getDocument.mockResolvedValueOnce({
       snapshot: {
         __mymindBoard: { version: 1, canvasMode: 'a4' },
@@ -308,15 +324,17 @@ describe('BoardCanvas A4 mode', () => {
     render(<BoardCanvas boardId="board-a4" title="Листы" />)
 
     const workspace = await screen.findByRole('region', { name: 'Холст доски' })
-    const boundary = workspace.querySelector('[data-board-a4-page-boundary]')
+    const boundaries = workspace.querySelectorAll('[data-board-a4-page-boundary]')
 
     expect(workspace).toHaveAttribute('data-board-canvas-mode', 'a4')
     expect(workspace).toHaveClass('tldraw__editor')
-    expect(boundary).toBeInTheDocument()
-    expect(workspace.querySelector('[data-board-a4-stage]')).not.toBeInTheDocument()
-    expect(workspace.querySelector('[data-board-a4-page-surface]')).not.toBeInTheDocument()
+    expect(boundaries).toHaveLength(3)
+    expect(screen.getByText('Лист 1')).toBeInTheDocument()
+    expect(screen.getByText('Лист 2')).toBeInTheDocument()
+    expect(screen.getByText('Лист 3')).toBeInTheDocument()
+    expect(screen.queryByText('Создать новую страницу')).not.toBeInTheDocument()
     expect(testHarness.zoomToBounds).toHaveBeenCalledWith(
-      expect.anything(),
+      expect.objectContaining({ y: 0, h: 1485 }),
       expect.objectContaining({ inset: 28, immediate: true })
     )
     expect(testHarness.registerBeforeCreateHandler).toHaveBeenCalledWith(
@@ -326,6 +344,107 @@ describe('BoardCanvas A4 mode', () => {
     expect(testHarness.registerBeforeChangeHandler).toHaveBeenCalledWith(
       'shape',
       expect.any(Function)
+    )
+  })
+
+  it('adds another physical A4 sheet below the current document', async () => {
+    const user = userEvent.setup()
+    testHarness.pages = [
+      {
+        id: 'page:1',
+        name: 'A4',
+        meta: { mymindA4PageCount: 1 }
+      }
+    ]
+    testHarness.getDocument.mockResolvedValueOnce({
+      snapshot: {
+        __mymindBoard: { version: 1, canvasMode: 'a4' },
+        tldraw: {}
+      }
+    })
+
+    render(<BoardCanvas boardId="board-a4-add" />)
+
+    await user.click(screen.getByRole('button', { name: 'Добавить лист A4' }))
+
+    expect(testHarness.pages[0]?.meta).toMatchObject({ mymindA4PageCount: 2 })
+    expect(testHarness.updatePage).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        id: 'page:1',
+        meta: expect.objectContaining({ mymindA4PageCount: 2 })
+      })
+    )
+    expect(screen.getByText('Лист 2')).toBeInTheDocument()
+    expect(testHarness.zoomToBounds).toHaveBeenLastCalledWith(
+      expect.objectContaining({ y: 1581, h: 1485 }),
+      expect.objectContaining({ inset: 28 })
+    )
+  })
+
+  it('migrates old separate tldraw pages into one continuous A4 strip', async () => {
+    testHarness.pages = [
+      { id: 'page:1', name: 'Лист 1', meta: {} },
+      { id: 'page:2', name: 'Страница 1', meta: {} },
+      { id: 'page:3', name: 'Страница 2', meta: {} }
+    ]
+    testHarness.currentPageId = 'page:2'
+    testHarness.shapes = new Map([
+      [
+        'shape:2',
+        {
+          id: 'shape:2',
+          type: 'geo',
+          parentId: 'page:2',
+          x: 120,
+          y: 100
+        }
+      ],
+      [
+        'shape:3',
+        {
+          id: 'shape:3',
+          type: 'geo',
+          parentId: 'page:3',
+          x: 220,
+          y: 200
+        }
+      ]
+    ])
+    testHarness.pageShapeIds = {
+      'page:1': [],
+      'page:2': ['shape:2'],
+      'page:3': ['shape:3']
+    }
+    testHarness.getDocument.mockResolvedValueOnce({
+      snapshot: {
+        __mymindBoard: { version: 1, canvasMode: 'a4' },
+        tldraw: {}
+      }
+    })
+
+    render(<BoardCanvas boardId="board-a4-legacy" />)
+
+    await screen.findByRole('region', { name: 'Холст доски' })
+
+    expect(testHarness.moveShapesToPage).toHaveBeenCalledWith(['shape:2'], 'page:1')
+    expect(testHarness.moveShapesToPage).toHaveBeenCalledWith(['shape:3'], 'page:1')
+    expect(testHarness.shapes.get('shape:2')).toMatchObject({
+      parentId: 'page:1',
+      x: 120,
+      y: 1681
+    })
+    expect(testHarness.shapes.get('shape:3')).toMatchObject({
+      parentId: 'page:1',
+      x: 220,
+      y: 3362
+    })
+    expect(testHarness.deletePage).toHaveBeenCalledWith('page:2')
+    expect(testHarness.deletePage).toHaveBeenCalledWith('page:3')
+    expect(testHarness.pages).toHaveLength(1)
+    expect(testHarness.pages[0]?.meta).toMatchObject({ mymindA4PageCount: 3 })
+    expect(testHarness.zoomToBounds).toHaveBeenCalledWith(
+      expect.objectContaining({ y: 1581, h: 1485 }),
+      expect.objectContaining({ inset: 28, immediate: true })
     )
   })
 
