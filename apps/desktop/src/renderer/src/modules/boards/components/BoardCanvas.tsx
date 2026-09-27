@@ -207,8 +207,7 @@ function A4CanvasBackground(): React.JSX.Element {
           width: paper.width,
           height: paper.height,
           outline: '2px solid rgba(30, 41, 59, 0.28)',
-          boxShadow:
-            '0 2px 8px rgba(15, 23, 42, 0.16), 0 28px 80px rgba(15, 23, 42, 0.28)'
+          boxShadow: '0 2px 8px rgba(15, 23, 42, 0.16), 0 28px 80px rgba(15, 23, 42, 0.28)'
         }}
       />
     </div>
@@ -437,19 +436,14 @@ export function BoardCanvas({
         }
 
         const tldrawSnapshot = JSON.parse(JSON.stringify(getSnapshot(store))) as BoardSnapshot
-        await boardsClient.saveDocument(
-          boardId,
-          createBoardSnapshotEnvelope('a4', tldrawSnapshot)
-        )
+        await boardsClient.saveDocument(boardId, createBoardSnapshotEnvelope('a4', tldrawSnapshot))
 
         setLoadState((current) =>
           current?.boardId === boardId ? { ...current, canvasMode: 'a4' } : current
         )
         onSaveStateChange?.('saved')
       } catch (reason: unknown) {
-        setExportError(
-          reason instanceof Error ? reason.message : 'Не удалось перевести доску в A4'
-        )
+        setExportError(reason instanceof Error ? reason.message : 'Не удалось перевести доску в A4')
       } finally {
         setIsConvertingToA4(false)
       }

@@ -166,10 +166,7 @@ describe('BoardCanvas A4 mode', () => {
     expect(workspace).toHaveAttribute('data-board-canvas-mode', 'a4')
     expect(screen.getByText('A4')).toBeInTheDocument()
     expect(testHarness.flushQueue).toHaveBeenCalled()
-    expect(testHarness.renamePage).toHaveBeenCalledWith(
-      { id: 'page:1', name: 'Page 1' },
-      'Лист 1'
-    )
+    expect(testHarness.renamePage).toHaveBeenCalledWith({ id: 'page:1', name: 'Page 1' }, 'Лист 1')
     expect(testHarness.zoomToBounds).toHaveBeenCalled()
   })
 })
