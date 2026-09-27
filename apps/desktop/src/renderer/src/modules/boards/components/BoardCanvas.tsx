@@ -537,8 +537,7 @@ export function BoardCanvas({
                 data-board-a4-page-surface
                 className="tldraw__editor relative overflow-hidden bg-white shadow-[0_18px_60px_rgba(15,23,42,0.28)] ring-1 ring-slate-400"
                 style={{
-                  height:
-                    'min(calc(100cqh - 40px), calc((100cqw - 40px) * 297 / 210))',
+                  width: 'min(calc(100cqw - 40px), calc(70.707cqh - 28.283px))',
                   aspectRatio: '210 / 297'
                 }}
               >
@@ -606,6 +605,10 @@ function installA4EditorConstraints(editor: Editor): () => void {
     (previousShape, nextShape) =>
       constrainShapeToA4(editor, nextShape, previousShape)
   )
+  const unregisterShapeCreate = editor.sideEffects.registerAfterCreateHandler(
+    'shape',
+    (shape) => fitStoredShapeInsideA4(editor, shape)
+  )
   const unregisterPageCreate = editor.sideEffects.registerAfterCreateHandler('page', (page) => {
     if (/^Page \\d+$/.test(page.name)) {
       const pageIndex = editor.getPages().findIndex((candidate) => candidate.id === page.id)
@@ -617,8 +620,40 @@ function installA4EditorConstraints(editor: Editor): () => void {
   return () => {
     unregisterCreate()
     unregisterChange()
+    unregisterShapeCreate()
     unregisterPageCreate()
   }
+}
+
+function fitStoredShapeInsideA4(editor: Editor, shape: TLShape): void {
+  if (shape.parentId !== editor.getCurrentPageId()) {
+    return
+  }
+
+  const bounds = editor.getShapePageBounds(shape)
+  if (!bounds) {
+    return
+  }
+
+  const pageRight = BOARD_A4_BOUNDS.x + BOARD_A4_BOUNDS.w
+  const pageBottom = BOARD_A4_BOUNDS.y + BOARD_A4_BOUNDS.h
+  const fitsWithoutResize =
+    bounds.x >= BOARD_A4_BOUNDS.x &&
+    bounds.y >= BOARD_A4_BOUNDS.y &&
+    bounds.maxX <= pageRight &&
+    bounds.maxY <= pageBottom
+
+  if (fitsWithoutResize) {
+    return
+  }
+
+  const scale = Math.min(1, BOARD_A4_BOUNDS.w / bounds.w, BOARD_A4_BOUNDS.h / bounds.h)
+  const width = Math.max(1, bounds.w * scale)
+  const height = Math.max(1, bounds.h * scale)
+  const x = Math.min(Math.max(bounds.x, BOARD_A4_BOUNDS.x), pageRight - width)
+  const y = Math.min(Math.max(bounds.y, BOARD_A4_BOUNDS.y), pageBottom - height)
+
+  editor.resizeToBounds([shape.id], { x, y, w: width, h: height })
 }
 
 function renameDefaultA4Pages(editor: Editor): void {
