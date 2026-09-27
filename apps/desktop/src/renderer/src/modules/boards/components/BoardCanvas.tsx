@@ -44,9 +44,7 @@ import { BoardSaveQueue, type BoardSaveState } from '../lib/board-save-queue'
 const assetUrls = getAssetUrlsByImport((assetUrl) => assetUrl)
 const BOARD_AUTOSAVE_DELAY_MS = 800
 
-const infiniteBoardOptions: Partial<TldrawOptions> = {
-  maxPages: 1
-}
+const infiniteBoardOptions: Partial<TldrawOptions> = {}
 
 const a4BoardOptions: Partial<TldrawOptions> = {
   maxPages: BOARD_A4_MAX_PAGES,
