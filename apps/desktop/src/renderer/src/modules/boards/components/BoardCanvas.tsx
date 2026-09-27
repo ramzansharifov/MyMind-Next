@@ -1,5 +1,6 @@
 import { getAssetUrlsByImport } from '@tldraw/assets/imports.vite'
 import {
+  Box,
   createTLStore,
   DefaultQuickActions,
   DefaultQuickActionsContent,
@@ -388,7 +389,12 @@ export function BoardCanvas({
           await nextAnimationFrame()
 
           const result = await editor.getSvgString([...editor.getCurrentPageShapeIds()], {
-            bounds: { ...BOARD_A4_BOUNDS },
+            bounds: new Box(
+              BOARD_A4_BOUNDS.x,
+              BOARD_A4_BOUNDS.y,
+              BOARD_A4_BOUNDS.w,
+              BOARD_A4_BOUNDS.h
+            ),
             padding: 0,
             background: false,
             darkMode: false,
