@@ -1158,7 +1158,9 @@ function BoardCanvasModeSelector({
               onClick={() => onChange(option.value)}
             >
               <span className="flex items-center gap-2 text-sm font-medium text-[var(--app-text)]">
-                <span className={active ? 'text-[var(--app-accent-300)]' : 'text-[var(--app-muted)]'}>
+                <span
+                  className={active ? 'text-[var(--app-accent-300)]' : 'text-[var(--app-muted)]'}
+                >
                   {option.icon}
                 </span>
                 {option.title}
