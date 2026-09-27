@@ -110,7 +110,11 @@ function BoardCanvasQuickActions(props: TLUiQuickActionsProps): React.JSX.Elemen
     <DefaultQuickActions {...props}>
       <DefaultQuickActionsContent />
       {controls?.canExportPdf && (
-        <Tooltip content="Экспортировать все листы A4 в PDF" side="bottom" contentClassName="z-[1000]">
+        <Tooltip
+          content="Экспортировать все листы A4 в PDF"
+          side="bottom"
+          contentClassName="z-[1000]"
+        >
           <TldrawUiButton
             type="icon"
             aria-label="Экспортировать доску в PDF"
