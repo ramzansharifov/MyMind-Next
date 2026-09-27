@@ -20,6 +20,14 @@ vi.mock('@tldraw/assets/imports.vite', () => ({
 }))
 
 vi.mock('tldraw', () => ({
+  Box: class BoxMock {
+    constructor(
+      public x: number,
+      public y: number,
+      public w: number,
+      public h: number
+    ) {}
+  },
   createTLStore: vi.fn(() => ({
     history: {
       get: vi.fn(() => 0)
@@ -35,6 +43,8 @@ vi.mock('tldraw', () => ({
   defaultShapeUtils: [],
   getSnapshot: vi.fn(() => ({})),
   react: vi.fn(() => testHarness.stopListening),
+  useEditor: vi.fn(),
+  useValue: vi.fn((_name: string, getter: () => unknown) => getter()),
   Tldraw: ({
     components
   }: {
