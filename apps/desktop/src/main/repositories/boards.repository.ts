@@ -207,8 +207,7 @@ export function createBoardNode(input: CreateBoardNodeInput): BoardNode {
         .insert(boardDocuments)
         .values({
           nodeId: id,
-          snapshot:
-            input.canvasMode === 'a4' ? createBoardSnapshotEnvelope('a4', null) : null,
+          snapshot: input.canvasMode === 'a4' ? createBoardSnapshotEnvelope('a4', null) : null,
           createdAt: now,
           updatedAt: now
         })
