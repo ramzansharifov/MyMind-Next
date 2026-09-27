@@ -12,7 +12,11 @@ const testHarness = vi.hoisted(() => ({
   updateQueue: vi.fn(),
   saveLatestQueue: vi.fn(),
   flushQueue: vi.fn(),
-  disposeQueue: vi.fn()
+  disposeQueue: vi.fn(),
+  zoomToBounds: vi.fn(),
+  renamePage: vi.fn(),
+  resizeToBounds: vi.fn(),
+  setCurrentPage: vi.fn()
 }))
 
 vi.mock('@tldraw/assets/imports.vite', () => ({
@@ -46,11 +50,25 @@ vi.mock('tldraw', () => ({
   useEditor: vi.fn(),
   useValue: vi.fn((_name: string, getter: () => unknown) => getter()),
   Tldraw: ({
-    components
+    components,
+    onMount
   }: {
     components?: { QuickActions?: (props: { children?: ReactNode }) => ReactElement }
+    onMount?: (editor: unknown) => void
   }) => {
     const QuickActions = components?.QuickActions
+    onMount?.({
+      getCurrentPageId: () => 'page:1',
+      getPages: () => [{ id: 'page:1', name: 'Page 1' }],
+      getPage: () => ({ id: 'page:1', name: 'Page 1' }),
+      setCurrentPage: testHarness.setCurrentPage,
+      renamePage: testHarness.renamePage,
+      getCurrentPageShapeIds: () => new Set(),
+      getCurrentPageBounds: () => undefined,
+      getShape: () => undefined,
+      resizeToBounds: testHarness.resizeToBounds,
+      zoomToBounds: testHarness.zoomToBounds
+    })
 
     return <div data-testid="tldraw-canvas">{QuickActions ? <QuickActions /> : null}</div>
   },
@@ -118,6 +136,39 @@ beforeEach(() => {
   testHarness.saveLatestQueue.mockReset()
   testHarness.flushQueue.mockReset()
   testHarness.disposeQueue.mockReset()
+  testHarness.zoomToBounds.mockReset()
+  testHarness.renamePage.mockReset()
+  testHarness.resizeToBounds.mockReset()
+  testHarness.setCurrentPage.mockReset()
+})
+
+describe('BoardCanvas A4 mode', () => {
+  it('converts an existing infinite board to A4 and persists the mode envelope', async () => {
+    const user = userEvent.setup()
+
+    render(<BoardCanvas boardId="board-convert" title="Черновик" />)
+
+    const workspace = await screen.findByRole('region', { name: 'Холст доски' })
+    expect(workspace).toHaveAttribute('data-board-canvas-mode', 'infinite')
+
+    await user.click(screen.getByRole('button', { name: 'Перевести доску в A4' }))
+
+    await vi.waitFor(() =>
+      expect(testHarness.saveDocument).toHaveBeenCalledWith(
+        'board-convert',
+        expect.objectContaining({
+          __mymindBoard: { version: 1, canvasMode: 'a4' },
+          tldraw: {}
+        })
+      )
+    )
+
+    expect(workspace).toHaveAttribute('data-board-canvas-mode', 'a4')
+    expect(screen.getByText('A4')).toBeInTheDocument()
+    expect(testHarness.flushQueue).toHaveBeenCalled()
+    expect(testHarness.renamePage).toHaveBeenCalledWith({ id: 'page:1', name: 'Page 1' }, 'Лист 1')
+    expect(testHarness.zoomToBounds).toHaveBeenCalled()
+  })
 })
 
 describe('BoardCanvas fullscreen mode', () => {

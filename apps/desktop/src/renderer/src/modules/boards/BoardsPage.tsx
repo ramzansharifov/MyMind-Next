@@ -71,7 +71,7 @@ export function BoardsPage({
   const [error, setError] = useState<string | null>(null)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [createRequest, setCreateRequest] = useState<BoardCreateRequest | null>(null)
-  const [createCanvasMode, setCreateCanvasMode] = useState<BoardCanvasMode>('infinite')
+  const [createCanvasMode, setCreateCanvasMode] = useState<BoardCanvasMode>('a4')
   const [renameTarget, setRenameTarget] = useState<BoardNode | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<BoardNode | null>(null)
   const [dialogValue, setDialogValue] = useState('')
@@ -171,7 +171,7 @@ export function BoardsPage({
       })
       await refreshNodes()
       setCreateRequest(null)
-      setCreateCanvasMode('infinite')
+      setCreateCanvasMode('a4')
       setDialogValue('')
       await openNode(created.id)
     } catch (reason: unknown) {
@@ -248,7 +248,7 @@ export function BoardsPage({
 
   function startCreate(type: BoardNodeType, parentId: string | null): void {
     setCreateRequest({ type, parentId })
-    setCreateCanvasMode('infinite')
+    setCreateCanvasMode('a4')
     setDialogValue(type === 'folder' ? 'Новая папка' : 'Новая доска')
   }
 
@@ -386,7 +386,7 @@ export function BoardsPage({
         onOpenChange={(open) => {
           if (!open && !isSubmitting) {
             setCreateRequest(null)
-            setCreateCanvasMode('infinite')
+            setCreateCanvasMode('a4')
           }
         }}
         onConfirm={() => void createNode()}
@@ -1125,22 +1125,27 @@ function BoardCanvasModeSelector({
     icon: ReactNode
   }> = [
     {
+      value: 'a4',
+      title: 'A4-документ',
+      description: 'Белые листы A4, несколько страниц и экспорт в PDF',
+      icon: <FileText aria-hidden="true" className="size-4" />
+    },
+    {
       value: 'infinite',
       title: 'Бесконечная',
       description: 'Свободный холст без границ',
       icon: <LayoutDashboard aria-hidden="true" className="size-4" />
-    },
-    {
-      value: 'a4',
-      title: 'A4-документ',
-      description: 'Несколько листов A4 с экспортом в PDF',
-      icon: <FileText aria-hidden="true" className="size-4" />
     }
   ]
 
   return (
     <div className="mt-4">
-      <p className="mb-2 text-xs font-medium text-[var(--app-muted)]">Формат доски</p>
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <p className="text-xs font-medium text-[var(--app-muted)]">Формат доски</p>
+        <span className="rounded-full border border-[var(--app-border)] bg-[var(--app-workspace)] px-2 py-0.5 text-[10px] font-semibold tracking-[0.08em] text-[var(--app-muted)] uppercase">
+          A4 по умолчанию
+        </span>
+      </div>
       <div className="grid grid-cols-2 gap-2 max-[520px]:grid-cols-1">
         {options.map((option) => {
           const active = option.value === value
