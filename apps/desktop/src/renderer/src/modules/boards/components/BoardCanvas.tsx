@@ -197,10 +197,7 @@ function A4PageBackground(): React.JSX.Element {
       const viewport = editor.getViewportPageBounds()
       const stride = BOARD_A4_BOUNDS.h + A4_PAGE_GAP
       const firstVisible = Math.max(0, Math.floor(viewport.y / stride) - 1)
-      const lastVisible = Math.min(
-        pageCount - 1,
-        Math.ceil(viewport.maxY / stride) + 1
-      )
+      const lastVisible = Math.min(pageCount - 1, Math.ceil(viewport.maxY / stride) + 1)
       const zoom = editor.getZoomLevel()
       const pages: Array<{
         index: number
@@ -700,9 +697,11 @@ function getNearestA4PageIndex(centerY: number, pageCount: number): number {
   return Math.min(pageCount - 1, Math.max(0, rawIndex))
 }
 
-function migrateLegacyA4Pages(
-  editor: Editor
-): { pageCount: number; focusPageIndex: number; didMigrate: boolean } {
+function migrateLegacyA4Pages(editor: Editor): {
+  pageCount: number
+  focusPageIndex: number
+  didMigrate: boolean
+} {
   const pages = editor.getPages()
   if (pages.length <= 1) {
     const pageCount = getA4PageCount(editor)
@@ -790,9 +789,7 @@ function fitStoredShapeInsideA4(editor: Editor, shape: TLShape): void {
   }
 
   const pageCount = getA4PageCount(editor)
-  const targetPage = getA4PageBox(
-    getNearestA4PageIndex(bounds.y + bounds.h / 2, pageCount)
-  )
+  const targetPage = getA4PageBox(getNearestA4PageIndex(bounds.y + bounds.h / 2, pageCount))
   const pageRight = targetPage.x + targetPage.w
   const pageBottom = targetPage.y + targetPage.h
   const fitsWithoutResize =
@@ -844,9 +841,7 @@ function constrainShapeToA4<T extends TLShape>(editor: Editor, shape: T, fallbac
   }
 
   const pageCount = getA4PageCount(editor)
-  const targetPage = getA4PageBox(
-    getNearestA4PageIndex((minY + maxY) / 2, pageCount)
-  )
+  const targetPage = getA4PageBox(getNearestA4PageIndex((minY + maxY) / 2, pageCount))
   let deltaX = 0
   let deltaY = 0
 
