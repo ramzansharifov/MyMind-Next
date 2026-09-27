@@ -146,7 +146,7 @@ describe('BoardsPage', () => {
 
     testHarness.listNodes
       .mockResolvedValueOnce([systemFolder])
-      .mockResolvedValueOnce([systemFolder, a4Board])
+      .mockResolvedValueOnce([systemFolder])
     testHarness.createNode.mockResolvedValueOnce(a4Board)
 
     render(<BoardsPage />)
