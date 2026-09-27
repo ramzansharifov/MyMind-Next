@@ -153,7 +153,12 @@ describe('BoardsPage', () => {
 
     await screen.findByRole('heading', { name: 'Доски', level: 1 })
     await user.click(screen.getByRole('button', { name: 'Новая доска' }))
-    await user.click(screen.getByRole('button', { name: /A4-документ/ }))
+
+    expect(screen.getByRole('button', { name: /A4-документ/ })).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    )
+    expect(screen.getByText('A4 по умолчанию')).toBeInTheDocument()
 
     const titleInput = screen.getByDisplayValue('Новая доска')
     await user.clear(titleInput)
