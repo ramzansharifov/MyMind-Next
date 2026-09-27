@@ -1,9 +1,4 @@
-import {
-  dialog,
-  type BrowserWindow,
-  type SaveDialogOptions,
-  type WebContents
-} from 'electron'
+import { dialog, type BrowserWindow, type SaveDialogOptions, type WebContents } from 'electron'
 import { writeFile } from 'node:fs/promises'
 
 import type { ExportBoardPdfResult } from '../../shared/contracts/boards'
@@ -19,10 +14,14 @@ export function createBoardPdfFileName(title: string): string {
     .replace(/[. ]+$/g, '')
 
   if (/\.pdf$/i.test(normalized)) {
-    normalized = normalized.slice(0, -4).trimEnd().replace(/[. ]+$/g, '')
+    normalized = normalized
+      .slice(0, -4)
+      .trimEnd()
+      .replace(/[. ]+$/g, '')
   }
 
-  const safeStem = normalized && !WINDOWS_RESERVED_FILE_NAMES.test(normalized) ? normalized : 'Доска'
+  const safeStem =
+    normalized && !WINDOWS_RESERVED_FILE_NAMES.test(normalized) ? normalized : 'Доска'
   return `${safeStem}.pdf`
 }
 
