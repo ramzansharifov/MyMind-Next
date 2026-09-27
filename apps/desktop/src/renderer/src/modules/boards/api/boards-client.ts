@@ -8,6 +8,8 @@ import {
   type CreateBoardNodeInput,
   type EnsureNoteBoardInput,
   type EnsureStudyBoardInput,
+  type ExportBoardPdfInput,
+  type ExportBoardPdfResult,
   type MoveBoardNodeInput
 } from '../../../../../shared/contracts/boards'
 import type { StudyFolderIconName } from '../../../../../shared/contracts/study'
@@ -167,5 +169,9 @@ export const boardsClient = {
 
   async ensureNoteBoard(input: EnsureNoteBoardInput): Promise<BoardNode> {
     return getBoardApi().ensureNoteBoard(input)
+  },
+
+  async exportPdf(input: ExportBoardPdfInput): Promise<ExportBoardPdfResult> {
+    return getBoardApi().exportPdf(input)
   }
 }
