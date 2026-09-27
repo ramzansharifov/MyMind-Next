@@ -237,6 +237,7 @@ beforeEach(() => {
   testHarness.getDocument.mockReset()
   testHarness.getDocument.mockResolvedValue({ snapshot: null })
   testHarness.saveDocument.mockReset()
+  testHarness.saveDocument.mockResolvedValue({})
   testHarness.disposeStore.mockReset()
   testHarness.stopListening.mockReset()
   testHarness.unregisterDraft.mockReset()
