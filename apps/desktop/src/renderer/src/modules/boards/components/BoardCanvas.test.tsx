@@ -16,7 +16,13 @@ const testHarness = vi.hoisted(() => ({
   zoomToBounds: vi.fn(),
   renamePage: vi.fn(),
   resizeToBounds: vi.fn(),
-  setCurrentPage: vi.fn()
+  setCurrentPage: vi.fn(),
+  registerBeforeCreateHandler: vi.fn(),
+  registerBeforeChangeHandler: vi.fn(),
+  registerAfterCreateHandler: vi.fn(),
+  unregisterBeforeCreate: vi.fn(),
+  unregisterBeforeChange: vi.fn(),
+  unregisterAfterCreate: vi.fn()
 }))
 
 vi.mock('@tldraw/assets/imports.vite', () => ({
@@ -47,8 +53,6 @@ vi.mock('tldraw', () => ({
   defaultShapeUtils: [],
   getSnapshot: vi.fn(() => ({})),
   react: vi.fn(() => testHarness.stopListening),
-  useEditor: vi.fn(),
-  useValue: vi.fn((_name: string, getter: () => unknown) => getter()),
   Tldraw: ({
     components,
     onMount
@@ -61,6 +65,20 @@ vi.mock('tldraw', () => ({
       getCurrentPageId: () => 'page:1',
       getPages: () => [{ id: 'page:1', name: 'Page 1' }],
       getPage: () => ({ id: 'page:1', name: 'Page 1' }),
+      sideEffects: {
+        registerBeforeCreateHandler: testHarness.registerBeforeCreateHandler,
+        registerBeforeChangeHandler: testHarness.registerBeforeChangeHandler,
+        registerAfterCreateHandler: testHarness.registerAfterCreateHandler
+      },
+      getShapeUtil: () => ({
+        getGeometry: (shape: { props?: { w?: number; h?: number } }) => {
+          const w = shape.props?.w ?? 100
+          const h = shape.props?.h ?? 100
+          return {
+            bounds: { x: 0, y: 0, w, h, maxX: w, maxY: h }
+          }
+        }
+      }),
       setCurrentPage: testHarness.setCurrentPage,
       renamePage: testHarness.renamePage,
       getCurrentPageShapeIds: () => new Set(),
@@ -140,6 +158,15 @@ beforeEach(() => {
   testHarness.renamePage.mockReset()
   testHarness.resizeToBounds.mockReset()
   testHarness.setCurrentPage.mockReset()
+  testHarness.registerBeforeCreateHandler.mockReset()
+  testHarness.registerBeforeChangeHandler.mockReset()
+  testHarness.registerAfterCreateHandler.mockReset()
+  testHarness.unregisterBeforeCreate.mockReset()
+  testHarness.unregisterBeforeChange.mockReset()
+  testHarness.unregisterAfterCreate.mockReset()
+  testHarness.registerBeforeCreateHandler.mockReturnValue(testHarness.unregisterBeforeCreate)
+  testHarness.registerBeforeChangeHandler.mockReturnValue(testHarness.unregisterBeforeChange)
+  testHarness.registerAfterCreateHandler.mockReturnValue(testHarness.unregisterAfterCreate)
 })
 
 describe('BoardCanvas A4 mode', () => {
@@ -164,10 +191,90 @@ describe('BoardCanvas A4 mode', () => {
     )
 
     expect(workspace).toHaveAttribute('data-board-canvas-mode', 'a4')
-    expect(screen.getByText('A4')).toBeInTheDocument()
+    expect(workspace.querySelector('[data-board-a4-stage]')).toBeInTheDocument()
+    expect(workspace.querySelector('[data-board-a4-page-surface]')).toBeInTheDocument()
     expect(testHarness.flushQueue).toHaveBeenCalled()
     expect(testHarness.renamePage).toHaveBeenCalledWith({ id: 'page:1', name: 'Page 1' }, 'Лист 1')
     expect(testHarness.zoomToBounds).toHaveBeenCalled()
+  })
+
+  it('renders A4 as the editor surface instead of a rectangle inside an infinite canvas', async () => {
+    testHarness.getDocument.mockResolvedValueOnce({
+      snapshot: {
+        __mymindBoard: { version: 1, canvasMode: 'a4' },
+        tldraw: {}
+      }
+    })
+
+    render(<BoardCanvas boardId="board-a4" title="Листы" />)
+
+    const workspace = await screen.findByRole('region', { name: 'Холст доски' })
+    const stage = workspace.querySelector('[data-board-a4-stage]')
+    const pageSurface = workspace.querySelector('[data-board-a4-page-surface]')
+
+    expect(workspace).toHaveAttribute('data-board-canvas-mode', 'a4')
+    expect(workspace).not.toHaveClass('tldraw__editor')
+    expect(stage).toBeInTheDocument()
+    expect(pageSurface).toBeInTheDocument()
+    expect(pageSurface).toHaveClass('tldraw__editor', 'overflow-hidden', 'bg-white')
+    expect(testHarness.zoomToBounds).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ inset: 0, immediate: true })
+    )
+    expect(testHarness.registerBeforeCreateHandler).toHaveBeenCalledWith(
+      'shape',
+      expect.any(Function)
+    )
+    expect(testHarness.registerBeforeChangeHandler).toHaveBeenCalledWith(
+      'shape',
+      expect.any(Function)
+    )
+  })
+
+  it('clamps top-level shapes so they cannot be moved outside the A4 page', async () => {
+    testHarness.getDocument.mockResolvedValueOnce({
+      snapshot: {
+        __mymindBoard: { version: 1, canvasMode: 'a4' },
+        tldraw: {}
+      }
+    })
+
+    render(<BoardCanvas boardId="board-a4-bounds" />)
+
+    await screen.findByRole('region', { name: 'Холст доски' })
+
+    const handler = testHarness.registerBeforeChangeHandler.mock.calls[0]?.[1] as (
+      previous: Record<string, unknown>,
+      next: Record<string, unknown>
+    ) => Record<string, unknown>
+
+    const previous = {
+      id: 'shape:1',
+      typeName: 'shape',
+      type: 'geo',
+      parentId: 'page:1',
+      x: 900,
+      y: 1300,
+      rotation: 0,
+      props: { w: 100, h: 100 }
+    }
+    const next = {
+      ...previous,
+      x: 1020,
+      y: 1450
+    }
+
+    expect(handler(previous, next)).toMatchObject({
+      x: 950,
+      y: 1385
+    })
+
+    const oversized = {
+      ...next,
+      props: { w: 1200, h: 100 }
+    }
+
+    expect(handler(previous, oversized)).toBe(previous)
   })
 })
 

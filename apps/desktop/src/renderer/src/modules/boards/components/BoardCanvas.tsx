@@ -11,11 +11,10 @@ import {
   react,
   Tldraw,
   TldrawUiButton,
-  useEditor,
-  useValue,
   type Editor,
   type TLComponents,
   type TLEditorSnapshot,
+  type TLShape,
   type TLStore,
   type TLUiQuickActionsProps,
   type TldrawOptions
@@ -45,13 +44,20 @@ const assetUrls = getAssetUrlsByImport((assetUrl) => assetUrl)
 const BOARD_AUTOSAVE_DELAY_MS = 800
 
 const infiniteBoardOptions: Partial<TldrawOptions> = {}
+const A4_PAGE_BOX = new Box(
+  BOARD_A4_BOUNDS.x,
+  BOARD_A4_BOUNDS.y,
+  BOARD_A4_BOUNDS.w,
+  BOARD_A4_BOUNDS.h
+)
 
 const a4BoardOptions: Partial<TldrawOptions> = {
   maxPages: BOARD_A4_MAX_PAGES,
   camera: {
+    zoomSteps: [1, 1.25, 1.5, 2, 3, 4, 6, 8],
     constraints: {
       bounds: { ...BOARD_A4_BOUNDS },
-      padding: { x: 48, y: 48 },
+      padding: { x: 0, y: 0 },
       origin: { x: 0.5, y: 0.5 },
       initialZoom: 'fit-max',
       baseZoom: 'fit-max',
@@ -101,7 +107,7 @@ const boardCanvasComponents: TLComponents = {
 
 const a4BoardCanvasComponents: TLComponents = {
   QuickActions: BoardCanvasQuickActions,
-  Background: A4CanvasBackground
+  Background: A4PageBackground
 }
 
 function BoardCanvasQuickActions(props: TLUiQuickActionsProps): React.JSX.Element {
@@ -171,47 +177,8 @@ function BoardCanvasQuickActions(props: TLUiQuickActionsProps): React.JSX.Elemen
   )
 }
 
-function A4CanvasBackground(): React.JSX.Element {
-  const editor = useEditor()
-  const paper = useValue(
-    'A4 paper bounds',
-    () => {
-      const topLeft = editor.pageToViewport({ x: BOARD_A4_BOUNDS.x, y: BOARD_A4_BOUNDS.y })
-      const zoom = editor.getZoomLevel()
-
-      return {
-        left: topLeft.x,
-        top: topLeft.y,
-        width: BOARD_A4_BOUNDS.w * zoom,
-        height: BOARD_A4_BOUNDS.h * zoom
-      }
-    },
-    [editor]
-  )
-
-  return (
-    <div
-      className="pointer-events-none absolute inset-0"
-      aria-hidden="true"
-      style={{
-        background:
-          'linear-gradient(135deg, rgba(255,255,255,0.34), rgba(255,255,255,0) 42%), #d6dbe2'
-      }}
-    >
-      <div
-        className="absolute bg-white"
-        style={{
-          pointerEvents: 'none',
-          left: paper.left,
-          top: paper.top,
-          width: paper.width,
-          height: paper.height,
-          outline: '2px solid rgba(30, 41, 59, 0.28)',
-          boxShadow: '0 2px 8px rgba(15, 23, 42, 0.16), 0 28px 80px rgba(15, 23, 42, 0.28)'
-        }}
-      />
-    </div>
-  )
+function A4PageBackground(): React.JSX.Element {
+  return <div className="pointer-events-none absolute inset-0 bg-white" aria-hidden="true" />
 }
 
 export function BoardCanvas({
@@ -387,21 +354,16 @@ export function BoardCanvas({
     (editor: Editor) => {
       editorRef.current = editor
 
+      const disposeA4Constraints =
+        canvasMode === 'a4' ? installA4EditorConstraints(editor) : undefined
+
       if (canvasMode === 'a4') {
-        const pages = editor.getPages()
-        const firstPage = pages[0]
-
-        if (pages.length === 1 && firstPage?.name === 'Page 1') {
-          editor.renamePage(firstPage, 'Лист 1')
-        }
-
-        editor.zoomToBounds(
-          new Box(BOARD_A4_BOUNDS.x, BOARD_A4_BOUNDS.y, BOARD_A4_BOUNDS.w, BOARD_A4_BOUNDS.h),
-          { inset: 72, immediate: true }
-        )
+        renameDefaultA4Pages(editor)
+        editor.zoomToBounds(A4_PAGE_BOX, { inset: 0, immediate: true })
       }
 
       return () => {
+        disposeA4Constraints?.()
         if (editorRef.current === editor) {
           editorRef.current = null
         }
@@ -560,43 +522,64 @@ export function BoardCanvas({
           data-board-fullscreen={isFullscreen}
           data-board-focus-mode={focusMode}
           className={cn(
-            'mymind-board-canvas tldraw__editor relative h-full min-h-0 w-full overflow-hidden bg-[var(--app-workspace)]',
+            'mymind-board-canvas relative h-full min-h-0 w-full overflow-hidden bg-[var(--app-workspace)]',
+            canvasMode !== 'a4' && 'tldraw__editor',
             isLocalFullscreen && 'app-fullscreen-bounds fixed z-40 h-auto w-screen'
           )}
         >
-          <Tldraw
-            key={`${boardId}:${canvasMode}`}
-            store={store}
-            assetUrls={assetUrls}
-            colorScheme={canvasMode === 'a4' ? 'light' : resolvedTheme}
-            components={canvasMode === 'a4' ? a4BoardCanvasComponents : boardCanvasComponents}
-            options={canvasMode === 'a4' ? a4BoardOptions : infiniteBoardOptions}
-            onMount={handleEditorMount}
-          />
           {canvasMode === 'a4' ? (
-            <div className="pointer-events-none absolute top-3 left-1/2 z-[1000] -translate-x-1/2">
-              <div className="flex items-center gap-2 rounded-full border border-slate-300 bg-white/95 px-3 py-1.5 text-xs font-semibold tracking-[0.08em] text-slate-700 shadow-lg backdrop-blur">
-                <FileText aria-hidden="true" className="size-3.5" />
-                A4
+            <div
+              data-board-a4-stage
+              className="flex h-full min-h-0 w-full items-center justify-center overflow-hidden bg-slate-300 p-5"
+              style={{ containerType: 'size' }}
+            >
+              <div
+                data-board-a4-page-surface
+                className="tldraw__editor relative overflow-hidden bg-white shadow-[0_18px_60px_rgba(15,23,42,0.28)] ring-1 ring-slate-400"
+                style={{
+                  width: 'min(calc(100cqw - 40px), calc(70.707cqh - 28.283px))',
+                  aspectRatio: '210 / 297'
+                }}
+              >
+                <Tldraw
+                  key={`${boardId}:a4`}
+                  store={store}
+                  assetUrls={assetUrls}
+                  colorScheme="light"
+                  components={a4BoardCanvasComponents}
+                  options={a4BoardOptions}
+                  onMount={handleEditorMount}
+                />
               </div>
             </div>
           ) : (
-            <div className="absolute top-3 left-1/2 z-[1000] -translate-x-1/2">
-              <button
-                type="button"
-                aria-label="Перевести эту доску в A4"
-                disabled={isConvertingToA4}
-                className="flex items-center gap-2 rounded-full border border-[var(--app-border)] bg-[var(--app-surface-raised)]/95 px-3 py-1.5 text-xs font-semibold text-[var(--app-text)] shadow-lg backdrop-blur transition-colors hover:bg-[var(--app-control-hover)] disabled:cursor-wait disabled:opacity-60"
-                onClick={convertToA4}
-              >
-                {isConvertingToA4 ? (
-                  <LoaderCircle aria-hidden="true" className="size-3.5 animate-spin" />
-                ) : (
-                  <FileText aria-hidden="true" className="size-3.5" />
-                )}
-                Сделать A4
-              </button>
-            </div>
+            <>
+              <Tldraw
+                key={`${boardId}:infinite`}
+                store={store}
+                assetUrls={assetUrls}
+                colorScheme={resolvedTheme}
+                components={boardCanvasComponents}
+                options={infiniteBoardOptions}
+                onMount={handleEditorMount}
+              />
+              <div className="absolute top-3 left-1/2 z-[1000] -translate-x-1/2">
+                <button
+                  type="button"
+                  aria-label="Перевести эту доску в A4"
+                  disabled={isConvertingToA4}
+                  className="flex items-center gap-2 rounded-full border border-[var(--app-border)] bg-[var(--app-surface-raised)]/95 px-3 py-1.5 text-xs font-semibold text-[var(--app-text)] shadow-lg backdrop-blur transition-colors hover:bg-[var(--app-control-hover)] disabled:cursor-wait disabled:opacity-60"
+                  onClick={convertToA4}
+                >
+                  {isConvertingToA4 ? (
+                    <LoaderCircle aria-hidden="true" className="size-3.5 animate-spin" />
+                  ) : (
+                    <FileText aria-hidden="true" className="size-3.5" />
+                  )}
+                  Сделать A4
+                </button>
+              </div>
+            </>
           )}
           {exportError && (
             <div
@@ -613,6 +596,127 @@ export function BoardCanvas({
   )
 }
 
+function installA4EditorConstraints(editor: Editor): () => void {
+  const unregisterCreate = editor.sideEffects.registerBeforeCreateHandler('shape', (shape) =>
+    constrainShapeToA4(editor, shape)
+  )
+  const unregisterChange = editor.sideEffects.registerBeforeChangeHandler(
+    'shape',
+    (previousShape, nextShape) => constrainShapeToA4(editor, nextShape, previousShape)
+  )
+  const unregisterShapeCreate = editor.sideEffects.registerAfterCreateHandler('shape', (shape) =>
+    fitStoredShapeInsideA4(editor, shape)
+  )
+  const unregisterPageCreate = editor.sideEffects.registerAfterCreateHandler('page', (page) => {
+    if (/^Page \d+$/.test(page.name)) {
+      const pageIndex = editor.getPages().findIndex((candidate) => candidate.id === page.id)
+      editor.renamePage(page, `Лист ${pageIndex + 1}`)
+    }
+    editor.zoomToBounds(A4_PAGE_BOX, { inset: 0, immediate: true })
+  })
+
+  return () => {
+    unregisterCreate()
+    unregisterChange()
+    unregisterShapeCreate()
+    unregisterPageCreate()
+  }
+}
+
+function fitStoredShapeInsideA4(editor: Editor, shape: TLShape): void {
+  if (shape.parentId !== editor.getCurrentPageId()) {
+    return
+  }
+
+  const bounds = editor.getShapePageBounds(shape)
+  if (!bounds) {
+    return
+  }
+
+  const pageRight = BOARD_A4_BOUNDS.x + BOARD_A4_BOUNDS.w
+  const pageBottom = BOARD_A4_BOUNDS.y + BOARD_A4_BOUNDS.h
+  const fitsWithoutResize =
+    bounds.x >= BOARD_A4_BOUNDS.x &&
+    bounds.y >= BOARD_A4_BOUNDS.y &&
+    bounds.maxX <= pageRight &&
+    bounds.maxY <= pageBottom
+
+  if (fitsWithoutResize) {
+    return
+  }
+
+  const scale = Math.min(1, BOARD_A4_BOUNDS.w / bounds.w, BOARD_A4_BOUNDS.h / bounds.h)
+  const width = Math.max(1, bounds.w * scale)
+  const height = Math.max(1, bounds.h * scale)
+  const x = Math.min(Math.max(bounds.x, BOARD_A4_BOUNDS.x), pageRight - width)
+  const y = Math.min(Math.max(bounds.y, BOARD_A4_BOUNDS.y), pageBottom - height)
+
+  editor.resizeToBounds([shape.id], { x, y, w: width, h: height })
+}
+
+function renameDefaultA4Pages(editor: Editor): void {
+  editor.getPages().forEach((page, index) => {
+    if (/^Page \d+$/.test(page.name)) {
+      editor.renamePage(page, `Лист ${index + 1}`)
+    }
+  })
+}
+
+function constrainShapeToA4<T extends TLShape>(editor: Editor, shape: T, fallback?: T): T {
+  if (shape.parentId !== editor.getCurrentPageId()) {
+    return shape
+  }
+
+  const localBounds = editor.getShapeUtil(shape).getGeometry(shape).bounds
+  const cos = Math.cos(shape.rotation)
+  const sin = Math.sin(shape.rotation)
+  const corners = [
+    [localBounds.x, localBounds.y],
+    [localBounds.maxX, localBounds.y],
+    [localBounds.maxX, localBounds.maxY],
+    [localBounds.x, localBounds.maxY]
+  ].map(([x, y]) => ({
+    x: shape.x + x * cos - y * sin,
+    y: shape.y + x * sin + y * cos
+  }))
+
+  const minX = Math.min(...corners.map((point) => point.x))
+  const maxX = Math.max(...corners.map((point) => point.x))
+  const minY = Math.min(...corners.map((point) => point.y))
+  const maxY = Math.max(...corners.map((point) => point.y))
+  const width = maxX - minX
+  const height = maxY - minY
+
+  if (width > BOARD_A4_BOUNDS.w || height > BOARD_A4_BOUNDS.h) {
+    return fallback ?? shape
+  }
+
+  let deltaX = 0
+  let deltaY = 0
+
+  if (minX < BOARD_A4_BOUNDS.x) {
+    deltaX = BOARD_A4_BOUNDS.x - minX
+  } else if (maxX > BOARD_A4_BOUNDS.x + BOARD_A4_BOUNDS.w) {
+    deltaX = BOARD_A4_BOUNDS.x + BOARD_A4_BOUNDS.w - maxX
+  }
+
+  if (minY < BOARD_A4_BOUNDS.y) {
+    deltaY = BOARD_A4_BOUNDS.y - minY
+  } else if (maxY > BOARD_A4_BOUNDS.y + BOARD_A4_BOUNDS.h) {
+    deltaY = BOARD_A4_BOUNDS.y + BOARD_A4_BOUNDS.h - maxY
+  }
+
+  if (deltaX === 0 && deltaY === 0) {
+    return shape
+  }
+
+  return {
+    ...shape,
+    x: shape.x + deltaX,
+    y: shape.y + deltaY
+  }
+}
+
 function prepareEditorForA4(editor: Editor): void {
   const originalPageId = editor.getCurrentPageId()
   const pages = editor.getPages()
@@ -623,7 +727,7 @@ function prepareEditorForA4(editor: Editor): void {
   pages.forEach((page, index) => {
     editor.setCurrentPage(page.id)
 
-    if (/^Page \\d+$/.test(page.name)) {
+    if (/^Page \d+$/.test(page.name)) {
       editor.renamePage(page, `Лист ${index + 1}`)
     }
 
