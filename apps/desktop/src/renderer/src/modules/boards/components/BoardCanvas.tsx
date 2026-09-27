@@ -22,7 +22,15 @@ import {
   type TldrawOptions
 } from 'tldraw'
 import 'tldraw/tldraw.css'
-import { FileDown, FileText, LoaderCircle, Maximize2, Minimize2, TriangleAlert } from 'lucide-react'
+import {
+  FileDown,
+  FilePlus2,
+  FileText,
+  LoaderCircle,
+  Maximize2,
+  Minimize2,
+  TriangleAlert
+} from 'lucide-react'
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 
@@ -46,25 +54,13 @@ const assetUrls = getAssetUrlsByImport((assetUrl) => assetUrl)
 const BOARD_AUTOSAVE_DELAY_MS = 800
 
 const infiniteBoardOptions: Partial<TldrawOptions> = {}
-const A4_PAGE_BOX = new Box(
-  BOARD_A4_BOUNDS.x,
-  BOARD_A4_BOUNDS.y,
-  BOARD_A4_BOUNDS.w,
-  BOARD_A4_BOUNDS.h
-)
+const A4_PAGE_GAP = 96
+const A4_PAGE_META_KEY = 'mymindA4PageCount'
 
 const a4BoardOptions: Partial<TldrawOptions> = {
-  maxPages: BOARD_A4_MAX_PAGES,
-  camera: {
-    constraints: {
-      bounds: { ...BOARD_A4_BOUNDS },
-      padding: { x: 28, y: 28 },
-      origin: { x: 0.5, y: 0.5 },
-      initialZoom: 'fit-max',
-      baseZoom: 'fit-max',
-      behavior: { x: 'contain', y: 'contain' }
-    }
-  }
+  // A4 sheets live on one continuous tldraw page. Native tldraw pages are migrated
+  // into this vertical strip and disabled afterwards.
+  maxPages: 1
 }
 
 interface BoardLoadState {
@@ -89,6 +85,9 @@ interface BoardCanvasUiContextValue {
   canExportPdf: boolean
   isExportingPdf: boolean
   exportPdf: () => void
+  canAddA4Page: boolean
+  a4PageCount: number
+  addA4Page: () => void
   canConvertToA4: boolean
   isConvertingToA4: boolean
   convertToA4: () => void
@@ -137,6 +136,17 @@ function BoardCanvasQuickActions(props: TLUiQuickActionsProps): React.JSX.Elemen
           </TldrawUiButton>
         </Tooltip>
       )}
+      {controls?.canAddA4Page && (
+        <Tooltip
+          content={`Добавить лист A4 · сейчас ${controls.a4PageCount}`}
+          side="bottom"
+          contentClassName="z-[1000]"
+        >
+          <TldrawUiButton type="icon" aria-label="Добавить лист A4" onClick={controls.addA4Page}>
+            <FilePlus2 aria-hidden="true" className="size-4" />
+          </TldrawUiButton>
+        </Tooltip>
+      )}
       {controls?.canExportPdf && (
         <Tooltip
           content="Экспортировать все листы A4 в PDF"
@@ -180,18 +190,39 @@ function BoardCanvasQuickActions(props: TLUiQuickActionsProps): React.JSX.Elemen
 
 function A4PageBackground(): React.JSX.Element {
   const editor = useEditor()
-  const paper = useValue(
-    'A4 paper bounds',
+  const visiblePages = useValue(
+    'continuous A4 pages',
     () => {
-      const topLeft = editor.pageToViewport({ x: BOARD_A4_BOUNDS.x, y: BOARD_A4_BOUNDS.y })
+      const pageCount = getA4PageCount(editor)
+      const viewport = editor.getViewportPageBounds()
+      const stride = BOARD_A4_BOUNDS.h + A4_PAGE_GAP
+      const firstVisible = Math.max(0, Math.floor(viewport.y / stride) - 1)
+      const lastVisible = Math.min(
+        pageCount - 1,
+        Math.ceil(viewport.maxY / stride) + 1
+      )
       const zoom = editor.getZoomLevel()
+      const pages: Array<{
+        index: number
+        left: number
+        top: number
+        width: number
+        height: number
+      }> = []
 
-      return {
-        left: topLeft.x,
-        top: topLeft.y,
-        width: BOARD_A4_BOUNDS.w * zoom,
-        height: BOARD_A4_BOUNDS.h * zoom
+      for (let index = firstVisible; index <= lastVisible; index += 1) {
+        const bounds = getA4PageBox(index)
+        const topLeft = editor.pageToViewport({ x: bounds.x, y: bounds.y })
+        pages.push({
+          index,
+          left: topLeft.x,
+          top: topLeft.y,
+          width: bounds.w * zoom,
+          height: bounds.h * zoom
+        })
       }
+
+      return pages
     },
     [editor]
   )
@@ -201,17 +232,25 @@ function A4PageBackground(): React.JSX.Element {
       className="pointer-events-none absolute inset-0 bg-[var(--app-workspace)]"
       aria-hidden="true"
     >
-      <div
-        data-board-a4-page-boundary
-        className="absolute bg-white shadow-[0_22px_60px_rgba(0,0,0,0.28)]"
-        style={{
-          left: paper.left,
-          top: paper.top,
-          width: paper.width,
-          height: paper.height,
-          border: '1px solid rgba(148, 163, 184, 0.55)'
-        }}
-      />
+      {visiblePages.map((page) => (
+        <div
+          key={page.index}
+          data-board-a4-page-boundary
+          data-board-a4-page-index={page.index}
+          className="absolute bg-white shadow-[0_22px_60px_rgba(0,0,0,0.28)]"
+          style={{
+            left: page.left,
+            top: page.top,
+            width: page.width,
+            height: page.height,
+            border: '1px solid rgba(148, 163, 184, 0.55)'
+          }}
+        >
+          <span className="absolute top-3 left-4 rounded-md bg-slate-100/90 px-2 py-1 text-[11px] font-medium text-slate-500 shadow-sm">
+            Лист {page.index + 1}
+          </span>
+        </div>
+      ))}
     </div>
   )
 }
@@ -228,6 +267,7 @@ export function BoardCanvas({
   const [fullscreenBoardId, setFullscreenBoardId] = useState<string | null>(null)
   const [pdfPages, setPdfPages] = useState<BoardPdfPage[] | null>(null)
   const [isExportingPdf, setIsExportingPdf] = useState(false)
+  const [a4PageCount, setA4PageCount] = useState(1)
   const [isConvertingToA4, setIsConvertingToA4] = useState(false)
   const [exportError, setExportError] = useState<string | null>(null)
   const saveTimerRef = useRef<number | null>(null)
@@ -389,12 +429,16 @@ export function BoardCanvas({
     (editor: Editor) => {
       editorRef.current = editor
 
-      const disposeA4Constraints =
-        canvasMode === 'a4' ? installA4EditorConstraints(editor) : undefined
+      let disposeA4Constraints: (() => void) | undefined
 
       if (canvasMode === 'a4') {
-        renameDefaultA4Pages(editor)
-        editor.zoomToBounds(A4_PAGE_BOX, { inset: 28, immediate: true })
+        const migration = migrateLegacyA4Pages(editor)
+        setA4PageCount(migration.pageCount)
+        disposeA4Constraints = installA4EditorConstraints(editor)
+        editor.zoomToBounds(getA4PageBox(migration.focusPageIndex), {
+          inset: 28,
+          immediate: true
+        })
       }
 
       return () => {
@@ -406,6 +450,26 @@ export function BoardCanvas({
     },
     [canvasMode]
   )
+
+  const addA4Page = useCallback(() => {
+    const editor = editorRef.current
+    if (!editor || canvasMode !== 'a4') {
+      return
+    }
+
+    const currentCount = getA4PageCount(editor)
+    if (currentCount >= BOARD_A4_MAX_PAGES) {
+      return
+    }
+
+    const nextCount = currentCount + 1
+    setA4PageCountValue(editor, nextCount)
+    setA4PageCount(nextCount)
+    editor.zoomToBounds(getA4PageBox(nextCount - 1), {
+      inset: 28,
+      animation: { duration: 220 }
+    })
+  }, [canvasMode])
 
   const convertToA4 = useCallback(() => {
     const editor = editorRef.current
@@ -425,7 +489,8 @@ export function BoardCanvas({
         }
 
         await saveQueueRef.current?.flush()
-        prepareEditorForA4(editor)
+        const conversion = prepareEditorForA4(editor)
+        setA4PageCount(conversion.pageCount)
 
         if (saveTimerRef.current !== null) {
           window.clearTimeout(saveTimerRef.current)
@@ -458,22 +523,14 @@ export function BoardCanvas({
     setExportError(null)
 
     void (async () => {
-      const originalPageId = editor.getCurrentPageId()
-
       try {
         const renderedPages: BoardPdfPage[] = []
+        const shapeIds = [...editor.getCurrentPageShapeIds()]
+        const pageCount = getA4PageCount(editor)
 
-        for (const page of editor.getPages()) {
-          editor.setCurrentPage(page.id)
-          await nextAnimationFrame()
-
-          const result = await editor.getSvgString([...editor.getCurrentPageShapeIds()], {
-            bounds: new Box(
-              BOARD_A4_BOUNDS.x,
-              BOARD_A4_BOUNDS.y,
-              BOARD_A4_BOUNDS.w,
-              BOARD_A4_BOUNDS.h
-            ),
+        for (let index = 0; index < pageCount; index += 1) {
+          const result = await editor.getSvgString(shapeIds, {
+            bounds: getA4PageBox(index),
             padding: 0,
             background: false,
             darkMode: false,
@@ -481,14 +538,10 @@ export function BoardCanvas({
           })
 
           renderedPages.push({
-            id: page.id,
-            name: page.name,
+            id: `a4-page-${index + 1}`,
+            name: `Лист ${index + 1}`,
             svg: result?.svg ?? createBlankA4Svg()
           })
-        }
-
-        if (editor.getPage(originalPageId)) {
-          editor.setCurrentPage(originalPageId)
         }
 
         setPdfPages(renderedPages)
@@ -497,9 +550,6 @@ export function BoardCanvas({
       } catch (reason: unknown) {
         setExportError(reason instanceof Error ? reason.message : 'Не удалось экспортировать PDF')
       } finally {
-        if (editor.getPage(originalPageId)) {
-          editor.setCurrentPage(originalPageId)
-        }
         setPdfPages(null)
         setIsExportingPdf(false)
       }
@@ -542,6 +592,9 @@ export function BoardCanvas({
     canExportPdf: canvasMode === 'a4',
     isExportingPdf,
     exportPdf,
+    canAddA4Page: canvasMode === 'a4' && a4PageCount < BOARD_A4_MAX_PAGES,
+    a4PageCount,
+    addA4Page,
     canConvertToA4: canvasMode !== 'a4',
     isConvertingToA4,
     convertToA4
@@ -603,6 +656,99 @@ export function BoardCanvas({
   )
 }
 
+function getA4PageBox(index: number): Box {
+  return new Box(
+    BOARD_A4_BOUNDS.x,
+    BOARD_A4_BOUNDS.y + index * (BOARD_A4_BOUNDS.h + A4_PAGE_GAP),
+    BOARD_A4_BOUNDS.w,
+    BOARD_A4_BOUNDS.h
+  )
+}
+
+function getA4PageCount(editor: Editor): number {
+  const raw = editor.getCurrentPage().meta?.[A4_PAGE_META_KEY]
+  if (typeof raw !== 'number' || !Number.isFinite(raw)) {
+    return 1
+  }
+
+  return Math.min(BOARD_A4_MAX_PAGES, Math.max(1, Math.floor(raw)))
+}
+
+function setA4PageCountValue(editor: Editor, pageCount: number): void {
+  const page = editor.getCurrentPage()
+  editor.updatePage({
+    id: page.id,
+    meta: {
+      ...page.meta,
+      [A4_PAGE_META_KEY]: Math.min(BOARD_A4_MAX_PAGES, Math.max(1, Math.floor(pageCount)))
+    }
+  })
+}
+
+function getNearestA4PageIndex(centerY: number, pageCount: number): number {
+  const stride = BOARD_A4_BOUNDS.h + A4_PAGE_GAP
+  const rawIndex = Math.round((centerY - BOARD_A4_BOUNDS.h / 2) / stride)
+  return Math.min(pageCount - 1, Math.max(0, rawIndex))
+}
+
+function migrateLegacyA4Pages(editor: Editor): { pageCount: number; focusPageIndex: number } {
+  const pages = editor.getPages()
+  if (pages.length <= 1) {
+    const pageCount = getA4PageCount(editor)
+    setA4PageCountValue(editor, pageCount)
+    return { pageCount, focusPageIndex: 0 }
+  }
+
+  const originalPageId = editor.getCurrentPageId()
+  const focusPageIndex = Math.max(
+    0,
+    pages.findIndex((page) => page.id === originalPageId)
+  )
+  const targetPage = pages[0]
+
+  editor.run(
+    () => {
+      pages.forEach((page, index) => {
+        if (index === 0) {
+          return
+        }
+
+        const topLevelShapeIds = [...editor.getPageShapeIds(page.id)].filter(
+          (shapeId) => editor.getShape(shapeId)?.parentId === page.id
+        )
+
+        if (topLevelShapeIds.length > 0) {
+          editor.moveShapesToPage(topLevelShapeIds, targetPage.id)
+          const offsetY = getA4PageBox(index).y
+          editor.updateShapes(
+            topLevelShapeIds.flatMap((shapeId) => {
+              const shape = editor.getShape(shapeId)
+              return shape
+                ? [
+                    {
+                      id: shape.id,
+                      type: shape.type,
+                      x: shape.x,
+                      y: shape.y + offsetY
+                    }
+                  ]
+                : []
+            })
+          )
+        }
+      })
+
+      editor.setCurrentPage(targetPage.id)
+      pages.slice(1).forEach((page) => editor.deletePage(page.id))
+      editor.renamePage(targetPage, 'A4')
+      setA4PageCountValue(editor, pages.length)
+    },
+    { history: 'ignore' }
+  )
+
+  return { pageCount: pages.length, focusPageIndex }
+}
+
 function installA4EditorConstraints(editor: Editor): () => void {
   const unregisterCreate = editor.sideEffects.registerBeforeCreateHandler('shape', (shape) =>
     constrainShapeToA4(editor, shape)
@@ -614,19 +760,11 @@ function installA4EditorConstraints(editor: Editor): () => void {
   const unregisterShapeCreate = editor.sideEffects.registerAfterCreateHandler('shape', (shape) =>
     fitStoredShapeInsideA4(editor, shape)
   )
-  const unregisterPageCreate = editor.sideEffects.registerAfterCreateHandler('page', (page) => {
-    if (/^Page \d+$/.test(page.name)) {
-      const pageIndex = editor.getPages().findIndex((candidate) => candidate.id === page.id)
-      editor.renamePage(page, `Лист ${pageIndex + 1}`)
-    }
-    editor.zoomToBounds(A4_PAGE_BOX, { inset: 28, immediate: true })
-  })
 
   return () => {
     unregisterCreate()
     unregisterChange()
     unregisterShapeCreate()
-    unregisterPageCreate()
   }
 }
 
@@ -640,11 +778,15 @@ function fitStoredShapeInsideA4(editor: Editor, shape: TLShape): void {
     return
   }
 
-  const pageRight = BOARD_A4_BOUNDS.x + BOARD_A4_BOUNDS.w
-  const pageBottom = BOARD_A4_BOUNDS.y + BOARD_A4_BOUNDS.h
+  const pageCount = getA4PageCount(editor)
+  const targetPage = getA4PageBox(
+    getNearestA4PageIndex(bounds.y + bounds.h / 2, pageCount)
+  )
+  const pageRight = targetPage.x + targetPage.w
+  const pageBottom = targetPage.y + targetPage.h
   const fitsWithoutResize =
-    bounds.x >= BOARD_A4_BOUNDS.x &&
-    bounds.y >= BOARD_A4_BOUNDS.y &&
+    bounds.x >= targetPage.x &&
+    bounds.y >= targetPage.y &&
     bounds.maxX <= pageRight &&
     bounds.maxY <= pageBottom
 
@@ -652,21 +794,13 @@ function fitStoredShapeInsideA4(editor: Editor, shape: TLShape): void {
     return
   }
 
-  const scale = Math.min(1, BOARD_A4_BOUNDS.w / bounds.w, BOARD_A4_BOUNDS.h / bounds.h)
+  const scale = Math.min(1, targetPage.w / bounds.w, targetPage.h / bounds.h)
   const width = Math.max(1, bounds.w * scale)
   const height = Math.max(1, bounds.h * scale)
-  const x = Math.min(Math.max(bounds.x, BOARD_A4_BOUNDS.x), pageRight - width)
-  const y = Math.min(Math.max(bounds.y, BOARD_A4_BOUNDS.y), pageBottom - height)
+  const x = Math.min(Math.max(bounds.x, targetPage.x), pageRight - width)
+  const y = Math.min(Math.max(bounds.y, targetPage.y), pageBottom - height)
 
   editor.resizeToBounds([shape.id], { x, y, w: width, h: height })
-}
-
-function renameDefaultA4Pages(editor: Editor): void {
-  editor.getPages().forEach((page, index) => {
-    if (/^Page \d+$/.test(page.name)) {
-      editor.renamePage(page, `Лист ${index + 1}`)
-    }
-  })
 }
 
 function constrainShapeToA4<T extends TLShape>(editor: Editor, shape: T, fallback?: T): T {
@@ -698,19 +832,23 @@ function constrainShapeToA4<T extends TLShape>(editor: Editor, shape: T, fallbac
     return fallback ?? shape
   }
 
+  const pageCount = getA4PageCount(editor)
+  const targetPage = getA4PageBox(
+    getNearestA4PageIndex((minY + maxY) / 2, pageCount)
+  )
   let deltaX = 0
   let deltaY = 0
 
-  if (minX < BOARD_A4_BOUNDS.x) {
-    deltaX = BOARD_A4_BOUNDS.x - minX
-  } else if (maxX > BOARD_A4_BOUNDS.x + BOARD_A4_BOUNDS.w) {
-    deltaX = BOARD_A4_BOUNDS.x + BOARD_A4_BOUNDS.w - maxX
+  if (minX < targetPage.x) {
+    deltaX = targetPage.x - minX
+  } else if (maxX > targetPage.x + targetPage.w) {
+    deltaX = targetPage.x + targetPage.w - maxX
   }
 
-  if (minY < BOARD_A4_BOUNDS.y) {
-    deltaY = BOARD_A4_BOUNDS.y - minY
-  } else if (maxY > BOARD_A4_BOUNDS.y + BOARD_A4_BOUNDS.h) {
-    deltaY = BOARD_A4_BOUNDS.y + BOARD_A4_BOUNDS.h - maxY
+  if (minY < targetPage.y) {
+    deltaY = targetPage.y - minY
+  } else if (maxY > targetPage.y + targetPage.h) {
+    deltaY = targetPage.y + targetPage.h - maxY
   }
 
   if (deltaX === 0 && deltaY === 0) {
@@ -724,46 +862,65 @@ function constrainShapeToA4<T extends TLShape>(editor: Editor, shape: T, fallbac
   }
 }
 
-function prepareEditorForA4(editor: Editor): void {
-  const originalPageId = editor.getCurrentPageId()
+function prepareEditorForA4(editor: Editor): { pageCount: number } {
   const pages = editor.getPages()
+  const targetPage = pages[0]
+  const pageCount = Math.max(1, pages.length)
   const margin = 84
   const availableWidth = BOARD_A4_BOUNDS.w - margin * 2
   const availableHeight = BOARD_A4_BOUNDS.h - margin * 2
 
-  pages.forEach((page, index) => {
-    editor.setCurrentPage(page.id)
+  editor.run(() => {
+    pages.forEach((page, index) => {
+      editor.setCurrentPage(page.id)
+      const topLevelShapeIds = [...editor.getCurrentPageShapeIds()].filter(
+        (shapeId) => editor.getShape(shapeId)?.parentId === page.id
+      )
+      const contentBounds = editor.getCurrentPageBounds()
 
-    if (/^Page \d+$/.test(page.name)) {
-      editor.renamePage(page, `Лист ${index + 1}`)
-    }
+      if (contentBounds && topLevelShapeIds.length > 0) {
+        const width = Math.max(contentBounds.w, 1)
+        const height = Math.max(contentBounds.h, 1)
+        const scale = Math.min(1, availableWidth / width, availableHeight / height)
+        const targetWidth = width * scale
+        const targetHeight = height * scale
 
-    const topLevelShapeIds = [...editor.getCurrentPageShapeIds()].filter(
-      (shapeId) => editor.getShape(shapeId)?.parentId === page.id
-    )
-    const contentBounds = editor.getCurrentPageBounds()
+        editor.resizeToBounds(topLevelShapeIds, {
+          x: BOARD_A4_BOUNDS.x + margin + (availableWidth - targetWidth) / 2,
+          y: BOARD_A4_BOUNDS.y + margin + (availableHeight - targetHeight) / 2,
+          w: targetWidth,
+          h: targetHeight
+        })
+      }
 
-    if (!contentBounds || topLevelShapeIds.length === 0) {
-      return
-    }
-
-    const width = Math.max(contentBounds.w, 1)
-    const height = Math.max(contentBounds.h, 1)
-    const scale = Math.min(1, availableWidth / width, availableHeight / height)
-    const targetWidth = width * scale
-    const targetHeight = height * scale
-
-    editor.resizeToBounds(topLevelShapeIds, {
-      x: BOARD_A4_BOUNDS.x + margin + (availableWidth - targetWidth) / 2,
-      y: BOARD_A4_BOUNDS.y + margin + (availableHeight - targetHeight) / 2,
-      w: targetWidth,
-      h: targetHeight
+      if (index > 0 && topLevelShapeIds.length > 0) {
+        editor.moveShapesToPage(topLevelShapeIds, targetPage.id)
+        const offsetY = getA4PageBox(index).y
+        editor.updateShapes(
+          topLevelShapeIds.flatMap((shapeId) => {
+            const shape = editor.getShape(shapeId)
+            return shape
+              ? [
+                  {
+                    id: shape.id,
+                    type: shape.type,
+                    x: shape.x,
+                    y: shape.y + offsetY
+                  }
+                ]
+              : []
+          })
+        )
+      }
     })
+
+    editor.setCurrentPage(targetPage.id)
+    pages.slice(1).forEach((page) => editor.deletePage(page.id))
+    editor.renamePage(targetPage, 'A4')
+    setA4PageCountValue(editor, pageCount)
   })
 
-  if (editor.getPage(originalPageId)) {
-    editor.setCurrentPage(originalPageId)
-  }
+  return { pageCount }
 }
 
 function BoardPdfExportRoot({ pages }: { pages: BoardPdfPage[] }): React.JSX.Element {
