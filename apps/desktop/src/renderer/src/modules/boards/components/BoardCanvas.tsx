@@ -579,12 +579,29 @@ export function BoardCanvas({
             options={canvasMode === 'a4' ? a4BoardOptions : infiniteBoardOptions}
             onMount={handleEditorMount}
           />
-          {canvasMode === 'a4' && (
+          {canvasMode === 'a4' ? (
             <div className="pointer-events-none absolute top-3 left-1/2 z-[1000] -translate-x-1/2">
               <div className="flex items-center gap-2 rounded-full border border-slate-300 bg-white/95 px-3 py-1.5 text-xs font-semibold tracking-[0.08em] text-slate-700 shadow-lg backdrop-blur">
                 <FileText aria-hidden="true" className="size-3.5" />
                 A4
               </div>
+            </div>
+          ) : (
+            <div className="absolute top-3 left-1/2 z-[1000] -translate-x-1/2">
+              <button
+                type="button"
+                aria-label="Перевести эту доску в A4"
+                disabled={isConvertingToA4}
+                className="flex items-center gap-2 rounded-full border border-[var(--app-border)] bg-[var(--app-surface-raised)]/95 px-3 py-1.5 text-xs font-semibold text-[var(--app-text)] shadow-lg backdrop-blur transition-colors hover:bg-[var(--app-control-hover)] disabled:cursor-wait disabled:opacity-60"
+                onClick={convertToA4}
+              >
+                {isConvertingToA4 ? (
+                  <LoaderCircle aria-hidden="true" className="size-3.5 animate-spin" />
+                ) : (
+                  <FileText aria-hidden="true" className="size-3.5" />
+                )}
+                Сделать A4
+              </button>
             </div>
           )}
           {exportError && (
