@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import type { ReactElement, ReactNode } from 'react'
+import { useEffect, type ReactElement, type ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const testHarness = vi.hoisted(() => ({
@@ -85,7 +85,7 @@ vi.mock('tldraw', () => ({
       QuickActions?: (props: { children?: ReactNode }) => ReactElement
       Background?: () => ReactElement
     }
-    onMount?: (editor: unknown) => void
+    onMount?: (editor: unknown) => void | (() => void)
   }) => {
     const QuickActions = components?.QuickActions
     const Background = components?.Background
@@ -168,7 +168,10 @@ vi.mock('tldraw', () => ({
     }
 
     testHarness.activeEditor = editor
-    onMount?.(editor)
+    useEffect(() => {
+      const cleanup = onMount?.(editor)
+      return typeof cleanup === 'function' ? cleanup : undefined
+    }, [onMount])
 
     return (
       <div data-testid="tldraw-canvas">
@@ -365,6 +368,7 @@ describe('BoardCanvas A4 mode', () => {
 
     render(<BoardCanvas boardId="board-a4-add" />)
 
+    await screen.findByRole('region', { name: 'Холст доски' })
     await user.click(screen.getByRole('button', { name: 'Добавить лист A4' }))
 
     expect(testHarness.pages[0]?.meta).toMatchObject({ mymindA4PageCount: 2 })
