@@ -91,6 +91,7 @@ describe('preload API contract', () => {
       'getMovie',
       'createMovie',
       'createMovies',
+      'upsertMovies',
       'updateMovie',
       'deleteMovie',
       'searchWeb'
@@ -100,6 +101,7 @@ describe('preload API contract', () => {
       'getItem',
       'createItem',
       'createItems',
+      'upsertLibrary',
       'updateItem',
       'deleteItem',
       'createPlaylist',
