@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto'
 import {
   BOARD_NOTES_SYSTEM_ROOT_ID,
   BOARD_SYSTEM_ROOT_ID,
+  createBoardSnapshotEnvelope,
   isBoardSystemRootId,
   type BoardDocument,
   type BoardNode,
@@ -206,7 +207,8 @@ export function createBoardNode(input: CreateBoardNodeInput): BoardNode {
         .insert(boardDocuments)
         .values({
           nodeId: id,
-          snapshot: null,
+          snapshot:
+            input.canvasMode === 'a4' ? createBoardSnapshotEnvelope('a4', null) : null,
           createdAt: now,
           updatedAt: now
         })
