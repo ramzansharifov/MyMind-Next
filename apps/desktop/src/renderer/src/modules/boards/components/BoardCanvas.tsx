@@ -602,12 +602,10 @@ function installA4EditorConstraints(editor: Editor): () => void {
   )
   const unregisterChange = editor.sideEffects.registerBeforeChangeHandler(
     'shape',
-    (previousShape, nextShape) =>
-      constrainShapeToA4(editor, nextShape, previousShape)
+    (previousShape, nextShape) => constrainShapeToA4(editor, nextShape, previousShape)
   )
-  const unregisterShapeCreate = editor.sideEffects.registerAfterCreateHandler(
-    'shape',
-    (shape) => fitStoredShapeInsideA4(editor, shape)
+  const unregisterShapeCreate = editor.sideEffects.registerAfterCreateHandler('shape', (shape) =>
+    fitStoredShapeInsideA4(editor, shape)
   )
   const unregisterPageCreate = editor.sideEffects.registerAfterCreateHandler('page', (page) => {
     if (/^Page \\d+$/.test(page.name)) {
@@ -664,11 +662,7 @@ function renameDefaultA4Pages(editor: Editor): void {
   })
 }
 
-function constrainShapeToA4<T extends TLShape>(
-  editor: Editor,
-  shape: T,
-  fallback?: T
-): T {
+function constrainShapeToA4<T extends TLShape>(editor: Editor, shape: T, fallback?: T): T {
   if (shape.parentId !== editor.getCurrentPageId()) {
     return shape
   }
