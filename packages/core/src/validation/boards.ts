@@ -11,6 +11,7 @@ import { studyFolderIconSchema } from './study'
 const boardSafeIdSchema = z.string().regex(STUDY_SAFE_ID_PATTERN, 'Некорректный идентификатор')
 
 export const boardNodeTypeSchema = z.enum(['folder', 'board'])
+export const boardCanvasModeSchema = z.enum(['infinite', 'a4'])
 
 export const boardSnapshotSchema = z
   .record(z.string(), z.unknown())
@@ -65,7 +66,8 @@ export const createBoardNodeInputSchema = z.object({
   type: boardNodeTypeSchema,
   parentId: boardSafeIdSchema.nullable(),
   title: z.string().trim().max(BOARD_DOCUMENT_LIMITS.maxTitleLength).optional(),
-  icon: studyFolderIconSchema.optional()
+  icon: studyFolderIconSchema.optional(),
+  canvasMode: boardCanvasModeSchema.optional()
 })
 
 export const renameBoardNodeInputSchema = z.object({
@@ -108,4 +110,8 @@ export const ensureStudyBoardInputSchema = z.object({
 export const ensureNoteBoardInputSchema = z.object({
   noteId: boardSafeIdSchema,
   blockId: boardSafeIdSchema
+})
+
+export const exportBoardPdfInputSchema = z.object({
+  title: z.string().trim().min(1).max(BOARD_DOCUMENT_LIMITS.maxTitleLength)
 })
