@@ -264,7 +264,11 @@ const api: MyMindApi = {
     ensureNoteBoard: (input) =>
       invoke(BOARD_IPC_CHANNELS.ensureNoteBoard, input) as Promise<BoardNode>,
     exportPdf: (input) =>
-      invokeWithSuccess(BOARD_IPC_CHANNELS.exportPdf, 'PDF сохранён', input) as Promise<ExportBoardPdfResult>
+      invokeWithSuccess(
+        BOARD_IPC_CHANNELS.exportPdf,
+        'PDF сохранён',
+        input
+      ) as Promise<ExportBoardPdfResult>
   },
 
   study: {
