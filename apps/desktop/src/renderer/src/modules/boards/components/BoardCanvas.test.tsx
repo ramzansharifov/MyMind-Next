@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import type { ReactElement, ReactNode } from 'react'
+import { useEffect, type ReactElement, type ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const testHarness = vi.hoisted(() => ({
@@ -17,12 +17,26 @@ const testHarness = vi.hoisted(() => ({
   renamePage: vi.fn(),
   resizeToBounds: vi.fn(),
   setCurrentPage: vi.fn(),
+  updatePage: vi.fn(),
+  updateShapes: vi.fn(),
+  moveShapesToPage: vi.fn(),
+  deletePage: vi.fn(),
+  getPageShapeIds: vi.fn(),
   registerBeforeCreateHandler: vi.fn(),
   registerBeforeChangeHandler: vi.fn(),
   registerAfterCreateHandler: vi.fn(),
   unregisterBeforeCreate: vi.fn(),
   unregisterBeforeChange: vi.fn(),
-  unregisterAfterCreate: vi.fn()
+  unregisterAfterCreate: vi.fn(),
+  pages: [{ id: 'page:1', name: 'Page 1', meta: {} }] as Array<{
+    id: string
+    name: string
+    meta: Record<string, unknown>
+  }>,
+  currentPageId: 'page:1',
+  shapes: new Map<string, Record<string, unknown>>(),
+  pageShapeIds: {} as Record<string, string[]>,
+  activeEditor: null as Record<string, unknown> | null
 }))
 
 vi.mock('@tldraw/assets/imports.vite', () => ({
@@ -37,6 +51,14 @@ vi.mock('tldraw', () => ({
       public w: number,
       public h: number
     ) {}
+
+    get maxX(): number {
+      return this.x + this.w
+    }
+
+    get maxY(): number {
+      return this.y + this.h
+    }
   },
   createTLStore: vi.fn(() => ({
     history: {
@@ -53,10 +75,7 @@ vi.mock('tldraw', () => ({
   defaultShapeUtils: [],
   getSnapshot: vi.fn(() => ({})),
   react: vi.fn(() => testHarness.stopListening),
-  useEditor: vi.fn(() => ({
-    pageToViewport: ({ x, y }: { x: number; y: number }) => ({ x: x + 24, y: y + 24 }),
-    getZoomLevel: () => 0.5
-  })),
+  useEditor: vi.fn(() => testHarness.activeEditor),
   useValue: vi.fn((_name: string, getter: () => unknown) => getter()),
   Tldraw: ({
     components,
@@ -66,19 +85,45 @@ vi.mock('tldraw', () => ({
       QuickActions?: (props: { children?: ReactNode }) => ReactElement
       Background?: () => ReactElement
     }
-    onMount?: (editor: unknown) => void
+    onMount?: (editor: unknown) => void | (() => void)
   }) => {
     const QuickActions = components?.QuickActions
     const Background = components?.Background
-    onMount?.({
-      getCurrentPageId: () => 'page:1',
-      getPages: () => [{ id: 'page:1', name: 'Page 1' }],
-      getPage: () => ({ id: 'page:1', name: 'Page 1' }),
-      sideEffects: {
-        registerBeforeCreateHandler: testHarness.registerBeforeCreateHandler,
-        registerBeforeChangeHandler: testHarness.registerBeforeChangeHandler,
-        registerAfterCreateHandler: testHarness.registerAfterCreateHandler
+
+    const editor = {
+      run: (callback: () => void) => callback(),
+      getCurrentPageId: () => testHarness.currentPageId,
+      getCurrentPage: () =>
+        testHarness.pages.find((page) => page.id === testHarness.currentPageId) ??
+        testHarness.pages[0],
+      getPages: () => testHarness.pages,
+      getPage: (pageId: string) => testHarness.pages.find((page) => page.id === pageId),
+      setCurrentPage: (page: string | { id: string }) => {
+        testHarness.currentPageId = typeof page === 'string' ? page : page.id
+        testHarness.setCurrentPage(page)
       },
+      updatePage: (partial: { id: string; meta?: Record<string, unknown>; name?: string }) => {
+        const page = testHarness.pages.find((candidate) => candidate.id === partial.id)
+        if (page) {
+          if (partial.meta) page.meta = partial.meta
+          if (partial.name) page.name = partial.name
+        }
+        testHarness.updatePage(partial)
+      },
+      renamePage: (page: string | { id: string }, name: string) => {
+        const pageId = typeof page === 'string' ? page : page.id
+        const existing = testHarness.pages.find((candidate) => candidate.id === pageId)
+        if (existing) existing.name = name
+        testHarness.renamePage(page, name)
+      },
+      getPageShapeIds: (pageId: string) => {
+        testHarness.getPageShapeIds(pageId)
+        return new Set(testHarness.pageShapeIds[pageId] ?? [])
+      },
+      getCurrentPageShapeIds: () =>
+        new Set(testHarness.pageShapeIds[testHarness.currentPageId] ?? []),
+      getCurrentPageBounds: () => undefined,
+      getShape: (shapeId: string) => testHarness.shapes.get(shapeId),
       getShapeUtil: () => ({
         getGeometry: (shape: { props?: { w?: number; h?: number } }) => {
           const w = shape.props?.w ?? 100
@@ -88,14 +133,45 @@ vi.mock('tldraw', () => ({
           }
         }
       }),
-      setCurrentPage: testHarness.setCurrentPage,
-      renamePage: testHarness.renamePage,
-      getCurrentPageShapeIds: () => new Set(),
-      getCurrentPageBounds: () => undefined,
-      getShape: () => undefined,
+      getShapePageBounds: () => undefined,
+      moveShapesToPage: (shapeIds: string[], targetPageId: string) => {
+        shapeIds.forEach((shapeId) => {
+          const shape = testHarness.shapes.get(shapeId)
+          if (shape) testHarness.shapes.set(shapeId, { ...shape, parentId: targetPageId })
+        })
+        testHarness.currentPageId = targetPageId
+        testHarness.moveShapesToPage(shapeIds, targetPageId)
+      },
+      updateShapes: (updates: Array<Record<string, unknown>>) => {
+        updates.forEach((update) => {
+          const id = update.id as string
+          const shape = testHarness.shapes.get(id)
+          if (shape) testHarness.shapes.set(id, { ...shape, ...update })
+        })
+        testHarness.updateShapes(updates)
+      },
+      deletePage: (pageId: string) => {
+        testHarness.pages = testHarness.pages.filter((page) => page.id !== pageId)
+        delete testHarness.pageShapeIds[pageId]
+        testHarness.deletePage(pageId)
+      },
       resizeToBounds: testHarness.resizeToBounds,
-      zoomToBounds: testHarness.zoomToBounds
-    })
+      zoomToBounds: testHarness.zoomToBounds,
+      getViewportPageBounds: () => ({ x: -200, y: -200, w: 1400, h: 5200, maxY: 5000 }),
+      pageToViewport: ({ x, y }: { x: number; y: number }) => ({ x: x + 24, y: y + 24 }),
+      getZoomLevel: () => 0.5,
+      sideEffects: {
+        registerBeforeCreateHandler: testHarness.registerBeforeCreateHandler,
+        registerBeforeChangeHandler: testHarness.registerBeforeChangeHandler,
+        registerAfterCreateHandler: testHarness.registerAfterCreateHandler
+      }
+    }
+
+    testHarness.activeEditor = editor
+    useEffect(() => {
+      const cleanup = onMount?.(editor)
+      return typeof cleanup === 'function' ? cleanup : undefined
+    }, [onMount])
 
     return (
       <div data-testid="tldraw-canvas">
@@ -161,6 +237,7 @@ beforeEach(() => {
   testHarness.getDocument.mockReset()
   testHarness.getDocument.mockResolvedValue({ snapshot: null })
   testHarness.saveDocument.mockReset()
+  testHarness.saveDocument.mockResolvedValue({})
   testHarness.disposeStore.mockReset()
   testHarness.stopListening.mockReset()
   testHarness.unregisterDraft.mockReset()
@@ -172,6 +249,16 @@ beforeEach(() => {
   testHarness.renamePage.mockReset()
   testHarness.resizeToBounds.mockReset()
   testHarness.setCurrentPage.mockReset()
+  testHarness.updatePage.mockReset()
+  testHarness.updateShapes.mockReset()
+  testHarness.moveShapesToPage.mockReset()
+  testHarness.deletePage.mockReset()
+  testHarness.getPageShapeIds.mockReset()
+  testHarness.pages = [{ id: 'page:1', name: 'Page 1', meta: {} }]
+  testHarness.currentPageId = 'page:1'
+  testHarness.shapes = new Map()
+  testHarness.pageShapeIds = {}
+  testHarness.activeEditor = null
   testHarness.registerBeforeCreateHandler.mockReset()
   testHarness.registerBeforeChangeHandler.mockReset()
   testHarness.registerAfterCreateHandler.mockReset()
@@ -210,11 +297,27 @@ describe('BoardCanvas A4 mode', () => {
     expect(workspace.querySelector('[data-board-a4-stage]')).not.toBeInTheDocument()
     expect(workspace.querySelector('[data-board-a4-page-surface]')).not.toBeInTheDocument()
     expect(testHarness.flushQueue).toHaveBeenCalled()
-    expect(testHarness.renamePage).toHaveBeenCalledWith({ id: 'page:1', name: 'Page 1' }, 'Лист 1')
+    expect(testHarness.renamePage).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'page:1' }),
+      'A4'
+    )
+    expect(testHarness.updatePage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'page:1',
+        meta: expect.objectContaining({ mymindA4PageCount: 1 })
+      })
+    )
     expect(testHarness.zoomToBounds).toHaveBeenCalled()
   })
 
-  it('renders A4 boundaries directly on the full main tldraw canvas', async () => {
+  it('renders multiple A4 sheets one after another on the same canvas', async () => {
+    testHarness.pages = [
+      {
+        id: 'page:1',
+        name: 'A4',
+        meta: { mymindA4PageCount: 3 }
+      }
+    ]
     testHarness.getDocument.mockResolvedValueOnce({
       snapshot: {
         __mymindBoard: { version: 1, canvasMode: 'a4' },
@@ -225,15 +328,17 @@ describe('BoardCanvas A4 mode', () => {
     render(<BoardCanvas boardId="board-a4" title="Листы" />)
 
     const workspace = await screen.findByRole('region', { name: 'Холст доски' })
-    const boundary = workspace.querySelector('[data-board-a4-page-boundary]')
+    const boundaries = workspace.querySelectorAll('[data-board-a4-page-boundary]')
 
     expect(workspace).toHaveAttribute('data-board-canvas-mode', 'a4')
     expect(workspace).toHaveClass('tldraw__editor')
-    expect(boundary).toBeInTheDocument()
-    expect(workspace.querySelector('[data-board-a4-stage]')).not.toBeInTheDocument()
-    expect(workspace.querySelector('[data-board-a4-page-surface]')).not.toBeInTheDocument()
+    expect(boundaries).toHaveLength(3)
+    expect(screen.getByText('Лист 1')).toBeInTheDocument()
+    expect(screen.getByText('Лист 2')).toBeInTheDocument()
+    expect(screen.getByText('Лист 3')).toBeInTheDocument()
+    expect(screen.queryByText('Создать новую страницу')).not.toBeInTheDocument()
     expect(testHarness.zoomToBounds).toHaveBeenCalledWith(
-      expect.anything(),
+      expect.objectContaining({ y: 0, h: 1485 }),
       expect.objectContaining({ inset: 28, immediate: true })
     )
     expect(testHarness.registerBeforeCreateHandler).toHaveBeenCalledWith(
@@ -243,6 +348,108 @@ describe('BoardCanvas A4 mode', () => {
     expect(testHarness.registerBeforeChangeHandler).toHaveBeenCalledWith(
       'shape',
       expect.any(Function)
+    )
+  })
+
+  it('adds another physical A4 sheet below the current document', async () => {
+    const user = userEvent.setup()
+    testHarness.pages = [
+      {
+        id: 'page:1',
+        name: 'A4',
+        meta: { mymindA4PageCount: 1 }
+      }
+    ]
+    testHarness.getDocument.mockResolvedValueOnce({
+      snapshot: {
+        __mymindBoard: { version: 1, canvasMode: 'a4' },
+        tldraw: {}
+      }
+    })
+
+    render(<BoardCanvas boardId="board-a4-add" />)
+
+    await screen.findByRole('region', { name: 'Холст доски' })
+    await user.click(screen.getByRole('button', { name: 'Добавить лист A4' }))
+
+    expect(testHarness.pages[0]?.meta).toMatchObject({ mymindA4PageCount: 2 })
+    expect(testHarness.updatePage).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        id: 'page:1',
+        meta: expect.objectContaining({ mymindA4PageCount: 2 })
+      })
+    )
+    expect(screen.getByText('Лист 2')).toBeInTheDocument()
+    expect(testHarness.zoomToBounds).toHaveBeenLastCalledWith(
+      expect.objectContaining({ y: 1581, h: 1485 }),
+      expect.objectContaining({ inset: 28 })
+    )
+  })
+
+  it('migrates old separate tldraw pages into one continuous A4 strip', async () => {
+    testHarness.pages = [
+      { id: 'page:1', name: 'Лист 1', meta: {} },
+      { id: 'page:2', name: 'Страница 1', meta: {} },
+      { id: 'page:3', name: 'Страница 2', meta: {} }
+    ]
+    testHarness.currentPageId = 'page:2'
+    testHarness.shapes = new Map([
+      [
+        'shape:2',
+        {
+          id: 'shape:2',
+          type: 'geo',
+          parentId: 'page:2',
+          x: 120,
+          y: 100
+        }
+      ],
+      [
+        'shape:3',
+        {
+          id: 'shape:3',
+          type: 'geo',
+          parentId: 'page:3',
+          x: 220,
+          y: 200
+        }
+      ]
+    ])
+    testHarness.pageShapeIds = {
+      'page:1': [],
+      'page:2': ['shape:2'],
+      'page:3': ['shape:3']
+    }
+    testHarness.getDocument.mockResolvedValueOnce({
+      snapshot: {
+        __mymindBoard: { version: 1, canvasMode: 'a4' },
+        tldraw: {}
+      }
+    })
+
+    render(<BoardCanvas boardId="board-a4-legacy" />)
+
+    await screen.findByRole('region', { name: 'Холст доски' })
+
+    expect(testHarness.moveShapesToPage).toHaveBeenCalledWith(['shape:2'], 'page:1')
+    expect(testHarness.moveShapesToPage).toHaveBeenCalledWith(['shape:3'], 'page:1')
+    expect(testHarness.shapes.get('shape:2')).toMatchObject({
+      parentId: 'page:1',
+      x: 120,
+      y: 1681
+    })
+    expect(testHarness.shapes.get('shape:3')).toMatchObject({
+      parentId: 'page:1',
+      x: 220,
+      y: 3362
+    })
+    expect(testHarness.deletePage).toHaveBeenCalledWith('page:2')
+    expect(testHarness.deletePage).toHaveBeenCalledWith('page:3')
+    expect(testHarness.pages).toHaveLength(1)
+    expect(testHarness.pages[0]?.meta).toMatchObject({ mymindA4PageCount: 3 })
+    expect(testHarness.zoomToBounds).toHaveBeenCalledWith(
+      expect.objectContaining({ y: 1581, h: 1485 }),
+      expect.objectContaining({ inset: 28, immediate: true })
     )
   })
 
