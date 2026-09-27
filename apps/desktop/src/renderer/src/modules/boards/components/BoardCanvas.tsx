@@ -70,7 +70,7 @@ interface BoardLoadState {
 
 interface BoardCanvasProps {
   boardId: string
-  title: string
+  title?: string
   focusMode?: boolean
   onFocusModeChange?: (active: boolean) => void
   onSaveStateChange?: (state: BoardSaveState) => void
@@ -182,7 +182,7 @@ function A4CanvasBackground(): React.JSX.Element {
 
 export function BoardCanvas({
   boardId,
-  title,
+  title = 'Доска',
   focusMode = false,
   onFocusModeChange,
   onSaveStateChange
