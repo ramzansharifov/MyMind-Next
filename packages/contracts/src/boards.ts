@@ -16,6 +16,11 @@ export const BOARD_DOCUMENT_LIMITS = {
 } as const
 
 export type BoardNodeType = 'folder' | 'board'
+export type BoardCanvasMode = 'infinite' | 'a4'
+
+export const BOARD_A4_BOUNDS = { x: 0, y: 0, w: 1050, h: 1485 } as const
+export const BOARD_A4_MAX_PAGES = 10_000
+export const BOARD_SNAPSHOT_META_KEY = '__mymindBoard' as const
 
 export interface BoardNode {
   id: string
@@ -36,6 +41,54 @@ export interface BoardNode {
 
 export type BoardSnapshot = Record<string, unknown>
 
+export interface BoardSnapshotState {
+  canvasMode: BoardCanvasMode
+  tldrawSnapshot: BoardSnapshot | null
+}
+
+export function createBoardSnapshotEnvelope(
+  canvasMode: BoardCanvasMode,
+  tldrawSnapshot: BoardSnapshot | null
+): BoardSnapshot {
+  return {
+    [BOARD_SNAPSHOT_META_KEY]: {
+      version: 1,
+      canvasMode
+    },
+    tldraw: tldrawSnapshot
+  }
+}
+
+export function readBoardSnapshot(snapshot: BoardSnapshot | null): BoardSnapshotState {
+  if (!snapshot) {
+    return { canvasMode: 'infinite', tldrawSnapshot: null }
+  }
+
+  const metadata = snapshot[BOARD_SNAPSHOT_META_KEY]
+  const isMetadata =
+    typeof metadata === 'object' &&
+    metadata !== null &&
+    !Array.isArray(metadata) &&
+    (metadata as Record<string, unknown>).version === 1 &&
+    ((metadata as Record<string, unknown>).canvasMode === 'infinite' ||
+      (metadata as Record<string, unknown>).canvasMode === 'a4')
+
+  if (!isMetadata || !Object.prototype.hasOwnProperty.call(snapshot, 'tldraw')) {
+    return { canvasMode: 'infinite', tldrawSnapshot: snapshot }
+  }
+
+  const rawTldraw = snapshot.tldraw
+  const tldrawSnapshot =
+    typeof rawTldraw === 'object' && rawTldraw !== null && !Array.isArray(rawTldraw)
+      ? (rawTldraw as BoardSnapshot)
+      : null
+
+  return {
+    canvasMode: (metadata as { canvasMode: BoardCanvasMode }).canvasMode,
+    tldrawSnapshot
+  }
+}
+
 export interface BoardDocument {
   nodeId: string
   snapshot: BoardSnapshot | null
@@ -48,6 +101,7 @@ export interface CreateBoardNodeInput {
   parentId: string | null
   title?: string
   icon?: StudyFolderIconName
+  canvasMode?: BoardCanvasMode
 }
 
 export interface RenameBoardNodeInput {
@@ -86,6 +140,13 @@ export interface EnsureNoteBoardInput {
   blockId: string
 }
 
+export interface ExportBoardPdfInput {
+  nodeId: string
+  title: string
+}
+
+export type ExportBoardPdfResult = { status: 'saved' } | { status: 'cancelled' }
+
 export const BOARD_IPC_CHANNELS = {
   listNodes: 'boards:list-nodes',
   createNode: 'boards:create-node',
@@ -97,7 +158,8 @@ export const BOARD_IPC_CHANNELS = {
   getDocument: 'boards:get-document',
   saveDocument: 'boards:save-document',
   ensureStudyBoard: 'boards:ensure-study-board',
-  ensureNoteBoard: 'boards:ensure-note-board'
+  ensureNoteBoard: 'boards:ensure-note-board',
+  exportPdf: 'boards:export-pdf'
 } as const
 
 export interface BoardApi {
@@ -112,4 +174,5 @@ export interface BoardApi {
   saveDocument(input: SaveBoardDocumentInput): Promise<BoardDocument>
   ensureStudyBoard(input: EnsureStudyBoardInput): Promise<BoardNode>
   ensureNoteBoard(input: EnsureNoteBoardInput): Promise<BoardNode>
+  exportPdf(input: ExportBoardPdfInput): Promise<ExportBoardPdfResult>
 }

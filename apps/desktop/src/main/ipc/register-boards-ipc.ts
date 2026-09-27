@@ -1,8 +1,9 @@
-import { ipcMain } from 'electron'
+import { BrowserWindow, ipcMain } from 'electron'
 
 import { BOARD_IPC_CHANNELS } from '../../shared/contracts/boards'
 import {
   createBoardNodeInputSchema,
+  exportBoardPdfInputSchema,
   ensureNoteBoardInputSchema,
   ensureStudyBoardInputSchema,
   moveBoardNodeInputSchema,
@@ -24,6 +25,7 @@ import {
   updateBoardFolderIcon,
   updateBoardNodeExpansion
 } from '../repositories/boards.repository'
+import { exportBoardPdf } from '../services/board-pdf-export'
 import { mainOperationTracker } from '../services/main-operation-tracker'
 
 export function registerBoardsIpcHandlers(): void {
@@ -96,5 +98,22 @@ export function registerBoardsIpcHandlers(): void {
 
   ipcMain.handle(BOARD_IPC_CHANNELS.ensureNoteBoard, (_event, rawInput: unknown) =>
     mainOperationTracker.run(() => ensureNoteBoard(ensureNoteBoardInputSchema.parse(rawInput)))
+  )
+
+  ipcMain.handle(BOARD_IPC_CHANNELS.exportPdf, (event, rawInput: unknown) =>
+    mainOperationTracker.run(async () => {
+      if (!event.senderFrame || event.senderFrame !== event.sender.mainFrame) {
+        throw new Error('Untrusted board PDF export request')
+      }
+
+      const input = exportBoardPdfInputSchema.parse(rawInput)
+      getBoardDocument(input.nodeId)
+
+      return exportBoardPdf({
+        title: input.title,
+        webContents: event.sender,
+        parentWindow: BrowserWindow.fromWebContents(event.sender)
+      })
+    })
   )
 }

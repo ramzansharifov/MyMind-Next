@@ -1,7 +1,11 @@
 import Database from 'better-sqlite3'
 import { afterEach, describe, expect, it } from 'vitest'
 import type { RepositoryRuntime, SqlDatabasePort } from '@mymind/contracts/storage'
-import { BOARD_NOTES_SYSTEM_ROOT_ID, BOARD_SYSTEM_ROOT_ID } from '@mymind/contracts/boards'
+import {
+  BOARD_NOTES_SYSTEM_ROOT_ID,
+  BOARD_SYSTEM_ROOT_ID,
+  readBoardSnapshot
+} from '@mymind/contracts/boards'
 import { mobileSchemaV1 } from './mobile-schema'
 import { mobileSchemaV2 } from './mobile-schema-v2'
 import { mobileSchemaV3 } from './mobile-schema-v3'
@@ -61,6 +65,22 @@ describe('shared Boards persistence', () => {
       boards.moveNode({ id: board.id, parentId: BOARD_SYSTEM_ROOT_ID, position: 0 })
     ).toThrow('управляемого раздела')
     expect(() => boards.renameNode(BOARD_SYSTEM_ROOT_ID, 'Другое')).toThrow('Системную папку')
+  })
+
+  it('stores A4 mode inside the board snapshot without changing the database schema', () => {
+    const { runtime } = setup()
+    const boards = createBoardsRepository(runtime)
+    const board = boards.createNode({
+      type: 'board',
+      parentId: null,
+      title: 'A4 notes',
+      canvasMode: 'a4'
+    })
+
+    expect(readBoardSnapshot(boards.getDocument(board.id).snapshot)).toEqual({
+      canvasMode: 'a4',
+      tldrawSnapshot: null
+    })
   })
 
   it('round-trips an opaque tldraw-compatible snapshot without changing its shape', () => {

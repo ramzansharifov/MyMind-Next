@@ -1,7 +1,12 @@
 import { contextBridge, ipcRenderer } from 'electron'
 
 import { AI_CHAT_IPC_CHANNELS } from '../shared/contracts/ai-chat'
-import { BOARD_IPC_CHANNELS, type BoardDocument, type BoardNode } from '../shared/contracts/boards'
+import {
+  BOARD_IPC_CHANNELS,
+  type BoardDocument,
+  type BoardNode,
+  type ExportBoardPdfResult
+} from '../shared/contracts/boards'
 import { CALENDAR_IPC_CHANNELS } from '../shared/contracts/calendar'
 import { DIARY_IPC_CHANNELS } from '../shared/contracts/diary'
 import { FINANCE_IPC_CHANNELS } from '../shared/contracts/finance'
@@ -257,7 +262,13 @@ const api: MyMindApi = {
     ensureStudyBoard: (input) =>
       invoke(BOARD_IPC_CHANNELS.ensureStudyBoard, input) as Promise<BoardNode>,
     ensureNoteBoard: (input) =>
-      invoke(BOARD_IPC_CHANNELS.ensureNoteBoard, input) as Promise<BoardNode>
+      invoke(BOARD_IPC_CHANNELS.ensureNoteBoard, input) as Promise<BoardNode>,
+    exportPdf: (input) =>
+      invokeWithSuccess(
+        BOARD_IPC_CHANNELS.exportPdf,
+        'PDF сохранён',
+        input
+      ) as Promise<ExportBoardPdfResult>
   },
 
   study: {

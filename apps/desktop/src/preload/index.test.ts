@@ -53,7 +53,8 @@ describe('preload API contract', () => {
       'getDocument',
       'saveDocument',
       'ensureStudyBoard',
-      'ensureNoteBoard'
+      'ensureNoteBoard',
+      'exportPdf'
     ])
     expect(Object.keys(api.notes)).toEqual([
       'listOverview',
@@ -90,6 +91,7 @@ describe('preload API contract', () => {
       'getMovie',
       'createMovie',
       'createMovies',
+      'upsertMovies',
       'updateMovie',
       'deleteMovie',
       'searchWeb'
@@ -99,6 +101,7 @@ describe('preload API contract', () => {
       'getItem',
       'createItem',
       'createItems',
+      'upsertLibrary',
       'updateItem',
       'deleteItem',
       'createPlaylist',

@@ -9,6 +9,9 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock('electron', () => ({
+  BrowserWindow: {
+    fromWebContents: vi.fn(() => null)
+  },
   ipcMain: {
     handle: mocks.handle,
     removeHandler: mocks.removeHandler
@@ -25,6 +28,10 @@ vi.mock('../repositories/boards.repository', () => ({
   renameBoardNode: vi.fn(),
   saveBoardDocument: vi.fn(),
   updateBoardNodeExpansion: vi.fn()
+}))
+
+vi.mock('../services/board-pdf-export', () => ({
+  exportBoardPdf: vi.fn()
 }))
 
 vi.mock('../services/main-operation-tracker', () => ({

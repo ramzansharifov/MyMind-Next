@@ -1,0 +1,74 @@
+[data-board-pdf-export-root] {
+  position: fixed;
+  top: 0;
+  left: -100000px;
+  z-index: -1;
+  width: 210mm;
+  visibility: hidden;
+  pointer-events: none;
+  background: #ffffff;
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 0;
+    background: #ffffff;
+  }
+
+  :root,
+  html,
+  body {
+    min-width: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    color-scheme: light !important;
+    background: #ffffff !important;
+  }
+
+  body > #root {
+    display: none !important;
+  }
+
+  [data-board-pdf-export-root] {
+    position: static !important;
+    inset: auto !important;
+    z-index: auto !important;
+    display: block !important;
+    width: 210mm !important;
+    margin: 0 !important;
+    visibility: visible !important;
+    overflow: visible !important;
+    pointer-events: auto !important;
+    background: #ffffff !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  [data-board-pdf-export-page] {
+    display: block !important;
+    width: 210mm !important;
+    height: 297mm !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+    break-after: page;
+    page-break-after: always;
+    background: #ffffff !important;
+  }
+
+  [data-board-pdf-export-page]:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
+
+  [data-board-pdf-export-page] > svg {
+    display: block !important;
+    width: 210mm !important;
+    height: 297mm !important;
+    max-width: none !important;
+    max-height: none !important;
+  }
+}

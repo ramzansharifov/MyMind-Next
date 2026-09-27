@@ -1,5 +1,6 @@
 import { getAssetUrlsByImport } from '@tldraw/assets/imports.vite'
 import {
+  Box,
   createTLStore,
   DefaultQuickActions,
   DefaultQuickActionsContent,
@@ -10,16 +11,29 @@ import {
   react,
   Tldraw,
   TldrawUiButton,
+  useEditor,
+  useValue,
+  type Editor,
+  type TLComponents,
   type TLEditorSnapshot,
   type TLStore,
-  type TLUiComponents,
-  type TLUiQuickActionsProps
+  type TLUiQuickActionsProps,
+  type TldrawOptions
 } from 'tldraw'
 import 'tldraw/tldraw.css'
-import { LoaderCircle, Maximize2, Minimize2, TriangleAlert } from 'lucide-react'
+import { FileDown, LoaderCircle, Maximize2, Minimize2, TriangleAlert } from 'lucide-react'
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 
-import type { BoardSnapshot } from '../../../../../shared/contracts/boards'
+import {
+  BOARD_A4_BOUNDS,
+  BOARD_A4_MAX_PAGES,
+  createBoardSnapshotEnvelope,
+  readBoardSnapshot,
+  type BoardCanvasMode,
+  type BoardSnapshot
+} from '../../../../../shared/contracts/boards'
+import '../../../assets/board-pdf-export.css'
 import { useAppearance } from '../../../app/appearance/appearance-context'
 import { cn } from '../../../shared/lib/cn'
 import { Tooltip, TooltipProvider } from '../../../shared/ui/tooltip'
@@ -30,14 +44,32 @@ import { BoardSaveQueue, type BoardSaveState } from '../lib/board-save-queue'
 const assetUrls = getAssetUrlsByImport((assetUrl) => assetUrl)
 const BOARD_AUTOSAVE_DELAY_MS = 800
 
+const infiniteBoardOptions: Partial<TldrawOptions> = {}
+
+const a4BoardOptions: Partial<TldrawOptions> = {
+  maxPages: BOARD_A4_MAX_PAGES,
+  camera: {
+    constraints: {
+      bounds: { ...BOARD_A4_BOUNDS },
+      padding: { x: 48, y: 48 },
+      origin: { x: 0.5, y: 0.5 },
+      initialZoom: 'fit-max',
+      baseZoom: 'fit-max',
+      behavior: { x: 'contain', y: 'contain' }
+    }
+  }
+}
+
 interface BoardLoadState {
   boardId: string
   store: TLStore | null
+  canvasMode: BoardCanvasMode
   error: string | null
 }
 
 interface BoardCanvasProps {
   boardId: string
+  title?: string
   focusMode?: boolean
   onFocusModeChange?: (active: boolean) => void
   onSaveStateChange?: (state: BoardSaveState) => void
@@ -47,12 +79,26 @@ interface BoardCanvasUiContextValue {
   isFullscreen: boolean
   fullscreenLabel: string
   toggleFullscreen: () => void
+  canExportPdf: boolean
+  isExportingPdf: boolean
+  exportPdf: () => void
+}
+
+interface BoardPdfPage {
+  id: string
+  name: string
+  svg: string
 }
 
 const BoardCanvasUiContext = createContext<BoardCanvasUiContextValue | null>(null)
 
-const boardCanvasComponents: TLUiComponents = {
+const boardCanvasComponents: TLComponents = {
   QuickActions: BoardCanvasQuickActions
+}
+
+const a4BoardCanvasComponents: TLComponents = {
+  QuickActions: BoardCanvasQuickActions,
+  Background: A4CanvasBackground
 }
 
 function BoardCanvasQuickActions(props: TLUiQuickActionsProps): React.JSX.Element {
@@ -61,6 +107,26 @@ function BoardCanvasQuickActions(props: TLUiQuickActionsProps): React.JSX.Elemen
   return (
     <DefaultQuickActions {...props}>
       <DefaultQuickActionsContent />
+      {controls?.canExportPdf && (
+        <Tooltip
+          content="Экспортировать все листы A4 в PDF"
+          side="bottom"
+          contentClassName="z-[1000]"
+        >
+          <TldrawUiButton
+            type="icon"
+            aria-label="Экспортировать доску в PDF"
+            disabled={controls.isExportingPdf}
+            onClick={controls.exportPdf}
+          >
+            {controls.isExportingPdf ? (
+              <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
+            ) : (
+              <FileDown aria-hidden="true" className="size-4" />
+            )}
+          </TldrawUiButton>
+        </Tooltip>
+      )}
       {controls && (
         <Tooltip content={controls.fullscreenLabel} side="bottom" contentClassName="z-[1000]">
           <TldrawUiButton
@@ -82,8 +148,47 @@ function BoardCanvasQuickActions(props: TLUiQuickActionsProps): React.JSX.Elemen
   )
 }
 
+function A4CanvasBackground(): React.JSX.Element {
+  const editor = useEditor()
+  const paper = useValue(
+    'A4 paper bounds',
+    () => {
+      const topLeft = editor.pageToViewport({ x: BOARD_A4_BOUNDS.x, y: BOARD_A4_BOUNDS.y })
+      const zoom = editor.getZoomLevel()
+
+      return {
+        left: topLeft.x,
+        top: topLeft.y,
+        width: BOARD_A4_BOUNDS.w * zoom,
+        height: BOARD_A4_BOUNDS.h * zoom
+      }
+    },
+    [editor]
+  )
+
+  return (
+    <div
+      className="pointer-events-none absolute inset-0 bg-[var(--app-workspace)]"
+      aria-hidden="true"
+    >
+      <div
+        className="absolute bg-white shadow-[0_24px_80px_rgb(0_0_0/0.22)]"
+        style={{
+          pointerEvents: 'none',
+          left: paper.left,
+          top: paper.top,
+          width: paper.width,
+          height: paper.height,
+          border: '1px solid rgba(15, 23, 42, 0.16)'
+        }}
+      />
+    </div>
+  )
+}
+
 export function BoardCanvas({
   boardId,
+  title = 'Доска',
   focusMode = false,
   onFocusModeChange,
   onSaveStateChange
@@ -91,7 +196,11 @@ export function BoardCanvas({
   const { resolvedTheme } = useAppearance()
   const [loadState, setLoadState] = useState<BoardLoadState | null>(null)
   const [fullscreenBoardId, setFullscreenBoardId] = useState<string | null>(null)
+  const [pdfPages, setPdfPages] = useState<BoardPdfPage[] | null>(null)
+  const [isExportingPdf, setIsExportingPdf] = useState(false)
+  const [exportError, setExportError] = useState<string | null>(null)
   const saveTimerRef = useRef<number | null>(null)
+  const editorRef = useRef<Editor | null>(null)
   const isLocalFullscreen = fullscreenBoardId === boardId
   const isFullscreen = focusMode || isLocalFullscreen
 
@@ -106,8 +215,9 @@ export function BoardCanvas({
           return
         }
 
+        const boardState = readBoardSnapshot(document.snapshot)
         const nextStore = createTLStore({
-          snapshot: (document.snapshot ?? undefined) as TLEditorSnapshot | undefined,
+          snapshot: (boardState.tldrawSnapshot ?? undefined) as TLEditorSnapshot | undefined,
           assetUtils: defaultAssetUtils,
           bindingUtils: defaultBindingUtils,
           shapeUtils: defaultShapeUtils
@@ -117,6 +227,7 @@ export function BoardCanvas({
         setLoadState({
           boardId,
           store: nextStore,
+          canvasMode: boardState.canvasMode,
           error: null
         })
       })
@@ -128,17 +239,20 @@ export function BoardCanvas({
         setLoadState({
           boardId,
           store: null,
+          canvasMode: 'infinite',
           error: reason instanceof Error ? reason.message : 'Не удалось загрузить доску'
         })
       })
 
     return () => {
       active = false
+      editorRef.current = null
       loadedStore?.dispose()
     }
   }, [boardId])
 
   const store = loadState?.boardId === boardId ? loadState.store : null
+  const canvasMode = loadState?.boardId === boardId ? loadState.canvasMode : 'infinite'
   const loadError = loadState?.boardId === boardId ? loadState.error : null
 
   useEffect(() => {
@@ -159,8 +273,12 @@ export function BoardCanvas({
       }
     )
 
-    const captureSnapshot = (): BoardSnapshot =>
-      JSON.parse(JSON.stringify(getSnapshot(store))) as BoardSnapshot
+    const captureSnapshot = (): BoardSnapshot => {
+      const tldrawSnapshot = JSON.parse(JSON.stringify(getSnapshot(store))) as BoardSnapshot
+      return canvasMode === 'a4'
+        ? createBoardSnapshotEnvelope('a4', tldrawSnapshot)
+        : tldrawSnapshot
+    }
 
     const saveLatest = (): void => {
       queue.update(captureSnapshot())
@@ -174,8 +292,6 @@ export function BoardCanvas({
     }
 
     let observedHistory = store.history.get()
-    // Пробный cleanup редактора в React Strict Mode отменяет внутренний scheduler
-    // store.listen. Независимый history reactor остаётся активным после повторного mount.
     const stopListening = react(`autosave board ${boardId}`, () => {
       const nextHistory = store.history.get()
       if (nextHistory === observedHistory) return
@@ -202,7 +318,7 @@ export function BoardCanvas({
       unregisterDraft()
       queue.dispose()
     }
-  }, [boardId, onSaveStateChange, store])
+  }, [boardId, canvasMode, onSaveStateChange, store])
 
   useEffect(() => {
     if (!isFullscreen) return undefined
@@ -232,6 +348,89 @@ export function BoardCanvas({
 
     setFullscreenBoardId((current) => (current === boardId ? null : boardId))
   }, [boardId, focusMode, onFocusModeChange])
+
+  const handleEditorMount = useCallback(
+    (editor: Editor) => {
+      editorRef.current = editor
+
+      if (canvasMode === 'a4') {
+        const pages = editor.getPages()
+        const firstPage = pages[0]
+
+        if (pages.length === 1 && firstPage?.name === 'Page 1') {
+          editor.renamePage(firstPage, 'Лист 1')
+        }
+
+        editor.resetZoom()
+      }
+
+      return () => {
+        if (editorRef.current === editor) {
+          editorRef.current = null
+        }
+      }
+    },
+    [canvasMode]
+  )
+
+  const exportPdf = useCallback(() => {
+    const editor = editorRef.current
+
+    if (!editor || canvasMode !== 'a4' || isExportingPdf) {
+      return
+    }
+
+    setIsExportingPdf(true)
+    setExportError(null)
+
+    void (async () => {
+      const originalPageId = editor.getCurrentPageId()
+
+      try {
+        const renderedPages: BoardPdfPage[] = []
+
+        for (const page of editor.getPages()) {
+          editor.setCurrentPage(page.id)
+          await nextAnimationFrame()
+
+          const result = await editor.getSvgString([...editor.getCurrentPageShapeIds()], {
+            bounds: new Box(
+              BOARD_A4_BOUNDS.x,
+              BOARD_A4_BOUNDS.y,
+              BOARD_A4_BOUNDS.w,
+              BOARD_A4_BOUNDS.h
+            ),
+            padding: 0,
+            background: false,
+            darkMode: false,
+            scale: 1
+          })
+
+          renderedPages.push({
+            id: page.id,
+            name: page.name,
+            svg: result?.svg ?? createBlankA4Svg()
+          })
+        }
+
+        if (editor.getPage(originalPageId)) {
+          editor.setCurrentPage(originalPageId)
+        }
+
+        setPdfPages(renderedPages)
+        await waitForBoardPdfReady()
+        await boardsClient.exportPdf({ nodeId: boardId, title })
+      } catch (reason: unknown) {
+        setExportError(reason instanceof Error ? reason.message : 'Не удалось экспортировать PDF')
+      } finally {
+        if (editor.getPage(originalPageId)) {
+          editor.setCurrentPage(originalPageId)
+        }
+        setPdfPages(null)
+        setIsExportingPdf(false)
+      }
+    })()
+  }, [boardId, canvasMode, isExportingPdf, title])
 
   if (loadError) {
     return (
@@ -265,7 +464,10 @@ export function BoardCanvas({
   const boardCanvasUi: BoardCanvasUiContextValue = {
     isFullscreen,
     fullscreenLabel,
-    toggleFullscreen
+    toggleFullscreen,
+    canExportPdf: canvasMode === 'a4',
+    isExportingPdf,
+    exportPdf
   }
 
   return (
@@ -274,6 +476,7 @@ export function BoardCanvas({
         <div
           role="region"
           aria-label="Холст доски"
+          data-board-canvas-mode={canvasMode}
           data-board-fullscreen={isFullscreen}
           data-board-focus-mode={focusMode}
           className={cn(
@@ -284,11 +487,69 @@ export function BoardCanvas({
           <Tldraw
             store={store}
             assetUrls={assetUrls}
-            colorScheme={resolvedTheme}
-            components={boardCanvasComponents}
+            colorScheme={canvasMode === 'a4' ? 'light' : resolvedTheme}
+            components={canvasMode === 'a4' ? a4BoardCanvasComponents : boardCanvasComponents}
+            options={canvasMode === 'a4' ? a4BoardOptions : infiniteBoardOptions}
+            onMount={handleEditorMount}
           />
+          {exportError && (
+            <div
+              role="alert"
+              className="absolute right-4 bottom-4 z-[1000] max-w-sm rounded-xl border border-red-500/25 bg-[var(--app-surface-raised)] px-4 py-3 text-sm text-red-200 shadow-2xl"
+            >
+              {exportError}
+            </div>
+          )}
         </div>
+        {pdfPages && <BoardPdfExportRoot pages={pdfPages} />}
       </BoardCanvasUiContext.Provider>
     </TooltipProvider>
   )
+}
+
+function BoardPdfExportRoot({ pages }: { pages: BoardPdfPage[] }): React.JSX.Element {
+  return createPortal(
+    <div data-board-pdf-export-root aria-hidden="true">
+      {pages.map((page) => (
+        <section
+          key={page.id}
+          data-board-pdf-export-page
+          data-board-pdf-page-name={page.name}
+          dangerouslySetInnerHTML={{ __html: page.svg }}
+        />
+      ))}
+    </div>,
+    window.document.body
+  )
+}
+
+function createBlankA4Svg(): string {
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${BOARD_A4_BOUNDS.w}" height="${BOARD_A4_BOUNDS.h}" viewBox="0 0 ${BOARD_A4_BOUNDS.w} ${BOARD_A4_BOUNDS.h}"></svg>`
+}
+
+async function waitForBoardPdfReady(timeoutMs = 5_000): Promise<void> {
+  const deadline = Date.now() + timeoutMs
+
+  while (Date.now() < deadline) {
+    if (window.document.querySelector('[data-board-pdf-export-root]')) {
+      if (window.document.fonts?.ready) {
+        await window.document.fonts.ready
+      }
+      await nextAnimationFrame()
+      await nextAnimationFrame()
+      return
+    }
+
+    await delay(16)
+  }
+
+  throw new Error('Не удалось подготовить листы доски к экспорту')
+}
+
+function nextAnimationFrame(): Promise<void> {
+  return new Promise((resolve) => window.requestAnimationFrame(() => resolve()))
+}
+
+function delay(milliseconds: number): Promise<void> {
+  return new Promise((resolve) => window.setTimeout(resolve, milliseconds))
 }

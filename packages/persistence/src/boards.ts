@@ -12,6 +12,7 @@ import type {
 import {
   BOARD_NOTES_SYSTEM_ROOT_ID,
   BOARD_SYSTEM_ROOT_ID,
+  createBoardSnapshotEnvelope,
   isBoardSystemRootId
 } from '@mymind/contracts/boards'
 import type { NoteDocument } from '@mymind/contracts/notes'
@@ -390,12 +391,15 @@ export function createBoardsRepository(
           now,
           now
         )
-      if (valid.type === 'board')
+      if (valid.type === 'board') {
+        const initialSnapshot =
+          valid.canvasMode === 'a4' ? JSON.stringify(createBoardSnapshotEnvelope('a4', null)) : null
         database
           .prepare(
-            'INSERT INTO board_documents(node_id, snapshot, created_at, updated_at) VALUES (?, NULL, ?, ?)'
+            'INSERT INTO board_documents(node_id, snapshot, created_at, updated_at) VALUES (?, ?, ?, ?)'
           )
-          .run(id, now, now)
+          .run(id, initialSnapshot, now, now)
+      }
       if (valid.parentId)
         database
           .prepare('UPDATE board_nodes SET is_expanded = 1, updated_at = ? WHERE id = ?')
