@@ -1,0 +1,50 @@
+[data-board-pdf-export-root] {
+  display: none;
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+
+  html,
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+  }
+
+  body > * {
+    display: none !important;
+  }
+
+  body > [data-board-pdf-export-root] {
+    display: block !important;
+  }
+
+  [data-board-pdf-export-root] {
+    width: 210mm;
+    background: #ffffff;
+  }
+
+  [data-board-pdf-export-page] {
+    width: 210mm;
+    height: 297mm;
+    overflow: hidden;
+    break-after: page;
+    page-break-after: always;
+    background: #ffffff;
+  }
+
+  [data-board-pdf-export-page]:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
+
+  [data-board-pdf-export-page] > svg {
+    display: block;
+    width: 210mm !important;
+    height: 297mm !important;
+  }
+}
