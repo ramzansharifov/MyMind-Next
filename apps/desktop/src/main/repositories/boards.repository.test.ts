@@ -2,7 +2,11 @@ import { readFile, readdir } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
-import { BOARD_NOTES_SYSTEM_ROOT_ID, BOARD_SYSTEM_ROOT_ID } from '../../shared/contracts/boards'
+import {
+  BOARD_NOTES_SYSTEM_ROOT_ID,
+  BOARD_SYSTEM_ROOT_ID,
+  readBoardSnapshot
+} from '../../shared/contracts/boards'
 import { closeDatabase, getSqlite, initializeDatabaseForTesting } from '../database/client'
 import {
   createBoardNode,
@@ -107,6 +111,20 @@ describe('boards repository documents', () => {
     expect(() => updateBoardFolderIcon({ id: 'linked-folder', icon: 'science' })).toThrow(
       'Иконка этой папки управляется исходным модулем'
     )
+  })
+
+  it('initializes A4 boards with compatible snapshot metadata', () => {
+    const created = createBoardNode({
+      type: 'board',
+      parentId: null,
+      title: 'A4 board',
+      canvasMode: 'a4'
+    })
+
+    expect(readBoardSnapshot(getBoardDocument(created.id).snapshot)).toEqual({
+      canvasMode: 'a4',
+      tldrawSnapshot: null
+    })
   })
 
   it('creates, reads and saves a compatible BoardDocument snapshot', () => {
