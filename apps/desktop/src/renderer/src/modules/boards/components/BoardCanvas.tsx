@@ -439,6 +439,15 @@ export function BoardCanvas({
           inset: 28,
           immediate: true
         })
+
+        if (migration.didMigrate && store) {
+          const tldrawSnapshot = JSON.parse(JSON.stringify(getSnapshot(store))) as BoardSnapshot
+          void boardsClient
+            .saveDocument(boardId, createBoardSnapshotEnvelope('a4', tldrawSnapshot))
+            .catch((reason: unknown) => {
+              console.error('Failed to persist continuous A4 migration', reason)
+            })
+        }
       }
 
       return () => {
@@ -448,7 +457,7 @@ export function BoardCanvas({
         }
       }
     },
-    [canvasMode]
+    [boardId, canvasMode, store]
   )
 
   const addA4Page = useCallback(() => {
@@ -691,12 +700,14 @@ function getNearestA4PageIndex(centerY: number, pageCount: number): number {
   return Math.min(pageCount - 1, Math.max(0, rawIndex))
 }
 
-function migrateLegacyA4Pages(editor: Editor): { pageCount: number; focusPageIndex: number } {
+function migrateLegacyA4Pages(
+  editor: Editor
+): { pageCount: number; focusPageIndex: number; didMigrate: boolean } {
   const pages = editor.getPages()
   if (pages.length <= 1) {
     const pageCount = getA4PageCount(editor)
     setA4PageCountValue(editor, pageCount)
-    return { pageCount, focusPageIndex: 0 }
+    return { pageCount, focusPageIndex: 0, didMigrate: false }
   }
 
   const originalPageId = editor.getCurrentPageId()
@@ -746,7 +757,7 @@ function migrateLegacyA4Pages(editor: Editor): { pageCount: number; focusPageInd
     { history: 'ignore' }
   )
 
-  return { pageCount: pages.length, focusPageIndex }
+  return { pageCount: pages.length, focusPageIndex, didMigrate: true }
 }
 
 function installA4EditorConstraints(editor: Editor): () => void {
