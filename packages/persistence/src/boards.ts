@@ -393,9 +393,7 @@ export function createBoardsRepository(
         )
       if (valid.type === 'board') {
         const initialSnapshot =
-          valid.canvasMode === 'a4'
-            ? JSON.stringify(createBoardSnapshotEnvelope('a4', null))
-            : null
+          valid.canvasMode === 'a4' ? JSON.stringify(createBoardSnapshotEnvelope('a4', null)) : null
         database
           .prepare(
             'INSERT INTO board_documents(node_id, snapshot, created_at, updated_at) VALUES (?, ?, ?, ?)'
