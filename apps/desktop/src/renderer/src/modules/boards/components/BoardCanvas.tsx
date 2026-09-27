@@ -165,7 +165,10 @@ function A4CanvasBackground(): React.JSX.Element {
   )
 
   return (
-    <div className="absolute inset-0 bg-[var(--app-workspace)]" aria-hidden="true">
+    <div
+      className="pointer-events-none absolute inset-0 bg-[var(--app-workspace)]"
+      aria-hidden="true"
+    >
       <div
         className="absolute bg-white shadow-[0_24px_80px_rgb(0_0_0/0.22)]"
         style={{
