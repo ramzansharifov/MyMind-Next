@@ -7,6 +7,7 @@ import {
   defaultAssetUtils,
   defaultBindingUtils,
   defaultShapeUtils,
+  DrawShapeUtil,
   getSnapshot,
   react,
   Tldraw,
@@ -60,6 +61,19 @@ import { BoardSaveQueue, type BoardSaveState } from '../lib/board-save-queue'
 
 const assetUrls = getAssetUrlsByImport((assetUrl) => assetUrl)
 const BOARD_AUTOSAVE_DELAY_MS = 800
+const BOARD_SMALL_DRAW_STROKE_MULTIPLIER = 0.25
+
+const BoardDrawShapeUtil = DrawShapeUtil.configure({
+  getCustomDisplayValues(_editor, shape, theme) {
+    return shape.props.size === 's'
+      ? { strokeWidth: theme.strokeWidth * BOARD_SMALL_DRAW_STROKE_MULTIPLIER }
+      : {}
+  }
+})
+
+const boardShapeUtils = defaultShapeUtils.map((ShapeUtilClass) =>
+  ShapeUtilClass.type === 'draw' ? BoardDrawShapeUtil : ShapeUtilClass
+)
 
 const infiniteBoardOptions: Partial<TldrawOptions> = {}
 const A4_PAGE_GAP = 96
@@ -297,7 +311,7 @@ export function BoardCanvas({
           snapshot: (boardState.tldrawSnapshot ?? undefined) as TLEditorSnapshot | undefined,
           assetUtils: defaultAssetUtils,
           bindingUtils: defaultBindingUtils,
-          shapeUtils: defaultShapeUtils
+          shapeUtils: boardShapeUtils
         })
         loadedStore = nextStore
 
