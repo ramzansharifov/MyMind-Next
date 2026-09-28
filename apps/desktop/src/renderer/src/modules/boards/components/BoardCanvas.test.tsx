@@ -302,12 +302,14 @@ describe('BoardCanvas pencil styling', () => {
       ) => { strokeWidth?: number }
     }
 
-    expect(options.getCustomDisplayValues({}, { props: { size: 's' } }, { strokeWidth: 2 })).toEqual({
+    expect(
+      options.getCustomDisplayValues({}, { props: { size: 's' } }, { strokeWidth: 2 })
+    ).toEqual({
       strokeWidth: 0.5
     })
-    expect(options.getCustomDisplayValues({}, { props: { size: 'm' } }, { strokeWidth: 2 })).toEqual(
-      {}
-    )
+    expect(
+      options.getCustomDisplayValues({}, { props: { size: 'm' } }, { strokeWidth: 2 })
+    ).toEqual({})
   })
 })
 

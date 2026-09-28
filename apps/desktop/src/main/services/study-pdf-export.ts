@@ -1,9 +1,4 @@
-import {
-  dialog,
-  type BrowserWindow,
-  type SaveDialogOptions,
-  type WebContents
-} from 'electron'
+import { dialog, type BrowserWindow, type SaveDialogOptions, type WebContents } from 'electron'
 import { writeFile } from 'node:fs/promises'
 
 import type { ExportStudyMaterialPdfResult } from '../../shared/contracts/study-pdf'
@@ -19,10 +14,14 @@ export function createStudyPdfFileName(title: string): string {
     .replace(/[. ]+$/g, '')
 
   if (/\.pdf$/i.test(normalized)) {
-    normalized = normalized.slice(0, -4).trimEnd().replace(/[. ]+$/g, '')
+    normalized = normalized
+      .slice(0, -4)
+      .trimEnd()
+      .replace(/[. ]+$/g, '')
   }
 
-  const safeStem = normalized && !WINDOWS_RESERVED_FILE_NAMES.test(normalized) ? normalized : 'Материал'
+  const safeStem =
+    normalized && !WINDOWS_RESERVED_FILE_NAMES.test(normalized) ? normalized : 'Материал'
   return `${safeStem}.pdf`
 }
 
