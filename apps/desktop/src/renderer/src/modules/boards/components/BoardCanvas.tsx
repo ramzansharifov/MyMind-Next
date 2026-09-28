@@ -973,7 +973,7 @@ function constrainShapeToA4<T extends TLShape>(editor: Editor, shape: T, fallbac
   const escapesTargetPage =
     minX < targetPage.x || maxX > targetPage.maxX || minY < targetPage.y || maxY > targetPage.maxY
 
-  if (fallbackBounds && escapesTargetPage) {
+  if (fallback && fallbackBounds && escapesTargetPage) {
     return fallback
   }
 
