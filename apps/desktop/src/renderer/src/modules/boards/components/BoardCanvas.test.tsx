@@ -3,6 +3,10 @@ import userEvent from '@testing-library/user-event'
 import { useEffect, type ReactElement, type ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+const drawStyleHarness = vi.hoisted(() => ({
+  options: null as unknown
+}))
+
 const testHarness = vi.hoisted(() => ({
   getDocument: vi.fn(),
   saveDocument: vi.fn(),
@@ -41,7 +45,7 @@ const testHarness = vi.hoisted(() => ({
   currentToolId: 'select',
   originPagePoint: { x: 100, y: 100 },
   configureDrawShapeUtil: vi.fn((options: unknown) => {
-    void options
+    drawStyleHarness.options = options
     return class BoardDrawShapeUtilMock {
       static type = 'draw'
     }
@@ -294,7 +298,7 @@ beforeEach(() => {
 
 describe('BoardCanvas pencil styling', () => {
   it('makes only the S pencil stroke thinner than the tldraw default', () => {
-    const options = testHarness.configureDrawShapeUtil.mock.calls[0]?.[0] as {
+    const options = drawStyleHarness.options as {
       getCustomDisplayValues: (
         editor: unknown,
         shape: { props: { size: string } },
@@ -302,6 +306,7 @@ describe('BoardCanvas pencil styling', () => {
       ) => { strokeWidth?: number }
     }
 
+    expect(options).toBeTruthy()
     expect(
       options.getCustomDisplayValues({}, { props: { size: 's' } }, { strokeWidth: 2 })
     ).toEqual({
