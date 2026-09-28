@@ -5,9 +5,13 @@ import type { ExportStudyMaterialPdfResult } from '../../shared/contracts/study-
 
 const WINDOWS_RESERVED_FILE_NAMES = /^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\..*)?$/i
 
+function stripControlCharacters(value: string): string {
+  return Array.from(value, (character) => (character.charCodeAt(0) < 32 ? ' ' : character)).join('')
+}
+
 export function createStudyPdfFileName(title: string): string {
-  let normalized = title
-    .replace(/[<>:"/\\|?*\u0000-\u001f]/g, ' ')
+  let normalized = stripControlCharacters(title)
+    .replace(/[<>:"/\\|?*]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
     .slice(0, 120)
