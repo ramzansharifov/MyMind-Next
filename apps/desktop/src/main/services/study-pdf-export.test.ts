@@ -66,7 +66,12 @@ describe('study PDF export', () => {
     expect(mocks.printToPDF).toHaveBeenCalledWith({
       printBackground: true,
       preferCSSPageSize: true,
-      pageSize: 'A4'
+      margins: {
+        top: 0,
+        bottom: 0,
+        left: 0,
+        right: 0
+      }
     })
     expect(await readFile(filePath)).toEqual(pdf)
   })
