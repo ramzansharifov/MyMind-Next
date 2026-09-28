@@ -41,7 +41,7 @@ const testHarness = vi.hoisted(() => ({
   currentToolId: 'select',
   originPagePoint: { x: 100, y: 100 },
   configureDrawShapeUtil: vi.fn(
-    () =>
+    (_options: unknown) =>
       class BoardDrawShapeUtilMock {
         static type = 'draw'
       }
