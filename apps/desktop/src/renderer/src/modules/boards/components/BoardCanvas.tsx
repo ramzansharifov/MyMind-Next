@@ -759,10 +759,7 @@ function setA4PageCountValue(editor: Editor, pageCount: number): void {
   })
 }
 
-function getA4PageIndexAtPoint(
-  point: { x: number; y: number },
-  pageCount: number
-): number | null {
+function getA4PageIndexAtPoint(point: { x: number; y: number }, pageCount: number): number | null {
   const stride = BOARD_A4_BOUNDS.h + A4_PAGE_GAP
   const pageIndex = Math.floor((point.y - BOARD_A4_BOUNDS.y) / stride)
   if (pageIndex < 0 || pageIndex >= pageCount) {
@@ -771,10 +768,7 @@ function getA4PageIndexAtPoint(
 
   const page = getA4PageBox(pageIndex)
   const isInside =
-    point.x >= page.x &&
-    point.x <= page.maxX &&
-    point.y >= page.y &&
-    point.y <= page.maxY
+    point.x >= page.x && point.x <= page.maxX && point.y >= page.y && point.y <= page.maxY
 
   return isInside ? pageIndex : null
 }
@@ -977,10 +971,7 @@ function constrainShapeToA4<T extends TLShape>(editor: Editor, shape: T, fallbac
     : (minY + maxY) / 2
   const targetPage = getA4PageBox(getNearestA4PageIndex(targetCenterY, pageCount))
   const escapesTargetPage =
-    minX < targetPage.x ||
-    maxX > targetPage.maxX ||
-    minY < targetPage.y ||
-    maxY > targetPage.maxY
+    minX < targetPage.x || maxX > targetPage.maxX || minY < targetPage.y || maxY > targetPage.maxY
 
   if (fallbackBounds && escapesTargetPage) {
     return fallback
