@@ -39,7 +39,13 @@ const testHarness = vi.hoisted(() => ({
   pageShapeIds: {} as Record<string, string[]>,
   activeEditor: null as Record<string, unknown> | null,
   currentToolId: 'select',
-  originPagePoint: { x: 100, y: 100 }
+  originPagePoint: { x: 100, y: 100 },
+  configureDrawShapeUtil: vi.fn(
+    () =>
+      class BoardDrawShapeUtilMock {
+        static type = 'draw'
+      }
+  )
 }))
 
 vi.mock('@tldraw/assets/imports.vite', () => ({
@@ -76,6 +82,9 @@ vi.mock('tldraw', () => ({
   defaultAssetUtils: {},
   defaultBindingUtils: [],
   defaultShapeUtils: [],
+  DrawShapeUtil: {
+    configure: testHarness.configureDrawShapeUtil
+  },
   getSnapshot: vi.fn(() => ({})),
   react: vi.fn(() => testHarness.stopListening),
   useEditor: vi.fn(() => testHarness.activeEditor),
@@ -281,6 +290,25 @@ beforeEach(() => {
   testHarness.registerBeforeCreateHandler.mockReturnValue(testHarness.unregisterBeforeCreate)
   testHarness.registerBeforeChangeHandler.mockReturnValue(testHarness.unregisterBeforeChange)
   testHarness.registerAfterCreateHandler.mockReturnValue(testHarness.unregisterAfterCreate)
+})
+
+describe('BoardCanvas pencil styling', () => {
+  it('makes only the S pencil stroke thinner than the tldraw default', () => {
+    const options = testHarness.configureDrawShapeUtil.mock.calls[0]?.[0] as {
+      getCustomDisplayValues: (
+        editor: unknown,
+        shape: { props: { size: string } },
+        theme: { strokeWidth: number }
+      ) => { strokeWidth?: number }
+    }
+
+    expect(options.getCustomDisplayValues({}, { props: { size: 's' } }, { strokeWidth: 2 })).toEqual({
+      strokeWidth: 0.5
+    })
+    expect(options.getCustomDisplayValues({}, { props: { size: 'm' } }, { strokeWidth: 2 })).toEqual(
+      {}
+    )
+  })
 })
 
 describe('BoardCanvas A4 mode', () => {
