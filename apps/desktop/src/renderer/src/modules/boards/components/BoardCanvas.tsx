@@ -31,7 +31,15 @@ import {
   Minimize2,
   TriangleAlert
 } from 'lucide-react'
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent
+} from 'react'
 import { createPortal } from 'react-dom'
 
 import {
@@ -422,6 +430,64 @@ export function BoardCanvas({
     setFullscreenBoardId((current) => (current === boardId ? null : boardId))
   }, [boardId, focusMode, onFocusModeChange])
 
+  const handleA4PointerDownCapture = useCallback(
+    (event: ReactPointerEvent<HTMLDivElement>) => {
+      const editor = editorRef.current
+      if (canvasMode !== 'a4' || !editor || editor.getCurrentToolId() !== 'draw') {
+        return
+      }
+
+      const pagePoint = editor.screenToPage({ x: event.clientX, y: event.clientY })
+      if (getA4PageIndexAtPoint(pagePoint, getA4PageCount(editor)) !== null) {
+        return
+      }
+
+      stopA4PointerEvent(event)
+    },
+    [canvasMode]
+  )
+
+  const handleA4PointerMoveCapture = useCallback(
+    (event: ReactPointerEvent<HTMLDivElement>) => {
+      const editor = editorRef.current
+      if (
+        canvasMode !== 'a4' ||
+        !editor ||
+        editor.getCurrentToolId() !== 'draw' ||
+        (event.buttons & 1) !== 1
+      ) {
+        return
+      }
+
+      const pageCount = getA4PageCount(editor)
+      const originPoint = editor.inputs.getOriginPagePoint()
+      const pageIndex = getA4PageIndexAtPoint(originPoint, pageCount)
+      if (pageIndex === null) {
+        return
+      }
+
+      const pointerPoint = editor.screenToPage({ x: event.clientX, y: event.clientY })
+      const clampedPoint = clampPointToA4Page(pointerPoint, pageIndex)
+      if (clampedPoint.x === pointerPoint.x && clampedPoint.y === pointerPoint.y) {
+        return
+      }
+
+      stopA4PointerEvent(event)
+
+      editor.updatePointer({
+        point: editor.pageToScreen(clampedPoint),
+        pointerId: event.pointerId,
+        isPen: event.pointerType === 'pen',
+        shiftKey: event.shiftKey,
+        altKey: event.altKey,
+        ctrlKey: event.ctrlKey,
+        metaKey: event.metaKey,
+        immediate: true
+      })
+    },
+    [canvasMode]
+  )
+
   const handleEditorMount = useCallback(
     (editor: Editor) => {
       editorRef.current = editor
@@ -615,6 +681,8 @@ export function BoardCanvas({
           data-board-canvas-mode={canvasMode}
           data-board-fullscreen={isFullscreen}
           data-board-focus-mode={focusMode}
+          onPointerDownCapture={handleA4PointerDownCapture}
+          onPointerMoveCapture={handleA4PointerMoveCapture}
           className={cn(
             'mymind-board-canvas tldraw__editor relative h-full min-h-0 w-full overflow-hidden bg-[var(--app-workspace)]',
             isLocalFullscreen && 'app-fullscreen-bounds fixed z-40 h-auto w-screen'
@@ -689,6 +757,37 @@ function setA4PageCountValue(editor: Editor, pageCount: number): void {
       [A4_PAGE_META_KEY]: Math.min(BOARD_A4_MAX_PAGES, Math.max(1, Math.floor(pageCount)))
     }
   })
+}
+
+function getA4PageIndexAtPoint(point: { x: number; y: number }, pageCount: number): number | null {
+  const stride = BOARD_A4_BOUNDS.h + A4_PAGE_GAP
+  const pageIndex = Math.floor((point.y - BOARD_A4_BOUNDS.y) / stride)
+  if (pageIndex < 0 || pageIndex >= pageCount) {
+    return null
+  }
+
+  const page = getA4PageBox(pageIndex)
+  const isInside =
+    point.x >= page.x && point.x <= page.maxX && point.y >= page.y && point.y <= page.maxY
+
+  return isInside ? pageIndex : null
+}
+
+function clampPointToA4Page(
+  point: { x: number; y: number },
+  pageIndex: number
+): { x: number; y: number } {
+  const page = getA4PageBox(pageIndex)
+  return {
+    x: Math.min(page.maxX, Math.max(page.x, point.x)),
+    y: Math.min(page.maxY, Math.max(page.y, point.y))
+  }
+}
+
+function stopA4PointerEvent(event: ReactPointerEvent<HTMLDivElement>): void {
+  event.preventDefault()
+  event.stopPropagation()
+  event.nativeEvent.stopImmediatePropagation()
 }
 
 function getNearestA4PageIndex(centerY: number, pageCount: number): number {
@@ -811,11 +910,17 @@ function fitStoredShapeInsideA4(editor: Editor, shape: TLShape): void {
   editor.resizeToBounds([shape.id], { x, y, w: width, h: height })
 }
 
-function constrainShapeToA4<T extends TLShape>(editor: Editor, shape: T, fallback?: T): T {
-  if (shape.parentId !== editor.getCurrentPageId()) {
-    return shape
-  }
-
+function getShapeProjectedBounds(
+  editor: Editor,
+  shape: TLShape
+): {
+  minX: number
+  maxX: number
+  minY: number
+  maxY: number
+  width: number
+  height: number
+} {
   const localBounds = editor.getShapeUtil(shape).getGeometry(shape).bounds
   const cos = Math.cos(shape.rotation)
   const sin = Math.sin(shape.rotation)
@@ -833,15 +938,45 @@ function constrainShapeToA4<T extends TLShape>(editor: Editor, shape: T, fallbac
   const maxX = Math.max(...corners.map((point) => point.x))
   const minY = Math.min(...corners.map((point) => point.y))
   const maxY = Math.max(...corners.map((point) => point.y))
-  const width = maxX - minX
-  const height = maxY - minY
+
+  return {
+    minX,
+    maxX,
+    minY,
+    maxY,
+    width: maxX - minX,
+    height: maxY - minY
+  }
+}
+
+function constrainShapeToA4<T extends TLShape>(editor: Editor, shape: T, fallback?: T): T {
+  if (shape.parentId !== editor.getCurrentPageId()) {
+    return shape
+  }
+
+  const bounds = getShapeProjectedBounds(editor, shape)
+  const { minX, maxX, minY, maxY, width, height } = bounds
 
   if (width > BOARD_A4_BOUNDS.w || height > BOARD_A4_BOUNDS.h) {
     return fallback ?? shape
   }
 
   const pageCount = getA4PageCount(editor)
-  const targetPage = getA4PageBox(getNearestA4PageIndex((minY + maxY) / 2, pageCount))
+  const fallbackBounds =
+    fallback && (shape.type === 'draw' || shape.type === 'highlight')
+      ? getShapeProjectedBounds(editor, fallback)
+      : null
+  const targetCenterY = fallbackBounds
+    ? (fallbackBounds.minY + fallbackBounds.maxY) / 2
+    : (minY + maxY) / 2
+  const targetPage = getA4PageBox(getNearestA4PageIndex(targetCenterY, pageCount))
+  const escapesTargetPage =
+    minX < targetPage.x || maxX > targetPage.maxX || minY < targetPage.y || maxY > targetPage.maxY
+
+  if (fallback && fallbackBounds && escapesTargetPage) {
+    return fallback
+  }
+
   let deltaX = 0
   let deltaY = 0
 

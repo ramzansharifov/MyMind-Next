@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useEffect, type ReactElement, type ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -22,6 +22,7 @@ const testHarness = vi.hoisted(() => ({
   moveShapesToPage: vi.fn(),
   deletePage: vi.fn(),
   getPageShapeIds: vi.fn(),
+  updatePointer: vi.fn(),
   registerBeforeCreateHandler: vi.fn(),
   registerBeforeChangeHandler: vi.fn(),
   registerAfterCreateHandler: vi.fn(),
@@ -36,7 +37,9 @@ const testHarness = vi.hoisted(() => ({
   currentPageId: 'page:1',
   shapes: new Map<string, Record<string, unknown>>(),
   pageShapeIds: {} as Record<string, string[]>,
-  activeEditor: null as Record<string, unknown> | null
+  activeEditor: null as Record<string, unknown> | null,
+  currentToolId: 'select',
+  originPagePoint: { x: 100, y: 100 }
 }))
 
 vi.mock('@tldraw/assets/imports.vite', () => ({
@@ -160,6 +163,13 @@ vi.mock('tldraw', () => ({
       getViewportPageBounds: () => ({ x: -200, y: -200, w: 1400, h: 5200, maxY: 5000 }),
       pageToViewport: ({ x, y }: { x: number; y: number }) => ({ x: x + 24, y: y + 24 }),
       getZoomLevel: () => 0.5,
+      getCurrentToolId: () => testHarness.currentToolId,
+      screenToPage: ({ x, y }: { x: number; y: number }) => ({ x, y }),
+      pageToScreen: ({ x, y }: { x: number; y: number }) => ({ x, y }),
+      inputs: {
+        getOriginPagePoint: () => testHarness.originPagePoint
+      },
+      updatePointer: testHarness.updatePointer,
       sideEffects: {
         registerBeforeCreateHandler: testHarness.registerBeforeCreateHandler,
         registerBeforeChangeHandler: testHarness.registerBeforeChangeHandler,
@@ -254,11 +264,14 @@ beforeEach(() => {
   testHarness.moveShapesToPage.mockReset()
   testHarness.deletePage.mockReset()
   testHarness.getPageShapeIds.mockReset()
+  testHarness.updatePointer.mockReset()
   testHarness.pages = [{ id: 'page:1', name: 'Page 1', meta: {} }]
   testHarness.currentPageId = 'page:1'
   testHarness.shapes = new Map()
   testHarness.pageShapeIds = {}
   testHarness.activeEditor = null
+  testHarness.currentToolId = 'select'
+  testHarness.originPagePoint = { x: 100, y: 100 }
   testHarness.registerBeforeCreateHandler.mockReset()
   testHarness.registerBeforeChangeHandler.mockReset()
   testHarness.registerAfterCreateHandler.mockReset()
@@ -451,6 +464,86 @@ describe('BoardCanvas A4 mode', () => {
       expect.objectContaining({ y: 1581, h: 1485 }),
       expect.objectContaining({ inset: 28, immediate: true })
     )
+  })
+
+  it('clamps the active pencil pointer to the A4 sheet before tldraw receives it', async () => {
+    testHarness.pages = [
+      {
+        id: 'page:1',
+        name: 'A4',
+        meta: { mymindA4PageCount: 1 }
+      }
+    ]
+    testHarness.currentToolId = 'draw'
+    testHarness.originPagePoint = { x: 120, y: 240 }
+    testHarness.getDocument.mockResolvedValueOnce({
+      snapshot: {
+        __mymindBoard: { version: 1, canvasMode: 'a4' },
+        tldraw: {}
+      }
+    })
+
+    render(<BoardCanvas boardId="board-pencil-clamp" />)
+
+    const workspace = await screen.findByRole('region', { name: 'Холст доски' })
+
+    fireEvent.pointerMove(workspace, {
+      clientX: 1300,
+      clientY: 720,
+      buttons: 1,
+      pointerId: 7,
+      pointerType: 'mouse'
+    })
+
+    expect(testHarness.updatePointer).toHaveBeenCalledWith(
+      expect.objectContaining({
+        point: { x: 1050, y: 720 },
+        pointerId: 7,
+        immediate: true
+      })
+    )
+  })
+
+  it('keeps the previous pencil stroke instead of shifting the whole draw shape outside A4', async () => {
+    testHarness.pages = [
+      {
+        id: 'page:1',
+        name: 'A4',
+        meta: { mymindA4PageCount: 1 }
+      }
+    ]
+    testHarness.getDocument.mockResolvedValueOnce({
+      snapshot: {
+        __mymindBoard: { version: 1, canvasMode: 'a4' },
+        tldraw: {}
+      }
+    })
+
+    render(<BoardCanvas boardId="board-pencil-fallback" />)
+
+    await screen.findByRole('region', { name: 'Холст доски' })
+
+    const handler = testHarness.registerBeforeChangeHandler.mock.calls[0]?.[1] as (
+      previous: Record<string, unknown>,
+      next: Record<string, unknown>
+    ) => Record<string, unknown>
+
+    const previous = {
+      id: 'shape:draw',
+      typeName: 'shape',
+      type: 'draw',
+      parentId: 'page:1',
+      x: 900,
+      y: 600,
+      rotation: 0,
+      props: { w: 100, h: 80 }
+    }
+    const escaped = {
+      ...previous,
+      props: { w: 220, h: 80 }
+    }
+
+    expect(handler(previous, escaped)).toBe(previous)
   })
 
   it('clamps top-level shapes so they cannot be moved outside the A4 page', async () => {
