@@ -53,7 +53,12 @@ export async function exportStudyMaterialPdf({
   const pdf = await webContents.printToPDF({
     printBackground: true,
     preferCSSPageSize: true,
-    pageSize: 'A4'
+    margins: {
+      top: 0,
+      bottom: 0,
+      left: 0,
+      right: 0
+    }
   })
 
   await writeFile(selection.filePath, pdf)
