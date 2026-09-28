@@ -40,12 +40,12 @@ const testHarness = vi.hoisted(() => ({
   activeEditor: null as Record<string, unknown> | null,
   currentToolId: 'select',
   originPagePoint: { x: 100, y: 100 },
-  configureDrawShapeUtil: vi.fn(
-    (_options: unknown) =>
-      class BoardDrawShapeUtilMock {
-        static type = 'draw'
-      }
-  )
+  configureDrawShapeUtil: vi.fn((options: unknown) => {
+    void options
+    return class BoardDrawShapeUtilMock {
+      static type = 'draw'
+    }
+  })
 }))
 
 vi.mock('@tldraw/assets/imports.vite', () => ({
