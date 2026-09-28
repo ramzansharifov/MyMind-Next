@@ -15,11 +15,11 @@ vi.mock('electron', () => ({
   }
 }))
 
-import { createStudyPdfFileName, exportStudyMaterialPdf } from './study-pdf-export'
+import { createBoardPdfFileName, exportBoardPdf } from './board-pdf-export'
 
 let tempDirectory: string | null = null
 
-describe('study PDF export', () => {
+describe('board PDF export', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
@@ -31,36 +31,33 @@ describe('study PDF export', () => {
     }
   })
 
-  it('creates a safe PDF file name from a material title', () => {
-    expect(createStudyPdfFileName('  Теория: свет / тень?  ')).toBe('Теория свет тень.pdf')
-    expect(createStudyPdfFileName('CON')).toBe('Материал.pdf')
-    expect(createStudyPdfFileName('CON.txt')).toBe('Материал.pdf')
-    expect(createStudyPdfFileName('COM1.log')).toBe('Материал.pdf')
-    expect(createStudyPdfFileName('Лекция.pdf')).toBe('Лекция.pdf')
-    expect(createStudyPdfFileName('...')).toBe('Материал.pdf')
+  it('creates a safe PDF file name from a board title', () => {
+    expect(createBoardPdfFileName('  Конспект: алгебра / 1?  ')).toBe('Конспект алгебра 1.pdf')
+    expect(createBoardPdfFileName('CON')).toBe('Доска.pdf')
+    expect(createBoardPdfFileName('Лист.pdf')).toBe('Лист.pdf')
   })
 
-  it('does not render or write a PDF when the save dialog is cancelled', async () => {
+  it('does not print when the save dialog is cancelled', async () => {
     mocks.showSaveDialog.mockResolvedValue({ canceled: true, filePath: undefined })
     const webContents = { printToPDF: mocks.printToPDF } as unknown as WebContents
 
     await expect(
-      exportStudyMaterialPdf({ title: 'Материал', webContents, parentWindow: null })
+      exportBoardPdf({ title: 'Доска', webContents, parentWindow: null })
     ).resolves.toEqual({ status: 'cancelled' })
 
     expect(mocks.printToPDF).not.toHaveBeenCalled()
   })
 
-  it('prints A4 with backgrounds and writes the selected PDF file', async () => {
-    const pdf = Buffer.from('%PDF-test')
-    tempDirectory = await mkdtemp(join(tmpdir(), 'mymind-study-pdf-'))
-    const filePath = join(tempDirectory, 'Lesson.pdf')
+  it('lets CSS define A4 size instead of passing Electron pageSize', async () => {
+    const pdf = Buffer.from('%PDF-board-test')
+    tempDirectory = await mkdtemp(join(tmpdir(), 'mymind-board-pdf-'))
+    const filePath = join(tempDirectory, 'Board.pdf')
     mocks.showSaveDialog.mockResolvedValue({ canceled: false, filePath })
     mocks.printToPDF.mockResolvedValue(pdf)
     const webContents = { printToPDF: mocks.printToPDF } as unknown as WebContents
 
     await expect(
-      exportStudyMaterialPdf({ title: 'Урок', webContents, parentWindow: null })
+      exportBoardPdf({ title: 'Доска', webContents, parentWindow: null })
     ).resolves.toEqual({ status: 'saved' })
 
     expect(mocks.printToPDF).toHaveBeenCalledWith({
@@ -73,6 +70,7 @@ describe('study PDF export', () => {
         right: 0
       }
     })
+    expect(mocks.printToPDF.mock.calls[0]?.[0]).not.toHaveProperty('pageSize')
     expect(await readFile(filePath)).toEqual(pdf)
   })
 })

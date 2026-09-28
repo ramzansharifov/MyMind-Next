@@ -3,6 +3,10 @@ import userEvent from '@testing-library/user-event'
 import { useEffect, type ReactElement, type ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+const drawStyleHarness = vi.hoisted(() => ({
+  options: null as unknown
+}))
+
 const testHarness = vi.hoisted(() => ({
   getDocument: vi.fn(),
   saveDocument: vi.fn(),
@@ -39,7 +43,13 @@ const testHarness = vi.hoisted(() => ({
   pageShapeIds: {} as Record<string, string[]>,
   activeEditor: null as Record<string, unknown> | null,
   currentToolId: 'select',
-  originPagePoint: { x: 100, y: 100 }
+  originPagePoint: { x: 100, y: 100 },
+  configureDrawShapeUtil: vi.fn((options: unknown) => {
+    drawStyleHarness.options = options
+    return class BoardDrawShapeUtilMock {
+      static type = 'draw'
+    }
+  })
 }))
 
 vi.mock('@tldraw/assets/imports.vite', () => ({
@@ -76,6 +86,9 @@ vi.mock('tldraw', () => ({
   defaultAssetUtils: {},
   defaultBindingUtils: [],
   defaultShapeUtils: [],
+  DrawShapeUtil: {
+    configure: testHarness.configureDrawShapeUtil
+  },
   getSnapshot: vi.fn(() => ({})),
   react: vi.fn(() => testHarness.stopListening),
   useEditor: vi.fn(() => testHarness.activeEditor),
@@ -281,6 +294,28 @@ beforeEach(() => {
   testHarness.registerBeforeCreateHandler.mockReturnValue(testHarness.unregisterBeforeCreate)
   testHarness.registerBeforeChangeHandler.mockReturnValue(testHarness.unregisterBeforeChange)
   testHarness.registerAfterCreateHandler.mockReturnValue(testHarness.unregisterAfterCreate)
+})
+
+describe('BoardCanvas pencil styling', () => {
+  it('makes only the S pencil stroke thinner than the tldraw default', () => {
+    const options = drawStyleHarness.options as {
+      getCustomDisplayValues: (
+        editor: unknown,
+        shape: { props: { size: string } },
+        theme: { strokeWidth: number }
+      ) => { strokeWidth?: number }
+    }
+
+    expect(options).toBeTruthy()
+    expect(
+      options.getCustomDisplayValues({}, { props: { size: 's' } }, { strokeWidth: 2 })
+    ).toEqual({
+      strokeWidth: 0.5
+    })
+    expect(
+      options.getCustomDisplayValues({}, { props: { size: 'm' } }, { strokeWidth: 2 })
+    ).toEqual({})
+  })
 })
 
 describe('BoardCanvas A4 mode', () => {
