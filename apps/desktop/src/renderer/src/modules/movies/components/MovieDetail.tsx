@@ -223,7 +223,7 @@ export function MovieDetail({
   return (
     <>
       <section>
-        <div className="overflow-hidden rounded-[28px] border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[var(--app-shadow-card)]">
+        <div className="movie-detail-card overflow-hidden rounded-[28px] border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[var(--app-shadow-card)]">
           <div className="grid gap-0 lg:grid-cols-[300px_minmax(0,1fr)]">
             <div className="relative min-h-[440px] bg-[var(--app-workspace)]">
               {movie.posterUrl && !posterFailed ? (
@@ -424,7 +424,7 @@ export function MovieDetail({
               </div>
 
               {movie.description && (
-                <div className="mt-8 rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-5">
+                <div className="movie-detail-description mt-8 rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-5">
                   <h3 className="text-sm font-semibold text-[var(--app-text)]">Описание</h3>
                   <p className="mt-3 max-w-3xl text-sm leading-7 whitespace-pre-wrap text-[var(--app-muted)]">
                     {movie.description}

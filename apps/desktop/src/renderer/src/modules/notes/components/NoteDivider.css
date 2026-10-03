@@ -1,0 +1,24 @@
+.note-canvas-text .note-divider {
+  display: flex;
+  align-items: center;
+  margin-block: 24px;
+  border-radius: 6px;
+  padding-block: 12px;
+  cursor: pointer;
+}
+
+.note-divider > span {
+  display: block;
+  width: 100%;
+}
+
+.note-canvas-text[contenteditable='true'] .note-divider:hover,
+.note-canvas-text .note-divider.ProseMirror-selectednode {
+  outline: 1px solid color-mix(in srgb, var(--app-accent-500) 45%, transparent);
+  outline-offset: 4px;
+  background: color-mix(in srgb, var(--app-accent-500) 6%, transparent);
+}
+
+.note-canvas-text[contenteditable='false'] .note-divider {
+  cursor: default;
+}

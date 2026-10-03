@@ -39,11 +39,13 @@ type AttachmentBlock = Extract<
 interface StudyFileBlockViewProps {
   block: AttachmentBlock
   onOpenFile?: (input: OpenStudyAssetInput) => Promise<void>
+  imagePresentation?: 'framed' | 'plain'
 }
 
 export function StudyFileBlockView({
   block,
-  onOpenFile = studyClient.openAsset
+  onOpenFile = studyClient.openAsset,
+  imagePresentation = 'framed'
 }: StudyFileBlockViewProps): React.JSX.Element {
   const asset = block.source.type === 'local' ? block.source.asset : undefined
 
@@ -196,27 +198,37 @@ export function StudyFileBlockView({
       setFailedSourceKey(sourceKey)
     }
 
+    const imagePreview = (
+      <img
+        data-study-image-preview
+        src={sourceUrl}
+        alt={accessibleTitle}
+        loading="lazy"
+        referrerPolicy="no-referrer"
+        className={cn('size-full', imageFitClassName)}
+        onLoad={handleImageLoad}
+        onError={handleImageError}
+      />
+    )
+
     return (
       <Dialog.Root>
-        <figure className="overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)]">
+        <figure
+          className={cn(
+            'overflow-hidden rounded-xl bg-[var(--app-workspace)]',
+            imagePresentation === 'framed' && 'border border-[var(--app-border)]'
+          )}
+        >
           <MediaTitleBar title={customTitle} />
 
           <div
-            className="group relative flex w-full items-center justify-center overflow-hidden bg-black/20"
-            style={{
-              height: `${imageHeight}px`
-            }}
+            className={cn(
+              'group relative flex w-full items-center justify-center overflow-hidden',
+              imagePresentation === 'plain' ? 'bg-white/[0.025]' : 'bg-black/20'
+            )}
+            style={{ height: `${imageHeight}px` }}
           >
-            <img
-              data-study-image-preview
-              src={sourceUrl}
-              alt={accessibleTitle}
-              loading="lazy"
-              referrerPolicy="no-referrer"
-              className={cn('size-full', imageFitClassName)}
-              onLoad={handleImageLoad}
-              onError={handleImageError}
-            />
+            {imagePreview}
 
             <Tooltip content={expandImageLabel} side="top">
               <Dialog.Trigger asChild>

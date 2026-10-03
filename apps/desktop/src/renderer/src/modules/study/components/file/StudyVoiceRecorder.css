@@ -1,0 +1,69 @@
+.study-voice-recorder-waveform {
+  flex: 1;
+  min-width: 96px;
+  height: 36px;
+  overflow: hidden;
+  color: var(--app-accent-400);
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    black 12px,
+    black calc(100% - 12px),
+    transparent
+  );
+}
+
+.study-voice-recorder-waveform__track {
+  display: flex;
+  width: max(200%, 384px);
+  height: 100%;
+  animation: study-voice-waveform-scroll 8s linear infinite;
+}
+
+.study-voice-recorder-waveform__segment {
+  display: flex;
+  flex: 0 0 50%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 3px;
+  padding-right: 3px;
+}
+
+.study-voice-recorder-waveform__bar {
+  flex: 0 0 3px;
+  border-radius: 3px;
+  background: currentColor;
+  transform-origin: center;
+  animation: study-voice-waveform-pulse 1s ease-in-out infinite;
+}
+
+@keyframes study-voice-waveform-scroll {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes study-voice-waveform-pulse {
+  0%,
+  100% {
+    transform: scaleY(0.35);
+    opacity: 0.5;
+  }
+
+  35% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+
+  65% {
+    transform: scaleY(0.6);
+    opacity: 0.75;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .study-voice-recorder-waveform__track,
+  .study-voice-recorder-waveform__bar {
+    animation: none;
+  }
+}

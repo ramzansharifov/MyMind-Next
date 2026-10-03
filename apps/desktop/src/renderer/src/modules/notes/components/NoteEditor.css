@@ -1,4 +1,286 @@
-[data-note-editor-content] .max-w-\[1320px\],
-[data-note-editor-content] .max-w-5xl {
-  max-width: 100%;
+.note-title {
+  min-width: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  color: var(--app-text);
+}
+
+.note-title-button {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding-inline: 8px;
+  display: block;
+  overflow: hidden;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+  outline: none;
+}
+
+.note-title-button:focus-visible {
+  border-color: color-mix(in srgb, var(--app-accent-500) 50%, transparent);
+  background: var(--app-control);
+}
+
+.note-canvas-layout {
+  --note-settings-width: 240px;
+  --note-settings-gap: 16px;
+  --note-canvas-side-padding: clamp(24px, 5vw, 80px);
+  position: relative;
+  /* Anchor the fixed panel to the editor area, below its header. */
+  contain: layout;
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.note-canvas-scroll {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  padding: 40px var(--note-canvas-side-padding);
+}
+
+.note-canvas-layout[data-settings-visible='true'] .note-canvas-scroll {
+  padding-inline-end: calc(
+    var(--note-settings-width) + var(--note-settings-gap) * 2 + 8px +
+      var(--note-canvas-side-padding)
+  );
+}
+
+.note-canvas-page {
+  width: 100%;
+  max-width: 900px;
+  min-height: 100%;
+  margin-inline: auto;
+  color: var(--app-text);
+}
+
+.note-canvas-content,
+.note-canvas-content > div {
+  min-height: 100%;
+}
+
+.note-canvas-text {
+  min-height: max(360px, calc(100vh - 180px));
+  padding-bottom: 80px;
+  font-size: 1rem;
+  line-height: 1.85;
+}
+
+.note-canvas-settings {
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  z-index: 20;
+  top: var(--note-settings-gap);
+  right: calc(var(--note-settings-gap) + 8px);
+  bottom: var(--note-settings-gap);
+  width: var(--note-settings-width);
+  overflow: hidden;
+  border: 1px solid var(--app-border);
+  border-radius: 16px;
+  background: var(--app-surface);
+  box-shadow: var(--app-shadow-card);
+  padding: 16px 14px;
+}
+
+.note-canvas-settings-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-bottom: 12px;
+}
+
+.note-canvas-attachment {
+  margin-block: 24px;
+  min-width: 0;
+  border-radius: 12px;
+  outline: none;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+
+.note-canvas-text .note-canvas-attachment p {
+  min-height: 0;
+  white-space: normal;
+}
+
+.note-canvas-attachment[data-selected='true'],
+.note-canvas-attachment:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--app-accent-500) 55%, transparent);
+  outline-offset: 4px;
+}
+
+.note-canvas-settings [data-note-attachment-settings] .note-attachment-fields {
+  display: grid;
+  gap: 10px;
+}
+
+.note-attachment-label {
+  font-size: 11px;
+  color: var(--app-muted);
+}
+
+.note-attachment-source-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  height: 34px;
+  border: 1px solid var(--app-border);
+  border-radius: 6px;
+  background: var(--app-workspace);
+  padding: 3px 4px;
+}
+
+.note-attachment-source-row:focus-within,
+.note-attachment-title-input:focus {
+  border-color: color-mix(in srgb, var(--app-accent-500) 45%, var(--app-border));
+}
+
+.note-attachment-url-input {
+  width: 0;
+  min-width: 0;
+  flex: 1;
+  padding-inline: 4px;
+  background: transparent;
+  color: var(--app-text);
+  font-size: 12px;
+  outline: none;
+}
+
+.note-attachment-title-input {
+  width: 100%;
+  min-width: 0;
+  height: 32px;
+  border: 1px solid var(--app-border);
+  border-radius: 6px;
+  background: var(--app-workspace);
+  padding: 6px 8px;
+  color: var(--app-text);
+  font-size: 12px;
+  outline: none;
+}
+
+.note-attachment-title-input::placeholder,
+.note-attachment-url-input::placeholder {
+  color: color-mix(in srgb, var(--app-muted) 65%, transparent);
+}
+
+.note-canvas-settings [data-rich-text-settings] {
+  display: grid;
+  gap: 12px;
+}
+
+.note-canvas-settings [data-rich-text-settings] > * {
+  margin: 0;
+}
+
+.note-canvas-settings [data-rich-text-settings-section] {
+  padding-bottom: 12px;
+}
+
+.note-canvas-settings [data-rich-text-settings-section]:last-child {
+  padding-bottom: 0;
+}
+
+.note-canvas-settings [data-rich-text-settings-section] h3 {
+  font-size: 10px;
+  letter-spacing: 0.05em;
+}
+
+.note-canvas-settings [data-rich-text-settings-section] > div,
+.note-canvas-settings [data-rich-text-settings-section] div.flex {
+  gap: 4px;
+}
+
+.note-canvas-settings [data-rich-text-formatting-control] {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+}
+
+.note-canvas-settings [data-rich-text-formatting-control] svg {
+  width: 14px;
+  height: 14px;
+}
+
+.note-canvas-settings [data-rich-text-settings-field] {
+  gap: 4px;
+}
+
+.note-canvas-settings [data-rich-text-settings-field] button[aria-haspopup='dialog'] {
+  height: 32px;
+  gap: 6px;
+  padding-inline: 8px;
+}
+
+.note-canvas-settings
+  [data-rich-text-settings-field]
+  button[aria-haspopup='dialog']
+  > span:first-child {
+  width: 16px;
+  height: 16px;
+}
+
+.note-canvas-settings [data-rich-text-settings-section] > div > div.grid {
+  gap: 8px;
+}
+
+.note-canvas-legacy {
+  margin-top: 32px;
+  border-top: 1px solid var(--app-border);
+  padding-top: 20px;
+}
+
+.note-canvas-legacy summary {
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: var(--app-muted);
+}
+
+[data-note-legacy-content] {
+  margin-top: 16px;
+}
+
+[data-note-legacy-content] .min-h-\[85vh\] {
+  min-height: 0;
+}
+
+[data-note-legacy-content] article {
+  padding: 16px 0;
+}
+
+@media (max-width: 900px) {
+  .note-canvas-layout {
+    --note-canvas-side-padding: 24px;
+  }
+
+  .note-canvas-scroll {
+    padding-block: 28px;
+  }
+}
+
+@media (max-width: 640px) {
+  .note-canvas-layout {
+    --note-settings-width: 220px;
+    --note-settings-gap: 12px;
+    --note-canvas-side-padding: 16px;
+  }
+
+  .note-canvas-scroll {
+    padding-block: 24px;
+  }
+
+  .note-canvas-text {
+    min-height: 360px;
+    padding-bottom: 32px;
+  }
 }

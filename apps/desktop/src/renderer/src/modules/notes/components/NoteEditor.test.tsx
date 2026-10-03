@@ -1,6 +1,5 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import type { ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { NoteDocument, NoteRecord } from '../../../../../shared/contracts/notes'
@@ -10,7 +9,8 @@ const notesMocks = vi.hoisted(() => ({
   saveNote: vi.fn(),
   renameNote: vi.fn(),
   importAsset: vi.fn(),
-  openAsset: vi.fn()
+  openAsset: vi.fn(),
+  stubCanvas: false
 }))
 
 vi.mock('../api/notes-client', () => ({
@@ -25,10 +25,6 @@ vi.mock('../api/notes-client', () => ({
   }
 }))
 
-vi.mock('../../study/components/StudyBlockAssetProvider', () => ({
-  StudyBlockAssetProvider: ({ children }: { children: ReactNode }) => <>{children}</>
-}))
-
 const changedDocument: NoteDocument = {
   version: 1,
   blocks: [
@@ -41,24 +37,25 @@ const changedDocument: NoteDocument = {
   ]
 }
 
-vi.mock('../../study/components/StudyBlockEditor', () => ({
-  StudyBlockEditor: ({
-    mode,
-    onChange
-  }: {
-    mode: 'edit' | 'read'
-    onChange: (document: NoteDocument) => void
-  }) => (
-    <div>
-      <div data-testid="note-block-editor-mode">{mode}</div>
-      {mode === 'edit' && (
-        <button type="button" onClick={() => onChange(changedDocument)}>
-          Изменить документ
-        </button>
-      )}
-    </div>
-  )
-}))
+vi.mock('./NoteCanvas', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./NoteCanvas')>()
+  return {
+    ...actual,
+    NoteCanvas: (props: Parameters<typeof actual.NoteCanvas>[0]) =>
+      notesMocks.stubCanvas ? (
+        <div>
+          <div data-testid="note-canvas-mode">{props.mode}</div>
+          {props.mode === 'edit' && (
+            <button type="button" onClick={() => props.onChange(changedDocument)}>
+              Изменить документ
+            </button>
+          )}
+        </div>
+      ) : (
+        <actual.NoteCanvas {...props} />
+      )
+  }
+})
 
 import { NoteEditor } from './NoteEditor'
 
@@ -76,6 +73,8 @@ const note: NoteRecord = {
 }
 
 beforeEach(() => {
+  vi.clearAllMocks()
+  notesMocks.stubCanvas = false
   notesMocks.getNote.mockResolvedValue(note)
   notesMocks.saveNote.mockImplementation(async ({ document }: { document: NoteDocument }) => ({
     ...note,
@@ -95,17 +94,19 @@ describe('NoteEditor reading mode', () => {
 
     const workspace = container.querySelector<HTMLElement>('[data-note-editor-mode="edit"]')
     const header = container.querySelector<HTMLElement>('[data-note-editor-header]')
-    const scrollContainer = container.querySelector<HTMLElement>('[data-note-editor-scroll-container]')
+    const scrollContainer = container.querySelector<HTMLElement>(
+      '[data-note-editor-scroll-container]'
+    )
 
     expect(workspace).toHaveClass('flex', 'h-full', 'min-h-0', 'flex-col')
-    expect(header).toHaveClass('min-h-20', 'border-b', 'px-8')
-    expect(scrollContainer).toHaveClass('min-h-0', 'flex-1', 'overflow-y-auto', 'px-8', 'py-6')
+    expect(header).toHaveClass('min-h-20', 'border-b', 'px-6', 'bg-[var(--app-workspace)]')
+    expect(scrollContainer).toHaveClass('note-canvas-scroll')
     expect(scrollContainer).not.toHaveClass('rounded-[28px]')
     expect(scrollContainer).not.toHaveClass('shadow-[var(--app-shadow-card)]')
     expect(screen.getByRole('tablist', { name: 'Режим заметки' })).toHaveClass('rounded-lg')
   })
 
-  it('uses the standard Notes content width in both editing and reading modes', async () => {
+  it('keeps a full-width header and the same canvas layout in editing and reading modes', async () => {
     const user = userEvent.setup()
     const { container } = render(
       <NoteEditor noteId={note.id} onBack={vi.fn()} onNoteUpdated={vi.fn()} />
@@ -116,45 +117,62 @@ describe('NoteEditor reading mode', () => {
     const headerContent = container.querySelector<HTMLElement>('[data-note-editor-header-content]')
     const content = container.querySelector<HTMLElement>('[data-note-editor-content]')
 
-    expect(headerContent).toHaveClass(
-      'mx-auto',
-      'w-full',
-      'max-w-[var(--app-standard-content-width)]'
-    )
-    expect(content).toHaveClass(
-      'mx-auto',
-      'w-full',
-      'max-w-[var(--app-standard-content-width)]'
-    )
+    expect(headerContent).toHaveClass('flex', 'w-full')
+    expect(headerContent).not.toHaveClass('max-w-[var(--app-standard-content-width)]')
+    expect(content).toHaveClass('note-canvas-layout')
+    expect(content).toHaveAttribute('data-settings-visible', 'true')
+    expect(
+      screen.getByRole('complementary', { name: 'Настройки текста заметки' })
+    ).toBeInTheDocument()
 
     await user.click(screen.getByRole('tab', { name: 'Чтение' }))
     await waitFor(() => {
-      expect(screen.getByTestId('note-block-editor-mode')).toHaveTextContent('read')
+      expect(screen.getByRole('document', { name: 'Текст заметки' })).toBeInTheDocument()
     })
 
-    expect(container.querySelector('[data-note-editor-content]')).toHaveClass(
-      'max-w-[var(--app-standard-content-width)]'
+    expect(container.querySelector('[data-note-editor-content]')).toHaveClass('note-canvas-layout')
+    expect(container.querySelector('[data-note-editor-content]')).toHaveAttribute(
+      'data-settings-visible',
+      'false'
+    )
+    expect(
+      screen.queryByRole('complementary', { name: 'Настройки текста заметки' })
+    ).not.toBeInTheDocument()
+    expect(container.querySelector('[data-note-editor-mode="read"]')).toHaveClass(
+      'bg-[var(--app-workspace)]'
     )
   })
 
-  it('switches between editing and reading through the shared block editor', async () => {
+  it('switches the note canvas between editing and reading', async () => {
     const user = userEvent.setup()
 
     render(<NoteEditor noteId={note.id} onBack={vi.fn()} onNoteUpdated={vi.fn()} />)
 
     await screen.findByRole('heading', { name: note.title })
-    expect(screen.getByTestId('note-block-editor-mode')).toHaveTextContent('edit')
+    expect(screen.getByRole('textbox', { name: 'Текст заметки' })).toHaveAttribute(
+      'contenteditable',
+      'true'
+    )
 
     await user.click(screen.getByRole('tab', { name: 'Чтение' }))
     await waitFor(() => {
-      expect(screen.getByTestId('note-block-editor-mode')).toHaveTextContent('read')
+      expect(screen.getByRole('document', { name: 'Текст заметки' })).toHaveAttribute(
+        'contenteditable',
+        'false'
+      )
     })
 
     await user.click(screen.getByRole('tab', { name: 'Редактирование' }))
-    expect(screen.getByTestId('note-block-editor-mode')).toHaveTextContent('edit')
+    await waitFor(() => {
+      expect(screen.getByRole('textbox', { name: 'Текст заметки' })).toHaveAttribute(
+        'contenteditable',
+        'true'
+      )
+    })
   })
 
   it('flushes the latest draft before entering reading mode', async () => {
+    notesMocks.stubCanvas = true
     const user = userEvent.setup()
 
     render(<NoteEditor noteId={note.id} onBack={vi.fn()} onNoteUpdated={vi.fn()} />)
@@ -168,7 +186,7 @@ describe('NoteEditor reading mode', () => {
         id: note.id,
         document: changedDocument
       })
-      expect(screen.getByTestId('note-block-editor-mode')).toHaveTextContent('read')
+      expect(screen.getByTestId('note-canvas-mode')).toHaveTextContent('read')
     })
   })
 })

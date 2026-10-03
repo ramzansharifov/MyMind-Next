@@ -36,6 +36,7 @@ import { MovieDetail } from './components/MovieDetail'
 import { MovieFormPage } from './components/MovieFormPage'
 import { MovieJsonImportDialog } from './components/MovieJsonImportDialog'
 import { MovieJsonViewerDialog } from './components/MovieJsonViewerDialog'
+import { MoviePageBackdrop } from './components/MoviePageBackdrop'
 import { MOVIE_TYPE_OPTIONS, movieTypeLabel } from './movie-types'
 
 type MovieFilter = 'all' | 'watchlist' | 'watched' | 'favorites'
@@ -522,7 +523,13 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
   )
 
   return (
-    <StandardModulePage>
+    <StandardModulePage className={view.kind === 'detail' ? 'movies-detail-page' : undefined}>
+      {view.kind === 'detail' && activeMovie?.posterUrl && (
+        <MoviePageBackdrop
+          key={`${activeMovie.id}:${activeMovie.posterUrl}`}
+          posterUrl={activeMovie.posterUrl}
+        />
+      )}
       <ModuleHeader icon={Film} title={headerTitle} className="mb-5" actions={headerActions}>
         {view.kind === 'library' && (
           <>
@@ -770,6 +777,7 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
         />
       ) : view.kind === 'detail' && activeMovie ? (
         <MovieDetail
+          key={activeMovie.id}
           movie={activeMovie}
           busy={isSaving}
           onUpdate={updateMovie}

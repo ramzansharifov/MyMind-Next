@@ -9,11 +9,12 @@ import { StudyInternalLinkExtension } from './StudyInternalLinkExtension'
 
 interface RichTextExtensionOptions {
   internalLinks?: boolean
+  placeholder?: string
 }
 
 export function createRichTextExtensions(
   readOnly: boolean,
-  { internalLinks = true }: RichTextExtensionOptions = {}
+  { internalLinks = true, placeholder = 'Начни писать материал…' }: RichTextExtensionOptions = {}
 ): Extensions {
   return [
     StarterKit.configure({
@@ -47,7 +48,7 @@ export function createRichTextExtensions(
     }),
 
     Placeholder.configure({
-      placeholder: 'Начни писать материал…',
+      placeholder,
       showOnlyWhenEditable: true
     })
   ]

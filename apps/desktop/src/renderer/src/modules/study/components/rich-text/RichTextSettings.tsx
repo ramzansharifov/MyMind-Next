@@ -9,6 +9,7 @@ import {
   AlignRight,
   Bold,
   Code2,
+  CircleCheck,
   IndentDecrease,
   IndentIncrease,
   Italic,
@@ -31,9 +32,13 @@ import { Tooltip } from '../../../../shared/ui/tooltip'
 import { STUDY_OPEN_INTERNAL_LINK_PICKER_EVENT } from '../../lib/study-internal-link'
 import { ColorPicker } from '../settings/ColorPicker'
 import { SegmentedChoice } from '../settings/SegmentedChoice'
+import { FontSizeRuler } from './FontSizeRuler'
+import { changeSelectedTextCase, type TextCase } from './text-case'
 
 interface RichTextSettingsProps {
   editor: Editor | null
+  compact?: boolean
+  children?: ReactNode
 }
 
 type TextAlignment = 'left' | 'center' | 'right' | 'justify'
@@ -47,6 +52,7 @@ interface EditorFormattingState {
   blockquote: boolean
   bulletList: boolean
   orderedList: boolean
+  taskList: boolean
   canIndentListItem: boolean
   canOutdentListItem: boolean
   alignment: TextAlignment
@@ -58,6 +64,7 @@ interface EditorFormattingState {
   linkActive: boolean
   canUndo: boolean
   canRedo: boolean
+  selectionEmpty: boolean
 }
 
 interface SavedSelection {
@@ -74,6 +81,7 @@ const defaultEditorState: EditorFormattingState = {
   blockquote: false,
   bulletList: false,
   orderedList: false,
+  taskList: false,
   canIndentListItem: false,
   canOutdentListItem: false,
   alignment: 'left',
@@ -84,7 +92,8 @@ const defaultEditorState: EditorFormattingState = {
   href: '',
   linkActive: false,
   canUndo: false,
-  canRedo: false
+  canRedo: false,
+  selectionEmpty: true
 }
 
 const fontSizes = [
@@ -144,15 +153,31 @@ const highlightColors = [
 const activeFormattingControlClassName =
   'border-[color-mix(in_srgb,var(--app-accent-500)_72%,white_8%)] bg-[color-mix(in_srgb,var(--app-accent-500)_24%,var(--app-workspace))] text-[color-mix(in_srgb,var(--app-accent-400)_88%,white)] shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--app-accent-500)_22%,transparent),0_0_14px_color-mix(in_srgb,var(--app-accent-500)_14%,transparent)]'
 
-export function RichTextSettings({ editor }: RichTextSettingsProps): React.JSX.Element {
+export function RichTextSettings({
+  editor,
+  compact = false,
+  children
+}: RichTextSettingsProps): React.JSX.Element {
   if (!editor || editor.isDestroyed) {
     return <UnavailableEditorSettings />
   }
 
-  return <ConnectedRichTextSettings editor={editor} />
+  return (
+    <ConnectedRichTextSettings editor={editor} compact={compact}>
+      {children}
+    </ConnectedRichTextSettings>
+  )
 }
 
-function ConnectedRichTextSettings({ editor }: { editor: Editor }): React.JSX.Element {
+function ConnectedRichTextSettings({
+  editor,
+  compact,
+  children
+}: {
+  editor: Editor
+  compact: boolean
+  children?: ReactNode
+}): React.JSX.Element {
   const savedSelectionRef = useRef<SavedSelection | null>(null)
 
   const editorState =
@@ -177,11 +202,20 @@ function ConnectedRichTextSettings({ editor }: { editor: Editor }): React.JSX.El
           blockquote: currentEditor.isActive('blockquote'),
           bulletList: currentEditor.isActive('bulletList'),
           orderedList: currentEditor.isActive('orderedList'),
+          taskList: currentEditor.isActive('taskList'),
           canIndentListItem: canRunEditorCommand(currentEditor, (candidate) =>
-            candidate.can().chain().sinkListItem('listItem').run()
+            candidate
+              .can()
+              .chain()
+              .sinkListItem(candidate.isActive('taskList') ? 'taskItem' : 'listItem')
+              .run()
           ),
           canOutdentListItem: canRunEditorCommand(currentEditor, (candidate) =>
-            candidate.can().chain().liftListItem('listItem').run()
+            candidate
+              .can()
+              .chain()
+              .liftListItem(candidate.isActive('taskList') ? 'taskItem' : 'listItem')
+              .run()
           ),
           alignment: getTextAlignment(paragraph.textAlign),
           fontSize: typeof textStyle.fontSize === 'string' ? textStyle.fontSize : 'default',
@@ -190,6 +224,7 @@ function ConnectedRichTextSettings({ editor }: { editor: Editor }): React.JSX.El
           highlightActive: currentEditor.isActive('highlight'),
           href: typeof link.href === 'string' ? link.href : '',
           linkActive: currentEditor.isActive('link'),
+          selectionEmpty: currentEditor.state.selection.empty,
           canUndo: canRunEditorCommand(currentEditor, (candidate) =>
             candidate.can().chain().undo().run()
           ),
@@ -334,6 +369,10 @@ function ConnectedRichTextSettings({ editor }: { editor: Editor }): React.JSX.El
     createCommandChain()?.unsetAllMarks().clearNodes().setTextAlign('left').run()
   }
 
+  function applyTextCase(mode: TextCase): void {
+    createCommandChain()?.command(changeSelectedTextCase(mode)).run()
+  }
+
   function applyLink(rawHref: string): boolean {
     const linkText = rawHref.trim()
     const href = normalizeHref(linkText)
@@ -407,7 +446,7 @@ function ConnectedRichTextSettings({ editor }: { editor: Editor }): React.JSX.El
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" data-rich-text-settings data-compact={compact ? 'true' : 'false'}>
       <SettingsSection title="Быстро">
         <ToolbarButton
           label="Отменить"
@@ -435,58 +474,110 @@ function ConnectedRichTextSettings({ editor }: { editor: Editor }): React.JSX.El
       </SettingsSection>
 
       <SettingsSection title="Текст">
-        <ToggleGroup.Root
-          type="multiple"
-          value={activeMarks}
-          aria-label="Форматирование текста"
-          className="flex flex-wrap gap-2"
-          onValueChange={applyMarkValues}
-        >
-          <ToolbarToggle value="bold" label="Жирный" active={editorState.bold}>
-            <Bold className="size-4" />
-          </ToolbarToggle>
+        <div className={compact ? 'flex w-full justify-between gap-2' : 'contents'}>
+          <ToggleGroup.Root
+            type="multiple"
+            value={activeMarks}
+            aria-label="Форматирование текста"
+            className={compact ? 'contents' : 'flex flex-wrap gap-2'}
+            onValueChange={applyMarkValues}
+          >
+            <ToolbarToggle value="bold" label="Жирный" active={editorState.bold}>
+              <Bold className="size-4" />
+            </ToolbarToggle>
 
-          <ToolbarToggle value="italic" label="Курсив" active={editorState.italic}>
-            <Italic className="size-4" />
-          </ToolbarToggle>
+            <ToolbarToggle value="italic" label="Курсив" active={editorState.italic}>
+              <Italic className="size-4" />
+            </ToolbarToggle>
 
-          <ToolbarToggle value="underline" label="Подчёркивание" active={editorState.underline}>
-            <Underline className="size-4" />
-          </ToolbarToggle>
+            <ToolbarToggle value="underline" label="Подчёркивание" active={editorState.underline}>
+              <Underline className="size-4" />
+            </ToolbarToggle>
 
-          <ToolbarToggle value="strike" label="Зачёркивание" active={editorState.strike}>
-            <Strikethrough className="size-4" />
-          </ToolbarToggle>
+            <ToolbarToggle value="strike" label="Зачёркивание" active={editorState.strike}>
+              <Strikethrough className="size-4" />
+            </ToolbarToggle>
 
-          <ToolbarToggle value="code" label="Код" active={editorState.code}>
-            <Code2 className="size-4" />
-          </ToolbarToggle>
-        </ToggleGroup.Root>
+            <ToolbarToggle value="code" label="Код" active={editorState.code}>
+              <Code2 className="size-4" />
+            </ToolbarToggle>
+          </ToggleGroup.Root>
 
-        <ToggleGroup.Root
-          type="single"
-          value={editorState.blockquote ? 'blockquote' : ''}
-          aria-label="Стиль цитаты"
-          className="flex flex-wrap gap-2"
-          onValueChange={() => {
-            createCommandChain()?.toggleBlockquote().run()
-          }}
-        >
-          <ToolbarToggle value="blockquote" label="Цитата" active={editorState.blockquote}>
-            <Quote className="size-4" />
-          </ToolbarToggle>
-        </ToggleGroup.Root>
+          <ToggleGroup.Root
+            type="single"
+            value={editorState.blockquote ? 'blockquote' : ''}
+            aria-label="Стиль цитаты"
+            className={compact ? 'contents' : 'flex flex-wrap gap-2'}
+            onValueChange={() => {
+              createCommandChain()?.toggleBlockquote().run()
+            }}
+          >
+            <ToolbarToggle value="blockquote" label="Цитата" active={editorState.blockquote}>
+              <Quote className="size-4" />
+            </ToolbarToggle>
+          </ToggleGroup.Root>
+        </div>
+        {compact && (
+          <div
+            className="flex w-full flex-wrap justify-between gap-2 pt-1"
+            aria-label="Цвета, ссылки и регистр текста"
+          >
+            <LinkPopover
+              disabled={false}
+              active={editorState.linkActive}
+              currentHref={editorState.href}
+              label="Ссылка"
+              ariaLabel="ссылку"
+              iconOnly
+              onApply={applyLink}
+              onRemove={removeLink}
+            />
+            <ColorPicker
+              value={editorState.color}
+              ariaLabel="Цвет текста"
+              triggerVariant="text"
+              clearLabel="Сбросить"
+              onChange={applyColor}
+              onClear={clearColor}
+            />
+            <ColorPicker
+              value={editorState.backgroundColor}
+              ariaLabel="Фон выделенного текста"
+              triggerVariant="highlight"
+              colors={highlightColors}
+              clearLabel="Убрать"
+              onChange={applyBackgroundColor}
+              onClear={clearBackgroundColor}
+            />
+            <TextCaseButtons disabled={editorState.selectionEmpty} onApply={applyTextCase} />
+          </div>
+        )}
+        {compact && (
+          <div className="w-full pt-1">
+            <FontSizeRuler value={editorState.fontSize} onChange={applyFontSize} />
+          </div>
+        )}
       </SettingsSection>
 
       <SettingsSection title="Списки">
         <ToggleGroup.Root
           type="single"
-          value={editorState.bulletList ? 'bullet' : editorState.orderedList ? 'ordered' : ''}
+          value={
+            editorState.taskList
+              ? 'task'
+              : editorState.bulletList
+                ? 'bullet'
+                : editorState.orderedList
+                  ? 'ordered'
+                  : ''
+          }
           aria-label="Тип списка"
           className="flex flex-wrap gap-2"
           onValueChange={(value) => {
             if (!value) {
-              if (editorState.bulletList) {
+              if (editorState.taskList) {
+                createCommandChain()?.toggleTaskList().run()
+              } else if (editorState.bulletList) {
                 createCommandChain()?.toggleBulletList().run()
               } else if (editorState.orderedList) {
                 createCommandChain()?.toggleOrderedList().run()
@@ -501,6 +592,9 @@ function ConnectedRichTextSettings({ editor }: { editor: Editor }): React.JSX.El
 
             if (value === 'ordered') {
               createCommandChain()?.toggleOrderedList().run()
+            }
+            if (value === 'task') {
+              createCommandChain()?.toggleTaskList().run()
             }
           }}
         >
@@ -519,13 +613,20 @@ function ConnectedRichTextSettings({ editor }: { editor: Editor }): React.JSX.El
           >
             <ListOrdered className="size-4" />
           </ToolbarToggle>
+          {compact && (
+            <ToolbarToggle value="task" label="Список с чекбоксами" active={editorState.taskList}>
+              <CircleCheck className="size-4" />
+            </ToolbarToggle>
+          )}
         </ToggleGroup.Root>
 
         <ToolbarButton
           label="Увеличить вложенность — Tab"
           disabled={!editorState.canIndentListItem}
           onClick={() => {
-            createCommandChain()?.sinkListItem('listItem').run()
+            createCommandChain()
+              ?.sinkListItem(editorState.taskList ? 'taskItem' : 'listItem')
+              .run()
           }}
         >
           <IndentIncrease className="size-4" />
@@ -535,7 +636,9 @@ function ConnectedRichTextSettings({ editor }: { editor: Editor }): React.JSX.El
           label="Уменьшить вложенность — Shift+Tab"
           disabled={!editorState.canOutdentListItem}
           onClick={() => {
-            createCommandChain()?.liftListItem('listItem').run()
+            createCommandChain()
+              ?.liftListItem(editorState.taskList ? 'taskItem' : 'listItem')
+              .run()
           }}
         >
           <IndentDecrease className="size-4" />
@@ -576,73 +679,79 @@ function ConnectedRichTextSettings({ editor }: { editor: Editor }): React.JSX.El
         </ToggleGroup.Root>
       </SettingsSection>
 
-      <SettingsSection title="Оформление" vertical>
-        <SettingsField label="Размер">
-          <SegmentedChoice
-            value={editorState.fontSize}
-            options={fontSizes}
-            ariaLabel="Размер текста"
-            columns={4}
-            onValueChange={applyFontSize}
-          />
-        </SettingsField>
-
-        <div className="grid grid-cols-2 gap-3">
-          <SettingsField label="Текст">
-            <ColorPicker
-              value={editorState.color}
-              ariaLabel="Цвет текста"
-              clearLabel="Сбросить"
-              onChange={applyColor}
-              onClear={clearColor}
+      {!compact && (
+        <SettingsSection title="Оформление" vertical>
+          <SettingsField label="Размер">
+            <SegmentedChoice
+              value={editorState.fontSize}
+              options={fontSizes}
+              ariaLabel="Размер текста"
+              columns={4}
+              onValueChange={applyFontSize}
             />
           </SettingsField>
+          <div className="grid grid-cols-2 gap-3">
+            <SettingsField label="Текст">
+              <ColorPicker
+                value={editorState.color}
+                ariaLabel="Цвет текста"
+                clearLabel="Сбросить"
+                onChange={applyColor}
+                onClear={clearColor}
+              />
+            </SettingsField>
 
-          <SettingsField label="Фон">
-            <ColorPicker
-              value={editorState.backgroundColor}
-              ariaLabel="Фон выделенного текста"
-              colors={highlightColors}
-              clearLabel="Убрать"
-              onChange={applyBackgroundColor}
-              onClear={clearBackgroundColor}
+            <SettingsField label="Фон">
+              <ColorPicker
+                value={editorState.backgroundColor}
+                ariaLabel="Фон выделенного текста"
+                colors={highlightColors}
+                clearLabel="Убрать"
+                onChange={applyBackgroundColor}
+                onClear={clearBackgroundColor}
+              />
+            </SettingsField>
+          </div>
+        </SettingsSection>
+      )}
+
+      {!compact && (
+        <SettingsSection title="Ссылки" vertical>
+          <div data-testid="link-actions" className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              aria-label="Создать внутреннюю ссылку"
+              className="hover:border-accent-500/35 hover:bg-accent-500/10 flex h-10 min-w-0 items-center justify-center gap-2 rounded-lg border border-(--app-border) bg-(--app-workspace) px-2 text-xs font-medium text-(--app-text) transition-colors outline-none focus-visible:ring-2 focus-visible:ring-(--app-accent-500)/40"
+              onMouseDown={(event) => {
+                event.preventDefault()
+              }}
+              onClick={() => {
+                editor.view.dom.dispatchEvent(
+                  new CustomEvent(STUDY_OPEN_INTERNAL_LINK_PICKER_EVENT)
+                )
+              }}
+            >
+              <Link2 aria-hidden="true" className="text-accent-300 size-4 shrink-0" />
+              <span className="truncate">Внутренняя</span>
+            </button>
+
+            <LinkPopover
+              disabled={false}
+              active={editorState.linkActive}
+              currentHref={editorState.href}
+              label="Обычная"
+              ariaLabel="обычную ссылку"
+              onApply={applyLink}
+              onRemove={removeLink}
             />
-          </SettingsField>
-        </div>
-      </SettingsSection>
+          </div>
 
-      <SettingsSection title="Ссылки" vertical>
-        <div data-testid="link-actions" className="grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            aria-label="Создать внутреннюю ссылку"
-            className="hover:border-accent-500/35 hover:bg-accent-500/10 flex h-10 min-w-0 items-center justify-center gap-2 rounded-lg border border-(--app-border) bg-(--app-workspace) px-2 text-xs font-medium text-(--app-text) transition-colors outline-none focus-visible:ring-2 focus-visible:ring-(--app-accent-500)/40"
-            onMouseDown={(event) => {
-              event.preventDefault()
-            }}
-            onClick={() => {
-              editor.view.dom.dispatchEvent(new CustomEvent(STUDY_OPEN_INTERNAL_LINK_PICKER_EVENT))
-            }}
-          >
-            <Link2 aria-hidden="true" className="text-accent-300 size-4 shrink-0" />
-            <span className="truncate">Внутренняя</span>
-          </button>
-
-          <LinkPopover
-            disabled={false}
-            active={editorState.linkActive}
-            currentHref={editorState.href}
-            label="Обычная"
-            ariaLabel="обычную ссылку"
-            onApply={applyLink}
-            onRemove={removeLink}
-          />
-        </div>
-
-        <p className="text-xs leading-5 text-(--app-muted)">
-          Внутреннюю ссылку также можно создать через [[ или Ctrl+Shift+K.
-        </p>
-      </SettingsSection>
+          <p className="text-xs leading-5 text-(--app-muted)">
+            Внутреннюю ссылку также можно создать через [[ или Ctrl+Shift+K.
+          </p>
+        </SettingsSection>
+      )}
+      {children}
     </div>
   )
 }
@@ -657,7 +766,10 @@ function SettingsSection({
   vertical?: boolean
 }): React.JSX.Element {
   return (
-    <section className="space-y-2 border-b border-(--app-border) pb-4 last:border-b-0 last:pb-0">
+    <section
+      data-rich-text-settings-section
+      className="space-y-2 border-b border-(--app-border) pb-4 last:border-b-0 last:pb-0"
+    >
       <h3 className="text-[11px] font-semibold tracking-[0.08em] text-(--app-muted) uppercase">
         {title}
       </h3>
@@ -675,7 +787,7 @@ function SettingsField({
   children: ReactNode
 }): React.JSX.Element {
   return (
-    <label className="grid gap-2">
+    <label data-rich-text-settings-field className="grid gap-2">
       <span className="text-[11px] font-medium text-(--app-muted)">{label}</span>
 
       {children}
@@ -699,6 +811,7 @@ function ToolbarButton({
       <button
         type="button"
         aria-label={label}
+        data-rich-text-formatting-control
         disabled={disabled}
         className={cn(
           'flex size-9 items-center justify-center rounded-lg border',
@@ -735,6 +848,7 @@ function ToolbarToggle({
       <ToggleGroup.Item
         value={value}
         aria-label={label}
+        data-rich-text-formatting-control
         data-active={active ? 'true' : 'false'}
         className={cn(
           'flex size-9 items-center justify-center rounded-lg border',
@@ -755,12 +869,44 @@ function ToolbarToggle({
   )
 }
 
+function TextCaseButtons({
+  disabled,
+  onApply
+}: {
+  disabled: boolean
+  onApply: (mode: TextCase) => void
+}): React.JSX.Element {
+  const options: { value: TextCase; label: string; sample: string }[] = [
+    { value: 'lower', label: 'Все строчные', sample: 'аа' },
+    { value: 'upper', label: 'Все прописные', sample: 'АА' },
+    { value: 'title', label: 'Каждое слово с большой буквы', sample: 'Аа' }
+  ]
+
+  return (
+    <>
+      {options.map((option) => (
+        <ToolbarButton
+          key={option.value}
+          label={option.label}
+          disabled={disabled}
+          onClick={() => onApply(option.value)}
+        >
+          <span aria-hidden="true" className="text-xs font-semibold">
+            {option.sample}
+          </span>
+        </ToolbarButton>
+      ))}
+    </>
+  )
+}
+
 function LinkPopover({
   disabled,
   active,
   currentHref,
   label,
   ariaLabel,
+  iconOnly = false,
   onApply,
   onRemove
 }: {
@@ -769,6 +915,7 @@ function LinkPopover({
   currentHref: string
   label: string
   ariaLabel: string
+  iconOnly?: boolean
   onApply: (href: string) => boolean
   onRemove: () => void
 }): React.JSX.Element {
@@ -799,25 +946,37 @@ function LinkPopover({
 
   return (
     <Popover.Root open={open} onOpenChange={handleOpenChange}>
-      <Popover.Trigger asChild>
-        <button
-          type="button"
-          aria-label={active ? `Изменить ${ariaLabel}` : `Добавить ${ariaLabel}`}
-          disabled={disabled}
-          className={cn(
-            'flex h-10 w-full min-w-0 items-center justify-center gap-2 rounded-lg border px-2 text-xs font-medium',
-            active
-              ? activeFormattingControlClassName
-              : 'border-(--app-border) bg-(--app-workspace) text-(--app-muted)',
-            'hover:bg-white/[0.05] hover:text-(--app-text)',
-            'focus-visible:ring-2 focus-visible:ring-(--app-accent-500)/40 focus-visible:outline-none',
-            'disabled:cursor-not-allowed disabled:opacity-35'
-          )}
-        >
-          <Link2 aria-hidden="true" className="size-4 shrink-0" />
-          <span className="truncate">{active ? 'Изменить' : label}</span>
-        </button>
-      </Popover.Trigger>
+      <Tooltip
+        content={active ? `Изменить ${ariaLabel}` : `Добавить ${ariaLabel}`}
+        side="top"
+        disabled={!iconOnly}
+      >
+        <Popover.Trigger asChild>
+          <button
+            type="button"
+            aria-label={active ? `Изменить ${ariaLabel}` : `Добавить ${ariaLabel}`}
+            data-rich-text-formatting-control={iconOnly ? 'true' : undefined}
+            disabled={disabled}
+            className={cn(
+              iconOnly
+                ? 'flex size-9 items-center justify-center rounded-lg border'
+                : 'flex h-10 w-full min-w-0 items-center justify-center gap-2 rounded-lg border px-2 text-xs font-medium',
+              active
+                ? activeFormattingControlClassName
+                : 'border-(--app-border) bg-(--app-workspace) text-(--app-muted)',
+              'hover:bg-white/[0.05] hover:text-(--app-text)',
+              'focus-visible:ring-2 focus-visible:ring-(--app-accent-500)/40 focus-visible:outline-none',
+              'disabled:cursor-not-allowed disabled:opacity-35'
+            )}
+            onMouseDown={(event) => {
+              if (iconOnly) event.preventDefault()
+            }}
+          >
+            <Link2 aria-hidden="true" className="size-4 shrink-0" />
+            {!iconOnly && <span className="truncate">{active ? 'Изменить' : label}</span>}
+          </button>
+        </Popover.Trigger>
+      </Tooltip>
 
       <Popover.Portal>
         <Popover.Content

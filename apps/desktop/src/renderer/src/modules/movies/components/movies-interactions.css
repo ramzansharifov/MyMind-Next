@@ -1,3 +1,153 @@
+/* A blurred poster and drifting light create ambience without sampling image colors. */
+.movies-detail-page {
+  position: relative;
+  isolation: isolate;
+}
+
+.movie-page-backdrop {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  overflow: hidden;
+  isolation: isolate;
+  pointer-events: none;
+  user-select: none;
+}
+
+.movie-page-backdrop__image {
+  position: absolute;
+  inset: -72px;
+  width: calc(100% + 144px);
+  max-width: none;
+  height: calc(100% + 144px);
+  object-fit: cover;
+  object-position: center 35%;
+  opacity: 0.72;
+  filter: blur(48px) saturate(1.15);
+}
+
+.movie-page-backdrop__shimmer {
+  position: absolute;
+  z-index: 2;
+  inset: -20%;
+  mix-blend-mode: screen;
+}
+
+.movie-page-backdrop__shimmer::before,
+.movie-page-backdrop__shimmer::after {
+  position: absolute;
+  inset: 0;
+  content: '';
+  filter: blur(40px);
+  will-change: transform, opacity;
+}
+
+.movie-page-backdrop__shimmer::before {
+  background:
+    radial-gradient(ellipse at 25% 30%, rgb(255 255 255 / 38%), transparent 48%),
+    radial-gradient(ellipse at 75% 65%, rgb(255 245 230 / 24%), transparent 45%);
+  animation: movie-backdrop-glow 14s ease-in-out -5s infinite alternate;
+}
+
+.movie-page-backdrop__shimmer::after {
+  background:
+    radial-gradient(ellipse at 65% 20%, rgb(235 245 255 / 28%), transparent 45%),
+    linear-gradient(
+      115deg,
+      transparent 25%,
+      rgb(255 255 255 / 3%) 38%,
+      rgb(255 255 255 / 22%) 50%,
+      rgb(255 255 255 / 3%) 62%,
+      transparent 75%
+    );
+  animation: movie-backdrop-sheen 19s ease-in-out -9s infinite alternate;
+}
+
+@keyframes movie-backdrop-glow {
+  0% {
+    opacity: 0.35;
+    transform: translate(-12%, -8%) scale(1);
+  }
+  50% {
+    opacity: 0.75;
+    transform: translate(5%, 6%) scale(1.12);
+  }
+  100% {
+    opacity: 0.45;
+    transform: translate(14%, -4%) scale(1.04);
+  }
+}
+
+@keyframes movie-backdrop-sheen {
+  0% {
+    opacity: 0.4;
+    transform: translate(18%, 8%) rotate(-8deg) scale(1.08);
+  }
+  50% {
+    opacity: 0.8;
+    transform: translate(-4%, -5%) rotate(4deg) scale(1.16);
+  }
+  100% {
+    opacity: 0.35;
+    transform: translate(-20%, 6%) rotate(10deg) scale(1.04);
+  }
+}
+
+.movie-page-backdrop::after {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  content: '';
+  background:
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--app-workspace) 20%, transparent),
+      color-mix(in srgb, var(--app-workspace) 55%, transparent)
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--app-workspace) 25%, transparent) 0%,
+      color-mix(in srgb, var(--app-workspace) 45%, transparent) 55%,
+      var(--app-workspace) 100%
+    );
+}
+
+.movies-detail-page:has(.movie-page-backdrop) [data-module-header],
+.movies-detail-page:has(.movie-page-backdrop) .movie-detail-card {
+  background: color-mix(in srgb, var(--app-surface) 76%, transparent);
+}
+
+.movies-detail-page:has(.movie-page-backdrop) .movie-detail-description {
+  background: color-mix(in srgb, var(--app-workspace) 72%, transparent);
+}
+
+:root[data-theme='light'] .movie-page-backdrop__image {
+  opacity: 0.4;
+}
+
+:root[data-theme='light'] .movie-page-backdrop__shimmer {
+  opacity: 0.65;
+}
+
+@media (max-width: 700px) {
+  .movie-page-backdrop__image {
+    filter: blur(36px);
+  }
+  .movie-page-backdrop__shimmer::before,
+  .movie-page-backdrop__shimmer::after {
+    filter: blur(28px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .movie-page-backdrop__shimmer::before,
+  .movie-page-backdrop__shimmer::after {
+    animation: none;
+    opacity: 0.4;
+    will-change: auto;
+  }
+}
+
 button[aria-haspopup='dialog'][class*='rounded-xl'] {
   border: 1px solid var(--app-border-strong);
 }

@@ -1,24 +1,17 @@
 import * as Tabs from '@radix-ui/react-tabs'
-import { ArrowLeft, BookOpen, Check, Edit3, LoaderCircle, Pencil } from 'lucide-react'
+import { ArrowLeft, BookOpen, Check, Edit3, LoaderCircle } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-import {
-  NOTE_BLOCK_TYPES,
-  type NoteDocument,
-  type NoteRecord,
-  type NoteSummary
-} from '../../../../../shared/contracts/notes'
-import type { StudyDocument } from '../../../../../shared/contracts/study'
-import { cn } from '../../../shared/lib/cn'
+import type { NoteDocument, NoteRecord, NoteSummary } from '../../../../../shared/contracts/notes'
 import { Tooltip } from '../../../shared/ui/tooltip'
 import { StudyActionButton } from '../../study/components/StudyActionButton'
 import { StudyBlockAssetProvider } from '../../study/components/StudyBlockAssetProvider'
-import { StudyBlockEditor } from '../../study/components/StudyBlockEditor'
 import { StudyAutosaveQueue, type StudyAutosaveState } from '../../study/lib/study-autosave-queue'
 import { notesBlockAssetClient, notesClient } from '../api/notes-client'
 import { registerNotesDraftHandle } from '../lib/notes-draft-lifecycle'
 import './NoteEditor.css'
-import { NoteNameDialog } from './NoteNameDialog'
+import { NoteCanvas } from './NoteCanvas'
+import { NoteTitle } from './NoteTitle'
 
 interface NoteEditorProps {
   noteId: string
@@ -35,16 +28,16 @@ export function NoteEditor({ noteId, onBack, onNoteUpdated }: NoteEditorProps): 
   const [saveState, setSaveState] = useState<StudyAutosaveState>('saved')
   const [mode, setMode] = useState<NoteEditorMode>('edit')
   const [isModeChanging, setIsModeChanging] = useState(false)
-  const [renameOpen, setRenameOpen] = useState(false)
   const [backError, setBackError] = useState<string | null>(null)
   const [modeError, setModeError] = useState<string | null>(null)
   const saveTimerRef = useRef<number | null>(null)
+  const renamePromiseRef = useRef<Promise<void> | null>(null)
 
   const [autosaveQueue] = useState(
     () =>
       new StudyAutosaveQueue<NoteDocument>(async (document) => {
         const saved = await notesClient.saveNote({ id: noteId, document })
-        setNote(saved)
+        setNote((current) => (current ? { ...saved, document: current.document } : saved))
         onNoteUpdated(saved)
       }, setSaveState)
   )
@@ -55,9 +48,10 @@ export function NoteEditor({ noteId, onBack, onNoteUpdated }: NoteEditorProps): 
     saveTimerRef.current = null
   }, [])
 
-  const flushLatestDraft = useCallback((): Promise<void> => {
+  const flushLatestDraft = useCallback(async (): Promise<void> => {
     clearSaveTimer()
-    return autosaveQueue.flushLatestDraft()
+    await renamePromiseRef.current
+    await autosaveQueue.flushLatestDraft()
   }, [autosaveQueue, clearSaveTimer])
 
   useEffect(() => {
@@ -65,7 +59,8 @@ export function NoteEditor({ noteId, onBack, onNoteUpdated }: NoteEditorProps): 
 
     const unregister = registerNotesDraftHandle({
       noteId,
-      hasUnsavedChanges: () => autosaveQueue.hasUnsavedChanges(),
+      hasUnsavedChanges: () =>
+        autosaveQueue.hasUnsavedChanges() || renamePromiseRef.current !== null,
       flush: flushLatestDraft
     })
 
@@ -110,6 +105,26 @@ export function NoteEditor({ noteId, onBack, onNoteUpdated }: NoteEditorProps): 
       saveTimerRef.current = null
       void autosaveQueue.saveLatest().catch(() => undefined)
     }, 700)
+  }
+
+  function renameTitle(title: string): Promise<void> {
+    if (renamePromiseRef.current) return renamePromiseRef.current
+    clearSaveTimer()
+    const operation = autosaveQueue.flushLatestDraft().then(async () => {
+      const updated = await notesClient.renameNote(noteId, title)
+      setNote((current) => (current ? { ...current, ...updated } : current))
+      onNoteUpdated(updated)
+    })
+    renamePromiseRef.current = operation
+    void operation.then(
+      () => {
+        renamePromiseRef.current = null
+      },
+      () => {
+        renamePromiseRef.current = null
+      }
+    )
+    return operation
   }
 
   async function handleBack(): Promise<void> {
@@ -179,11 +194,11 @@ export function NoteEditor({ noteId, onBack, onNoteUpdated }: NoteEditorProps): 
     >
       <header
         data-note-editor-header
-        className="min-h-20 shrink-0 border-b border-[var(--app-border)] bg-[var(--app-workspace)] px-8 max-[700px]:px-4"
+        className="min-h-20 shrink-0 border-b border-[var(--app-border)] bg-[var(--app-workspace)] px-6 max-[700px]:px-4"
       >
         <div
           data-note-editor-header-content
-          className="mx-auto flex min-h-20 w-full max-w-[var(--app-standard-content-width)] items-center gap-4 max-[640px]:gap-2"
+          className="flex min-h-20 w-full items-center gap-4 max-[640px]:gap-2"
         >
           <Tooltip content="Вернуться к заметкам" side="bottom">
             <StudyActionButton
@@ -196,26 +211,7 @@ export function NoteEditor({ noteId, onBack, onNoteUpdated }: NoteEditorProps): 
             </StudyActionButton>
           </Tooltip>
 
-          <div className="min-w-0 flex-1">
-            <p className="text-accent-300 text-[11px] font-semibold tracking-[0.08em] uppercase">
-              Заметка
-            </p>
-            <h1 className="mt-1 truncate text-xl font-semibold tracking-tight text-[var(--app-text)]">
-              {note.title}
-            </h1>
-          </div>
-
-          <Tooltip content="Переименовать заметку" side="bottom">
-            <StudyActionButton
-              type="button"
-              aria-label="Переименовать заметку"
-              className="w-auto shrink-0 px-3 max-[760px]:w-10 max-[760px]:px-0"
-              onClick={() => setRenameOpen(true)}
-            >
-              <Pencil aria-hidden="true" />
-              <span className="max-[760px]:hidden">Переименовать</span>
-            </StudyActionButton>
-          </Tooltip>
+          <NoteTitle title={note.title} onRename={renameTitle} />
 
           <SaveStatus
             state={saveState}
@@ -266,45 +262,15 @@ export function NoteEditor({ noteId, onBack, onNoteUpdated }: NoteEditorProps): 
         </div>
       )}
 
-      <div
-        data-note-editor-scroll-container
-        className={cn(
-          'min-h-0 flex-1 overflow-y-auto px-8 py-6',
-          'max-[700px]:px-4 max-[640px]:py-4',
-          mode === 'read' && '[scrollbar-gutter:stable] bg-[var(--app-reader-surface)]'
-        )}
-      >
-        <div
-          data-note-editor-content
-          className="mx-auto w-full max-w-[var(--app-standard-content-width)]"
-        >
-          <StudyBlockAssetProvider client={notesBlockAssetClient}>
-            <StudyBlockEditor
-              materialId={note.id}
-              document={note.document as StudyDocument}
-              mode={mode}
-              boardSource="notes"
-              allowedBlockTypes={NOTE_BLOCK_TYPES}
-              documentLabel="заметки"
-              onChange={(document) => updateDocument(document as NoteDocument)}
-            />
-          </StudyBlockAssetProvider>
-        </div>
-      </div>
-
-      <NoteNameDialog
-        open={renameOpen}
-        title="Переименовать заметку"
-        label="Название заметки"
-        initialValue={note.title}
-        confirmLabel="Сохранить"
-        onOpenChange={setRenameOpen}
-        onConfirm={async (title) => {
-          const updated = await notesClient.renameNote(note.id, title)
-          setNote((current) => (current ? { ...current, ...updated } : current))
-          onNoteUpdated(updated)
-        }}
-      />
+      <StudyBlockAssetProvider client={notesBlockAssetClient}>
+        <NoteCanvas
+          key={note.id}
+          noteId={note.id}
+          document={note.document}
+          mode={mode}
+          onChange={updateDocument}
+        />
+      </StudyBlockAssetProvider>
     </section>
   )
 }
