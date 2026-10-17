@@ -34,9 +34,7 @@ describe('StudyLatexBlock', () => {
   })
 
   it('uses the full available width for rendered LaTeX and preserves alignment', () => {
-    const { container } = render(
-      <StudyLatexBlock mode="read" source={'x = 1'} alignment="right" />
-    )
+    const { container } = render(<StudyLatexBlock mode="read" source={'x = 1'} alignment="right" />)
 
     expect(container.querySelector('.study-latex-preview')).toHaveClass('w-full')
     expect(container.querySelector('.study-latex-render')).toHaveClass('w-full', 'text-right')

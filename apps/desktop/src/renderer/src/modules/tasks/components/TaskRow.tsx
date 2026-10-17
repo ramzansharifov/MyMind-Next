@@ -4,7 +4,6 @@ import { Check, Pencil, Trash2 } from 'lucide-react'
 
 import type { TaskGroupRecord, TaskRecord } from '../../../../../shared/contracts/tasks'
 import { cn } from '../../../shared/lib/cn'
-import { TaskGroupIconGlyph, taskGroupColorClasses } from '../task-options'
 import { TaskMoveGroupMenu } from './TaskMoveGroupMenu'
 
 interface TaskRowProps {
@@ -43,7 +42,7 @@ export function TaskRow({
       initial={false}
       exit={reduceMotion ? undefined : { opacity: 0, y: -5, scale: 0.992 }}
       transition={transition}
-      className="relative flex items-center gap-3 overflow-hidden px-4 py-3.5 transition-colors hover:bg-[var(--app-control-hover)]"
+      className="relative flex min-h-16 items-center gap-3 overflow-hidden px-5 py-4 transition-colors hover:bg-[var(--app-control-hover)]"
     >
       <motion.span
         aria-hidden="true"
@@ -67,7 +66,7 @@ export function TaskRow({
         }
         aria-pressed={completed}
         disabled={busy}
-        className="relative z-[1] flex min-w-0 flex-1 items-center gap-3 text-left outline-none disabled:cursor-wait"
+        className="focus-visible:ring-accent-500/35 relative z-[1] flex min-w-0 flex-1 items-center gap-3 rounded-lg text-left outline-none focus-visible:ring-2 disabled:cursor-wait"
         onClick={() => void onToggle()}
       >
         <motion.span
@@ -95,40 +94,31 @@ export function TaskRow({
           </AnimatePresence>
         </motion.span>
 
-        <span className="min-w-0 flex-1">
-          <span className="relative block w-fit max-w-full">
-            <span
-              className={cn(
-                'block max-w-full text-sm leading-5 font-semibold transition-colors',
-                completed ? 'text-[var(--app-muted)]' : 'text-[var(--app-text)]'
-              )}
-              style={{
-                whiteSpace: 'normal',
-                overflowWrap: 'anywhere',
-                ...(completed
-                  ? {
-                      textDecorationLine: 'line-through',
-                      textDecorationColor: 'rgb(110 231 183 / 0.65)'
-                    }
-                  : {})
-              }}
-            >
-              {task.title}
-            </span>
+        <span className="min-w-0 flex-1 text-sm leading-6">
+          <span
+            className={cn(
+              'font-medium transition-colors',
+              completed ? 'text-[var(--app-muted)]' : 'text-[var(--app-text)]'
+            )}
+            style={{
+              whiteSpace: 'normal',
+              overflowWrap: 'anywhere',
+              ...(completed
+                ? {
+                    textDecorationLine: 'line-through',
+                    textDecorationColor: 'rgb(110 231 183 / 0.65)'
+                  }
+                : {})
+            }}
+          >
+            {task.title}
           </span>
-
           {group && (
-            <span
-              className={cn(
-                'mt-1.5 inline-flex h-6 max-w-full items-center gap-1.5 rounded-lg border px-2 text-[11px] font-medium transition-opacity',
-                taskGroupColorClasses[group.color].soft,
-                taskGroupColorClasses[group.color].text,
-                taskGroupColorClasses[group.color].border,
-                completed && 'opacity-65'
-              )}
-            >
-              <TaskGroupIconGlyph icon={group.icon} className="size-3 shrink-0" />
-              <span className="truncate">{group.name}</span>
+            <span className={cn('font-normal', completed && 'opacity-65')}>
+              <span aria-hidden="true" className="mx-2 text-[var(--app-muted)]/50">
+                /
+              </span>
+              <span className="text-accent-300 break-words">{group.name}</span>
             </span>
           )}
         </span>
@@ -156,6 +146,7 @@ export function TaskRow({
           <button
             type="button"
             aria-label={`Изменить задачу «${task.title}»`}
+            disabled={busy}
             className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control)] hover:text-[var(--app-text)]"
             onClick={onEdit}
           >
@@ -166,6 +157,7 @@ export function TaskRow({
           <button
             type="button"
             aria-label={`Удалить задачу «${task.title}»`}
+            disabled={busy}
             className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
             onClick={onDelete}
           >

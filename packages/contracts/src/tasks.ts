@@ -14,28 +14,15 @@ export const TASK_GROUP_ICONS = [
   'rocket',
   'bell'
 ] as const
-export const TASK_GROUP_COLORS = [
-  'accent',
-  'violet',
-  'blue',
-  'cyan',
-  'emerald',
-  'amber',
-  'orange',
-  'rose',
-  'pink'
-] as const
 
 export type TaskStatus = (typeof TASK_STATUSES)[number]
 export type TaskPriority = (typeof TASK_PRIORITIES)[number]
 export type TaskGroupIcon = (typeof TASK_GROUP_ICONS)[number]
-export type TaskGroupColor = (typeof TASK_GROUP_COLORS)[number]
 
 export interface TaskGroupRecord {
   id: string
   name: string
   icon: TaskGroupIcon
-  color: TaskGroupColor
   position: number
   createdAt: number
   updatedAt: number
@@ -63,7 +50,6 @@ export interface TasksOverview {
 export interface CreateTaskGroupInput {
   name: string
   icon: TaskGroupIcon
-  color: TaskGroupColor
 }
 
 export interface UpdateTaskGroupInput extends CreateTaskGroupInput {

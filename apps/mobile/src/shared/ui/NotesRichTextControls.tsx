@@ -7,6 +7,7 @@ import {
   AlignRight,
   Bold,
   Code2,
+  CircleCheck,
   IndentDecrease,
   IndentIncrease,
   Italic,
@@ -32,25 +33,6 @@ import type {
 import { Button, Label } from './primitives'
 import { useTheme } from './theme'
 
-export const DEFAULT_NOTES_RICH_TEXT_STATE: NotesRichTextFormattingState = {
-  bold: false,
-  italic: false,
-  underline: false,
-  strike: false,
-  code: false,
-  blockquote: false,
-  bulletList: false,
-  orderedList: false,
-  alignment: 'left',
-  linkActive: false,
-  href: '',
-  fontSize: 'default',
-  color: '',
-  backgroundColor: '',
-  canUndo: false,
-  canRedo: false
-}
-
 const FONT_SIZES = [
   { value: 'default', label: 'Авто' },
   { value: '0.75rem', label: '12' },
@@ -63,6 +45,7 @@ const FONT_SIZES = [
 ] as const
 
 const TEXT_COLORS = [
+  '#202127',
   '#f2f3f5',
   '#a1a1aa',
   '#a78bfa',
@@ -110,8 +93,8 @@ function ToolIcon({
       disabled={disabled}
       onPress={onPress}
       style={({ pressed }) => ({
-        width: 38,
-        height: 36,
+        width: 44,
+        height: 44,
         alignItems: 'center',
         justifyContent: 'center',
         borderRadius: 10,
@@ -130,12 +113,14 @@ export function NotesRichTextInlineControls({
   editor,
   state,
   openSettings,
-  openLink
+  openLink,
+  showSettings = true
 }: {
   editor: NotesRichTextDomRef | null
   state: NotesRichTextFormattingState
   openSettings(): void
   openLink(): void
+  showSettings?: boolean
 }): React.JSX.Element {
   const theme = useTheme()
   return (
@@ -177,6 +162,14 @@ export function NotesRichTextInlineControls({
         active={state.orderedList}
         onPress={() => run(editor, 'orderedList')}
       />
+      {state.taskList !== undefined ? (
+        <ToolIcon
+          label="Список с чекбоксами"
+          icon={CircleCheck}
+          active={state.taskList}
+          onPress={() => run(editor, 'taskList')}
+        />
+      ) : null}
       <ToolIcon
         label="Цитата"
         icon={Quote}
@@ -184,21 +177,23 @@ export function NotesRichTextInlineControls({
         onPress={() => run(editor, 'blockquote')}
       />
       <ToolIcon label="Ссылка" icon={Link2} active={state.linkActive} onPress={openLink} />
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Все настройки текста"
-        onPress={openSettings}
-        style={({ pressed }) => ({
-          minWidth: 42,
-          height: 36,
-          alignItems: 'center',
-          justifyContent: 'center',
-          borderRadius: 10,
-          opacity: pressed ? 0.7 : 1
-        })}
-      >
-        <Text style={{ color: theme.text, fontSize: 13, fontWeight: '800' }}>Aa</Text>
-      </Pressable>
+      {showSettings ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Все настройки текста"
+          onPress={openSettings}
+          style={({ pressed }) => ({
+            minWidth: 42,
+            height: 44,
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: 10,
+            opacity: pressed ? 0.7 : 1
+          })}
+        >
+          <Text style={{ color: theme.text, fontSize: 13, fontWeight: '800' }}>Aa</Text>
+        </Pressable>
+      ) : null}
     </>
   )
 }
@@ -264,7 +259,6 @@ export function NotesRichTextSettingsSheet({
           if (!next) close()
         }}
         title="Форматирование текста"
-        description="Те же параметры, что и в desktop-редакторе"
         icon="settings"
         presentation="sheet"
       >
@@ -349,6 +343,14 @@ export function NotesRichTextSettingsSheet({
                 active={state.orderedList}
                 onPress={() => run(editor, 'orderedList')}
               />
+              {state.taskList !== undefined ? (
+                <ToolIcon
+                  label="Список с чекбоксами"
+                  icon={CircleCheck}
+                  active={state.taskList}
+                  onPress={() => run(editor, 'taskList')}
+                />
+              ) : null}
               <ToolIcon
                 label="Увеличить отступ"
                 icon={IndentIncrease}
@@ -362,6 +364,28 @@ export function NotesRichTextSettingsSheet({
             </View>
           </View>
 
+          {state.taskList !== undefined ? (
+            <View style={{ gap: 8 }}>
+              <Label muted>Регистр текста</Label>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                <Button
+                  label="aa"
+                  accessibilityLabel="Все строчные"
+                  onPress={() => run(editor, 'lowercase')}
+                />
+                <Button
+                  label="AA"
+                  accessibilityLabel="Все прописные"
+                  onPress={() => run(editor, 'uppercase')}
+                />
+                <Button
+                  label="Aa"
+                  accessibilityLabel="Каждое слово с большой буквы"
+                  onPress={() => run(editor, 'titlecase')}
+                />
+              </View>
+            </View>
+          ) : null}
           <View style={{ gap: 8 }}>
             <Label muted>Выравнивание</Label>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
@@ -410,6 +434,11 @@ export function NotesRichTextSettingsSheet({
           <View style={{ gap: 8 }}>
             <Label muted>Цвет текста</Label>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 7 }}>
+              <Swatch
+                color={theme.accent}
+                selected={state.color.toLowerCase() === theme.accent.toLowerCase()}
+                onPress={() => void editor?.setTextColor(theme.accent)}
+              />
               {TEXT_COLORS.map((color) => (
                 <Swatch
                   key={color}
@@ -425,6 +454,11 @@ export function NotesRichTextSettingsSheet({
           <View style={{ gap: 8 }}>
             <Label muted>Фон выделенного текста</Label>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 7 }}>
+              <Swatch
+                color={theme.accent}
+                selected={state.backgroundColor.toLowerCase() === theme.accent.toLowerCase()}
+                onPress={() => void editor?.setHighlightColor(theme.accent)}
+              />
               {HIGHLIGHT_COLORS.map((color) => (
                 <Swatch
                   key={color}
@@ -509,7 +543,6 @@ export function NotesRichTextSettingsSheet({
           </View>
         </View>
       </AppDialog>
-
     </>
   )
 }

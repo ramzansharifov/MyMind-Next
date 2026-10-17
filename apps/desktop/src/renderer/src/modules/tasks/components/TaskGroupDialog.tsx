@@ -1,9 +1,8 @@
 import { FolderPlus } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 import type {
   CreateTaskGroupInput,
-  TaskGroupColor,
   TaskGroupIcon,
   TaskGroupRecord,
   UpdateTaskGroupInput
@@ -11,12 +10,8 @@ import type {
 import { cn } from '../../../shared/lib/cn'
 import { AppDialog } from '../../../shared/ui/AppDialog'
 import { Tooltip } from '../../../shared/ui/tooltip'
-import {
-  TASK_GROUP_COLOR_OPTIONS,
-  TASK_GROUP_ICON_OPTIONS,
-  TaskGroupIconGlyph,
-  taskGroupColorClasses
-} from '../task-options'
+import { TASK_GROUP_ICON_OPTIONS } from '../task-options'
+import { TaskGroupIconGlyph } from '../task-icons'
 
 const GROUP_FORM_ID = 'task-group-editor-form'
 
@@ -37,16 +32,19 @@ export function TaskGroupDialog({
 }: TaskGroupDialogProps): React.JSX.Element {
   const [name, setName] = useState('')
   const [icon, setIcon] = useState<TaskGroupIcon>('folder')
-  const [color, setColor] = useState<TaskGroupColor>('accent')
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (!open) return
-    setName(group?.name ?? '')
-    setIcon(group?.icon ?? 'folder')
-    setColor(group?.color ?? 'accent')
-    setError(null)
-  }, [group, open])
+  const [formInputs, setFormInputs] = useState<{ group: typeof group; open: typeof open } | null>(
+    null
+  )
+  if (formInputs === null || formInputs.group !== group || formInputs.open !== open) {
+    setFormInputs({ group: group, open: open })
+    if (open) {
+      setName(group?.name ?? '')
+      setIcon(group?.icon ?? 'folder')
+      setError(null)
+    }
+  }
 
   async function submit(event: React.FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault()
@@ -54,7 +52,7 @@ export function TaskGroupDialog({
     if (!normalizedName || busy) return
 
     setError(null)
-    const input: CreateTaskGroupInput = { name: normalizedName, icon, color }
+    const input: CreateTaskGroupInput = { name: normalizedName, icon }
 
     try {
       await onSave(group ? { ...input, id: group.id } : input)
@@ -131,48 +129,9 @@ export function TaskGroupDialog({
           </div>
         </div>
 
-        <div className="space-y-2">
-          <div className="flex items-center justify-between gap-3">
-            <span className="block text-xs font-medium text-[var(--app-muted)]">Цвет</span>
-            <span className="text-[11px] text-[var(--app-muted)]">
-              Без цвета = акцент приложения
-            </span>
-          </div>
-          <div className="grid grid-cols-9 gap-2 max-[620px]:grid-cols-5 max-[440px]:grid-cols-3">
-            {TASK_GROUP_COLOR_OPTIONS.map((option) => {
-              const classes = taskGroupColorClasses[option.value]
-              return (
-                <Tooltip key={option.value} content={option.label} side="top">
-                  <button
-                    type="button"
-                    aria-label={`Цвет: ${option.label}`}
-                    aria-pressed={color === option.value}
-                    className={cn(
-                      'flex aspect-square items-center justify-center rounded-xl border bg-[var(--app-workspace)] transition-transform outline-none hover:scale-105',
-                      color === option.value
-                        ? `${classes.border} ring-2 ring-white/10`
-                        : 'border-[var(--app-border)]'
-                    )}
-                    onClick={() => setColor(option.value)}
-                  >
-                    <span className={cn('size-5 rounded-full shadow-sm', classes.dot)} />
-                  </button>
-                </Tooltip>
-              )
-            })}
-          </div>
-        </div>
-
         <div className="rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-4 py-3">
           <div className="flex items-center gap-3">
-            <span
-              className={cn(
-                'flex size-9 items-center justify-center rounded-xl border',
-                taskGroupColorClasses[color].soft,
-                taskGroupColorClasses[color].text,
-                taskGroupColorClasses[color].border
-              )}
-            >
+            <span className="border-accent-400/25 bg-accent-500/12 text-accent-300 flex size-9 items-center justify-center rounded-xl border">
               <TaskGroupIconGlyph icon={icon} className="size-4" />
             </span>
             <div className="min-w-0">
@@ -180,9 +139,7 @@ export function TaskGroupDialog({
                 {name.trim() || 'Название группы'}
               </div>
               <div className="mt-0.5 text-xs text-[var(--app-muted)]">
-                {color === 'accent'
-                  ? 'Группа будет использовать акцентный цвет приложения'
-                  : 'Так группа будет выглядеть в списке'}
+                Так группа будет выглядеть в списке
               </div>
             </div>
           </div>

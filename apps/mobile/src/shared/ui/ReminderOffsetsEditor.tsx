@@ -28,7 +28,7 @@ function plural(value: number, forms: [string, string, string]): string {
   return forms[2]
 }
 
-export function reminderOffsetLabel(minutes: number): string {
+function reminderOffsetLabel(minutes: number): string {
   if (minutes === 0) return 'В момент события'
   if (minutes % 10_080 === 0) {
     const value = minutes / 10_080
@@ -57,8 +57,11 @@ export function ReminderOffsetsEditor({
   const offsets = useMemo(
     () =>
       Array.isArray(value)
-        ? [...new Set(value.filter((item): item is number => typeof item === 'number' && item >= 0))]
-            .sort((a, b) => b - a)
+        ? [
+            ...new Set(
+              value.filter((item): item is number => typeof item === 'number' && item >= 0)
+            )
+          ].sort((a, b) => b - a)
         : [],
     [value]
   )

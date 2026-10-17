@@ -85,7 +85,8 @@ export function replaceStudyCodeMatch(
   if (result.error) return { source, replaced: false, error: result.error }
 
   const current = result.matches.find(
-    (match) => match.start === target.start && match.end === target.end && match.text === target.text
+    (match) =>
+      match.start === target.start && match.end === target.end && match.text === target.text
   )
   if (!current) return { source, replaced: false, error: null }
 
@@ -165,10 +166,13 @@ function createSearchRegex(
       error: null
     }
   } catch (reason: unknown) {
-    const message = reason instanceof Error ? reason.message.replace(/^Invalid regular expression:\s*/i, '') : ''
+    const message =
+      reason instanceof Error ? reason.message.replace(/^Invalid regular expression:\s*/i, '') : ''
     return {
       regex: null,
-      error: message ? `Некорректное регулярное выражение: ${message}` : 'Некорректное регулярное выражение'
+      error: message
+        ? `Некорректное регулярное выражение: ${message}`
+        : 'Некорректное регулярное выражение'
     }
   }
 }

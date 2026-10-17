@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { StudyInternalLinkTarget } from '../../../../../../shared/contracts/study'
 import { studyClient } from '../../api/study-client'
 import { STUDY_OPEN_INTERNAL_LINK_PICKER_EVENT } from '../../lib/study-internal-link'
-import { useRichTextInternalLinksEnabled } from './RichTextCapabilities'
+import { useRichTextInternalLinksEnabled } from './rich-text-capabilities-context'
 import { createRichTextExtensions } from './extensions'
 import {
   StudyInternalLinkPicker,

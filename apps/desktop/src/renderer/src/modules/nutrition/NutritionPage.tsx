@@ -1,5 +1,16 @@
 import { Tooltip } from '../../shared/ui/tooltip'
-import { BarChart3, Braces, CalendarDays, Target, Utensils, X, type LucideIcon } from 'lucide-react'
+import {
+  BarChart3,
+  Braces,
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  RotateCcw,
+  Target,
+  Utensils,
+  X,
+  type LucideIcon
+} from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import type {
@@ -13,8 +24,9 @@ import type {
   UpdateNutritionLogEntryInput
 } from '../../../../shared/contracts/nutrition'
 import { cn } from '../../shared/lib/cn'
+import { AppDateField } from '../../shared/ui/AppDateField'
+import { AppSelect } from '../../shared/ui/AppSelect'
 import { DeleteConfirmationDialog } from '../../shared/ui/DeleteConfirmationDialog'
-import { ModuleHeader } from '../../shared/ui/ModuleHeader'
 import { StandardModulePage } from '../../shared/ui/StandardModulePage'
 import { nutritionClient } from './api/nutrition-client'
 import { NutritionDiaryView } from './components/NutritionDiaryView'
@@ -25,10 +37,12 @@ import {
   NutritionProgressView,
   type NutritionProgressPeriod
 } from './components/NutritionProgressView'
+import { NUTRITION_MEAL_OPTIONS } from './nutrition-options'
 import {
   nutritionDaysAgoKey,
   nutritionErrorMessage,
-  nutritionLocalDateKey
+  nutritionLocalDateKey,
+  shiftNutritionDate
 } from './nutrition-utils'
 
 type NutritionTab = 'today' | 'diary' | 'goal' | 'progress'
@@ -243,46 +257,164 @@ export function NutritionPage({
 
   const headerAction =
     tab === 'today' || tab === 'diary' ? (
-      <button
-        type="button"
-        className="bg-accent-500 hover:bg-accent-400 inline-flex h-10 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold text-white transition-colors"
-        onClick={() => setJsonDialogOpen(true)}
-      >
-        <Braces className="size-4" /> Добавить из JSON
-      </button>
+      <Tooltip content="Добавить из JSON" side="bottom">
+        <button
+          type="button"
+          aria-label="Добавить из JSON"
+          className="bg-accent-500 hover:bg-accent-400 focus-visible:ring-accent-500/35 flex size-10 shrink-0 items-center justify-center rounded-xl text-white transition-colors outline-none focus-visible:ring-2"
+          onClick={() => setJsonDialogOpen(true)}
+        >
+          <Braces className="size-[18px]" />
+        </button>
+      </Tooltip>
     ) : undefined
 
   return (
     <StandardModulePage>
-      <ModuleHeader
-        icon={Utensils}
-        title="Питание"
-        description="Сегодняшнее питание, дневник по датам, общая цель и динамика прогресса."
-        actions={headerAction}
+      <header
+        data-module-header
+        className="relative isolate flex flex-wrap items-center gap-3 overflow-hidden rounded-[28px] border border-[var(--app-border)] bg-[var(--app-surface)] p-6 shadow-[var(--app-shadow-card)] max-[700px]:p-5 max-[480px]:gap-2"
       >
-        <div className="flex gap-1 overflow-x-auto rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-1">
+        <div
+          aria-hidden="true"
+          className="bg-accent-500/10 pointer-events-none absolute -top-32 right-8 -z-10 size-80 rounded-full blur-3xl"
+        />
+        <div
+          aria-hidden="true"
+          className="bg-accent-900/10 pointer-events-none absolute -bottom-44 -left-24 -z-10 size-80 rounded-full blur-3xl"
+        />
+        <h1 className="sr-only">Питание</h1>
+        <span className="border-accent-500/20 bg-accent-500/10 text-accent-300 shadow-accent-500/5 flex size-12 shrink-0 items-center justify-center rounded-2xl border shadow-inner">
+          <Utensils className="size-6" />
+        </span>
+
+        {tab === 'diary' && (
+          <div
+            role="group"
+            aria-label="Дата дневника питания"
+            className="flex min-w-0 items-center gap-1 max-[640px]:order-last max-[640px]:w-full"
+          >
+            <Tooltip content="Предыдущий день" side="bottom">
+              <button
+                type="button"
+                aria-label="Предыдущий день"
+                className="focus-visible:ring-accent-500/35 flex size-10 shrink-0 items-center justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] text-[var(--app-muted)] transition-colors outline-none hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] focus-visible:ring-2"
+                onClick={() => setDiaryDate(shiftNutritionDate(diaryDate, -1))}
+              >
+                <ChevronLeft className="size-[18px]" />
+              </button>
+            </Tooltip>
+            <AppDateField
+              value={diaryDate}
+              ariaLabel="Дата дневника питания"
+              className="w-[155px] max-[640px]:flex-1"
+              onChange={(date) => {
+                if (date) setDiaryDate(date)
+              }}
+            />
+            <Tooltip content="Следующий день" side="bottom">
+              <button
+                type="button"
+                aria-label="Следующий день"
+                className="focus-visible:ring-accent-500/35 flex size-10 shrink-0 items-center justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] text-[var(--app-muted)] transition-colors outline-none hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] focus-visible:ring-2"
+                onClick={() => setDiaryDate(shiftNutritionDate(diaryDate, 1))}
+              >
+                <ChevronRight className="size-[18px]" />
+              </button>
+            </Tooltip>
+            <Tooltip content="Вернуться к сегодняшнему дню" side="bottom">
+              <button
+                type="button"
+                aria-label="Вернуться к сегодняшнему дню"
+                className="focus-visible:ring-accent-500/35 flex size-10 shrink-0 items-center justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] text-[var(--app-muted)] transition-colors outline-none hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] focus-visible:ring-2"
+                onClick={() => setDiaryDate(nutritionLocalDateKey())}
+              >
+                <RotateCcw className="size-[18px]" />
+              </button>
+            </Tooltip>
+          </div>
+        )}
+
+        {tab === 'progress' && (
+          <div
+            role="group"
+            aria-label="Фильтры прогресса питания"
+            className="flex min-w-0 flex-wrap items-center gap-2 max-[1100px]:order-last max-[1100px]:grid max-[1100px]:w-full max-[1100px]:grid-cols-2"
+          >
+            <div className="w-[150px] min-w-0 max-[1100px]:w-auto">
+              <AppSelect
+                ariaLabel="Период прогресса"
+                value={reportPeriod}
+                options={[
+                  { value: '7', label: '7 дней' },
+                  { value: '30', label: '30 дней' },
+                  { value: '90', label: '90 дней' },
+                  { value: '365', label: '365 дней' },
+                  { value: 'custom', label: 'Свой период' }
+                ]}
+                onValueChange={(value) => applyReportPeriod(value as NutritionProgressPeriod)}
+              />
+            </div>
+            <AppDateField
+              ariaLabel="Начало периода"
+              value={reportDateFrom}
+              className="w-[155px] max-[1100px]:w-auto"
+              onChange={(date) => {
+                if (!date) return
+                setReportPeriod('custom')
+                setReportDateFrom(date)
+              }}
+            />
+            <AppDateField
+              ariaLabel="Конец периода"
+              value={reportDateTo}
+              className="w-[155px] max-[1100px]:w-auto"
+              onChange={(date) => {
+                if (!date) return
+                setReportPeriod('custom')
+                setReportDateTo(date)
+              }}
+            />
+            <div className="w-[190px] min-w-0 max-[1100px]:w-auto">
+              <AppSelect
+                ariaLabel="Приём пищи в прогрессе"
+                value={reportMealType}
+                options={[{ value: 'all', label: 'Все приёмы пищи' }, ...NUTRITION_MEAL_OPTIONS]}
+                onValueChange={(value) => setReportMealType(value as 'all' | NutritionMealType)}
+              />
+            </div>
+          </div>
+        )}
+
+        <div
+          role="group"
+          aria-label="Вкладки питания"
+          className="ml-auto flex h-10 shrink-0 items-center gap-1 rounded-xl bg-[var(--app-workspace)] p-0.5 ring-1 ring-[var(--app-border)] ring-inset"
+        >
           {TABS.map((item) => {
             const Icon = item.icon
             return (
-              <button
-                key={item.id}
-                type="button"
-                aria-pressed={tab === item.id}
-                className={cn(
-                  'inline-flex h-9 shrink-0 items-center gap-2 rounded-lg px-3.5 text-sm font-medium transition-colors',
-                  tab === item.id
-                    ? 'bg-accent-500 font-semibold text-white'
-                    : 'text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
-                )}
-                onClick={() => setTab(item.id)}
-              >
-                <Icon className="size-4" />
-                {item.label}
-              </button>
+              <Tooltip key={item.id} content={item.label} side="bottom">
+                <button
+                  type="button"
+                  aria-label={item.label}
+                  aria-pressed={tab === item.id}
+                  className={cn(
+                    'focus-visible:ring-accent-500/35 flex h-full w-9 shrink-0 items-center justify-center rounded-[10px] transition-colors outline-none focus-visible:ring-2',
+                    tab === item.id
+                      ? 'bg-accent-500 text-white'
+                      : 'text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
+                  )}
+                  onClick={() => setTab(item.id)}
+                >
+                  <Icon className="size-[18px]" />
+                </button>
+              </Tooltip>
             )
           })}
         </div>
-      </ModuleHeader>
+        {headerAction}
+      </header>
 
       {error && (
         <div
@@ -325,14 +457,9 @@ export function NutritionPage({
       {tab === 'today' && (
         <NutritionDiaryView
           overview={overview}
-          selectedDate={todayDate}
           target={overview.currentTarget}
           busy={isBusy}
-          showDateNavigation={false}
-          onDateChange={(date) => {
-            setDiaryDate(date)
-            setTab('diary')
-          }}
+          summaryLabel="Сегодня"
           onEdit={setEditingLog}
           onDelete={setDeleteTarget}
           onWaterChange={(delta) => void changeWater(delta)}
@@ -342,10 +469,9 @@ export function NutritionPage({
       {tab === 'diary' && (
         <NutritionDiaryView
           overview={overview}
-          selectedDate={diaryDate}
           target={overview.currentTarget}
           busy={isBusy}
-          onDateChange={setDiaryDate}
+          summaryLabel="За день"
           onEdit={setEditingLog}
           onDelete={setDeleteTarget}
           onWaterChange={(delta) => void changeWater(delta)}
@@ -361,26 +487,7 @@ export function NutritionPage({
         />
       )}
 
-      {tab === 'progress' && (
-        <NutritionProgressView
-          report={report}
-          loading={reportLoading}
-          period={reportPeriod}
-          dateFrom={reportDateFrom}
-          dateTo={reportDateTo}
-          mealType={reportMealType}
-          onPeriodChange={applyReportPeriod}
-          onDateFromChange={(date) => {
-            setReportPeriod('custom')
-            setReportDateFrom(date)
-          }}
-          onDateToChange={(date) => {
-            setReportPeriod('custom')
-            setReportDateTo(date)
-          }}
-          onMealTypeChange={setReportMealType}
-        />
-      )}
+      {tab === 'progress' && <NutritionProgressView report={report} loading={reportLoading} />}
 
       <NutritionMealsJsonImportDialog
         open={jsonDialogOpen}

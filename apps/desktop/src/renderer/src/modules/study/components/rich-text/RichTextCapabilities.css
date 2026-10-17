@@ -8,6 +8,7 @@
 }
 
 [data-rich-text-internal-links='disabled']
-  div:has(> button[aria-label='Создать внутреннюю ссылку']) + p {
+  div:has(> button[aria-label='Создать внутреннюю ссылку'])
+  + p {
   display: none;
 }

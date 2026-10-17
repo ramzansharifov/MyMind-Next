@@ -41,7 +41,8 @@ import {
 import { StudyActionButton } from './StudyActionButton'
 import { StudyBlockEditor } from './StudyBlockEditor'
 import { StudyCodeWorkspace } from './code-mode/StudyCodeWorkspace'
-import { StudyMaterialPdfExport, waitForStudyMaterialPdfReady } from './StudyMaterialPdfExport'
+import { StudyMaterialPdfExport } from './StudyMaterialPdfExport'
+import { waitForStudyMaterialPdfReady } from './study-material-pdf-ready'
 import { StudyReadNavigation } from './StudyReadNavigation'
 
 type StudyMaterialMode = 'read' | 'edit' | 'code'

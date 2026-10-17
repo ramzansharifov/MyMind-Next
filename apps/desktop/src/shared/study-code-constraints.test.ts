@@ -30,7 +30,10 @@ describe('study Code Mode constraint diagnostics', () => {
     expect(diagnostics).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ line: 4, message: 'LaTeX: масштаб должен быть от 70 до 180%' }),
-        expect.objectContaining({ line: 8, message: 'Изображение: высота должна быть от 180 до 720 px' }),
+        expect.objectContaining({
+          line: 8,
+          message: 'Изображение: высота должна быть от 180 до 720 px'
+        }),
         expect.objectContaining({
           line: 10,
           message: 'Разделитель: толщина должна быть целым числом от 1 до 12'

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/explicit-function-return-type */
 import { readFileSync, writeFileSync } from 'node:fs'
 
 function read(path) {

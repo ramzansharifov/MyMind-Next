@@ -303,7 +303,7 @@ export function createNotesRepository(
       } else {
         blocks.push(block)
       }
-      return persistDocument(id, { version: 1, blocks })
+      return persistDocument(id, { ...existing.document, blocks })
     })
   }
 

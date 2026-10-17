@@ -13,11 +13,7 @@ import {
   saveStudyMaterial
 } from '../repositories/study.repository'
 import { setStudyAssetsRootForTesting } from './study-assets'
-import {
-  applyStudyCode,
-  getStudyCodeSnapshot,
-  previewStudyCode
-} from './study-code-service'
+import { applyStudyCode, getStudyCodeSnapshot, previewStudyCode } from './study-code-service'
 
 let testRoot = ''
 let assetsRoot = ''

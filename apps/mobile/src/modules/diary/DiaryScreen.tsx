@@ -14,8 +14,6 @@ import {
   BarChart3,
   BookOpen,
   CalendarDays,
-  ChevronLeft,
-  ChevronRight,
   Library,
   Settings2,
   SunMedium,
@@ -24,12 +22,7 @@ import {
 import { localDateKey } from '@mymind/core/habits'
 import { useServices } from '../../app/context'
 import { useCollection } from '../../shared/hooks/useCollection'
-import {
-  Button,
-  EmptyState,
-  ErrorState,
-  LoadingState
-} from '../../shared/ui/primitives'
+import { Button, EmptyState, ErrorState, LoadingState } from '../../shared/ui/primitives'
 import { FormSheet } from '../../shared/ui/FormSheet'
 import { MobileCreateAction } from '../../shared/ui/MobileCreateAction'
 import { choiceField, textField, type FormSpec } from '../../shared/ui/form-model'
@@ -215,7 +208,13 @@ function DiarySectionTab({
       })}
     >
       <Icon size={16} color={selected ? '#ffffff' : theme.muted} />
-      <Text style={{ color: selected ? '#ffffff' : theme.muted, fontSize: 13, fontWeight: selected ? '700' : '500' }}>
+      <Text
+        style={{
+          color: selected ? '#ffffff' : theme.muted,
+          fontSize: 13,
+          fontWeight: selected ? '700' : '500'
+        }}
+      >
         {label}
       </Text>
     </Pressable>
@@ -394,7 +393,10 @@ function DiaryDetail({
   )
 
   const readerPages = useMemo(
-    () => (state.data?.days ?? []).slice().sort((left, right) => left.dayKey.localeCompare(right.dayKey)),
+    () =>
+      (state.data?.days ?? [])
+        .slice()
+        .sort((left, right) => left.dayKey.localeCompare(right.dayKey)),
     [state.data?.days]
   )
   const readerIndex = readerPages.findIndex((item) => item.dayKey === date)
@@ -499,7 +501,9 @@ function DiaryDetail({
           />
           <View style={{ minWidth: 132, alignItems: 'center' }}>
             <Text style={{ color: theme.text, fontSize: 13, fontWeight: '600' }}>
-              {readerIndex >= 0 ? `${readerIndex + 1} / ${readerPages.length}` : `1 / ${readerPages.length}`}
+              {readerIndex >= 0
+                ? `${readerIndex + 1} / ${readerPages.length}`
+                : `1 / ${readerPages.length}`}
             </Text>
             <Text style={{ marginTop: 2, color: theme.muted, fontSize: 11 }}>{date}</Text>
           </View>
@@ -536,9 +540,7 @@ function DiaryDetail({
         />
       ) : view === 'reader' ? (
         readerPages.length === 0 ? (
-          <EmptyState
-            text="В дневнике пока нет страниц. Страница появится после записи или настроения."
-          />
+          <EmptyState text="В дневнике пока нет страниц. Страница появится после записи или настроения." />
         ) : (
           <Animated.View style={{ flex: 1, transform: [{ translateX: pageOffset }] }}>
             <DiaryPaperDay
@@ -738,7 +740,9 @@ function DiarySettingsMobile({
               backgroundColor: theme.accent + '14'
             }}
           >
-            <Text style={{ color: theme.accent, fontSize: 12, fontWeight: '700' }}>{diary.icon}</Text>
+            <Text style={{ color: theme.accent, fontSize: 12, fontWeight: '700' }}>
+              {diary.icon}
+            </Text>
           </View>
           <View style={{ minWidth: 0, flex: 1 }}>
             <Text numberOfLines={1} style={{ color: theme.text, fontSize: 20, fontWeight: '700' }}>
@@ -763,12 +767,20 @@ function DiarySettingsMobile({
           backgroundColor: theme.error + '08'
         }}
       >
-        <Text style={{ color: theme.error, fontSize: 15, fontWeight: '700' }}>Удаление дневника</Text>
+        <Text style={{ color: theme.error, fontSize: 15, fontWeight: '700' }}>
+          Удаление дневника
+        </Text>
         <Text style={{ marginTop: 7, color: theme.muted, fontSize: 13, lineHeight: 21 }}>
           Удаляются все страницы, настроения и записи. Действие необратимо.
         </Text>
         <View style={{ marginTop: 16, alignItems: 'flex-start' }}>
-          <Button label="Удалить дневник" icon="delete" danger disabled={!canDelete} onPress={onDelete} />
+          <Button
+            label="Удалить дневник"
+            icon="delete"
+            danger
+            disabled={!canDelete}
+            onPress={onDelete}
+          />
         </View>
         {!canDelete ? (
           <Text style={{ marginTop: 8, color: theme.muted, fontSize: 11 }}>
@@ -786,7 +798,9 @@ function DiarySettingsMobile({
           backgroundColor: theme.surface
         }}
       >
-        <Text style={{ color: theme.text, fontSize: 15, fontWeight: '700' }}>Оформление бумаги</Text>
+        <Text style={{ color: theme.text, fontSize: 15, fontWeight: '700' }}>
+          Оформление бумаги
+        </Text>
         <Text style={{ marginTop: 5, color: theme.muted, fontSize: 13, lineHeight: 20 }}>
           Разметка, оттенок листов и цвет переплёта применяются ко всему дневнику.
         </Text>

@@ -70,7 +70,9 @@ describe('study Code Mode DSL', () => {
   })
 
   it('allows new entities to omit readable names completely', () => {
-    const parsed = parseStudyCode(`@version(1)\n\nfolder "История" {\n  material "Французская революция" {\n    heading 1 "Введение"\n    text """\n      Текст лекции\n    """\n  }\n}\n`)
+    const parsed = parseStudyCode(
+      `@version(1)\n\nfolder "История" {\n  material "Французская революция" {\n    heading 1 "Введение"\n    text """\n      Текст лекции\n    """\n  }\n}\n`
+    )
 
     expect(parsed.root.name).toBeUndefined()
     expect(parsed.root.kind).toBe('folder')

@@ -55,7 +55,7 @@ afterEach(async () => {
   await rm(root, { recursive: true, force: true })
 })
 
-async function loadStorageService() {
+async function loadStorageService(): Promise<typeof import('./storage-location')> {
   return import('./storage-location')
 }
 

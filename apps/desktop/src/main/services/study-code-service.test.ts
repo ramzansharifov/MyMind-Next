@@ -14,11 +14,7 @@ import {
   saveStudyMaterial
 } from '../repositories/study.repository'
 import { setStudyAssetsRootForTesting } from './study-assets'
-import {
-  applyStudyCode,
-  getStudyCodeSnapshot,
-  previewStudyCode
-} from './study-code-service'
+import { applyStudyCode, getStudyCodeSnapshot, previewStudyCode } from './study-code-service'
 
 let testRoot = ''
 let assetsRoot = ''
@@ -121,7 +117,11 @@ describe('Study Code Mode safety service', () => {
   it('rejects borrowing a block @id from a sibling material in the same edited folder', async () => {
     const root = createStudyNode({ type: 'folder', parentId: null, title: 'Root' })
     const first = createStudyNode({ type: 'material', parentId: root.id, title: 'First material' })
-    const second = createStudyNode({ type: 'material', parentId: root.id, title: 'Second material' })
+    const second = createStudyNode({
+      type: 'material',
+      parentId: root.id,
+      title: 'Second material'
+    })
 
     await saveStudyMaterial({
       nodeId: first.id,
@@ -289,7 +289,9 @@ describe('Study Code Mode safety service', () => {
     expect(retainedAfter?.parentId).toBe(nested?.id)
     expect(created?.parentId).toBe(nested?.id)
     expect(nodes.some((node) => node.id === removed.id)).toBe(false)
-    expect(created ? getStudyMaterial(created.id).document.blocks[0]?.id : null).toBe('created-block')
+    expect(created ? getStudyMaterial(created.id).document.blocks[0]?.id : null).toBe(
+      'created-block'
+    )
   })
 })
 

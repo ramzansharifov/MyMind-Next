@@ -1,5 +1,6 @@
 import * as DocumentPicker from 'expo-document-picker'
 import { randomUUID } from 'expo-crypto'
+import type { MobileDocumentAssetStore } from './documentAssets'
 import type { NoteVoiceRecordingMimeType } from '@mymind/contracts/notes'
 import type {
   StudyAssetKind,
@@ -90,7 +91,7 @@ async function blobSize(uri: string): Promise<number> {
   }
 }
 
-export function createMobileDocumentAssetStore() {
+export function createMobileDocumentAssetStore(): MobileDocumentAssetStore {
   async function importAsset(
     ownerId: string,
     kind: StudyAssetKind

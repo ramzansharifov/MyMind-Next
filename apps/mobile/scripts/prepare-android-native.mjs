@@ -24,9 +24,7 @@ async function exists(target) {
   }
 }
 
-export async function computeAndroidNativeFingerprint({
-  repoRoot = defaultRepoRoot
-} = {}) {
+export async function computeAndroidNativeFingerprint({ repoRoot = defaultRepoRoot } = {}) {
   const hash = createHash('sha256')
   hash.update(`mymind-android-native-cache-v${CACHE_SCHEMA}\0`)
 

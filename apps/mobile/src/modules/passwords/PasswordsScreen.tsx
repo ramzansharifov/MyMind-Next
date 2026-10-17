@@ -31,7 +31,7 @@ import { WorkspaceNodeCard } from '../../shared/ui/Workspace'
 import { MobileCreateAction } from '../../shared/ui/MobileCreateAction'
 import { VisualIconBadge } from '../../shared/ui/VisualPickers'
 import { GROUP_COLOR_CHOICES, PASSWORD_GROUP_ICON_CHOICES } from '../../shared/ui/visual-options'
-import { useConfirmation } from '../../shared/ui/ConfirmationProvider'
+import { useConfirmation } from '../../shared/ui/confirmation-context'
 import { useToast } from '../../shared/ui/toast-context'
 import {
   colorField,

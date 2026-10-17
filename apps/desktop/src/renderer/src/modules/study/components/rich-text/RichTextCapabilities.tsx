@@ -1,8 +1,7 @@
-import { createContext, useContext, type ReactNode } from 'react'
+import type { ReactNode } from 'react'
+import { RichTextInternalLinksContext } from './rich-text-capabilities-context'
 
 import './RichTextCapabilities.css'
-
-const RichTextInternalLinksContext = createContext(true)
 
 export function RichTextInternalLinksProvider({
   enabled,
@@ -13,16 +12,9 @@ export function RichTextInternalLinksProvider({
 }): React.JSX.Element {
   return (
     <RichTextInternalLinksContext.Provider value={enabled}>
-      <div
-        className="contents"
-        data-rich-text-internal-links={enabled ? 'enabled' : 'disabled'}
-      >
+      <div className="contents" data-rich-text-internal-links={enabled ? 'enabled' : 'disabled'}>
         {children}
       </div>
     </RichTextInternalLinksContext.Provider>
   )
-}
-
-export function useRichTextInternalLinksEnabled(): boolean {
-  return useContext(RichTextInternalLinksContext)
 }

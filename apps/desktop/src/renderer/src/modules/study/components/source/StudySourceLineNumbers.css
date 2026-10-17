@@ -61,14 +61,15 @@
   line-height: var(--study-source-editor-line-height) !important;
 }
 
-.study-source-editor-body :is(
-  .study-markdown-source__pre,
-  .study-markdown-source__textarea,
-  .study-latex-source__pre,
-  .study-latex-source__textarea,
-  .study-mermaid-source__pre,
-  .study-mermaid-source__textarea
-),
+.study-source-editor-body
+  :is(
+    .study-markdown-source__pre,
+    .study-markdown-source__textarea,
+    .study-latex-source__pre,
+    .study-latex-source__textarea,
+    .study-mermaid-source__pre,
+    .study-mermaid-source__textarea
+  ),
 .study-code-block__pre,
 .study-code-block__textarea {
   line-height: var(--study-source-editor-line-height) !important;

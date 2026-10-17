@@ -60,7 +60,7 @@ import {
   type FinanceTab,
   type FinanceTabSwipeDirection
 } from './finance-tab-navigation'
-import { useConfirmation } from '../../shared/ui/ConfirmationProvider'
+import { useConfirmation } from '../../shared/ui/confirmation-context'
 import { useTheme } from '../../shared/ui/theme'
 import { SwipeTabBar } from '../../shared/ui/SwipeTabBar'
 import { useSwipeTabFeedback } from '../../shared/ui/useSwipeTabFeedback'

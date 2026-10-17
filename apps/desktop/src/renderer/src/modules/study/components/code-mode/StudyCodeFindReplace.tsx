@@ -55,6 +55,28 @@ export function StudyCodeFindReplace({
     () => findStudyCodeMatches(source, query, options),
     [source, query, options]
   )
+  const [matchInputs, setMatchInputs] = useState({ source, query, matchCase, wholeWord, useRegex })
+  if (
+    matchInputs.source !== source ||
+    matchInputs.query !== query ||
+    matchInputs.matchCase !== matchCase ||
+    matchInputs.wholeWord !== wholeWord ||
+    matchInputs.useRegex !== useRegex
+  ) {
+    const searchChanged =
+      matchInputs.query !== query ||
+      matchInputs.matchCase !== matchCase ||
+      matchInputs.wholeWord !== wholeWord ||
+      matchInputs.useRegex !== useRegex
+    setMatchInputs({ source, query, matchCase, wholeWord, useRegex })
+    setActiveMatchIndex(
+      result.matches.length === 0
+        ? -1
+        : searchChanged || activeMatchIndex < 0
+          ? 0
+          : Math.min(activeMatchIndex, result.matches.length - 1)
+    )
+  }
   const activeMatch = activeMatchIndex >= 0 ? result.matches[activeMatchIndex] : undefined
   const activeSegments = useMemo(
     () => (activeMatch ? getStudyCodeMatchSegments(source, activeMatch) : []),
@@ -98,10 +120,7 @@ export function StudyCodeFindReplace({
   }, [editorScrollRef])
 
   useEffect(() => {
-    if (!open) {
-      setHighlightHost(null)
-      return
-    }
+    if (!open) return
 
     setHighlightHost(
       editorScrollRef.current?.querySelector<HTMLElement>(
@@ -150,18 +169,6 @@ export function StudyCodeFindReplace({
     workspace.addEventListener('keydown', handleKeyDown)
     return () => workspace.removeEventListener('keydown', handleKeyDown)
   })
-
-  useEffect(() => {
-    setActiveMatchIndex(result.matches.length > 0 ? 0 : -1)
-  }, [query, matchCase, wholeWord, useRegex])
-
-  useEffect(() => {
-    setActiveMatchIndex((current) => {
-      if (result.matches.length === 0) return -1
-      if (current < 0) return 0
-      return Math.min(current, result.matches.length - 1)
-    })
-  }, [source, result.matches.length])
 
   useEffect(() => {
     if (!open || !activeMatch) return
@@ -439,7 +446,8 @@ export function StudyCodeFindReplace({
             )}
           </div>
 
-          {highlightHost &&
+          {open &&
+            highlightHost &&
             activeMatch &&
             createPortal(
               <div aria-hidden="true" data-study-code-find-highlight-layer>

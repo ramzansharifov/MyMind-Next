@@ -6,7 +6,7 @@ import { parseMoviesJson, parseMusicJson } from '@mymind/core/catalog-json-impor
 import { AppDialog } from '../../shared/ui/AppDialog'
 import { Button, ErrorState, Label } from '../../shared/ui/primitives'
 import { messageFor } from '../../shared/ui/form-model'
-import { useConfirmation } from '../../shared/ui/ConfirmationProvider'
+import { useConfirmation } from '../../shared/ui/confirmation-context'
 import { useTheme } from '../../shared/ui/theme'
 
 const MOVIE_EXAMPLE = `[

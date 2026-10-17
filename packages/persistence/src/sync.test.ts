@@ -9,6 +9,7 @@ import { mobileSchemaV5 } from './mobile-schema-v5'
 import { mobileSchemaV6 } from './mobile-schema-v6'
 import { mobileSchemaV7 } from './mobile-schema-v7'
 import { mobileSchemaV8 } from './mobile-schema-v8'
+import { mobileSchemaV9 } from './mobile-schema-v9'
 import {
   applySyncSnapshot,
   captureSyncSnapshot,
@@ -30,7 +31,8 @@ function createDatabase(): Database.Database {
     mobileSchemaV5,
     mobileSchemaV6,
     mobileSchemaV7,
-    mobileSchemaV8
+    mobileSchemaV8,
+    mobileSchemaV9
   ]) {
     for (const sql of migration) db.exec(sql)
   }
@@ -154,8 +156,8 @@ describe('LAN sync snapshot merge', () => {
       ensureSyncInfrastructure(database)
 
       db.prepare(
-        `INSERT INTO task_groups(id, name, icon, color, position, created_at, updated_at)
-         VALUES ('group-preview', 'Работа', 'folder', 'violet', 0, 1, 1)`
+        `INSERT INTO task_groups(id, name, icon, position, created_at, updated_at)
+         VALUES ('group-preview', 'Работа', 'folder', 0, 1, 1)`
       ).run()
       db.prepare(
         `INSERT INTO tasks(
@@ -568,8 +570,8 @@ describe('LAN sync snapshot merge', () => {
 
       for (const db of [left, right]) {
         db.prepare(
-          `INSERT INTO task_groups(id, name, icon, color, position, created_at, updated_at)
-           VALUES ('group-1', 'Работа', 'folder', 'violet', 0, 1, 1)`
+          `INSERT INTO task_groups(id, name, icon, position, created_at, updated_at)
+           VALUES ('group-1', 'Работа', 'folder', 0, 1, 1)`
         ).run()
         db.prepare(
           `INSERT INTO tasks(

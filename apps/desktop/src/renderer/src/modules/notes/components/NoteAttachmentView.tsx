@@ -1,7 +1,5 @@
-import { Node } from '@tiptap/core'
-import { NodeViewWrapper, ReactNodeViewRenderer, type NodeViewProps } from '@tiptap/react'
+import { NodeViewWrapper, type NodeViewProps } from '@tiptap/react'
 import { useCallback, type FocusEvent, type KeyboardEvent, type MouseEvent } from 'react'
-
 import { StudyFileBlockView } from '../../study/components/file/StudyFileBlockView'
 import {
   StudyVoiceRecorder,
@@ -11,95 +9,7 @@ import { useStudyBlockAssetClient } from '../../study/components/study-block-ass
 import { notesBlockAssetClient } from '../api/notes-client'
 import type { NoteAttachmentBlock } from '../lib/note-canvas-document'
 
-interface NoteAttachmentOptions {
-  noteId: string
-  getAttachment: (id: string) => NoteAttachmentBlock | undefined
-  onSelect: (id: string | null) => void
-  onVoiceControlsChange: (id: string, controls: StudyVoiceRecorderControls | null) => void
-}
-
-export const NoteAttachment = Node.create<NoteAttachmentOptions>({
-  name: 'noteAttachment',
-  group: 'block',
-  atom: true,
-  selectable: true,
-  isolating: true,
-
-  addOptions() {
-    return {
-      noteId: '',
-      getAttachment: () => undefined,
-      onSelect: () => undefined,
-      onVoiceControlsChange: () => undefined
-    }
-  },
-
-  addAttributes() {
-    return {
-      attachment: {
-        default: null,
-        rendered: false,
-        parseHTML: (element) =>
-          this.options.getAttachment(element.getAttribute('data-note-attachment-id') ?? '') ?? null
-      }
-    }
-  },
-
-  parseHTML() {
-    return [
-      {
-        tag: 'div[data-note-attachment-id]:not([data-note-voice-recording="true"])',
-        getAttrs: (element) =>
-          this.options.getAttachment(element.getAttribute('data-note-attachment-id') ?? '')
-            ? null
-            : false
-      }
-    ]
-  },
-
-  renderHTML({ node }) {
-    const attachment = node.attrs.attachment as NoteAttachmentBlock | null
-    return ['div', { 'data-note-attachment-id': attachment?.id ?? '' }]
-  },
-
-  addNodeView() {
-    return ReactNodeViewRenderer(NoteAttachmentView)
-  }
-})
-
-export const NoteVoiceRecording = NoteAttachment.extend({
-  name: 'noteVoiceRecording',
-
-  parseHTML() {
-    return [
-      {
-        tag: 'div[data-note-attachment-id][data-note-voice-recording="true"]',
-        getAttrs: (element) =>
-          this.options.getAttachment(element.getAttribute('data-note-attachment-id') ?? '')
-            ?.type === 'audio'
-            ? null
-            : false
-      }
-    ]
-  },
-
-  renderHTML({ node }) {
-    const attachment = node.attrs.attachment as NoteAttachmentBlock | null
-    return [
-      'div',
-      {
-        'data-note-attachment-id': attachment?.id ?? '',
-        'data-note-voice-recording': 'true'
-      }
-    ]
-  }
-})
-
-export function isNoteAttachmentNodeName(name: string): boolean {
-  return name === 'noteAttachment' || name === 'noteVoiceRecording'
-}
-
-function NoteAttachmentView({
+export function NoteAttachmentView({
   node,
   editor,
   extension,
@@ -109,12 +19,13 @@ function NoteAttachmentView({
 }: NodeViewProps): React.JSX.Element {
   const assetClient = useStudyBlockAssetClient()
   const attachment = node.attrs.attachment as NoteAttachmentBlock | null
+  const attachmentId = attachment?.id
   const isVoiceRecording = node.type.name === 'noteVoiceRecording'
   const onVoiceControlsChange = useCallback(
     (controls: StudyVoiceRecorderControls | null) => {
-      if (attachment?.id) extension.options.onVoiceControlsChange(attachment.id, controls)
+      if (attachmentId) extension.options.onVoiceControlsChange(attachmentId, controls)
     },
-    [attachment?.id, extension]
+    [attachmentId, extension]
   )
 
   function selectAttachment(focus: boolean): void {

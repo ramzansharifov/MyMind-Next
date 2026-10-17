@@ -110,23 +110,21 @@ export function translateReadableStudyCodeSource(
   const claimedNodeNameKeys = new Set<string>()
   const claimedBlockIds = new Set<string>()
 
-  const assignNodeIdentities = (
-    node: StudyCodeTreeAst,
-    isRoot: boolean,
-    path: number[]
-  ): void => {
+  const assignNodeIdentities = (node: StudyCodeTreeAst, isRoot: boolean, path: number[]): void => {
     validateReadableName(node.name, node)
 
     if (node.name) {
       const key = nameKey(node.name)
-      if (claimedNodeNameKeys.has(key)) fail(node, `Имя DSL «${node.name}» используется несколько раз`)
+      if (claimedNodeNameKeys.has(key))
+        fail(node, `Имя DSL «${node.name}» используется несколько раз`)
       claimedNodeNameKeys.add(key)
     }
 
     let resolvedId: string | undefined
 
     if (isRoot) {
-      if (node.id && node.id !== nodeId) fail(node, 'Идентификатор корневого элемента нельзя менять')
+      if (node.id && node.id !== nodeId)
+        fail(node, 'Идентификатор корневого элемента нельзя менять')
       resolvedId = nodeId
       validateExistingNodeName(node, resolvedId, state)
     } else if (node.id) {
@@ -144,7 +142,8 @@ export function translateReadableStudyCodeSource(
     } else if (node.name) {
       const mappedId = state.nodeIdByNameKey.get(nameKey(node.name))
       if (mappedId) {
-        if (!scopeNodeIds.has(mappedId)) fail(node, `Имя ${node.name} принадлежит другой ветке обучения`)
+        if (!scopeNodeIds.has(mappedId))
+          fail(node, `Имя ${node.name} принадлежит другой ветке обучения`)
         resolvedId = mappedId
       } else {
         resolvedId = createUniqueId(allNodeIds)
@@ -264,8 +263,11 @@ export function translateReadableStudyCodeSource(
       }
 
       headingId = plannedHeading?.id ?? storedHeading?.id ?? null
-      headingLevel = plannedHeading?.level ?? (storedHeading?.type === 'heading' ? storedHeading.level : null)
-      title = plannedHeading?.title ?? (storedHeading?.type === 'heading' ? storedHeading.text : materialTitle)
+      headingLevel =
+        plannedHeading?.level ?? (storedHeading?.type === 'heading' ? storedHeading.level : null)
+      title =
+        plannedHeading?.title ??
+        (storedHeading?.type === 'heading' ? storedHeading.text : materialTitle)
     }
 
     return {
@@ -381,7 +383,8 @@ function assignMaterialBlockIdentities(
 
     if (block.name) {
       const key = nameKey(block.name)
-      if (claimedNameKeys.has(key)) fail(block, `Имя блока DSL «${block.name}» используется несколько раз`)
+      if (claimedNameKeys.has(key))
+        fail(block, `Имя блока DSL «${block.name}» используется несколько раз`)
       claimedNameKeys.add(key)
     }
 
@@ -427,7 +430,8 @@ function assignMaterialBlockIdentities(
     }
 
     if (existingBlockId) {
-      if (claimedBlockIds.has(existingBlockId)) fail(block, 'Один идентификатор блока используется несколько раз')
+      if (claimedBlockIds.has(existingBlockId))
+        fail(block, 'Один идентификатор блока используется несколько раз')
       claimedBlockIds.add(existingBlockId)
     }
 
@@ -468,10 +472,14 @@ function validateExistingNodeName(
   if (!node.name) return
   const existingName = state.nodeNameById.get(nodeId)
   if (existingName && nameKey(existingName) !== nameKey(node.name)) {
-    fail(node, `Имя существующего элемента — ${existingName}. Измените обычное название, а не DSL-имя.`)
+    fail(
+      node,
+      `Имя существующего элемента — ${existingName}. Измените обычное название, а не DSL-имя.`
+    )
   }
   const occupied = state.nodeIdByNameKey.get(nameKey(node.name))
-  if (occupied && occupied !== nodeId) fail(node, `Имя DSL «${node.name}» уже используется другим элементом`)
+  if (occupied && occupied !== nodeId)
+    fail(node, `Имя DSL «${node.name}» уже используется другим элементом`)
 }
 
 function validateExistingBlockName(
@@ -482,7 +490,10 @@ function validateExistingBlockName(
 ): void {
   if (!block.name) return
   const existing = state.blockNameById.get(blockId)
-  if (existing && (existing.materialId !== materialId || nameKey(existing.name) !== nameKey(block.name))) {
+  if (
+    existing &&
+    (existing.materialId !== materialId || nameKey(existing.name) !== nameKey(block.name))
+  ) {
     fail(block, `Имя существующего блока — ${existing.name}. DSL-имя является стабильной ссылкой.`)
   }
   const occupied = state.blockIdByMaterialAndNameKey.get(blockScopeKey(materialId, block.name))
@@ -527,7 +538,10 @@ function loadReadableIdentityState(): ReadableIdentityState {
   }
 }
 
-function collectSubtreeIds(rootId: string, rows: Array<typeof studyNodes.$inferSelect>): Set<string> {
+function collectSubtreeIds(
+  rootId: string,
+  rows: Array<typeof studyNodes.$inferSelect>
+): Set<string> {
   const included = new Set<string>([rootId])
   let changed = true
   while (changed) {
@@ -549,7 +563,8 @@ function getPlannedFolderPath(
 ): string[] {
   const path: string[] = []
   const visited = new Set<string>()
-  let parentId = plannedNodes.get(materialId)?.parentId ?? storedNodes.get(materialId)?.parentId ?? null
+  let parentId =
+    plannedNodes.get(materialId)?.parentId ?? storedNodes.get(materialId)?.parentId ?? null
 
   while (parentId && !visited.has(parentId)) {
     visited.add(parentId)
@@ -564,7 +579,10 @@ function getPlannedFolderPath(
   return path
 }
 
-function validateReadableName(name: string | undefined, location: { line: number; column: number }): void {
+function validateReadableName(
+  name: string | undefined,
+  location: { line: number; column: number }
+): void {
   if (!name) return
   if (!STUDY_CODE_NAME_PATTERN.test(name)) {
     fail(

@@ -65,52 +65,45 @@ afterEach(() => {
 })
 
 describe('StudyBlockEditor virtualization', () => {
-  it(
-    'mounts distant blocks near the viewport and unmounts them again after they leave overscan',
-    async () => {
-      vi.stubGlobal('IntersectionObserver', MockIntersectionObserver)
+  it('mounts distant blocks near the viewport and unmounts them again after they leave overscan', async () => {
+    vi.stubGlobal('IntersectionObserver', MockIntersectionObserver)
 
-      const document: StudyDocument = {
-        version: 1,
-        blocks: Array.from({ length: 20 }, (_, index) => ({
-          id: `heading-${index + 1}`,
-          type: 'heading' as const,
-          text: `Заголовок ${index + 1}`,
-          level: 1 as const
-        }))
-      }
-
-      const { container } = render(
-        <StudyBlockEditor
-          materialId="large-material"
-          document={document}
-          mode="edit"
-          onChange={vi.fn()}
-        />
-      )
-
-      expect(screen.getByDisplayValue('Заголовок 1')).toBeInTheDocument()
-      expect(screen.queryByDisplayValue('Заголовок 20')).not.toBeInTheDocument()
-
-      const distantBlock = container.querySelector<HTMLElement>(
-        '[data-study-block-id="heading-20"]'
-      )
-
-      expect(distantBlock).toHaveAttribute('data-study-block-viewport', 'placeholder')
-      expect(
-        distantBlock?.querySelector('[data-study-block-placeholder]')
-      ).toBeInTheDocument()
-      expect(distantBlock?.style.height).not.toBe('')
-
-      emitIntersection(distantBlock!, true)
-
-      await waitFor(() => expect(screen.getByDisplayValue('Заголовок 20')).toBeInTheDocument())
-      expect(distantBlock).toHaveAttribute('data-study-block-viewport', 'mounted')
-
-      emitIntersection(distantBlock!, false)
-
-      await waitFor(() => expect(screen.queryByDisplayValue('Заголовок 20')).not.toBeInTheDocument())
-      expect(distantBlock).toHaveAttribute('data-study-block-viewport', 'placeholder')
+    const document: StudyDocument = {
+      version: 1,
+      blocks: Array.from({ length: 20 }, (_, index) => ({
+        id: `heading-${index + 1}`,
+        type: 'heading' as const,
+        text: `Заголовок ${index + 1}`,
+        level: 1 as const
+      }))
     }
-  )
+
+    const { container } = render(
+      <StudyBlockEditor
+        materialId="large-material"
+        document={document}
+        mode="edit"
+        onChange={vi.fn()}
+      />
+    )
+
+    expect(screen.getByDisplayValue('Заголовок 1')).toBeInTheDocument()
+    expect(screen.queryByDisplayValue('Заголовок 20')).not.toBeInTheDocument()
+
+    const distantBlock = container.querySelector<HTMLElement>('[data-study-block-id="heading-20"]')
+
+    expect(distantBlock).toHaveAttribute('data-study-block-viewport', 'placeholder')
+    expect(distantBlock?.querySelector('[data-study-block-placeholder]')).toBeInTheDocument()
+    expect(distantBlock?.style.height).not.toBe('')
+
+    emitIntersection(distantBlock!, true)
+
+    await waitFor(() => expect(screen.getByDisplayValue('Заголовок 20')).toBeInTheDocument())
+    expect(distantBlock).toHaveAttribute('data-study-block-viewport', 'mounted')
+
+    emitIntersection(distantBlock!, false)
+
+    await waitFor(() => expect(screen.queryByDisplayValue('Заголовок 20')).not.toBeInTheDocument())
+    expect(distantBlock).toHaveAttribute('data-study-block-viewport', 'placeholder')
+  })
 })

@@ -102,7 +102,9 @@ try {
     platform: 'win32',
     nodeExecutable: fakeNodeExecutable,
     expoCliPath: fakeExpoCliPath,
-    log() {},
+    log() {
+      return undefined
+    },
     spawn(command, args, options) {
       calls.push({ command, args, options })
 

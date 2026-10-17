@@ -41,7 +41,7 @@ export function patchExpoDomWebViewSource(source) {
   if (source.includes(PATCH_MARKER)) {
     if (
       !source.includes('if (!domReadyRef.current) return;') ||
-      !source.includes("data: latestSmartActionsRef.current")
+      !source.includes('data: latestSmartActionsRef.current')
     ) {
       throw new Error('Incomplete MyMind Expo DOM readiness patch')
     }
@@ -55,10 +55,9 @@ export function patchExpoDomWebViewSource(source) {
     throw new Error('Unsupported Expo DOM ready-handshake implementation')
   }
 
-  const next = source.replace(BUGGY_PROP_EFFECT, FIXED_PROP_EFFECT).replace(
-    BUGGY_DOM_READY,
-    FIXED_DOM_READY
-  )
+  const next = source
+    .replace(BUGGY_PROP_EFFECT, FIXED_PROP_EFFECT)
+    .replace(BUGGY_DOM_READY, FIXED_DOM_READY)
 
   return { source: next, changed: true }
 }

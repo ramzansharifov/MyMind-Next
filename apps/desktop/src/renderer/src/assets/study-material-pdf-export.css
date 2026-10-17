@@ -188,7 +188,10 @@
     letter-spacing: -0.01em !important;
   }
 
-  [data-study-pdf-export-root] button:not([aria-label^='Свернуть раздел']):not([aria-label^='Развернуть раздел']):not([aria-label^='Открыть файл']) {
+  [data-study-pdf-export-root]
+    button:not([aria-label^='Свернуть раздел']):not([aria-label^='Развернуть раздел']):not(
+      [aria-label^='Открыть файл']
+    ) {
     display: none !important;
   }
 

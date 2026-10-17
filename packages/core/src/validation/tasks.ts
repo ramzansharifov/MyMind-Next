@@ -1,11 +1,6 @@
 import { z } from 'zod'
 
-import {
-  TASK_GROUP_COLORS,
-  TASK_GROUP_ICONS,
-  TASK_PRIORITIES,
-  TASK_STATUSES
-} from '@mymind/contracts/tasks'
+import { TASK_GROUP_ICONS, TASK_PRIORITIES, TASK_STATUSES } from '@mymind/contracts/tasks'
 
 const TASK_SAFE_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/
 const MAX_GROUP_NAME_LENGTH = 80
@@ -19,7 +14,6 @@ export const taskSafeIdSchema = z
 export const taskStatusSchema = z.enum(TASK_STATUSES)
 export const taskPrioritySchema = z.enum(TASK_PRIORITIES)
 export const taskGroupIconSchema = z.enum(TASK_GROUP_ICONS)
-export const taskGroupColorSchema = z.enum(TASK_GROUP_COLORS)
 
 const taskDateSchema = z
   .string()
@@ -44,8 +38,7 @@ const taskTimeSchema = z
 export const createTaskGroupInputSchema = z
   .object({
     name: z.string().trim().min(1, 'Введите название группы').max(MAX_GROUP_NAME_LENGTH),
-    icon: taskGroupIconSchema,
-    color: taskGroupColorSchema
+    icon: taskGroupIconSchema
   })
   .strict()
 

@@ -33,7 +33,9 @@ function MoviePoster({ movie }: { movie: MovieRecord }): React.JSX.Element {
         backgroundColor: theme.raised
       }}
     >
-      <Text style={{ paddingHorizontal: 10, textAlign: 'center', color: theme.muted, fontSize: 11 }}>
+      <Text
+        style={{ paddingHorizontal: 10, textAlign: 'center', color: theme.muted, fontSize: 11 }}
+      >
         Постер не указан
       </Text>
     </View>
@@ -204,8 +206,7 @@ export function MovieLibraryView({
   refreshing,
   onRefresh,
   onOpen,
-  onToggleFavorite,
-  onSearchWeb: _onSearchWeb
+  onToggleFavorite
 }: MovieLibraryViewProps): React.JSX.Element {
   return (
     <FlatList

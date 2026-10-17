@@ -10,7 +10,7 @@ import {
   Star,
   UserRound
 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 import type {
   PasswordGroupRecord,
@@ -47,9 +47,16 @@ export function PasswordDetailDialog({
 }: PasswordDetailDialogProps): React.JSX.Element {
   const [revealed, setRevealed] = useState(false)
 
-  useEffect(() => {
-    if (open) setRevealed(false)
-  }, [open, item?.id])
+  const [formInputs, setFormInputs] = useState<{
+    open: typeof open
+    itemId: string | undefined
+  } | null>(null)
+  if (formInputs === null || formInputs.open !== open || formInputs.itemId !== item?.id) {
+    setFormInputs({ open: open, itemId: item?.id })
+    if (open) {
+      setRevealed(false)
+    }
+  }
 
   return (
     <AppDialog

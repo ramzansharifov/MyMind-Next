@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react'
 
 import type { StudyBlock } from '../../../../../shared/contracts/study'
 
@@ -25,7 +25,12 @@ export function useStudyEditBlockVirtualization({
   index,
   enabled,
   pinned
-}: StudyEditBlockVirtualizationInput) {
+}: StudyEditBlockVirtualizationInput): {
+  containerRef: RefObject<HTMLDivElement | null>
+  contentRef: RefObject<HTMLDivElement | null>
+  shouldRenderContent: boolean
+  placeholderHeight: number
+} {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const contentRef = useRef<HTMLDivElement | null>(null)
   const [nearViewport, setNearViewport] = useState(
@@ -35,7 +40,6 @@ export function useStudyEditBlockVirtualization({
 
   useEffect(() => {
     if (!enabled || typeof IntersectionObserver === 'undefined') {
-      setNearViewport(true)
       return undefined
     }
 
@@ -65,7 +69,8 @@ export function useStudyEditBlockVirtualization({
     return () => observer.disconnect()
   }, [enabled])
 
-  const shouldRenderContent = !enabled || pinned || nearViewport
+  const shouldRenderContent =
+    !enabled || typeof IntersectionObserver === 'undefined' || pinned || nearViewport
 
   useLayoutEffect(() => {
     if (!enabled || !shouldRenderContent) {

@@ -90,7 +90,9 @@ export function toReadableStudyCodeSource(internalSource: string): string {
 
       const blockId = block.id
       if (seenBlockIds.has(blockId)) {
-        throw new Error(`В материале обнаружен повторяющийся внутренний идентификатор блока ${blockId}`)
+        throw new Error(
+          `В материале обнаружен повторяющийся внутренний идентификатор блока ${blockId}`
+        )
       }
       seenBlockIds.add(blockId)
 
@@ -326,7 +328,10 @@ function removeAllStaleBlockNameRows(): void {
     .all()
     .forEach((row) => {
       if (!liveOwners.get(row.blockId)?.has(row.materialId)) {
-        database.delete(studyCodeBlockNames).where(eq(studyCodeBlockNames.blockId, row.blockId)).run()
+        database
+          .delete(studyCodeBlockNames)
+          .where(eq(studyCodeBlockNames.blockId, row.blockId))
+          .run()
       }
     })
 }

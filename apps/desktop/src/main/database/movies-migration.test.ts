@@ -112,11 +112,13 @@ describe('movies metadata migration', () => {
       expect(sqlite.prepare('SELECT type FROM movies WHERE id = ?').get('movie-3')).toEqual({
         type: 'movie'
       })
-      const typeColumn = (sqlite.prepare('PRAGMA table_info(movies)').all() as Array<{
-        name: string
-        notnull: number
-        dflt_value: string | null
-      }>).find((column) => column.name === 'type')
+      const typeColumn = (
+        sqlite.prepare('PRAGMA table_info(movies)').all() as Array<{
+          name: string
+          notnull: number
+          dflt_value: string | null
+        }>
+      ).find((column) => column.name === 'type')
       expect(typeColumn).toMatchObject({ name: 'type', notnull: 1, dflt_value: "'movie'" })
     } finally {
       sqlite.close()
@@ -137,21 +139,7 @@ describe('movies metadata migration', () => {
           status, favorite, comments, created_at, updated_at
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       )
-      insert.run(
-        'series-1',
-        'Series',
-        'series',
-        '',
-        45,
-        '[]',
-        '[]',
-        '',
-        'watchlist',
-        0,
-        '',
-        1,
-        2
-      )
+      insert.run('series-1', 'Series', 'series', '', 45, '[]', '[]', '', 'watchlist', 0, '', 1, 2)
       insert.run(
         'anime-1',
         'Legacy anime',

@@ -1,6 +1,6 @@
 import { Tooltip } from '../../../shared/ui/tooltip'
 import { FolderPlus } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 import type {
   CreatePasswordGroupInput,
@@ -14,9 +14,9 @@ import { AppDialog } from '../../../shared/ui/AppDialog'
 import {
   PASSWORD_GROUP_COLOR_OPTIONS,
   PASSWORD_GROUP_ICON_OPTIONS,
-  PasswordGroupIconGlyph,
   passwordGroupColorClasses
 } from '../password-options'
+import { PasswordGroupIconGlyph } from '../password-icons'
 
 const GROUP_FORM_ID = 'password-group-editor-form'
 
@@ -40,13 +40,18 @@ export function PasswordGroupDialog({
   const [color, setColor] = useState<PasswordGroupColor>('violet')
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (!open) return
-    setName(group?.name ?? '')
-    setIcon(group?.icon ?? 'folder')
-    setColor(group?.color ?? 'violet')
-    setError(null)
-  }, [group, open])
+  const [formInputs, setFormInputs] = useState<{ group: typeof group; open: typeof open } | null>(
+    null
+  )
+  if (formInputs === null || formInputs.group !== group || formInputs.open !== open) {
+    setFormInputs({ group: group, open: open })
+    if (open) {
+      setName(group?.name ?? '')
+      setIcon(group?.icon ?? 'folder')
+      setColor(group?.color ?? 'violet')
+      setError(null)
+    }
+  }
 
   async function submit(event: React.FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault()

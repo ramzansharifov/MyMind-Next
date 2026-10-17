@@ -1,21 +1,29 @@
-import { TaskList } from '@tiptap/extension-list'
 import { NodeSelection } from '@tiptap/pm/state'
 import { EditorContent, useEditor } from '@tiptap/react'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 
-import type { NoteDocument } from '../../../../../shared/contracts/notes'
+import type { NoteAppearance, NoteDocument } from '../../../../../shared/contracts/notes'
 import type { StudyAssetKind } from '../../../../../shared/contracts/study'
 import type { StudyVoiceRecorderControls } from '../../study/components/file/StudyVoiceRecorder'
 import { createRichTextExtensions } from '../../study/components/rich-text/extensions'
 import { RichTextSettings } from '../../study/components/rich-text/RichTextSettings'
 import { StudyBlockEditor } from '../../study/components/StudyBlockEditor'
 import {
+  createNoteAttachmentLookup,
   getNoteAttachments,
   getNoteCanvas,
   getNoteLegacyContent,
   updateNoteCanvas,
   type NoteAttachmentBlock
 } from '../lib/note-canvas-document'
+import {
+  getNoteAppearance,
+  getNoteAppearanceStyle,
+  getNotePaperStyle,
+  getNotePaperTone,
+  NOTE_PAGE_HEIGHT
+} from '../lib/note-appearance'
+import { NoteAppearanceSettings } from './NoteAppearanceSettings'
 import { isNoteAttachmentNodeName, NoteAttachment, NoteVoiceRecording } from './NoteAttachment'
 import { NoteAttachmentButtons } from './NoteAttachmentButtons'
 import {
@@ -25,15 +33,19 @@ import {
 import { NoteAttachmentSettings } from './NoteAttachmentSettings'
 import { NoteDivider } from './NoteDivider'
 import { NoteDividerSettings } from './NoteDividerSettings'
+import { NoteHighlightContrast } from './NoteHighlightContrast'
+import { NOTE_PAGE_GAP, NOTE_PAGINATION_LAYOUT_EVENT, NotePagination } from './NotePagination'
 import { NoteTaskItem } from './NoteTaskItem'
+import { NoteTaskList } from './NoteTaskList'
 import './NoteDivider.css'
 import './NoteTaskList.css'
+import './NotePaperTheme.css'
 
 interface NoteCanvasProps {
   noteId: string
   document: NoteDocument
-  mode: 'edit' | 'read'
-  onChange: (document: NoteDocument) => void
+  mode: 'edit' | 'read' | 'view'
+  onChange: (document: NoteDocument, options?: { saveImmediately?: boolean }) => void
 }
 
 export function NoteCanvas({
@@ -48,8 +60,13 @@ export function NoteCanvas({
       crypto.randomUUID()
   )
   const canvas = useMemo(() => getNoteCanvas(document, canvasId), [document, canvasId])
+  const appearance = getNoteAppearance(document)
+  const isPaged = appearance.variant !== 'canvas'
+  const [pageCount, setPageCount] = useState(1)
+  const isEditable = mode === 'edit'
   const legacyContent = useMemo(() => getNoteLegacyContent(document), [document])
   const attachments = useMemo(() => getNoteAttachments(document), [document])
+  const [attachmentLookup] = useState(() => createNoteAttachmentLookup(attachments))
   const [selectedAttachmentId, setSelectedAttachmentId] = useState<string | null>(null)
   const selectedAttachment = attachments.find(
     (attachment) => attachment.id === selectedAttachmentId
@@ -70,6 +87,14 @@ export function NoteCanvas({
     },
     []
   )
+
+  function updateAppearance(nextAppearance: NoteAppearance | undefined): void {
+    const nextDocument = { ...documentRef.current }
+    if (nextAppearance) nextDocument.appearance = nextAppearance
+    else delete nextDocument.appearance
+    documentRef.current = nextDocument
+    onChangeRef.current(nextDocument, { saveImmediately: true })
+  }
 
   useEffect(() => {
     if (selectedAttachmentId) attachmentSettingsRef.current?.scrollIntoView({ block: 'nearest' })
@@ -155,31 +180,32 @@ export function NoteCanvas({
   useEffect(() => {
     documentRef.current = document
     onChangeRef.current = onChange
-  }, [document, onChange])
+    attachmentLookup.update(attachments)
+  }, [document, onChange, attachmentLookup, attachments])
 
   const editor = useEditor(
     {
       extensions: [
-        ...createRichTextExtensions(mode === 'read', {
+        ...createRichTextExtensions(!isEditable, {
           internalLinks: false,
           placeholder: 'Начните писать заметку…'
         }),
         NoteDivider,
+        NoteHighlightContrast,
+        NotePagination.configure({ onPageCountChange: setPageCount }),
         NoteAttachmentDeletionGuard,
         NoteAttachment.configure({
           noteId,
-          getAttachment: (id) =>
-            getNoteAttachments(documentRef.current).find((attachment) => attachment.id === id),
+          getAttachment: attachmentLookup.getAttachment,
           onSelect: setSelectedAttachmentId
         }),
         NoteVoiceRecording.configure({
           noteId,
-          getAttachment: (id) =>
-            getNoteAttachments(documentRef.current).find((attachment) => attachment.id === id),
+          getAttachment: attachmentLookup.getAttachment,
           onSelect: setSelectedAttachmentId,
           onVoiceControlsChange
         }),
-        TaskList,
+        NoteTaskList,
         NoteTaskItem.configure({
           nested: true,
           HTMLAttributes: { 'data-type': 'taskItem' },
@@ -189,13 +215,13 @@ export function NoteCanvas({
         })
       ],
       content: canvas.html,
-      editable: mode === 'edit',
+      editable: isEditable,
       immediatelyRender: true,
       shouldRerenderOnTransaction: false,
       editorProps: {
         attributes: {
           class: 'mymind-rich-text-editor note-canvas-text',
-          role: mode === 'read' ? 'document' : 'textbox',
+          role: isEditable ? 'textbox' : 'document',
           'aria-label': 'Текст заметки',
           'aria-multiline': 'true'
         }
@@ -217,6 +243,7 @@ export function NoteCanvas({
           },
           currentAttachments
         )
+        attachmentLookup.update(currentAttachments)
         documentRef.current = nextDocument
         onChangeRef.current(nextDocument)
       },
@@ -229,7 +256,7 @@ export function NoteCanvas({
         setSelectedAttachmentId(attachment?.id ?? null)
       }
     },
-    [mode]
+    [isEditable]
   )
 
   useEffect(() => {
@@ -240,31 +267,74 @@ export function NoteCanvas({
     })
   }, [editor, canvas.html])
 
+  useEffect(() => {
+    if (!editor || editor.isDestroyed) return
+    editor.view.dom.dispatchEvent(new Event(NOTE_PAGINATION_LAYOUT_EVENT))
+  }, [editor, appearance.variant, mode])
+
+  const stackStyle = {
+    '--note-stack-height': isPaged
+      ? `${pageCount * NOTE_PAGE_HEIGHT + (pageCount - 1) * NOTE_PAGE_GAP}px`
+      : 'max(360px, calc(100vh - 180px))'
+  } as CSSProperties
+
   return (
     <div
       className="note-canvas-layout"
+      style={getNoteAppearanceStyle(appearance)}
       data-note-editor-content
-      data-settings-visible={mode === 'edit' ? 'true' : 'false'}
+      data-settings-visible={mode !== 'read' ? 'true' : 'false'}
     >
       <div className="note-canvas-scroll" data-note-editor-scroll-container>
-        <article className="note-canvas-page" aria-label="Содержимое заметки">
-          <EditorContent editor={editor} className="note-canvas-content" />
-          {legacyContent.length > 0 && (
-            <details className="note-canvas-legacy">
-              <summary>Другие материалы заметки ({legacyContent.length})</summary>
-              <div data-note-legacy-content>
-                <StudyBlockEditor
-                  materialId={noteId}
-                  document={{ version: 1, blocks: legacyContent }}
-                  mode="read"
-                  focusMode
-                  boardSource="notes"
-                  onChange={() => undefined}
+        <article
+          className="note-page-stack"
+          style={{ ...getNotePaperStyle(appearance), ...stackStyle }}
+          data-note-layout={appearance.variant}
+          data-paper-tone={getNotePaperTone(appearance)}
+          data-paper-pattern={appearance.paperPattern}
+          aria-label="Содержимое заметки"
+        >
+          {isPaged && (
+            <div className="note-page-sheets" aria-hidden="true">
+              {Array.from({ length: pageCount }, (_, index) => (
+                <div
+                  key={index}
+                  className="note-canvas-page"
+                  style={{ top: index * (NOTE_PAGE_HEIGHT + NOTE_PAGE_GAP) }}
+                  data-note-page={index + 1}
+                  data-paper-pattern={appearance.paperPattern}
                 />
-              </div>
-            </details>
+              ))}
+            </div>
+          )}
+          <EditorContent editor={editor} className="note-canvas-content" />
+          {isPaged && (
+            <div className="note-page-gutters" aria-hidden="true">
+              {Array.from({ length: pageCount - 1 }, (_, index) => (
+                <div
+                  key={index}
+                  className="note-page-gutter"
+                  style={{ top: (index + 1) * NOTE_PAGE_HEIGHT + index * NOTE_PAGE_GAP }}
+                />
+              ))}
+            </div>
           )}
         </article>
+        {legacyContent.length > 0 && (
+          <details className="note-canvas-legacy">
+            <summary>Другие материалы заметки ({legacyContent.length})</summary>
+            <div data-note-legacy-content>
+              <StudyBlockEditor
+                materialId={noteId}
+                document={{ version: 1, blocks: legacyContent }}
+                mode="read"
+                focusMode
+                boardSource="notes"
+                onChange={() => undefined}
+              />
+            </div>
+          </details>
+        )}
       </div>
 
       {mode === 'edit' && (
@@ -291,6 +361,13 @@ export function NoteCanvas({
                 )}
               </RichTextSettings>
             ) : null}
+          </div>
+        </aside>
+      )}
+      {mode === 'view' && (
+        <aside className="note-canvas-settings" aria-label="Настройки вида заметки">
+          <div className="note-canvas-settings-scroll">
+            <NoteAppearanceSettings value={appearance} onChange={updateAppearance} />
           </div>
         </aside>
       )}

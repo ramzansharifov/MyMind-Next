@@ -1,7 +1,10 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
-import type { WorkoutExerciseRecord, WorkoutSessionRecord } from '../../../../../shared/contracts/workouts'
+import type {
+  WorkoutExerciseRecord,
+  WorkoutSessionRecord
+} from '../../../../../shared/contracts/workouts'
 import { WorkoutSessionDialog } from './WorkoutSessionDialog'
 
 const pullUp: WorkoutExerciseRecord = {

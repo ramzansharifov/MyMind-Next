@@ -26,14 +26,8 @@ import { AppDialog } from '../../shared/ui/AppDialog'
 import { ActionMenu, ActionMenuDialog } from '../../shared/ui/ActionMenu'
 import { WorkspaceNodeCard } from '../../shared/ui/Workspace'
 import { VisualIconBadge } from '../../shared/ui/VisualPickers'
-import { TASK_GROUP_COLOR_CHOICES, TASK_GROUP_ICON_CHOICES } from '../../shared/ui/visual-options'
-import {
-  choiceField,
-  colorField,
-  iconField,
-  textField,
-  type FormSpec
-} from '../../shared/ui/form-model'
+import { TASK_GROUP_ICON_CHOICES } from '../../shared/ui/visual-options'
+import { choiceField, iconField, textField, type FormSpec } from '../../shared/ui/form-model'
 import { AppIcon, type AppIconName } from '../../shared/ui/icons'
 import { useTheme } from '../../shared/ui/theme'
 import { SwipeableTabContent } from '../../shared/ui/SwipeableTabContent'
@@ -127,18 +121,11 @@ export function TasksScreen(): React.JSX.Element {
       title: item ? 'Группа задач' : 'Новая группа',
       initial: {
         name: item?.name ?? '',
-        icon: item?.icon ?? 'folder',
-        color: item?.color ?? 'accent'
+        icon: item?.icon ?? 'folder'
       },
       fields: [
         textField('name', 'Название'),
-        iconField('icon', 'Иконка', TASK_GROUP_ICON_CHOICES, 'task'),
-        colorField(
-          'color',
-          'Цвет',
-          TASK_GROUP_COLOR_CHOICES,
-          '«Без цвета» использует акцент приложения.'
-        )
+        iconField('icon', 'Иконка', TASK_GROUP_ICON_CHOICES, 'task')
       ],
       save: (values) => {
         const input = schema.createTaskGroupInputSchema.parse(values)
@@ -415,9 +402,34 @@ export function TasksScreen(): React.JSX.Element {
                         textDecorationColor: completed ? theme.success : undefined
                       }}
                     >
-                      {item.title}
+                      <Text style={{ textDecorationLine: completed ? 'line-through' : 'none' }}>
+                        {item.title}
+                      </Text>
+                      {taskGroup && (
+                        <Text
+                          style={{
+                            color: theme.accent,
+                            fontWeight: '400',
+                            textDecorationLine: 'none'
+                          }}
+                        >
+                          {' / '}
+                          {taskGroup.name}
+                        </Text>
+                      )}
                     </Text>
                   </Pressable>
+
+                  {Platform.OS === 'web' ? (
+                    <IconButton
+                      label={`Действия задачи ${item.title}`}
+                      icon="more"
+                      compact
+                      ghost
+                      disabled={state.pending}
+                      onPress={() => setTaskActionsId(item.id)}
+                    />
+                  ) : null}
 
                   <ActionMenuDialog
                     open={taskActionsId === item.id}
@@ -551,7 +563,7 @@ export function TasksScreen(): React.JSX.Element {
               key={item.id}
               title={item.name}
               subtitle={`${(state.data?.tasks ?? []).filter((task) => task.groupId === item.id).length} задач`}
-              leading={<VisualIconBadge value={item.icon} colorKey={item.color} />}
+              leading={<VisualIconBadge value={item.icon} colorKey="accent" />}
               selected={group === item.id}
               onPress={() => {
                 setGroup(item.id)

@@ -3,14 +3,15 @@ import { Tooltip } from '../../shared/ui/tooltip'
 import { AnimatePresence } from 'framer-motion'
 import {
   CheckCircle2,
+  Circle,
   FolderPlus,
   Inbox,
+  List,
   ListTodo,
-  Pencil,
   Plus,
   Search,
-  Trash2,
-  X
+  X,
+  type LucideIcon
 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
@@ -24,13 +25,13 @@ import type {
 } from '../../../../shared/contracts/tasks'
 import { cn } from '../../shared/lib/cn'
 import { DeleteConfirmationDialog } from '../../shared/ui/DeleteConfirmationDialog'
-import { ModuleHeader } from '../../shared/ui/ModuleHeader'
 import { StandardModulePage } from '../../shared/ui/StandardModulePage'
 import { tasksClient } from './api/tasks-client'
 import { TaskDialog } from './components/TaskDialog'
 import { TaskGroupDialog } from './components/TaskGroupDialog'
+import { TaskGroupContextMenu } from './components/TaskGroupContextMenu'
 import { TaskRow } from './components/TaskRow'
-import { TaskGroupIconGlyph, taskGroupColorClasses } from './task-options'
+import { TaskGroupIconGlyph } from './task-icons'
 
 type TaskViewFilter = 'all' | 'active' | 'completed'
 type TaskGroupFilter = 'all' | 'ungrouped' | string
@@ -40,10 +41,10 @@ interface TasksPageProps {
   onResourceHandled?: () => void
 }
 
-const viewFilters: Array<{ id: TaskViewFilter; label: string }> = [
-  { id: 'all', label: 'Все' },
-  { id: 'active', label: 'Активные' },
-  { id: 'completed', label: 'Выполненные' }
+const viewFilters: Array<{ id: TaskViewFilter; label: string; icon: LucideIcon }> = [
+  { id: 'all', label: 'Все', icon: List },
+  { id: 'active', label: 'Активные', icon: Circle },
+  { id: 'completed', label: 'Выполненные', icon: CheckCircle2 }
 ]
 
 function errorMessage(reason: unknown): string {
@@ -85,6 +86,7 @@ export function TasksPage({ resourceId, onResourceHandled }: TasksPageProps): Re
   const [isDeleting, setIsDeleting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const handledResourceIdRef = useRef<string | null>(null)
+  const [handledResourceId, setHandledResourceId] = useState<string | null>(null)
 
   const loadOverview = useCallback(async (): Promise<void> => {
     setError(null)
@@ -109,21 +111,25 @@ export function TasksPage({ resourceId, onResourceHandled }: TasksPageProps): Re
     }
   }, [loadOverview])
 
-  useEffect(() => {
-    if (!resourceId) {
-      handledResourceIdRef.current = null
-      return
-    }
-    if (isLoading || handledResourceIdRef.current === resourceId) return
-
-    handledResourceIdRef.current = resourceId
+  if (!resourceId && handledResourceId !== null) {
+    setHandledResourceId(null)
+  } else if (resourceId && !isLoading && handledResourceId !== resourceId) {
+    setHandledResourceId(resourceId)
     const task = tasks.find((item) => item.id === resourceId)
     if (task) {
       setEditingTask(task)
       setTaskDialogOpen(true)
     }
-    onResourceHandled?.()
-  }, [isLoading, onResourceHandled, resourceId, tasks])
+  }
+
+  useEffect(() => {
+    if (!resourceId) {
+      handledResourceIdRef.current = null
+    } else if (handledResourceId === resourceId && handledResourceIdRef.current !== resourceId) {
+      handledResourceIdRef.current = resourceId
+      onResourceHandled?.()
+    }
+  }, [handledResourceId, onResourceHandled, resourceId])
 
   const groupById = useMemo(() => new Map(groups.map((group) => [group.id, group])), [groups])
 
@@ -313,74 +319,99 @@ export function TasksPage({ resourceId, onResourceHandled }: TasksPageProps): Re
 
   return (
     <StandardModulePage>
-      <ModuleHeader
-        icon={ListTodo}
-        title="Задачи"
-        description="Простой список дел: название, группа и статус."
-        actions={
-          <>
-            <button
-              type="button"
-              className="inline-flex h-11 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-4 text-sm font-medium text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
-              onClick={openNewGroup}
-            >
-              <FolderPlus className="size-4" /> Новая группа
-            </button>
-            <button
-              type="button"
-              className="bg-accent-500 hover:bg-accent-400 inline-flex h-11 items-center gap-2 rounded-xl px-4 text-sm font-semibold text-white transition-colors"
-              onClick={openNewTask}
-            >
-              <Plus className="size-4" /> Новая задача
-            </button>
-          </>
-        }
+      <header
+        data-module-header
+        className="relative isolate grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-3 overflow-hidden rounded-[28px] border border-[var(--app-border)] bg-[var(--app-surface)] p-6 shadow-[var(--app-shadow-card)] max-[700px]:p-5 max-[560px]:grid-cols-[auto_minmax(0,1fr)_auto] max-[560px]:gap-2"
       >
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-          <label className="focus-within:border-accent-500/45 focus-within:ring-accent-500/10 flex h-11 min-w-0 flex-1 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 focus-within:ring-2">
-            <Search className="size-4 shrink-0 text-[var(--app-muted)]" />
-            <input
-              value={query}
-              type="text"
-              role="searchbox"
-              aria-label="Поиск по задачам"
-              placeholder="Найти задачу…"
-              className="min-w-0 flex-1 bg-transparent text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60"
-              onChange={(event) => setQuery(event.target.value)}
-            />
-            {query && (
-              <Tooltip content="Очистить поиск задач" side="top">
+        <div
+          aria-hidden="true"
+          className="bg-accent-500/10 pointer-events-none absolute -top-32 right-8 -z-10 size-80 rounded-full blur-3xl"
+        />
+        <div
+          aria-hidden="true"
+          className="bg-accent-900/10 pointer-events-none absolute -bottom-44 -left-24 -z-10 size-80 rounded-full blur-3xl"
+        />
+        <h1 className="sr-only">Задачи</h1>
+        <span className="border-accent-500/20 bg-accent-500/10 text-accent-300 shadow-accent-500/5 flex size-12 shrink-0 items-center justify-center rounded-2xl border shadow-inner max-[560px]:row-span-2">
+          <ListTodo className="size-6" />
+        </span>
+
+        <label className="focus-within:border-accent-500/45 focus-within:ring-accent-500/10 flex h-10 min-w-0 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 transition-[border-color,box-shadow] focus-within:ring-2 max-[560px]:col-span-2">
+          <Search className="size-4 shrink-0 text-[var(--app-muted)]" />
+          <input
+            value={query}
+            type="text"
+            role="searchbox"
+            aria-label="Поиск по задачам"
+            placeholder="Найти задачу…"
+            className="min-w-0 flex-1 bg-transparent text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60"
+            onChange={(event) => setQuery(event.target.value)}
+          />
+          {query && (
+            <Tooltip content="Очистить поиск задач" side="bottom">
+              <button
+                type="button"
+                aria-label="Очистить поиск задач"
+                className="focus-visible:ring-accent-500/35 flex size-6 shrink-0 items-center justify-center rounded-md text-[var(--app-muted)] outline-none hover:text-[var(--app-text)] focus-visible:ring-2"
+                onClick={() => setQuery('')}
+              >
+                <X className="size-3.5" />
+              </button>
+            </Tooltip>
+          )}
+        </label>
+
+        <div
+          role="group"
+          aria-label="Статус задач"
+          className="flex h-10 items-center gap-1 justify-self-start rounded-xl bg-[var(--app-workspace)] p-0.5 ring-1 ring-[var(--app-border)] ring-inset"
+        >
+          {viewFilters.map((filter) => {
+            const Icon = filter.icon
+            return (
+              <Tooltip key={filter.id} content={filter.label} side="bottom">
                 <button
                   type="button"
-                  aria-label="Очистить поиск задач"
-                  className="text-[var(--app-muted)] hover:text-[var(--app-text)]"
-                  onClick={() => setQuery('')}
+                  aria-label={filter.label}
+                  aria-pressed={viewFilter === filter.id}
+                  className={cn(
+                    'focus-visible:ring-accent-500/35 flex h-full w-9 shrink-0 items-center justify-center rounded-[10px] transition-colors outline-none focus-visible:ring-2',
+                    viewFilter === filter.id
+                      ? 'bg-accent-500 text-white'
+                      : 'text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
+                  )}
+                  onClick={() => setViewFilter(filter.id)}
                 >
-                  <X className="size-4" />
+                  <Icon className="size-[18px]" />
                 </button>
               </Tooltip>
-            )}
-          </label>
-
-          <div className="flex shrink-0 gap-1 overflow-x-auto rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-1">
-            {viewFilters.map((filter) => (
-              <button
-                key={filter.id}
-                type="button"
-                aria-pressed={viewFilter === filter.id}
-                className={
-                  viewFilter === filter.id
-                    ? 'bg-accent-500 h-9 shrink-0 rounded-lg px-3.5 text-sm font-semibold text-white'
-                    : 'h-9 shrink-0 rounded-lg px-3.5 text-sm font-medium text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
-                }
-                onClick={() => setViewFilter(filter.id)}
-              >
-                {filter.label}
-              </button>
-            ))}
-          </div>
+            )
+          })}
         </div>
-      </ModuleHeader>
+
+        <div className="flex items-center gap-2 justify-self-end">
+          <Tooltip content="Новая группа" side="bottom">
+            <button
+              type="button"
+              aria-label="Новая группа"
+              className="focus-visible:ring-accent-500/35 flex size-10 shrink-0 items-center justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] text-[var(--app-muted)] transition-colors outline-none hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] focus-visible:ring-2"
+              onClick={openNewGroup}
+            >
+              <FolderPlus className="size-[18px]" />
+            </button>
+          </Tooltip>
+          <Tooltip content="Новая задача" side="bottom">
+            <button
+              type="button"
+              aria-label="Новая задача"
+              className="bg-accent-500 hover:bg-accent-400 focus-visible:ring-accent-500/35 flex size-10 shrink-0 items-center justify-center rounded-xl text-white transition-colors outline-none focus-visible:ring-2"
+              onClick={openNewTask}
+            >
+              <Plus className="size-[18px]" />
+            </button>
+          </Tooltip>
+        </div>
+      </header>
 
       {error && (
         <div
@@ -455,68 +486,40 @@ export function TasksPage({ resourceId, onResourceHandled }: TasksPageProps): Re
 
           <div className="space-y-1">
             {groups.map((group) => {
-              const color = taskGroupColorClasses[group.color]
               const selected = groupFilter === group.id
 
               return (
-                <div
+                <TaskGroupContextMenu
                   key={group.id}
-                  className={cn(
-                    'flex items-center rounded-xl',
-                    selected && 'bg-[var(--app-control)]'
-                  )}
+                  group={group}
+                  disabled={isSaving || isDeleting}
+                  onEdit={() => {
+                    setEditingGroup(group)
+                    setGroupDialogOpen(true)
+                  }}
+                  onDelete={() => setDeleteGroupTarget(group)}
                 >
                   <button
                     type="button"
+                    aria-pressed={selected}
+                    title={group.name}
                     className={cn(
-                      'flex h-11 min-w-0 flex-1 items-center gap-2.5 rounded-xl px-2.5 text-sm transition-colors',
+                      'focus-visible:ring-accent-500/35 flex h-11 w-full min-w-0 items-center gap-2.5 rounded-xl px-2.5 text-sm transition-colors outline-none focus-visible:ring-2',
                       selected
-                        ? 'font-semibold text-[var(--app-text)]'
-                        : 'text-[var(--app-muted)] hover:text-[var(--app-text)]'
+                        ? 'bg-accent-500/12 text-accent-200 font-semibold'
+                        : 'text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
                     )}
                     onClick={() => setGroupFilter(group.id)}
                   >
-                    <span
-                      className={cn(
-                        'flex size-7 shrink-0 items-center justify-center rounded-lg border',
-                        color.soft,
-                        color.text,
-                        color.border
-                      )}
-                    >
+                    <span className="border-accent-400/25 bg-accent-500/12 text-accent-300 flex size-7 shrink-0 items-center justify-center rounded-lg border">
                       <TaskGroupIconGlyph icon={group.icon} className="size-3.5" />
                     </span>
                     <span className="min-w-0 flex-1 truncate text-left">{group.name}</span>
-                    <span className="text-xs opacity-60">
+                    <span className="min-w-5 text-right text-xs tabular-nums opacity-60">
                       {groupTaskCounts.counts.get(group.id) ?? 0}
                     </span>
                   </button>
-                  <div className="mr-1 flex shrink-0 items-center">
-                    <Tooltip content={`Изменить группу «${group.name}»`} side="top">
-                      <button
-                        type="button"
-                        aria-label={`Изменить группу «${group.name}»`}
-                        className="flex size-7 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
-                        onClick={() => {
-                          setEditingGroup(group)
-                          setGroupDialogOpen(true)
-                        }}
-                      >
-                        <Pencil className="size-3.5" />
-                      </button>
-                    </Tooltip>
-                    <Tooltip content={`Удалить группу «${group.name}»`} side="top">
-                      <button
-                        type="button"
-                        aria-label={`Удалить группу «${group.name}»`}
-                        className="flex size-7 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
-                        onClick={() => setDeleteGroupTarget(group)}
-                      >
-                        <Trash2 className="size-3.5" />
-                      </button>
-                    </Tooltip>
-                  </div>
-                </div>
+                </TaskGroupContextMenu>
               )
             })}
           </div>

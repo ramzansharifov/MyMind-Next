@@ -221,11 +221,7 @@ function inferAssetErrorLocation(
 }
 
 function hasDeletions(summary: StudyCodeChangeSummary): boolean {
-  return (
-    summary.deletedFolders > 0 ||
-    summary.deletedMaterials > 0 ||
-    summary.deletedBlocks > 0
-  )
+  return summary.deletedFolders > 0 || summary.deletedMaterials > 0 || summary.deletedBlocks > 0
 }
 
 function createEmptySummary(): StudyCodeChangeSummary {

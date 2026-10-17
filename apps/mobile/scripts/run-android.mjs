@@ -23,10 +23,7 @@ export function parseAndroidSdkDir(localProperties) {
   const match = localProperties.match(/^sdk\.dir\s*=\s*(.+)$/m)
   if (!match) return null
 
-  return match[1]
-    .trim()
-    .replaceAll('\\:', ':')
-    .replaceAll('\\\\', '\\')
+  return match[1].trim().replaceAll('\\:', ':').replaceAll('\\\\', '\\')
 }
 
 export async function resolveAndroidSdkPath({
@@ -48,9 +45,7 @@ export async function resolveAndroidSdkPath({
   const candidates = [
     env.ANDROID_HOME,
     env.ANDROID_SDK_ROOT,
-    platform === 'win32' && env.LOCALAPPDATA
-      ? path.join(env.LOCALAPPDATA, 'Android', 'Sdk')
-      : null,
+    platform === 'win32' && env.LOCALAPPDATA ? path.join(env.LOCALAPPDATA, 'Android', 'Sdk') : null,
     platform === 'darwin' && env.HOME ? path.join(env.HOME, 'Library', 'Android', 'sdk') : null,
     platform !== 'win32' && platform !== 'darwin' && env.HOME
       ? path.join(env.HOME, 'Android', 'Sdk')
@@ -74,8 +69,7 @@ export async function resolveExpoCliPath({
   try {
     const expoPackageJsonPath = packageRequire.resolve('expo/package.json')
     const expoPackage = JSON.parse(await readFile(expoPackageJsonPath, 'utf8'))
-    const expoBin =
-      typeof expoPackage.bin === 'string' ? expoPackage.bin : expoPackage.bin?.expo
+    const expoBin = typeof expoPackage.bin === 'string' ? expoPackage.bin : expoPackage.bin?.expo
 
     if (typeof expoBin === 'string') {
       const cliPath = path.resolve(path.dirname(expoPackageJsonPath), expoBin)
@@ -116,9 +110,7 @@ export async function restoreAndroidLocalProperties({
   if (!(await exists(androidRoot))) return false
 
   const localPropertiesPath = path.join(androidRoot, 'local.properties')
-  const content =
-    snapshot ??
-    (sdkPath ? `sdk.dir=${sdkPath.replaceAll('\\', '/')}\n` : null)
+  const content = snapshot ?? (sdkPath ? `sdk.dir=${sdkPath.replaceAll('\\', '/')}\n` : null)
 
   if (!content) return false
 
@@ -162,8 +154,7 @@ export async function runAndroid({
     log
   })
 
-  const resolvedExpoCliPath =
-    expoCliPath ?? (await resolveExpoCliPath({ mobileRoot, repoRoot }))
+  const resolvedExpoCliPath = expoCliPath ?? (await resolveExpoCliPath({ mobileRoot, repoRoot }))
   const childEnv = {
     ...env,
     ...(sdkPath

@@ -4,7 +4,7 @@ import { Check, MoreHorizontal } from 'lucide-react'
 
 import type { TaskGroupRecord, TaskRecord } from '../../../../../shared/contracts/tasks'
 import { cn } from '../../../shared/lib/cn'
-import { TaskGroupIconGlyph, taskGroupColorClasses } from '../task-options'
+import { TaskGroupIconGlyph } from '../task-icons'
 
 interface TaskMoveGroupMenuProps {
   task: TaskRecord
@@ -59,7 +59,6 @@ export function TaskMoveGroupMenu({
             ) : (
               groups.map((group) => {
                 const selected = task.groupId === group.id
-                const color = taskGroupColorClasses[group.color]
 
                 return (
                   <DropdownMenu.Item
@@ -75,14 +74,7 @@ export function TaskMoveGroupMenu({
                     )}
                     onSelect={() => void onMove(group.id)}
                   >
-                    <span
-                      className={cn(
-                        'flex size-7 shrink-0 items-center justify-center rounded-lg border',
-                        color.soft,
-                        color.text,
-                        color.border
-                      )}
-                    >
+                    <span className="border-accent-400/25 bg-accent-500/12 text-accent-300 flex size-7 shrink-0 items-center justify-center rounded-lg border">
                       <TaskGroupIconGlyph icon={group.icon} className="size-3.5" />
                     </span>
                     <span className="min-w-0 flex-1 truncate">{group.name}</span>

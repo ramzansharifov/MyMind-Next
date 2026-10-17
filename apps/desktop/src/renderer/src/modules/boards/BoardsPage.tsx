@@ -27,7 +27,7 @@ import {
   type MoveBoardNodeInput
 } from '../../../../shared/contracts/boards'
 import { requestAppModuleNavigation } from '../../app/module-navigation'
-import type { AppModuleProps } from '../../app/module-registry'
+import type { AppModuleProps } from '../../app/module-contracts'
 import { cn } from '../../shared/lib/cn'
 import { AppDialog } from '../../shared/ui/AppDialog'
 import { DeleteConfirmationDialog } from '../../shared/ui/DeleteConfirmationDialog'

@@ -17,8 +17,7 @@ export function StudyDividerBlock({
   const theme = useTheme()
   const variant = block.variant ?? 'solid'
   const thickness = Math.max(1, Math.min(12, block.thickness ?? 1))
-  const color =
-    !block.color || block.color.toLowerCase() === '#6d5dfc' ? theme.accent : block.color
+  const color = !block.color || block.color.toLowerCase() === '#6d5dfc' ? theme.accent : block.color
   const paddingVertical = spacing === 'edit' ? 32 : spacing === 'read' ? 16 : 0
 
   return (
@@ -39,7 +38,12 @@ export function StudyDividerBlock({
           />
         </Svg>
       ) : variant === 'dashed' || variant === 'dotted' ? (
-        <Svg width="100%" height={Math.max(thickness, 2)} viewBox="0 0 100 2" preserveAspectRatio="none">
+        <Svg
+          width="100%"
+          height={Math.max(thickness, 2)}
+          viewBox="0 0 100 2"
+          preserveAspectRatio="none"
+        >
           <Line
             x1="0"
             y1="1"

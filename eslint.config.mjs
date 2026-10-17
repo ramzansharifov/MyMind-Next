@@ -14,7 +14,10 @@ export default defineConfig(
       '**/coverage',
       '**/.data',
       '**/.filetags',
-      '**/drizzle'
+      '**/drizzle',
+      '**/.next',
+      'apps/pwa/public',
+      'apps/pwa/next-env.d.ts'
     ]
   },
   tseslint.configs.recommended,
@@ -36,6 +39,31 @@ export default defineConfig(
     rules: {
       ...eslintPluginReactHooks.configs.recommended.rules,
       ...eslintPluginReactRefresh.configs.vite.rules
+    }
+  },
+  {
+    // Next.js app routes also export metadata, viewport and route handlers.
+    files: ['apps/pwa/src/app/**/*.{ts,tsx}'],
+    rules: { 'react-refresh/only-export-components': 'off' }
+  },
+  {
+    // JavaScript build scripts cannot declare TypeScript return types.
+    files: ['**/*.{js,mjs,cjs}'],
+    rules: {
+      '@typescript-eslint/explicit-function-return-type': 'off'
+    }
+  },
+  {
+    // Metro and Expo config plugins are loaded through CommonJS.
+    files: ['apps/mobile/metro.config.js', 'apps/mobile/plugins/*.js'],
+    rules: {
+      '@typescript-eslint/no-require-imports': 'off'
+    }
+  },
+  {
+    files: ['apps/mobile/**/*.{ts,tsx}'],
+    rules: {
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }]
     }
   },
   eslintConfigPrettier

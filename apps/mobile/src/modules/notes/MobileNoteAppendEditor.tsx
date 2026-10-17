@@ -3,8 +3,8 @@ import { ScrollView, Text, View } from 'react-native'
 import type { StudyTextBlock } from '@mymind/contracts/study'
 
 import { NotesRichTextBlock } from '../../shared/ui/NotesRichTextBlock'
+import { DEFAULT_NOTES_RICH_TEXT_STATE } from '../../shared/ui/notes-rich-text-state'
 import {
-  DEFAULT_NOTES_RICH_TEXT_STATE,
   NotesQuickLinkDialog,
   NotesRichTextInlineControls,
   NotesRichTextSettingsSheet

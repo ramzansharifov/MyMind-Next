@@ -1,5 +1,8 @@
 import { safeStorage } from 'electron'
-import { createLocalProfileRepository, type ProfileSecretPort } from '@mymind/persistence/local-profile'
+import {
+  createLocalProfileRepository,
+  type ProfileSecretPort
+} from '@mymind/persistence/local-profile'
 import { desktopRepositoryRuntime } from '../database/repository-runtime'
 import { getSqlite } from '../database/client'
 
@@ -53,15 +56,22 @@ export const getLocalProfile = (): ReturnType<
 
 export const createLocalProfile = (
   input: Parameters<ReturnType<typeof createLocalProfileRepository>['createProfile']>[0]
-) => getRepository().createProfile(input)
+): ReturnType<ReturnType<typeof createLocalProfileRepository>['createProfile']> =>
+  getRepository().createProfile(input)
 
 export const updateLocalProfile = (
   input: Parameters<ReturnType<typeof createLocalProfileRepository>['updateProfile']>[0]
-) => getRepository().updateProfile(input)
+): ReturnType<ReturnType<typeof createLocalProfileRepository>['updateProfile']> =>
+  getRepository().updateProfile(input)
 
 export const replaceLocalProfileCredentials = (
   input: Parameters<ReturnType<typeof createLocalProfileRepository>['replaceCredentials']>[0]
-) => getRepository().replaceCredentials(input)
+): ReturnType<ReturnType<typeof createLocalProfileRepository>['replaceCredentials']> =>
+  getRepository().replaceCredentials(input)
 
-export const getLocalProfileSyncKey = () => getRepository().getSyncKey()
-export const removeLocalProfile = () => getRepository().removeProfile()
+export const getLocalProfileSyncKey = (): ReturnType<
+  ReturnType<typeof createLocalProfileRepository>['getSyncKey']
+> => getRepository().getSyncKey()
+export const removeLocalProfile = (): ReturnType<
+  ReturnType<typeof createLocalProfileRepository>['removeProfile']
+> => getRepository().removeProfile()

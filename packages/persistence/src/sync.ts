@@ -466,7 +466,7 @@ function mergeConcurrentNoteRows(
   }
 
   const mergedDocument = noteDocumentSchema.parse({
-    version: 1,
+    ...baseDocument,
     blocks: [
       ...baseDocument.blocks,
       ...[...appendById.values()].sort((leftBlock, rightBlock) =>

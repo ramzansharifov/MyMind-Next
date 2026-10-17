@@ -1,4 +1,6 @@
 import type { Editor } from '@tiptap/core'
+import type { Mark } from '@tiptap/pm/model'
+import { TextSelection } from '@tiptap/pm/state'
 import { useEditorState } from '@tiptap/react'
 import * as Popover from '@radix-ui/react-popover'
 import * as ToggleGroup from '@radix-ui/react-toggle-group'
@@ -284,6 +286,16 @@ function ConnectedRichTextSettings({
     const from = Math.max(1, Math.min(selection.from, maxPosition))
     const to = Math.max(from, Math.min(selection.to, maxPosition))
 
+    // Recreating the same cursor selection clears stored marks. Keep those
+    // marks when several controls are applied before typing any text.
+    if (
+      editor.state.selection instanceof TextSelection &&
+      editor.state.selection.from === from &&
+      editor.state.selection.to === to
+    ) {
+      return chain
+    }
+
     return chain.setTextSelection({
       from,
       to
@@ -322,12 +334,36 @@ function ConnectedRichTextSettings({
     chain.run()
   }
 
+  function applyBlockFormatting(
+    command: (chain: ReturnType<Editor['chain']>) => ReturnType<Editor['chain']>
+  ): void {
+    const chain = createCommandChain()
+    if (!chain) return
+
+    let marks: readonly Mark[] | null = null
+    chain.command(({ tr }) => {
+      if (tr.selection.empty) marks = tr.storedMarks ?? tr.selection.$from.marks()
+      return true
+    })
+
+    // Wrapping or changing a paragraph clears stored marks even when its text
+    // is untouched. Preserve the formatting for continued typing at the cursor.
+    command(chain)
+      .command(({ tr }) => {
+        if (marks && tr.selection.empty && tr.selection.$from.parent.isTextblock) {
+          tr.ensureMarks(tr.selection.$from.parent.type.allowedMarks(marks))
+        }
+        return true
+      })
+      .run()
+  }
+
   function applyAlignment(value: string): void {
     if (!isTextAlignment(value)) {
       return
     }
 
-    createCommandChain()?.setTextAlign(value).run()
+    applyBlockFormatting((chain) => chain.setTextAlign(value))
   }
 
   function applyFontSize(value: string): void {
@@ -393,42 +429,31 @@ function ConnectedRichTextSettings({
     }
 
     if (editorState.linkActive) {
-      chain
+      return chain
         .extendMarkRange('link')
         .setLink({
           href
         })
         .run()
-
-      return true
     }
 
     if (selection.from === selection.to) {
-      chain
-        .insertContent({
-          type: 'text',
-          text: linkText,
-          marks: [
-            {
-              type: 'link',
-              attrs: {
-                href
-              }
-            }
-          ]
+      return chain
+        .command(({ tr, dispatch }) => {
+          if (!dispatch) return true
+          const marks = tr.storedMarks ?? tr.selection.$from.marks()
+          const link = tr.doc.type.schema.marks.link.create({ href })
+          tr.replaceSelectionWith(tr.doc.type.schema.text(linkText, link.addToSet(marks)), false)
+          return true
         })
         .run()
-
-      return true
     }
 
-    chain
+    return chain
       .setLink({
         href
       })
       .run()
-
-    return true
   }
 
   function removeLink(): void {
@@ -509,7 +534,7 @@ function ConnectedRichTextSettings({
             aria-label="Стиль цитаты"
             className={compact ? 'contents' : 'flex flex-wrap gap-2'}
             onValueChange={() => {
-              createCommandChain()?.toggleBlockquote().run()
+              applyBlockFormatting((chain) => chain.toggleBlockquote())
             }}
           >
             <ToolbarToggle value="blockquote" label="Цитата" active={editorState.blockquote}>
@@ -576,25 +601,25 @@ function ConnectedRichTextSettings({
           onValueChange={(value) => {
             if (!value) {
               if (editorState.taskList) {
-                createCommandChain()?.toggleTaskList().run()
+                applyBlockFormatting((chain) => chain.toggleTaskList())
               } else if (editorState.bulletList) {
-                createCommandChain()?.toggleBulletList().run()
+                applyBlockFormatting((chain) => chain.toggleBulletList())
               } else if (editorState.orderedList) {
-                createCommandChain()?.toggleOrderedList().run()
+                applyBlockFormatting((chain) => chain.toggleOrderedList())
               }
 
               return
             }
 
             if (value === 'bullet') {
-              createCommandChain()?.toggleBulletList().run()
+              applyBlockFormatting((chain) => chain.toggleBulletList())
             }
 
             if (value === 'ordered') {
-              createCommandChain()?.toggleOrderedList().run()
+              applyBlockFormatting((chain) => chain.toggleOrderedList())
             }
             if (value === 'task') {
-              createCommandChain()?.toggleTaskList().run()
+              applyBlockFormatting((chain) => chain.toggleTaskList())
             }
           }}
         >
@@ -624,9 +649,9 @@ function ConnectedRichTextSettings({
           label="Увеличить вложенность — Tab"
           disabled={!editorState.canIndentListItem}
           onClick={() => {
-            createCommandChain()
-              ?.sinkListItem(editorState.taskList ? 'taskItem' : 'listItem')
-              .run()
+            applyBlockFormatting((chain) =>
+              chain.sinkListItem(editorState.taskList ? 'taskItem' : 'listItem')
+            )
           }}
         >
           <IndentIncrease className="size-4" />
@@ -636,9 +661,9 @@ function ConnectedRichTextSettings({
           label="Уменьшить вложенность — Shift+Tab"
           disabled={!editorState.canOutdentListItem}
           onClick={() => {
-            createCommandChain()
-              ?.liftListItem(editorState.taskList ? 'taskItem' : 'listItem')
-              .run()
+            applyBlockFormatting((chain) =>
+              chain.liftListItem(editorState.taskList ? 'taskItem' : 'listItem')
+            )
           }}
         >
           <IndentDecrease className="size-4" />

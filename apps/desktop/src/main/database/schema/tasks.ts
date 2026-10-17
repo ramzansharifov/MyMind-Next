@@ -1,11 +1,6 @@
 import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 
-import type {
-  TaskGroupColor,
-  TaskGroupIcon,
-  TaskPriority,
-  TaskStatus
-} from '../../../shared/contracts/tasks'
+import type { TaskGroupIcon, TaskPriority, TaskStatus } from '../../../shared/contracts/tasks'
 
 export const taskGroups = sqliteTable(
   'task_groups',
@@ -13,7 +8,6 @@ export const taskGroups = sqliteTable(
     id: text('id').primaryKey(),
     name: text('name').notNull(),
     icon: text('icon').$type<TaskGroupIcon>().notNull().default('folder'),
-    color: text('color').$type<TaskGroupColor>().notNull().default('violet'),
     position: integer('position').notNull().default(0),
     createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
     updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull()

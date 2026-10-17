@@ -1,12 +1,5 @@
 import { useMemo, useState } from 'react'
-import {
-  Image,
-  Modal,
-  Pressable,
-  Text,
-  View,
-  useWindowDimensions
-} from 'react-native'
+import { Image, Modal, Pressable, Text, View, useWindowDimensions } from 'react-native'
 import type { StudyBlock, StudyLocalAsset } from '@mymind/contracts/study'
 import {
   ExternalLink,
@@ -17,19 +10,13 @@ import {
   Maximize2,
   Minimize2
 } from 'lucide-react-native'
-import {
-  normalizeStudyRemoteImageUrl,
-  parseStudyYouTubeUrl
-} from '@mymind/core/study-remote-media'
+import { normalizeStudyRemoteImageUrl, parseStudyYouTubeUrl } from '@mymind/core/study-remote-media'
 
 import StudyYouTubeDom from './StudyYouTubeDom'
 import { AudioAssetPlayer } from './VoiceRecorder'
 import { useTheme } from './theme'
 
-type AttachmentBlock = Extract<
-  StudyBlock,
-  { type: 'image' | 'video' | 'audio' | 'file' }
->
+type AttachmentBlock = Extract<StudyBlock, { type: 'image' | 'video' | 'audio' | 'file' }>
 
 interface StudyAttachmentBlockProps {
   block: AttachmentBlock
@@ -105,7 +92,15 @@ function EmptyAttachment({ block }: { block: AttachmentBlock }): React.JSX.Eleme
       <Text style={{ color: theme.text, fontSize: 14, fontWeight: '600' }}>
         {kindLabel(block.type)}
       </Text>
-      <Text style={{ maxWidth: 300, color: theme.muted, fontSize: 12, lineHeight: 18, textAlign: 'center' }}>
+      <Text
+        style={{
+          maxWidth: 300,
+          color: theme.muted,
+          fontSize: 12,
+          lineHeight: 18,
+          textAlign: 'center'
+        }}
+      >
         {message}
       </Text>
     </View>
@@ -244,7 +239,10 @@ function ImageAttachment({
               backgroundColor: '#00000055'
             }}
           >
-            <Text numberOfLines={1} style={{ flex: 1, color: '#ffffff', fontSize: 14, fontWeight: '600' }}>
+            <Text
+              numberOfLines={1}
+              style={{ flex: 1, color: '#ffffff', fontSize: 14, fontWeight: '600' }}
+            >
               {title}
             </Text>
             <Pressable
@@ -355,9 +353,7 @@ function FileCard({
         ) : null}
       </View>
 
-      {openAsset ? (
-        <ExternalLink size={17} color={theme.muted} />
-      ) : null}
+      {openAsset ? <ExternalLink size={17} color={theme.muted} /> : null}
     </Pressable>
   )
 }
@@ -389,7 +385,8 @@ export function StudyAttachmentBlock({
     if (!block.source.url.trim()) return <EmptyAttachment block={block} />
 
     if (block.type === 'image') {
-      if (!remoteImage) return <ErrorAttachment message="Нужна прямая HTTPS-ссылка на изображение" />
+      if (!remoteImage)
+        return <ErrorAttachment message="Нужна прямая HTTPS-ссылка на изображение" />
       return <ImageAttachment block={block} uri={remoteImage} />
     }
 
@@ -432,7 +429,8 @@ export function StudyAttachmentBlock({
   const uri = resolveAssetUri?.(asset) ?? null
 
   if (block.type === 'image') {
-    if (!uri) return <ErrorAttachment message="Локальная фотография не найдена на этом устройстве" />
+    if (!uri)
+      return <ErrorAttachment message="Локальная фотография не найдена на этом устройстве" />
     return <ImageAttachment block={block} uri={uri} />
   }
 
@@ -455,13 +453,5 @@ export function StudyAttachmentBlock({
     )
   }
 
-  return (
-    <FileCard
-      block={block}
-      asset={asset}
-      uri={uri}
-      openAsset={openAsset}
-      onError={onError}
-    />
-  )
+  return <FileCard block={block} asset={asset} uri={uri} openAsset={openAsset} onError={onError} />
 }

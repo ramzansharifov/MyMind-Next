@@ -1,17 +1,17 @@
 const LOCAL_WEB_HOSTS = new Set(['localhost', '127.0.0.1', '::1'])
 
-function normalizeHostname(hostname: string) {
+function normalizeHostname(hostname: string): string {
   return hostname.replace(/^\[|\]$/g, '')
 }
 
-function isLocalWebHost(hostname: string) {
+function isLocalWebHost(hostname: string): boolean {
   return LOCAL_WEB_HOSTS.has(normalizeHostname(hostname))
 }
 
 export function getSafeWebPreviewRedirect(
   currentHref: string | undefined,
   safeOrigin: string | undefined
-) {
+): string | null {
   if (!currentHref || !safeOrigin) return null
 
   try {

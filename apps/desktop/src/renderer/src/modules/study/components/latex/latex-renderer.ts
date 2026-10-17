@@ -60,9 +60,7 @@ function extractDocumentRows(source: string): string[] | null {
     return null
   }
 
-  const rows = splitTopLevelRows(match[2])
-    .map(normalizeDocumentRow)
-    .filter(Boolean)
+  const rows = splitTopLevelRows(match[2]).map(normalizeDocumentRow).filter(Boolean)
 
   if (!isDocumentLikeRows(rows, source)) {
     return null

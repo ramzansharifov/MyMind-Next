@@ -315,6 +315,7 @@ export function MobileProfileSyncSettings(): React.JSX.Element {
             <Label title>Логин *</Label>
             <TextInput
               value={login}
+              accessibilityLabel="Логин профиля"
               editable={!busy}
               autoCapitalize="none"
               autoCorrect={false}
@@ -326,6 +327,7 @@ export function MobileProfileSyncSettings(): React.JSX.Element {
             <Label title>{profile ? 'Новый пароль для смены данных' : 'Пароль *'}</Label>
             <TextInput
               value={password}
+              accessibilityLabel="Пароль профиля"
               editable={!busy}
               secureTextEntry
               autoCapitalize="none"
@@ -336,7 +338,13 @@ export function MobileProfileSyncSettings(): React.JSX.Element {
           </View>
           <View style={{ gap: 6 }}>
             <Label title>Имя</Label>
-            <TextInput value={name} editable={!busy} style={inputStyle} onChangeText={setName} />
+            <TextInput
+              accessibilityLabel="Имя профиля"
+              value={name}
+              editable={!busy}
+              style={inputStyle}
+              onChangeText={setName}
+            />
           </View>
           <View style={{ gap: 8 }}>
             <Label title>Пол</Label>

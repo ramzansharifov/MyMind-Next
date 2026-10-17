@@ -4,7 +4,6 @@ import type {
   CreateTaskInput,
   DeleteTaskGroupInput,
   DeleteTaskInput,
-  TaskGroupColor,
   TaskGroupIcon,
   TaskGroupRecord,
   TaskPriority,
@@ -22,7 +21,6 @@ export function createTasksRepository(runtime: RepositoryRuntime): TasksReposito
     id: string
     name: string
     icon: TaskGroupIcon
-    color: TaskGroupColor
     position: number
     created_at: number
     updated_at: number
@@ -51,7 +49,6 @@ export function createTasksRepository(runtime: RepositoryRuntime): TasksReposito
   id,
   name,
   icon,
-  color,
   position,
   created_at,
   updated_at
@@ -76,7 +73,6 @@ FROM tasks`
       id: row.id,
       name: row.name,
       icon: row.icon,
-      color: row.color,
       position: row.position,
       createdAt: row.created_at,
       updatedAt: row.updated_at
@@ -201,10 +197,10 @@ FROM tasks`
 
     getSqlite()
       .prepare(
-        `INSERT INTO task_groups (id, name, icon, color, position, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`
+        `INSERT INTO task_groups (id, name, icon, position, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?)`
       )
-      .run(id, input.name, input.icon, input.color, position, now, now)
+      .run(id, input.name, input.icon, position, now, now)
 
     return requireGroup(id)
   }
@@ -217,10 +213,10 @@ FROM tasks`
     getSqlite()
       .prepare(
         `UPDATE task_groups
-       SET name = ?, icon = ?, color = ?, updated_at = ?
+       SET name = ?, icon = ?, updated_at = ?
        WHERE id = ?`
       )
-      .run(input.name, input.icon, input.color, now, group.id)
+      .run(input.name, input.icon, now, group.id)
 
     return requireGroup(group.id)
   }

@@ -9,7 +9,7 @@ import {
   Save,
   WandSparkles
 } from 'lucide-react'
-import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useId, useMemo, useRef, useState } from 'react'
 
 import type {
   StudyCodeApplyResult,
@@ -55,7 +55,7 @@ export function StudyCodeWorkspace({
   const [source, setSource] = useState('')
   const [savedSource, setSavedSource] = useState('')
   const [revision, setRevision] = useState<string | null>(null)
-  const [saveState, setSaveState] = useState<SaveState>('loading')
+  const [storedSaveState, setSaveState] = useState<SaveState>('loading')
   const [diagnostics, setDiagnostics] = useState<StudyCodeDiagnostic[]>([])
   const [pendingPreview, setPendingPreview] = useState<StudyCodePreviewResult | null>(null)
   const [reloadConfirmOpen, setReloadConfirmOpen] = useState(false)
@@ -66,20 +66,9 @@ export function StudyCodeWorkspace({
   const editorTextareaId = useId()
   const editorLabel = `DSL-код ${node.type === 'folder' ? 'папки' : 'материала'} «${node.title}»`
 
-  const dirty = source !== savedSource
-  dirtyRef.current = dirty
-
-  useEffect(() => {
-    onDirtyChange?.(dirty)
-    setSaveState((current) => {
-      if (current === 'loading' || current === 'saving' || current === 'error') return current
-      const next = dirty ? 'dirty' : 'saved'
-      return current === next ? current : next
-    })
-  }, [dirty, onDirtyChange])
-
-  useEffect(() => {
-    let active = true
+  const [snapshotInputs, setSnapshotInputs] = useState({ nodeId: node.id, onDirtyChange })
+  if (snapshotInputs.nodeId !== node.id || snapshotInputs.onDirtyChange !== onDirtyChange) {
+    setSnapshotInputs({ nodeId: node.id, onDirtyChange })
     setSource('')
     setSavedSource('')
     setRevision(null)
@@ -87,6 +76,26 @@ export function StudyCodeWorkspace({
     setDiagnostics([])
     setPendingPreview(null)
     setReloadConfirmOpen(false)
+  }
+
+  const dirty = source !== savedSource
+  const saveState: SaveState =
+    storedSaveState === 'saved' || storedSaveState === 'dirty'
+      ? dirty
+        ? 'dirty'
+        : 'saved'
+      : storedSaveState
+
+  useLayoutEffect(() => {
+    dirtyRef.current = dirty
+  }, [dirty])
+
+  useEffect(() => {
+    onDirtyChange?.(dirty)
+  }, [dirty, onDirtyChange])
+
+  useEffect(() => {
+    let active = true
 
     void studyClient
       .getCodeSnapshot({ nodeId: node.id })

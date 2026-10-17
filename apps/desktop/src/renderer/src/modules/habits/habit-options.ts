@@ -1,23 +1,3 @@
-import {
-  BookOpen,
-  Brain,
-  Briefcase,
-  Code2,
-  Droplet,
-  Dumbbell,
-  Folder,
-  HeartPulse,
-  Home,
-  Leaf,
-  Moon,
-  Music2,
-  Sparkles,
-  Sun,
-  User,
-  Wallet,
-  type LucideIcon
-} from 'lucide-react'
-
 import type {
   HabitGroupColor,
   HabitGroupIcon,
@@ -58,25 +38,6 @@ export const HABIT_TRACKING_OPTIONS: Array<{ value: HabitTrackingType; label: st
   { value: 'check', label: 'Простая отметка' },
   { value: 'count', label: 'Количество / прогресс' }
 ]
-
-const iconByName: Record<HabitGroupIcon, LucideIcon> = {
-  folder: Folder,
-  sparkles: Sparkles,
-  dumbbell: Dumbbell,
-  'book-open': BookOpen,
-  'heart-pulse': HeartPulse,
-  brain: Brain,
-  droplet: Droplet,
-  moon: Moon,
-  sun: Sun,
-  leaf: Leaf,
-  music: Music2,
-  briefcase: Briefcase,
-  home: Home,
-  wallet: Wallet,
-  code: Code2,
-  user: User
-}
 
 export const habitGroupColorClasses: Record<
   HabitGroupColor,
@@ -130,17 +91,6 @@ export const habitGroupColorClasses: Record<
     border: 'border-pink-400/25',
     dot: 'bg-pink-400'
   }
-}
-
-export function HabitGroupIconGlyph({
-  icon,
-  className
-}: {
-  icon: HabitGroupIcon
-  className?: string
-}): React.JSX.Element {
-  const Icon = iconByName[icon]
-  return <Icon aria-hidden="true" className={className} />
 }
 
 export function habitRepeatLabel(days: number): string {

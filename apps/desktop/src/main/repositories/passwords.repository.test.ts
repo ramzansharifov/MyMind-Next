@@ -28,7 +28,9 @@ beforeAll(async () => {
 
 beforeEach(() => {
   lockPasswordVault()
-  getSqlite().exec('DELETE FROM password_items; DELETE FROM password_groups; DELETE FROM password_vault;')
+  getSqlite().exec(
+    'DELETE FROM password_items; DELETE FROM password_groups; DELETE FROM password_vault;'
+  )
 })
 
 afterAll(async () => {
@@ -37,7 +39,10 @@ afterAll(async () => {
   await rm(root, { recursive: true, force: true })
 })
 
-function itemInput(groupId: string | null, password = 'Strong-password-123!') {
+function itemInput(
+  groupId: string | null,
+  password = 'Strong-password-123!'
+): Parameters<typeof createPasswordItem>[0] {
   return {
     groupId,
     type: 'login' as const,
@@ -72,9 +77,9 @@ describe('passwords repository', () => {
 
     lockPasswordVault()
     expect(() => listPasswordsOverview()).toThrow('заблокировано')
-    await expect(
-      unlockPasswordVault({ masterPassword: 'wrong-master-password' })
-    ).rejects.toThrow('Неверный мастер-пароль')
+    await expect(unlockPasswordVault({ masterPassword: 'wrong-master-password' })).rejects.toThrow(
+      'Неверный мастер-пароль'
+    )
 
     await unlockPasswordVault({ masterPassword: 'master-password-very-strong' })
     expect(getPasswordItem(item.id)).toMatchObject({
@@ -98,7 +103,11 @@ describe('passwords repository', () => {
   it('detects reused and weak passwords without exposing passwords in the overview', async () => {
     await setupPasswordVault({ masterPassword: 'master-password-very-strong' })
     createPasswordItem(itemInput(null, '12345678'))
-    createPasswordItem({ ...itemInput(null, '12345678'), title: 'Другой сервис', username: 'other' })
+    createPasswordItem({
+      ...itemInput(null, '12345678'),
+      title: 'Другой сервис',
+      username: 'other'
+    })
 
     const overview = listPasswordsOverview()
     expect(overview.security.weak).toBe(2)

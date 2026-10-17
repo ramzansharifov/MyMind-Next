@@ -400,8 +400,8 @@ button {
 .mymind-rich-text-editor code {
   padding: 0.125rem 0.375rem;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: 0.9em;
-  color: #e4e4e7;
+  font-size: inherit;
+  color: inherit;
   background: #090a0c;
   border: 1px solid var(--app-border);
   border-radius: 0.375rem;

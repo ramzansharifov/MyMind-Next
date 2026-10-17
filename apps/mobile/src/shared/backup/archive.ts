@@ -3,7 +3,7 @@ const HEADER_SIZE = 12
 
 export const MOBILE_BACKUP_FORMAT = 'mymind-mobile-backup'
 export const MOBILE_BACKUP_VERSION = 1
-export const MOBILE_BACKUP_SCHEMA_VERSION = 8
+export const MOBILE_BACKUP_SCHEMA_VERSION = 9
 export const MOBILE_BACKUP_EXTENSION = '.mymindbackup'
 export const MOBILE_BACKUP_MAX_MANIFEST_BYTES = 4 * 1024 * 1024
 export const MOBILE_BACKUP_MAX_ENTRIES = 25_000

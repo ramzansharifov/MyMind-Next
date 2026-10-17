@@ -28,6 +28,7 @@ import {
   type MobileDurableFileRoot
 } from './restoreRecovery'
 import { MOBILE_RESTORE_STAGE_PREFIX } from './restoreRecoveryState'
+import { initializeMobileDatabase } from '../storage/sqlite'
 
 const CHUNK_SIZE = 1024 * 1024
 
@@ -349,7 +350,7 @@ export async function restoreMobileBackup(db: SQLiteDatabase): Promise<MobileRes
     const manifestLength = decodeMobileBackupHeader(header)
     const manifestBytes = readExactly(input, manifestLength)
     manifest = decodeMobileBackupManifest(manifestBytes, archive.size)
-    if (manifest.schemaVersion !== MOBILE_BACKUP_SCHEMA_VERSION) {
+    if (manifest.schemaVersion !== 8 && manifest.schemaVersion !== MOBILE_BACKUP_SCHEMA_VERSION) {
       throw new Error('Backup создан несовместимой версией MyMind')
     }
 
@@ -376,6 +377,13 @@ export async function restoreMobileBackup(db: SQLiteDatabase): Promise<MobileRes
 
   try {
     restoredDatabase = await deserializeDatabaseAsync(databaseBytes)
+    const restoredVersion = await restoredDatabase.getFirstAsync<{ user_version: number }>(
+      'PRAGMA user_version'
+    )
+    if (restoredVersion?.user_version !== manifest.schemaVersion) {
+      throw new Error('Версия базы данных backup не соответствует описанию')
+    }
+    await initializeMobileDatabase(restoredDatabase)
     await assertDatabaseHealthy(restoredDatabase)
     if ((await schemaSignature(restoredDatabase)) !== (await schemaSignature(db))) {
       throw new Error('Структура базы данных backup не соответствует этой версии MyMind')

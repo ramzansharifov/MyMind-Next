@@ -1,5 +1,5 @@
 import { Dumbbell } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 import type {
   CreateWorkoutExerciseInput,
@@ -39,19 +39,25 @@ export function WorkoutExerciseDialog({
   const [usesExternalWeight, setUsesExternalWeight] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (!open) return
-    setTitle(exercise?.title ?? '')
-    setMuscleGroups(
-      exercise
-        ? exercise.muscleGroups?.length
-          ? exercise.muscleGroups
-          : legacyGroups(exercise.muscleGroup)
-        : []
-    )
-    setUsesExternalWeight(exercise?.usesExternalWeight ?? true)
-    setError(null)
-  }, [exercise, open])
+  const [formInputs, setFormInputs] = useState<{
+    exercise: typeof exercise
+    open: typeof open
+  } | null>(null)
+  if (formInputs === null || formInputs.exercise !== exercise || formInputs.open !== open) {
+    setFormInputs({ exercise: exercise, open: open })
+    if (open) {
+      setTitle(exercise?.title ?? '')
+      setMuscleGroups(
+        exercise
+          ? exercise.muscleGroups?.length
+            ? exercise.muscleGroups
+            : legacyGroups(exercise.muscleGroup)
+          : []
+      )
+      setUsesExternalWeight(exercise?.usesExternalWeight ?? true)
+      setError(null)
+    }
+  }
 
   async function submit(event: React.FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault()

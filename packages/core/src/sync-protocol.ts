@@ -50,7 +50,11 @@ export function assertSyncDataSnapshot(value: unknown): asserts value is SyncDat
 
     const seenTables = new Set<string>()
     for (const table of module.tables) {
-      if (!isRecord(table) || typeof table.table !== 'string' || !/^[a-z0-9_]+$/.test(table.table)) {
+      if (
+        !isRecord(table) ||
+        typeof table.table !== 'string' ||
+        !/^[a-z0-9_]+$/.test(table.table)
+      ) {
         throw new Error('Некорректная таблица sync')
       }
       if (seenTables.has(table.table)) throw new Error('Повторяющаяся таблица sync')

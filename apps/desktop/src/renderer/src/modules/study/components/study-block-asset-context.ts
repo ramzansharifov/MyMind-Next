@@ -21,6 +21,7 @@ export interface StudyBlockAssetClient {
   importAsset(input: ImportStudyAssetInput): Promise<StudyLocalAsset | null>
   saveRecordedAudio?(input: SaveRecordedAudioInput): Promise<StudyLocalAsset>
   openAsset(input: OpenStudyAssetInput): Promise<void>
+  resolveAssetUri?(asset: StudyLocalAsset): string | null
   capabilities?: StudyBlockEditorCapabilities
 }
 

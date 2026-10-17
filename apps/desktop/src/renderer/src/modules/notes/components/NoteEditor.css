@@ -37,6 +37,7 @@
   flex: 1;
   min-height: 0;
   overflow: hidden;
+  background-color: var(--note-background-color, var(--app-workspace));
 }
 
 .note-canvas-scroll {
@@ -47,6 +48,31 @@
   padding: 40px var(--note-canvas-side-padding);
 }
 
+.note-canvas-page[data-paper-pattern='dots'],
+.note-page-stack[data-note-layout='canvas'][data-paper-pattern='dots'] {
+  background-image: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--note-paper-text, var(--app-text)) 18%, transparent) 1px,
+    transparent 1px
+  );
+  background-size: 24px 24px;
+}
+
+.note-canvas-page[data-paper-pattern='grid'],
+.note-page-stack[data-note-layout='canvas'][data-paper-pattern='grid'] {
+  background-image:
+    linear-gradient(
+      color-mix(in srgb, var(--note-paper-text, var(--app-text)) 9%, transparent) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--note-paper-text, var(--app-text)) 9%, transparent) 1px,
+      transparent 1px
+    );
+  background-size: 28px 28px;
+}
+
 .note-canvas-layout[data-settings-visible='true'] .note-canvas-scroll {
   padding-inline-end: calc(
     var(--note-settings-width) + var(--note-settings-gap) * 2 + 8px +
@@ -54,24 +80,317 @@
   );
 }
 
-.note-canvas-page {
+.note-page-stack {
+  --note-page-height: 1120px;
+  --note-page-inset: 40px;
+  --note-page-content-height: calc(var(--note-page-height) - 2 * var(--note-page-inset));
+  position: relative;
+  isolation: isolate;
   width: 100%;
   max-width: 900px;
-  min-height: 100%;
+  min-height: var(--note-stack-height);
   margin-inline: auto;
-  color: var(--app-text);
 }
 
-.note-canvas-content,
-.note-canvas-content > div {
-  min-height: 100%;
+.note-page-stack[data-note-layout='canvas'] {
+  --note-page-inset: 24px;
+  background-color: var(--note-paper-color, transparent);
+}
+
+.note-page-sheets,
+.note-page-gutters {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.note-canvas-page {
+  position: absolute;
+  width: 100%;
+  height: var(--note-page-height);
+  border: 1px solid var(--app-border-strong);
+  border-radius: 8px;
+  background-color: var(--note-paper-color, transparent);
+  color: var(--note-paper-text, var(--app-text));
+}
+
+.note-page-stack[data-note-layout='card'] .note-canvas-page {
+  border-width: 2px;
+}
+
+.note-page-gutters {
+  z-index: 2;
+}
+
+.note-page-gutter {
+  position: absolute;
+  width: 100%;
+  height: 32px;
+  background: var(--note-background-color, var(--app-workspace));
+}
+
+.note-canvas-content {
+  position: relative;
+  z-index: 1;
+  min-height: var(--note-stack-height);
 }
 
 .note-canvas-text {
-  min-height: max(360px, calc(100vh - 180px));
-  padding-bottom: 80px;
+  display: grid;
+  align-content: start;
+  row-gap: 12px;
+  min-height: var(--note-stack-height);
+  padding-block: var(--note-page-inset);
+  padding-inline: 40px;
   font-size: 1rem;
   line-height: 1.85;
+  color: var(--note-paper-text, var(--app-text));
+}
+
+.note-page-stack[data-note-layout='canvas'] .note-canvas-text {
+  padding-inline: 0;
+}
+
+.note-canvas-text.mymind-rich-text-editor > * {
+  margin-block: 0;
+  min-width: 0;
+}
+
+.note-canvas-text .note-page-break {
+  display: block;
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  line-height: 0;
+  pointer-events: none;
+  user-select: none;
+}
+
+.note-pagination-measuring .note-page-break,
+.note-page-stack[data-note-layout='canvas'] .note-page-break {
+  display: none !important;
+}
+
+/* Attachments stay whole. Oversized media gets its own scrollable area. */
+.note-page-stack:not([data-note-layout='canvas']) .note-canvas-attachment {
+  margin-block: 0;
+  max-height: var(--note-page-content-height);
+  overflow: auto;
+}
+
+.note-page-stack:not([data-note-layout='canvas']) .note-canvas-attachment figure > .group {
+  max-height: calc(var(--note-page-content-height) - 60px);
+}
+
+.note-canvas-text .note-canvas-attachment {
+  margin-block: 0;
+}
+
+.note-appearance-section {
+  border-bottom: 1px solid var(--app-border);
+}
+
+.note-appearance-section h3 {
+  margin-bottom: 8px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--app-muted);
+}
+
+.note-canvas-settings [data-note-appearance-settings] .note-appearance-fields {
+  display: grid;
+  gap: 10px;
+}
+
+.note-appearance-label {
+  font-size: 11px;
+  color: var(--app-muted);
+}
+
+.note-appearance-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.note-appearance-control {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--app-border);
+  background: var(--app-workspace);
+  color: var(--app-muted);
+  outline: none;
+}
+
+.note-appearance-control:hover {
+  background: var(--app-control-hover);
+}
+
+.note-appearance-control[data-active='true'],
+.note-appearance-preset[aria-pressed='true'] {
+  border-color: color-mix(in srgb, var(--app-accent-500) 65%, transparent);
+  background: color-mix(in srgb, var(--app-accent-500) 16%, var(--app-workspace));
+  color: var(--app-accent-400);
+}
+
+.note-appearance-control:focus-visible,
+.note-appearance-preset:focus-visible,
+.note-appearance-reset:focus-visible {
+  outline: 2px solid var(--app-accent-500);
+  outline-offset: 2px;
+}
+
+.note-appearance-dot-preview {
+  width: 16px;
+  height: 16px;
+  background-image: radial-gradient(circle, currentColor 1px, transparent 1px);
+  background-size: 5px 5px;
+}
+
+.note-appearance-presets {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.note-paper-color-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.note-paper-color-card {
+  display: grid;
+  min-width: 0;
+  gap: 5px;
+  padding: 6px;
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  background: var(--app-workspace);
+  color: var(--app-muted);
+  font-size: 10px;
+  text-align: center;
+  cursor: pointer;
+  outline: none;
+}
+
+.note-paper-color-card:hover {
+  border-color: var(--app-border-strong);
+  background: var(--app-control-hover);
+}
+
+.note-paper-color-card[data-state='on'] {
+  border-color: var(--app-accent-500);
+  background: color-mix(in srgb, var(--app-accent-500) 12%, var(--app-workspace));
+  color: var(--app-accent-400);
+}
+
+.note-paper-color-card:focus-visible {
+  outline: 2px solid var(--app-accent-500);
+  outline-offset: 2px;
+}
+
+.note-paper-color-card__preview {
+  display: grid;
+  align-content: center;
+  justify-items: start;
+  gap: 3px;
+  height: 36px;
+  padding-inline: 12px;
+  border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+  border-radius: 4px;
+}
+
+.note-paper-color-card__preview i {
+  width: 75%;
+  height: 2px;
+  background: currentColor;
+  opacity: 0.55;
+}
+
+.note-paper-color-card__preview i:last-child {
+  width: 45%;
+}
+
+.note-paper-color-card__preview[data-transparent='true'] {
+  background-image: conic-gradient(
+    var(--app-border) 25%,
+    transparent 0 50%,
+    var(--app-border) 0 75%,
+    transparent 0
+  );
+  background-size: 8px 8px;
+}
+
+.note-appearance-preset {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  padding: 8px 2px;
+  background: var(--app-workspace);
+  color: var(--app-muted);
+  font-size: 10px;
+  outline: none;
+}
+
+.note-appearance-preset__preview {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 40px;
+}
+
+.note-appearance-preset__preview > span {
+  display: grid;
+  gap: 4px;
+  width: 28px;
+  padding: 8px 4px;
+}
+
+.note-appearance-preset__preview i {
+  display: block;
+  height: 2px;
+  border-radius: 2px;
+  background: currentColor;
+  opacity: 0.65;
+}
+
+.note-appearance-preset__preview i:last-child {
+  width: 65%;
+}
+
+.note-appearance-preset__preview[data-variant='1'] > span,
+.note-appearance-preset__preview[data-variant='2'] > span {
+  border: 1px solid currentColor;
+  border-radius: 2px;
+  background: var(--app-surface);
+}
+
+.note-appearance-preset__preview[data-variant='2'] > span {
+  border-width: 2px;
+}
+
+.note-appearance-reset {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 32px;
+  border: 1px solid var(--app-border);
+  border-radius: 6px;
+  background: var(--app-workspace);
+  color: var(--app-muted);
+  font-size: 11px;
+  outline: none;
+}
+
+.note-appearance-reset:hover {
+  background: var(--app-control-hover);
+  color: var(--app-text);
 }
 
 .note-canvas-settings {
@@ -235,6 +554,8 @@
 }
 
 .note-canvas-legacy {
+  max-width: 900px;
+  margin-inline: auto;
   margin-top: 32px;
   border-top: 1px solid var(--app-border);
   padding-top: 20px;
@@ -277,10 +598,5 @@
 
   .note-canvas-scroll {
     padding-block: 24px;
-  }
-
-  .note-canvas-text {
-    min-height: 360px;
-    padding-bottom: 32px;
   }
 }

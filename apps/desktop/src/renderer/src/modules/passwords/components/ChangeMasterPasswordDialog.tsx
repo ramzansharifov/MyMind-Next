@@ -1,5 +1,5 @@
 import { ShieldCheck } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 import { AppDialog } from '../../../shared/ui/AppDialog'
 
@@ -23,13 +23,16 @@ export function ChangeMasterPasswordDialog({
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (!open) return
-    setCurrentPassword('')
-    setNextPassword('')
-    setConfirmPassword('')
-    setError(null)
-  }, [open])
+  const [formInputs, setFormInputs] = useState<{ open: typeof open } | null>(null)
+  if (formInputs === null || formInputs.open !== open) {
+    setFormInputs({ open: open })
+    if (open) {
+      setCurrentPassword('')
+      setNextPassword('')
+      setConfirmPassword('')
+      setError(null)
+    }
+  }
 
   const valid =
     currentPassword.length > 0 &&

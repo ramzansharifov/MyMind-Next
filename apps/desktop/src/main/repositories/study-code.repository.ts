@@ -365,7 +365,11 @@ function serializeBlock(block: StudyBlock): StudyCodeTreeMaterial['blocks'][numb
         id: block.id,
         type: block.type,
         body: block.source,
-        attributes: compactAttributes({ view: block.viewMode, theme: block.theme, scale: block.scale })
+        attributes: compactAttributes({
+          view: block.viewMode,
+          theme: block.theme,
+          scale: block.scale
+        })
       }
     case 'image':
       return {
@@ -430,12 +434,7 @@ function compactAttributes(
 }
 
 function buildPlan(scope: ScopeState, source: string): StudyCodePlan {
-  let ast
-  try {
-    ast = parseStudyCode(source)
-  } catch (reason: unknown) {
-    throw reason
-  }
+  const ast = parseStudyCode(source)
 
   if (ast.root.kind !== scope.root.type) {
     semanticFail(ast.root, `Корень должен оставаться ${scope.root.type}`)
@@ -549,7 +548,8 @@ function resolveFolderIcon(
   if (ast.kind !== 'folder') return null
   const raw = ast.attributes.icon
   if (raw === undefined) return (existing?.icon ?? 'folder') as StudyFolderIconName
-  if (typeof raw !== 'string' || !folderIconSet.has(raw)) semanticFail(ast, 'Неизвестная иконка папки')
+  if (typeof raw !== 'string' || !folderIconSet.has(raw))
+    semanticFail(ast, 'Неизвестная иконка папки')
   return raw as StudyFolderIconName
 }
 
@@ -584,7 +584,8 @@ function resolveBlockId(
   if (!ast.id)
     return createUniqueId(new Set([...oldBlocks.keys(), ...usedIds, ...outsideBlockOwners.keys()]))
   if (!STUDY_SAFE_ID_PATTERN.test(ast.id)) semanticFail(ast, 'Некорректный @id блока')
-  if (usedIds.has(ast.id)) semanticFail(ast, `Идентификатор блока ${ast.id} используется несколько раз`)
+  if (usedIds.has(ast.id))
+    semanticFail(ast, `Идентификатор блока ${ast.id} используется несколько раз`)
 
   const old = oldBlocks.get(ast.id)
   if (old && old.type !== ast.blockType) semanticFail(ast, 'Тип существующего блока нельзя менять')
@@ -627,12 +628,7 @@ function buildBlock(
         color: optionalString(attributes, 'color', ast),
         backgroundColor: optionalString(attributes, 'background', ast),
         alignment: optionalEnum(attributes, 'align', ['left', 'center', 'right'], ast),
-        backgroundScope: optionalEnum(
-          attributes,
-          'backgroundScope',
-          ['text', 'container'],
-          ast
-        )
+        backgroundScope: optionalEnum(attributes, 'backgroundScope', ['text', 'container'], ast)
       })
     case 'code':
       assertAllowedAttributes(ast, ['language'])
@@ -672,7 +668,16 @@ function buildBlock(
         scale: optionalNumber(attributes, 'scale', ast)
       })
     case 'image':
-      assertAllowedAttributes(ast, ['asset', 'name', 'mime', 'size', 'url', 'title', 'fit', 'height'])
+      assertAllowedAttributes(ast, [
+        'asset',
+        'name',
+        'mime',
+        'size',
+        'url',
+        'title',
+        'fit',
+        'height'
+      ])
       return compactObject({
         id,
         type: 'image' as const,
@@ -713,7 +718,12 @@ function buildBlock(
       if (boardId && existing?.type !== 'board') {
         semanticFail(ast, 'Новая доска создаётся без board. Откройте блок после сохранения.')
       }
-      if (boardId && existing?.type === 'board' && existing.boardId && boardId !== existing.boardId) {
+      if (
+        boardId &&
+        existing?.type === 'board' &&
+        existing.boardId &&
+        boardId !== existing.boardId
+      ) {
         semanticFail(ast, 'Нельзя подменить связанную доску через DSL')
       }
       return compactObject({ id, type: 'board' as const, boardId, title: ast.title })
@@ -834,7 +844,9 @@ function applyPlanTransaction(plan: StudyCodePlan): void {
     (row) => row.id !== plan.scope.root.id && !desiredIdSet.has(row.id)
   )
   const removedIds = new Set(removedRows.map((row) => row.id))
-  const topLevelRemoved = removedRows.filter((row) => !row.parentId || !removedIds.has(row.parentId))
+  const topLevelRemoved = removedRows.filter(
+    (row) => !row.parentId || !removedIds.has(row.parentId)
+  )
   const desiredPathMap = new Map(
     plan.desired.map((node) => [
       node.id,
@@ -889,14 +901,16 @@ function applyPlanTransaction(plan: StudyCodePlan): void {
       })
 
     plan.desired
-      .filter((node): node is DesiredNode & { type: 'material'; document: StudyDocument } =>
-        node.type === 'material' && node.document !== undefined
+      .filter(
+        (node): node is DesiredNode & { type: 'material'; document: StudyDocument } =>
+          node.type === 'material' && node.document !== undefined
       )
       .forEach((node) => {
         const existingMaterial = plan.scope.materialRows.get(node.id)
         const plainText = documentToPlainText(node.document)
         const changed =
-          !existingMaterial || JSON.stringify(existingMaterial.document) !== JSON.stringify(node.document)
+          !existingMaterial ||
+          JSON.stringify(existingMaterial.document) !== JSON.stringify(node.document)
 
         if (existingMaterial) {
           if (changed) {

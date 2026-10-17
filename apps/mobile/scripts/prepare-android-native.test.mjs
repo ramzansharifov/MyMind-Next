@@ -20,7 +20,9 @@ try {
   const first = await prepareAndroidNative({
     mobileRoot,
     repoRoot: root,
-    log() {}
+    log() {
+      return undefined
+    }
   })
   assert.equal(first.reset, true)
   await assert.rejects(readFile(path.join(androidRoot, 'stale.txt'), 'utf8'))
@@ -31,7 +33,9 @@ try {
   const second = await prepareAndroidNative({
     mobileRoot,
     repoRoot: root,
-    log() {}
+    log() {
+      return undefined
+    }
   })
   assert.equal(second.reset, false)
   assert.equal(await readFile(path.join(androidRoot, 'fresh.txt'), 'utf8'), 'fresh')
@@ -40,7 +44,9 @@ try {
   const changed = await prepareAndroidNative({
     mobileRoot,
     repoRoot: root,
-    log() {}
+    log() {
+      return undefined
+    }
   })
   assert.equal(changed.reset, true)
   await assert.rejects(readFile(path.join(androidRoot, 'fresh.txt'), 'utf8'))
@@ -51,7 +57,9 @@ try {
     mobileRoot,
     repoRoot: root,
     force: true,
-    log() {}
+    log() {
+      return undefined
+    }
   })
   assert.equal(forced.reset, true)
   await assert.rejects(readFile(path.join(androidRoot, 'force.txt'), 'utf8'))

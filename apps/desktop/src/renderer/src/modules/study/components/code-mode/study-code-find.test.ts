@@ -39,9 +39,9 @@ describe('study Code Mode find and replace', () => {
     expect(
       findStudyCodeMatches('text', '(', { ...defaultOptions, useRegex: true }).error
     ).toContain('Некорректное регулярное выражение')
-    expect(
-      findStudyCodeMatches('text', '^', { ...defaultOptions, useRegex: true }).error
-    ).toBe('Регулярное выражение не должно находить пустую строку')
+    expect(findStudyCodeMatches('text', '^', { ...defaultOptions, useRegex: true }).error).toBe(
+      'Регулярное выражение не должно находить пустую строку'
+    )
   })
 
   it('replaces the active regex match with capture groups', () => {

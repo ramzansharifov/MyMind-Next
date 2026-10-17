@@ -73,9 +73,7 @@ export class LanSyncRendererCoordinator {
       return
     }
 
-    pending.reject(
-      new Error(response.message?.trim() || 'Открытые изменения не удалось сохранить')
-    )
+    pending.reject(new Error(response.message?.trim() || 'Открытые изменения не удалось сохранить'))
   }
 
   cancelAll(message = 'Подготовка к синхронизации отменена'): void {

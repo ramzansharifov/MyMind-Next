@@ -28,9 +28,38 @@ export type NoteAssetKind = StudyAssetKind
 export type NoteLocalAsset = StudyLocalAsset
 export type OpenNoteAssetInput = OpenStudyAssetInput
 
+export const NOTE_BACKGROUND_PATTERNS = ['none', 'dots', 'grid'] as const
+export const NOTE_APPEARANCE_VARIANTS = ['canvas', 'sheet', 'card'] as const
+
+export interface NoteAppearance {
+  variant: (typeof NOTE_APPEARANCE_VARIANTS)[number]
+  paperPattern: (typeof NOTE_BACKGROUND_PATTERNS)[number]
+  /** null is transparent, "theme" follows the application's surface color. */
+  paperColor: string | null
+}
+
+export const DEFAULT_NOTE_APPEARANCE: Readonly<NoteAppearance> = {
+  variant: 'sheet',
+  paperPattern: 'none',
+  paperColor: 'theme'
+}
+
+/** Recover the selected layout from notes saved before an explicit variant existed. */
+export function getNoteAppearanceVariant(appearance: unknown): NoteAppearance['variant'] {
+  if (!appearance || typeof appearance !== 'object') return DEFAULT_NOTE_APPEARANCE.variant
+  const saved = appearance as Record<string, unknown>
+  if (NOTE_APPEARANCE_VARIANTS.includes(saved.variant as NoteAppearance['variant'])) {
+    return saved.variant as NoteAppearance['variant']
+  }
+  if (saved.borderWidth === 0 && saved.padding === 0) return 'canvas'
+  if (typeof saved.borderRadius === 'number' && saved.borderRadius >= 24) return 'card'
+  return 'sheet'
+}
+
 export interface NoteDocument {
   version: 1
   blocks: NoteBlock[]
+  appearance?: NoteAppearance
 }
 
 export interface NoteGroup {

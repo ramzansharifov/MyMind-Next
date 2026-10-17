@@ -7,9 +7,7 @@ import {
   Shield,
   type LucideIcon
 } from 'lucide-react'
-
 import type { WorkoutMuscleGroup } from '../../../../shared/contracts/workouts'
-import { WorkoutMuscleArtwork } from './components/WorkoutMuscleArtwork'
 
 export type WorkoutMuscleFamily = 'arms' | 'back' | 'chest' | 'abs' | 'legs'
 
@@ -177,14 +175,4 @@ export function workoutMuscleGroupLabel(group: WorkoutMuscleGroup): string {
 export function workoutMuscleGroupsLabel(groups: WorkoutMuscleGroup[]): string {
   const unique = [...new Set(groups)]
   return unique.length ? unique.map(workoutMuscleGroupLabel).join(' · ') : 'Зоны не выбраны'
-}
-
-export function WorkoutMuscleGroupIcon({
-  group,
-  className
-}: {
-  group: WorkoutMuscleGroup
-  className?: string
-}): React.JSX.Element {
-  return <WorkoutMuscleArtwork groups={[group]} className={className} />
 }

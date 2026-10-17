@@ -36,7 +36,12 @@ export function createSyncAssetPath(
   fileName: string
 ): string {
   const root = kind === 'note-asset' ? 'notes' : 'workouts'
-  return [root, safeSegment(ownerId, 'owner id'), safeSegment(assetId, 'asset id'), safeFileName(fileName)].join('/')
+  return [
+    root,
+    safeSegment(ownerId, 'owner id'),
+    safeSegment(assetId, 'asset id'),
+    safeFileName(fileName)
+  ].join('/')
 }
 
 export function parseSyncAssetPath(path: string): SyncAssetReference {
@@ -47,9 +52,13 @@ export function parseSyncAssetPath(path: string): SyncAssetReference {
   if (parts.length !== 4) throw new Error('Некорректный путь sync asset')
   const [root, ownerId, assetId, fileName] = parts
   const kind: SyncAssetKind =
-    root === 'notes' ? 'note-asset' : root === 'workouts' ? 'workout-photo' : (() => {
-      throw new Error('Неподдерживаемый тип sync asset')
-    })()
+    root === 'notes'
+      ? 'note-asset'
+      : root === 'workouts'
+        ? 'workout-photo'
+        : (() => {
+            throw new Error('Неподдерживаемый тип sync asset')
+          })()
   const reference = {
     path,
     kind,
@@ -57,7 +66,9 @@ export function parseSyncAssetPath(path: string): SyncAssetReference {
     assetId: safeSegment(assetId, 'asset id'),
     fileName: safeFileName(fileName)
   } satisfies SyncAssetReference
-  if (createSyncAssetPath(kind, reference.ownerId, reference.assetId, reference.fileName) !== path) {
+  if (
+    createSyncAssetPath(kind, reference.ownerId, reference.assetId, reference.fileName) !== path
+  ) {
     throw new Error('Неканонический путь sync asset')
   }
   return reference
@@ -152,7 +163,6 @@ export function listSyncAssetReferences(snapshot: SyncDataSnapshot): SyncAssetRe
   }
   return [...byPath.values()].sort((left, right) => left.path.localeCompare(right.path, 'en'))
 }
-
 
 export function listRemovedSyncAssetReferences(
   before: SyncDataSnapshot,

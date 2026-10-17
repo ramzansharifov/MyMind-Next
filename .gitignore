@@ -37,3 +37,11 @@ apps/mobile/android-smoke-artifacts/
 # Expo / React Native
 .expo/
 web-build/
+
+# Next.js PWA generated output
+.next/
+*.tsbuildinfo
+apps/pwa/public/sw.js
+apps/pwa/public/sqlite/
+apps/pwa/public/icons/
+apps/pwa/public/tldraw/

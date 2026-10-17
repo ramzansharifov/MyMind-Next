@@ -125,18 +125,6 @@ export const FINANCE_ICON_CHOICES = [
   { value: 'tag', label: 'Другое' }
 ] as const
 
-export const TASK_GROUP_COLOR_CHOICES = [
-  { value: 'accent', label: 'Без цвета' },
-  { value: 'violet', label: 'Фиолетовый' },
-  { value: 'blue', label: 'Синий' },
-  { value: 'cyan', label: 'Голубой' },
-  { value: 'emerald', label: 'Изумрудный' },
-  { value: 'amber', label: 'Янтарный' },
-  { value: 'orange', label: 'Оранжевый' },
-  { value: 'rose', label: 'Розовый' },
-  { value: 'pink', label: 'Малиновый' }
-] as const
-
 export const GROUP_COLOR_CHOICES = [
   { value: 'violet', label: 'Фиолетовый' },
   { value: 'blue', label: 'Синий' },

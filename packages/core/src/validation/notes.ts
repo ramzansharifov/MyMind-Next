@@ -1,6 +1,10 @@
 import { z } from 'zod'
 
 import {
+  DEFAULT_NOTE_APPEARANCE,
+  getNoteAppearanceVariant,
+  NOTE_APPEARANCE_VARIANTS,
+  NOTE_BACKGROUND_PATTERNS,
   NOTE_BLOCK_TYPES,
   NOTE_VOICE_RECORDING_MAX_BYTES,
   NOTE_VOICE_RECORDING_MIME_TYPES
@@ -44,10 +48,35 @@ export const noteBlockSchema = z.discriminatedUnion('type', [
   studyBoardBlockSchema
 ])
 
+const appearanceColorSchema = z
+  .string()
+  .regex(/^#[0-9a-fA-F]{6}$/)
+  .nullable()
+
+export const noteAppearanceSchema = z.preprocess(
+  (value) => {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return value
+    const saved = value as Record<string, unknown>
+    return {
+      ...saved,
+      variant: saved.variant ?? getNoteAppearanceVariant(saved),
+      paperPattern: saved.paperPattern ?? saved.backgroundPattern
+    }
+  },
+  z.object({
+    variant: z.enum(NOTE_APPEARANCE_VARIANTS).default(DEFAULT_NOTE_APPEARANCE.variant),
+    paperPattern: z.enum(NOTE_BACKGROUND_PATTERNS).default(DEFAULT_NOTE_APPEARANCE.paperPattern),
+    paperColor: z
+      .union([appearanceColorSchema, z.literal('theme')])
+      .default(DEFAULT_NOTE_APPEARANCE.paperColor)
+  })
+)
+
 export const noteDocumentSchema = z
   .object({
     version: z.literal(1),
-    blocks: z.array(noteBlockSchema).max(STUDY_DOCUMENT_LIMITS.maxBlocks)
+    blocks: z.array(noteBlockSchema).max(STUDY_DOCUMENT_LIMITS.maxBlocks),
+    appearance: noteAppearanceSchema.optional()
   })
   .superRefine((document, context) => {
     const ids = new Set<string>()

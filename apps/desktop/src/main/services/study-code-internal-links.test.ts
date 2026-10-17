@@ -3,10 +3,11 @@ import { describe, expect, it } from 'vitest'
 import {
   resolveStudyCodeSymbolicInternalLinks,
   symbolizeStoredStudyInternalLinks,
+  type StudyCodeResolvedInternalLink,
   type StudyCodeInternalLinkReference
 } from './study-code-internal-links'
 
-function resolve(reference: StudyCodeInternalLinkReference) {
+function resolve(reference: StudyCodeInternalLinkReference): StudyCodeResolvedInternalLink {
   if (reference.materialName === 'RelationalModel') {
     return {
       kind: 'material' as const,
@@ -53,13 +54,17 @@ describe('study code symbolic internal links', () => {
       resolve
     )
 
-    const symbolic = symbolizeStoredStudyInternalLinks(resolved.text, resolved.html, ({ materialId, headingId }) => {
-      if (materialId === 'material-relational') return { materialName: 'RelationalModel' }
-      if (materialId === 'material-sql' && headingId === 'heading-select') {
-        return { materialName: 'SqlBasics', headingName: 'Select' }
+    const symbolic = symbolizeStoredStudyInternalLinks(
+      resolved.text,
+      resolved.html,
+      ({ materialId, headingId }) => {
+        if (materialId === 'material-relational') return { materialName: 'RelationalModel' }
+        if (materialId === 'material-sql' && headingId === 'heading-select') {
+          return { materialName: 'SqlBasics', headingName: 'Select' }
+        }
+        return null
       }
-      return null
-    })
+    )
 
     expect(symbolic.text).toContain('[[RelationalModel|изучите реляционную модель]]')
     expect(symbolic.text).toContain('[[SqlBasics.Select]]')

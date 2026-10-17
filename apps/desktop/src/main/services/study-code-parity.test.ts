@@ -334,7 +334,12 @@ describe('Study Code Mode parity with the visual material editor', () => {
     const modern = result.nodes.find((node) => node.title === 'Новое время')
 
     expect(rootNode?.icon).toBe('history')
-    expect(antiquity).toMatchObject({ type: 'folder', parentId: root.id, position: 0, icon: 'book' })
+    expect(antiquity).toMatchObject({
+      type: 'folder',
+      parentId: root.id,
+      position: 0,
+      icon: 'book'
+    })
     expect(rome).toMatchObject({ type: 'material', parentId: antiquity?.id, position: 0 })
     expect(modern).toMatchObject({ type: 'material', parentId: root.id, position: 1 })
   })

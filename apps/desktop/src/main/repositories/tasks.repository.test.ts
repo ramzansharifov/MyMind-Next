@@ -34,7 +34,7 @@ afterAll(async () => {
 
 describe('tasks repository', () => {
   it('persists groups and tasks with their metadata', () => {
-    const work = createTaskGroup({ name: 'Работа', icon: 'briefcase', color: 'blue' })
+    const work = createTaskGroup({ name: 'Работа', icon: 'briefcase' })
     const task = createTask({
       title: 'Подготовить презентацию',
       description: 'Собрать финальную версию для встречи.',
@@ -54,15 +54,17 @@ describe('tasks repository', () => {
     const renamed = updateTaskGroup({
       id: work.id,
       name: 'Рабочие задачи',
-      icon: 'briefcase',
-      color: 'cyan'
+      icon: 'briefcase'
     })
     expect(renamed.name).toBe('Рабочие задачи')
-    expect(renamed.color).toBe('cyan')
+    expect(renamed).not.toHaveProperty('color')
+    expect(getSqlite().prepare('PRAGMA table_info(task_groups)').all()).not.toContainEqual(
+      expect.objectContaining({ name: 'color' })
+    )
   })
 
   it('moves tasks to ungrouped when a group is deleted', () => {
-    const home = createTaskGroup({ name: 'Дом', icon: 'home', color: 'emerald' })
+    const home = createTaskGroup({ name: 'Дом', icon: 'home' })
     const task = createTask({
       title: 'Купить лампочки',
       description: '',

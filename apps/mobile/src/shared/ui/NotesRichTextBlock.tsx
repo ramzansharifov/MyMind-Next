@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { View } from 'react-native'
 import type { ResolveStudyInternalLinkTargetInput, StudyTextBlock } from '@mymind/contracts/study'
 
@@ -37,7 +37,7 @@ export function DocumentRichTextViewer({
 }): React.JSX.Element {
   const theme = useTheme()
   const [height, setHeight] = useState(64)
-  const initialHtmlRef = useRef(html || '<p></p>')
+  const [initialContent] = useState(() => html || '<p></p>')
 
   const handleHeight = useCallback(async (nextHeight: number): Promise<void> => {
     const normalized = Math.max(32, Math.min(2400, Math.ceil(nextHeight)))
@@ -70,7 +70,7 @@ export function DocumentRichTextViewer({
     <View style={{ minHeight: Math.max(32, height), overflow: 'hidden' }}>
       <StableNotesRichTextDom
         ref={null}
-        html={initialHtmlRef.current}
+        html={initialContent}
         editable={false}
         textColor={theme.text}
         mutedColor={theme.muted}
@@ -108,9 +108,15 @@ export function NotesRichTextBlock({
   const updateRef = useRef(update)
   const activateRef = useRef(activate)
   const formattingChangedRef = useRef(formattingChanged)
-  const initialContentRef = useRef({
-    html: initialHtml(block)
-  })
+  const registrationRef = useRef(registerRef)
+  const [initialContent] = useState(() => initialHtml(block))
+
+  useLayoutEffect(() => {
+    registrationRef.current = registerRef
+  }, [registerRef])
+  const handleRegistration = useCallback((editor: NotesRichTextDomRef | null): void => {
+    registrationRef.current(editor)
+  }, [])
 
   useEffect(() => {
     blockRef.current = block
@@ -160,8 +166,8 @@ export function NotesRichTextBlock({
       }}
     >
       <StableNotesRichTextDom
-        ref={registerRef}
-        html={initialContentRef.current.html}
+        ref={handleRegistration}
+        html={initialContent}
         textColor={theme.text}
         mutedColor={theme.muted}
         borderColor={theme.border}

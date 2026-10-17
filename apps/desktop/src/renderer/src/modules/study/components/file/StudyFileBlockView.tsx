@@ -28,6 +28,7 @@ import {
 import { StudyAudioPlayer } from './StudyAudioPlayer'
 import { StudyVideoPlayer } from './StudyVideoPlayer'
 import { StudyYouTubePlayer } from './StudyYouTubePlayer'
+import { useStudyBlockAssetClient } from '../study-block-asset-context'
 
 type AttachmentBlock = Extract<
   StudyBlock,
@@ -49,7 +50,10 @@ export function StudyFileBlockView({
 }: StudyFileBlockViewProps): React.JSX.Element {
   const asset = block.source.type === 'local' ? block.source.asset : undefined
 
-  const sourceUrl = getStudyAttachmentSourceUrl(block)
+  const assetClient = useStudyBlockAssetClient()
+  const sourceUrl = asset && assetClient.resolveAssetUri
+    ? assetClient.resolveAssetUri(asset)
+    : getStudyAttachmentSourceUrl(block)
 
   const youtubeVideo =
     block.type === 'video' && block.source.type === 'url'

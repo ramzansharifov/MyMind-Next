@@ -9,6 +9,7 @@ import {
   Pencil,
   Plus,
   Repeat2,
+  RotateCcw,
   Search,
   Sparkles,
   Target,
@@ -30,7 +31,6 @@ import type {
 import { cn } from '../../shared/lib/cn'
 import { AppSelect } from '../../shared/ui/AppSelect'
 import { DeleteConfirmationDialog } from '../../shared/ui/DeleteConfirmationDialog'
-import { ModuleHeader } from '../../shared/ui/ModuleHeader'
 import { StandardModulePage } from '../../shared/ui/StandardModulePage'
 import { habitsClient } from './api/habits-client'
 import { HabitDatePicker } from './components/HabitDatePicker'
@@ -40,7 +40,8 @@ import { HabitTodayRow } from './components/HabitTodayRow'
 import { HabitReminderInbox } from './HabitReminderInbox'
 import { useHabitReminderInbox } from './useHabitReminderInbox'
 import { HabitReports } from './components/HabitReports'
-import { HabitGroupIconGlyph, habitGroupColorClasses } from './habit-options'
+import { habitGroupColorClasses } from './habit-options'
+import { HabitGroupIconGlyph } from './habit-icons'
 import { habitScheduleLabel } from './habit-schedule-options'
 import {
   addDays,
@@ -82,6 +83,7 @@ export function HabitsPage({ resourceId, onResourceHandled }: HabitsPageProps): 
   const [isDeleting, setIsDeleting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const handledResourceIdRef = useRef<string | null>(null)
+  const [handledResourceId, setHandledResourceId] = useState<string | null>(null)
   const { reminders, acknowledge: acknowledgeReminder } = useHabitReminderInbox()
 
   const today = localDateKey()
@@ -110,21 +112,25 @@ export function HabitsPage({ resourceId, onResourceHandled }: HabitsPageProps): 
     }
   }, [loadOverview])
 
-  useEffect(() => {
-    if (!resourceId) {
-      handledResourceIdRef.current = null
-      return
-    }
-    if (isLoading || handledResourceIdRef.current === resourceId) return
-
-    handledResourceIdRef.current = resourceId
+  if (!resourceId && handledResourceId !== null) {
+    setHandledResourceId(null)
+  } else if (resourceId && !isLoading && handledResourceId !== resourceId) {
+    setHandledResourceId(resourceId)
     const habit = habits.find((item) => item.id === resourceId)
     if (habit) {
       setEditingHabit(habit)
       setHabitDialogOpen(true)
     }
-    onResourceHandled?.()
-  }, [habits, isLoading, onResourceHandled, resourceId])
+  }
+
+  useEffect(() => {
+    if (!resourceId) {
+      handledResourceIdRef.current = null
+    } else if (handledResourceId === resourceId && handledResourceIdRef.current !== resourceId) {
+      handledResourceIdRef.current = resourceId
+      onResourceHandled?.()
+    }
+  }, [handledResourceId, onResourceHandled, resourceId])
 
   const groupById = useMemo(() => new Map(groups.map((group) => [group.id, group])), [groups])
   const entryByHabitId = useMemo(
@@ -342,145 +348,167 @@ export function HabitsPage({ resourceId, onResourceHandled }: HabitsPageProps): 
 
   return (
     <StandardModulePage>
-      <ModuleHeader
-        icon={Repeat2}
-        title="Привычки"
-        description="Ритмы, прогресс и долгосрочная статистика по важным действиям."
-        actions={
-          <>
-            <button
-              type="button"
-              className="inline-flex h-11 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-4 text-sm font-medium text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
-              onClick={openNewGroup}
-            >
-              <FolderPlus className="size-4" /> Новая группа
-            </button>
-            <button
-              type="button"
-              className="bg-accent-500 hover:bg-accent-400 inline-flex h-11 items-center gap-2 rounded-xl px-4 text-sm font-semibold text-white transition-colors"
-              onClick={openNewHabit}
-            >
-              <Plus className="size-4" /> Новая привычка
-            </button>
-          </>
-        }
+      <header
+        data-module-header
+        className="relative isolate flex flex-wrap items-center gap-3 overflow-hidden rounded-[28px] border border-[var(--app-border)] bg-[var(--app-surface)] p-6 shadow-[var(--app-shadow-card)] max-[700px]:p-5 max-[480px]:gap-2"
       >
-        {view !== 'reports' && (
-          <div className="flex flex-wrap gap-2">
-            <label className="focus-within:border-accent-500/45 focus-within:ring-accent-500/10 flex h-10 min-w-[260px] flex-1 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 focus-within:ring-2">
-              <Search className="size-4 shrink-0 text-[var(--app-muted)]" />
-              <input
-                value={query}
-                type="text"
-                role="searchbox"
-                aria-label="Поиск по привычкам"
-                placeholder="Найти привычку…"
-                className="min-w-0 flex-1 bg-transparent text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60"
-                onChange={(event) => setQuery(event.target.value)}
-              />
-              {query && (
-                <Tooltip content="Очистить поиск привычек" side="top">
-                  <button
-                    type="button"
-                    aria-label="Очистить поиск привычек"
-                    className="flex size-7 items-center justify-center rounded-lg text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
-                    onClick={() => setQuery('')}
-                  >
-                    <X className="size-4" />
-                  </button>
-                </Tooltip>
-              )}
-            </label>
+        <div
+          aria-hidden="true"
+          className="bg-accent-500/10 pointer-events-none absolute -top-32 right-8 -z-10 size-80 rounded-full blur-3xl"
+        />
+        <div
+          aria-hidden="true"
+          className="bg-accent-900/10 pointer-events-none absolute -bottom-44 -left-24 -z-10 size-80 rounded-full blur-3xl"
+        />
+        <h1 className="sr-only">Привычки</h1>
+        <span className="border-accent-500/20 bg-accent-500/10 text-accent-300 shadow-accent-500/5 flex size-12 shrink-0 items-center justify-center rounded-2xl border shadow-inner">
+          <Repeat2 className="size-6" />
+        </span>
 
-            {view === 'all' && (
-              <div className="min-w-[190px]">
-                <AppSelect
-                  ariaLabel="Фильтр по типу отслеживания"
-                  value={trackingFilter}
-                  options={[
-                    { value: 'all', label: 'Все типы' },
-                    { value: 'check', label: 'Простая отметка' },
-                    { value: 'count', label: 'Количество / прогресс' }
-                  ]}
-                  onValueChange={(value) => setTrackingFilter(value as HabitTrackingType | 'all')}
-                />
-              </div>
+        {view !== 'reports' && (
+          <label className="focus-within:border-accent-500/45 focus-within:ring-accent-500/10 flex h-10 min-w-[180px] flex-1 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 transition-[border-color,box-shadow] focus-within:ring-2 max-[640px]:order-last max-[640px]:w-full max-[640px]:flex-auto">
+            <Search className="size-4 shrink-0 text-[var(--app-muted)]" />
+            <input
+              value={query}
+              type="text"
+              role="searchbox"
+              aria-label="Поиск по привычкам"
+              placeholder="Найти привычку…"
+              className="min-w-0 flex-1 bg-transparent text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60"
+              onChange={(event) => setQuery(event.target.value)}
+            />
+            {query && (
+              <Tooltip content="Очистить поиск привычек" side="bottom">
+                <button
+                  type="button"
+                  aria-label="Очистить поиск привычек"
+                  className="focus-visible:ring-accent-500/35 flex size-6 shrink-0 items-center justify-center rounded-md text-[var(--app-muted)] outline-none hover:text-[var(--app-text)] focus-visible:ring-2"
+                  onClick={() => setQuery('')}
+                >
+                  <X className="size-3.5" />
+                </button>
+              </Tooltip>
             )}
+          </label>
+        )}
+
+        {view === 'all' && (
+          <div className="w-[190px] shrink-0 max-[640px]:order-last max-[640px]:w-full">
+            <AppSelect
+              ariaLabel="Фильтр по типу отслеживания"
+              value={trackingFilter}
+              options={[
+                { value: 'all', label: 'Все типы' },
+                { value: 'check', label: 'Простая отметка' },
+                { value: 'count', label: 'Количество / прогресс' }
+              ]}
+              onValueChange={(value) => setTrackingFilter(value as HabitTrackingType | 'all')}
+            />
+          </div>
+        )}
+
+        {view === 'today' && (
+          <div
+            role="group"
+            aria-label="Дата привычек"
+            className="flex shrink-0 items-center gap-1 max-[1100px]:order-last max-[1100px]:w-full"
+          >
+            <Tooltip content="Предыдущий день" side="bottom">
+              <button
+                type="button"
+                aria-label="Предыдущий день"
+                className="focus-visible:ring-accent-500/35 flex size-10 shrink-0 items-center justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] text-[var(--app-muted)] transition-colors outline-none hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] focus-visible:ring-2"
+                onClick={() => setSelectedDate((current) => addDays(current, -1))}
+              >
+                <ChevronLeft className="size-[18px]" />
+              </button>
+            </Tooltip>
+            <HabitDatePicker value={selectedDate} max={today} onChange={setSelectedDate} />
+            <Tooltip content="Следующий день" side="bottom">
+              <button
+                type="button"
+                aria-label="Следующий день"
+                disabled={selectedDate >= today}
+                className="focus-visible:ring-accent-500/35 flex size-10 shrink-0 items-center justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] text-[var(--app-muted)] transition-colors outline-none hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] focus-visible:ring-2 disabled:cursor-default disabled:opacity-45 disabled:hover:bg-[var(--app-workspace)]"
+                onClick={() =>
+                  setSelectedDate((current) => {
+                    const next = addDays(current, 1)
+                    return next > today ? today : next
+                  })
+                }
+              >
+                <ChevronRight className="size-[18px]" />
+              </button>
+            </Tooltip>
+            <Tooltip content="Вернуться к сегодняшнему дню" side="bottom">
+              <button
+                type="button"
+                aria-label="Вернуться к сегодняшнему дню"
+                disabled={selectedDate === today}
+                className="focus-visible:ring-accent-500/35 flex size-10 shrink-0 items-center justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] text-[var(--app-muted)] transition-colors outline-none hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] focus-visible:ring-2 disabled:cursor-default disabled:opacity-45 disabled:hover:bg-[var(--app-workspace)]"
+                onClick={() => setSelectedDate(today)}
+              >
+                <RotateCcw className="size-[18px]" />
+              </button>
+            </Tooltip>
           </div>
         )}
 
         <div
-          className={cn(
-            'flex flex-wrap items-center justify-between gap-3',
-            view !== 'reports' && 'mt-3'
-          )}
+          role="group"
+          aria-label="Вкладки привычек"
+          className="ml-auto flex h-10 shrink-0 items-center gap-1 rounded-xl bg-[var(--app-workspace)] p-0.5 ring-1 ring-[var(--app-border)] ring-inset"
         >
-          <div className="flex gap-1 overflow-x-auto rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-1">
-            {[
-              { id: 'today' as const, label: 'Сегодня', icon: CalendarDays },
-              { id: 'all' as const, label: 'Все привычки', icon: Target },
-              { id: 'reports' as const, label: 'Отчёты', icon: BarChart3 }
-            ].map((item) => {
-              const Icon = item.icon
-              return (
+          {[
+            { id: 'today' as const, label: 'Сегодня', icon: CalendarDays },
+            { id: 'all' as const, label: 'Все привычки', icon: Target },
+            { id: 'reports' as const, label: 'Отчёты', icon: BarChart3 }
+          ].map((item) => {
+            const Icon = item.icon
+            return (
+              <Tooltip key={item.id} content={item.label} side="bottom">
                 <button
-                  key={item.id}
                   type="button"
+                  aria-label={item.label}
                   aria-pressed={view === item.id}
-                  className={
+                  className={cn(
+                    'focus-visible:ring-accent-500/35 flex h-full w-9 shrink-0 items-center justify-center rounded-[10px] transition-colors outline-none focus-visible:ring-2',
                     view === item.id
-                      ? 'bg-accent-500 inline-flex h-9 shrink-0 items-center gap-2 rounded-lg px-3.5 text-sm font-semibold text-white'
-                      : 'inline-flex h-9 shrink-0 items-center gap-2 rounded-lg px-3.5 text-sm font-medium text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
-                  }
+                      ? 'bg-accent-500 text-white'
+                      : 'text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
+                  )}
                   onClick={() => setView(item.id)}
                 >
-                  <Icon className="size-4" /> {item.label}
-                </button>
-              )
-            })}
-          </div>
-
-          {view === 'today' && (
-            <div className="flex items-center gap-1.5">
-              <Tooltip content="Предыдущий день" side="top">
-                <button
-                  type="button"
-                  aria-label="Предыдущий день"
-                  className="flex size-10 items-center justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
-                  onClick={() => setSelectedDate((current) => addDays(current, -1))}
-                >
-                  <ChevronLeft className="size-4" />
+                  <Icon className="size-[18px]" />
                 </button>
               </Tooltip>
-              <HabitDatePicker value={selectedDate} max={today} onChange={setSelectedDate} />
-              <button
-                type="button"
-                disabled={selectedDate === today}
-                className="h-10 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm font-medium text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] disabled:cursor-default disabled:opacity-45 disabled:hover:bg-[var(--app-workspace)]"
-                onClick={() => setSelectedDate(today)}
-              >
-                Сегодня
-              </button>
-              <Tooltip content="Следующий день" side="top">
-                <button
-                  type="button"
-                  aria-label="Следующий день"
-                  disabled={selectedDate >= today}
-                  className="flex size-10 items-center justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-[var(--app-workspace)]"
-                  onClick={() =>
-                    setSelectedDate((current) => {
-                      const next = addDays(current, 1)
-                      return next > today ? today : next
-                    })
-                  }
-                >
-                  <ChevronRight className="size-4" />
-                </button>
-              </Tooltip>
-            </div>
-          )}
+            )
+          })}
         </div>
-      </ModuleHeader>
+
+        <div className="flex shrink-0 items-center gap-2">
+          <Tooltip content="Новая группа" side="bottom">
+            <button
+              type="button"
+              aria-label="Новая группа"
+              className="focus-visible:ring-accent-500/35 flex size-10 shrink-0 items-center justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] text-[var(--app-muted)] transition-colors outline-none hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] focus-visible:ring-2"
+              onClick={openNewGroup}
+            >
+              <FolderPlus className="size-[18px]" />
+            </button>
+          </Tooltip>
+          <Tooltip content="Новая привычка" side="bottom">
+            <button
+              type="button"
+              aria-label="Новая привычка"
+              className="bg-accent-500 hover:bg-accent-400 focus-visible:ring-accent-500/35 flex size-10 shrink-0 items-center justify-center rounded-xl text-white transition-colors outline-none focus-visible:ring-2"
+              onClick={openNewHabit}
+            >
+              <Plus className="size-[18px]" />
+            </button>
+          </Tooltip>
+        </div>
+      </header>
 
       <HabitReminderInbox
         className="mt-4"

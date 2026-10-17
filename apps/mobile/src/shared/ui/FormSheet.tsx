@@ -9,7 +9,7 @@ import {
 import { useRef, useState } from 'react'
 import { ScrollView, View } from 'react-native'
 import { AppDialog, type AppDialogPresentation } from './AppDialog'
-import { useConfirmation } from './ConfirmationProvider'
+import { useConfirmation } from './confirmation-context'
 import { AppCheckbox, AppDateField, AppSelect, AppTextField, AppTimeField } from './FormControls'
 import { Button, ErrorState, Label } from './primitives'
 import { useToast } from './toast-context'
@@ -125,116 +125,119 @@ export function FormSheet({ spec, close }: { spec: FormSpec; close(): void }): R
         contentContainerStyle={{ padding: 16, gap: 20, paddingBottom: 24 }}
       >
         {error ? <ErrorState message={error} /> : null}
-        {spec.fields.filter((field) => fieldVisible(field, values)).map((field) => (
-          <View key={field.key} style={{ gap: 8 }}>
-            <Label>{field.label}</Label>
-            {field.hint ? <Label muted>{field.hint}</Label> : null}
-            {field.kind === 'reminders' ? (
-              <ReminderOffsetsEditor
-                value={values[field.key]}
-                onChange={(value) => set(field.key, value)}
-                disabled={pending}
-              />
-            ) : field.kind === 'times' ? (
-              <PreferredTimes
-                value={values[field.key]}
-                onChange={(value) => set(field.key, value)}
-                disabled={pending}
-              />
-            ) : field.kind === 'multiple' ? (
-              <View style={{ gap: 7 }}>
-                {field.choices?.map((choice) => {
-                  const selected = Array.isArray(values[field.key])
-                    ? (values[field.key] as (string | null)[])
-                    : []
-                  return (
-                    <AppCheckbox
-                      key={String(choice.value)}
-                      label={choice.label}
-                      value={selected.includes(choice.value)}
-                      disabled={pending}
-                      onChange={(checked) =>
-                        set(
-                          field.key,
-                          checked
-                            ? [...selected, choice.value]
-                            : selected.filter((value) => value !== choice.value)
-                        )
-                      }
-                    />
-                  )
-                })}
-              </View>
-            ) : field.kind === 'boolean' ? (
-              <AppCheckbox
-                value={Boolean(values[field.key])}
-                disabled={pending}
-                onChange={(value) => set(field.key, value)}
-              />
-            ) : field.kind === 'date' ? (
-              <AppDateField
-                label={field.label}
-                value={String(values[field.key] ?? '')}
-                disabled={pending}
-                optional={values[field.key] === null}
-                onChangeText={(value) => set(field.key, value)}
-              />
-            ) : field.kind === 'time' ? (
-              <AppTimeField
-                label={field.label}
-                value={String(values[field.key] ?? '')}
-                disabled={pending}
-                optional={values[field.key] === null}
-                onChangeText={(value) => set(field.key, value)}
-              />
-            ) : field.kind === 'icon' ? (
-              <AppIconGrid
-                family={field.iconFamily ?? 'folder'}
-                value={String(values[field.key] ?? '')}
-                choices={field.choices ?? []}
-                disabled={pending}
-                onChange={(value) => set(field.key, value)}
-              />
-            ) : field.kind === 'color' ? (
-              <AppColorGrid
-                value={String(values[field.key] ?? '')}
-                choices={field.choices ?? []}
-                disabled={pending}
-                onChange={(value) => set(field.key, value)}
-              />
-            ) : field.kind === 'choice' ? (
-              <AppSelect
-                label={field.label}
-                value={
-                  typeof values[field.key] === 'string' || values[field.key] === null
-                    ? (values[field.key] as string | null)
-                    : null
-                }
-                choices={field.choices ?? []}
-                disabled={pending}
-                onChange={(value) => set(field.key, value)}
-              />
-            ) : (
-              <AppTextField
-                accessibilityLabel={field.label}
-                disabled={pending}
-                multiline={field.kind === 'multiline'}
-                keyboardType={
-                  field.kind === 'number' || field.kind === 'nullableNumber'
-                    ? 'decimal-pad'
-                    : 'default'
-                }
-                autoCapitalize="sentences"
-                value={
-                  Array.isArray(values[field.key])
-                    ? (values[field.key] as string[]).join(', ')
-                    : String(values[field.key] ?? '')
-                }
-                onChangeText={(value) => set(field.key, value)}
-              />
-            )}
-          </View>
-        ))}
+        {spec.fields
+          .filter((field) => fieldVisible(field, values))
+          .map((field) => (
+            <View key={field.key} style={{ gap: 8 }}>
+              <Label>{field.label}</Label>
+              {field.hint ? <Label muted>{field.hint}</Label> : null}
+              {field.kind === 'reminders' ? (
+                <ReminderOffsetsEditor
+                  value={values[field.key]}
+                  onChange={(value) => set(field.key, value)}
+                  disabled={pending}
+                />
+              ) : field.kind === 'times' ? (
+                <PreferredTimes
+                  value={values[field.key]}
+                  onChange={(value) => set(field.key, value)}
+                  disabled={pending}
+                />
+              ) : field.kind === 'multiple' ? (
+                <View style={{ gap: 7 }}>
+                  {field.choices?.map((choice) => {
+                    const selected = Array.isArray(values[field.key])
+                      ? (values[field.key] as (string | null)[])
+                      : []
+                    return (
+                      <AppCheckbox
+                        key={String(choice.value)}
+                        label={choice.label}
+                        value={selected.includes(choice.value)}
+                        disabled={pending}
+                        onChange={(checked) =>
+                          set(
+                            field.key,
+                            checked
+                              ? [...selected, choice.value]
+                              : selected.filter((value) => value !== choice.value)
+                          )
+                        }
+                      />
+                    )
+                  })}
+                </View>
+              ) : field.kind === 'boolean' ? (
+                <AppCheckbox
+                  accessibilityLabel={field.label}
+                  value={Boolean(values[field.key])}
+                  disabled={pending}
+                  onChange={(value) => set(field.key, value)}
+                />
+              ) : field.kind === 'date' ? (
+                <AppDateField
+                  label={field.label}
+                  value={String(values[field.key] ?? '')}
+                  disabled={pending}
+                  optional={values[field.key] === null}
+                  onChangeText={(value) => set(field.key, value)}
+                />
+              ) : field.kind === 'time' ? (
+                <AppTimeField
+                  label={field.label}
+                  value={String(values[field.key] ?? '')}
+                  disabled={pending}
+                  optional={values[field.key] === null}
+                  onChangeText={(value) => set(field.key, value)}
+                />
+              ) : field.kind === 'icon' ? (
+                <AppIconGrid
+                  family={field.iconFamily ?? 'folder'}
+                  value={String(values[field.key] ?? '')}
+                  choices={field.choices ?? []}
+                  disabled={pending}
+                  onChange={(value) => set(field.key, value)}
+                />
+              ) : field.kind === 'color' ? (
+                <AppColorGrid
+                  value={String(values[field.key] ?? '')}
+                  choices={field.choices ?? []}
+                  disabled={pending}
+                  onChange={(value) => set(field.key, value)}
+                />
+              ) : field.kind === 'choice' ? (
+                <AppSelect
+                  label={field.label}
+                  value={
+                    typeof values[field.key] === 'string' || values[field.key] === null
+                      ? (values[field.key] as string | null)
+                      : null
+                  }
+                  choices={field.choices ?? []}
+                  disabled={pending}
+                  onChange={(value) => set(field.key, value)}
+                />
+              ) : (
+                <AppTextField
+                  accessibilityLabel={field.label}
+                  disabled={pending}
+                  multiline={field.kind === 'multiline'}
+                  keyboardType={
+                    field.kind === 'number' || field.kind === 'nullableNumber'
+                      ? 'decimal-pad'
+                      : 'default'
+                  }
+                  autoCapitalize="sentences"
+                  value={
+                    Array.isArray(values[field.key])
+                      ? (values[field.key] as string[]).join(', ')
+                      : String(values[field.key] ?? '')
+                  }
+                  onChangeText={(value) => set(field.key, value)}
+                />
+              )}
+            </View>
+          ))}
         {spec.preview ? (
           <VisualGroupPreview
             family={spec.preview.iconFamily}

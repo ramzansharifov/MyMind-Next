@@ -36,7 +36,11 @@ import {
   updateStudyNodeExpansion
 } from '../repositories/study.repository'
 import { importStudyAsset, openStudyAsset } from '../services/study-assets'
-import { applyStudyCode, getStudyCodeSnapshot, previewStudyCode } from '../services/study-code-service'
+import {
+  applyStudyCode,
+  getStudyCodeSnapshot,
+  previewStudyCode
+} from '../services/study-code-service'
 import { mainOperationTracker } from '../services/main-operation-tracker'
 import { exportStudyMaterialPdf } from '../services/study-pdf-export'
 

@@ -67,6 +67,11 @@ import {
   workoutMuscleGroupsLabel
 } from './workout-options'
 
+const EMPTY_EXERCISES: WorkoutsOverview['exercises'] = []
+const EMPTY_PROGRAMS: WorkoutsOverview['programs'] = []
+const EMPTY_SESSIONS: WorkoutsOverview['sessions'] = []
+const EMPTY_PROGRESS_ENTRIES: WorkoutsOverview['progressEntries'] = []
+
 type WorkoutTab = 'journal' | 'exercises' | 'programs' | 'progress' | 'reports'
 type MuscleFilter = 'all' | WorkoutMuscleGroup
 type ExerciseCategoryFilter = 'all' | WorkoutExerciseCategory
@@ -149,6 +154,7 @@ export function WorkoutsPage({
   const [isDeleting, setIsDeleting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const handledResourceIdRef = useRef<string | null>(null)
+  const [handledResourceId, setHandledResourceId] = useState<string | null>(null)
 
   const [reportPeriod, setReportPeriod] = useState<ReportPeriod>('30')
   const [reportDateFrom, setReportDateFrom] = useState(daysAgoKey(29))
@@ -172,29 +178,40 @@ export function WorkoutsPage({
   }, [])
 
   useEffect(() => {
-    void loadOverview()
+    let cancelled = false
+    queueMicrotask(() => {
+      if (!cancelled) void loadOverview()
+    })
+    return () => {
+      cancelled = true
+    }
   }, [loadOverview])
 
-  useEffect(() => {
-    if (!overview || !resourceId) {
-      if (!resourceId) handledResourceIdRef.current = null
-      return
-    }
-    if (handledResourceIdRef.current === resourceId) return
-    handledResourceIdRef.current = resourceId
-    const session = overview.sessions.find((candidate) => candidate.id === resourceId)
+  if (!resourceId && handledResourceId !== null) {
+    setHandledResourceId(null)
+  } else if (resourceId && overview !== null && handledResourceId !== resourceId) {
+    setHandledResourceId(resourceId)
+    const session = overview.sessions.find((item) => item.id === resourceId)
     if (session) {
       setTab('journal')
       setSelectedSession(session)
       setSessionDetailOpen(true)
     }
-    onResourceHandled?.()
-  }, [onResourceHandled, overview, resourceId])
+  }
 
-  const exercises = overview?.exercises ?? []
-  const programs = overview?.programs ?? []
-  const sessions = overview?.sessions ?? []
-  const progressEntries = overview?.progressEntries ?? []
+  useEffect(() => {
+    if (!resourceId) {
+      handledResourceIdRef.current = null
+    } else if (handledResourceId === resourceId && handledResourceIdRef.current !== resourceId) {
+      handledResourceIdRef.current = resourceId
+      onResourceHandled?.()
+    }
+  }, [handledResourceId, onResourceHandled, resourceId])
+
+  const exercises = overview?.exercises ?? EMPTY_EXERCISES
+  const programs = overview?.programs ?? EMPTY_PROGRAMS
+  const sessions = overview?.sessions ?? EMPTY_SESSIONS
+  const progressEntries = overview?.progressEntries ?? EMPTY_PROGRESS_ENTRIES
   const exerciseMap = useMemo(
     () => new Map(exercises.map((exercise) => [exercise.id, exercise])),
     [exercises]

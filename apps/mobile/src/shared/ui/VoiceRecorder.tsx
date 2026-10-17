@@ -13,6 +13,7 @@ import { AppState, Platform, View } from 'react-native'
 import type { NoteVoiceRecordingMimeType } from '@mymind/contracts/notes'
 import type { StudyLocalAsset } from '@mymind/contracts/study'
 import { Button, Label } from './primitives'
+import { useTheme } from './theme'
 
 export interface VoiceRecordingInput {
   uri: string
@@ -54,19 +55,26 @@ interface VoiceRecorderProps {
   onSaved(asset: StudyLocalAsset): void
   onError?: (reason: unknown) => void
   disabled?: boolean
+  onBusyChange?: (busy: boolean) => void
 }
 
 export function VoiceRecorder({
   saveRecording,
   onSaved,
   onError,
-  disabled = false
+  disabled = false,
+  onBusyChange
 }: VoiceRecorderProps): React.JSX.Element {
+  const theme = useTheme()
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY)
   const recorderState = useAudioRecorderState(recorder, 250)
   const [phase, setPhaseState] = useState<RecorderPhase>('idle')
   const phaseRef = useRef<RecorderPhase>('idle')
   const mountedRef = useRef(true)
+
+  useEffect(() => {
+    onBusyChange?.(phase !== 'idle')
+  }, [phase, onBusyChange])
 
   const setPhase = useCallback((next: RecorderPhase): void => {
     phaseRef.current = next
@@ -190,7 +198,32 @@ export function VoiceRecorder({
         ) : null}
       </View>
       {phase === 'recording' ? (
-        <Label muted>Запись · {durationLabel(recorderState.durationMillis)}</Label>
+        <View style={{ gap: 8 }}>
+          <View
+            accessibilityLabel="Идёт запись голоса"
+            style={{
+              height: 40,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 4,
+              overflow: 'hidden'
+            }}
+          >
+            {Array.from({ length: 36 }, (_, index) => (
+              <View
+                key={index}
+                style={{
+                  flex: 1,
+                  height:
+                    6 + Math.abs(Math.sin(index * 1.7 + recorderState.durationMillis / 220)) * 30,
+                  backgroundColor: theme.accent,
+                  borderRadius: 3
+                }}
+              />
+            ))}
+          </View>
+          <Label muted>Запись · {durationLabel(recorderState.durationMillis)}</Label>
+        </View>
       ) : null}
     </View>
   )

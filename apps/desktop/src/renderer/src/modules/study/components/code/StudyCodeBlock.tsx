@@ -12,7 +12,7 @@ import 'prismjs/components/prism-bash'
 import 'prismjs/components/prism-c'
 import 'prismjs/components/prism-cpp'
 import 'prismjs/components/prism-java'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { cn } from '../../../../shared/lib/cn'
 import { StudySourceBlockShell } from '../source/StudySourceBlockShell'
@@ -34,27 +34,28 @@ export function StudyCodeBlock({
 }: StudyCodeBlockProps): React.JSX.Element {
   const languageOption = getStudyCodeLanguage(language)
   const editable = mode === 'edit'
-  const normalizedInitialSource = useRef(normalizeLegacyCodeSource(source))
+  const [initialSource] = useState(() => ({
+    raw: source,
+    normalized: normalizeLegacyCodeSource(source)
+  }))
+  const [normalizationPending, setNormalizationPending] = useState(true)
   const didNormalizeInitialSource = useRef(false)
-  const displaySource =
-    editable && !didNormalizeInitialSource.current
-      ? normalizedInitialSource.current
-      : editable
-        ? source
-        : normalizeLegacyCodeSource(source)
+
+  if (normalizationPending && source !== initialSource.raw) {
+    setNormalizationPending(false)
+  }
+
+  const displaySource = editable
+    ? normalizationPending
+      ? initialSource.normalized
+      : source
+    : normalizeLegacyCodeSource(source)
 
   useEffect(() => {
-    if (!editable || didNormalizeInitialSource.current) {
-      return
-    }
-
+    if (!editable || !normalizationPending || didNormalizeInitialSource.current) return
     didNormalizeInitialSource.current = true
-    const normalized = normalizedInitialSource.current
-
-    if (normalized !== source) {
-      onChange?.(normalized)
-    }
-  }, [editable, onChange, source])
+    if (initialSource.normalized !== source) onChange?.(initialSource.normalized)
+  }, [editable, initialSource, normalizationPending, onChange, source])
 
   return (
     <StudySourceBlockShell
@@ -118,6 +119,7 @@ export function StudyCodeBlock({
                 }}
                 onValueChange={(value) => {
                   if (editable) {
+                    setNormalizationPending(false)
                     onChange?.(value)
                   }
                 }}

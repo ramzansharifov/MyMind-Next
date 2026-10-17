@@ -44,7 +44,6 @@ import { PasswordGroupDialog } from './components/PasswordGroupDialog'
 import { PasswordItemDialog } from './components/PasswordItemDialog'
 import {
   PASSWORD_TYPE_OPTIONS,
-  PasswordGroupIconGlyph,
   passwordGroupColorClasses,
   passwordIssueClassName,
   passwordIssueLabel,
@@ -52,6 +51,7 @@ import {
   passwordStrengthLabel,
   passwordTypeLabel
 } from './password-options'
+import { PasswordGroupIconGlyph } from './password-icons'
 
 type PasswordView = 'all' | 'favorites' | 'security'
 type PasswordGroupFilter = 'all' | 'ungrouped' | string

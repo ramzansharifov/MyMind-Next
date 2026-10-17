@@ -11,6 +11,7 @@ async function firstExistingPath(candidates) {
       await access(candidate)
       return candidate
     } catch {
+      // Try the next browser installation path.
     }
   }
   return null

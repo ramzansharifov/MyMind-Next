@@ -10,6 +10,7 @@ import { mobileSchemaV5 } from './mobile-schema-v5'
 import { mobileSchemaV6 } from './mobile-schema-v6'
 import { mobileSchemaV7 } from './mobile-schema-v7'
 import { mobileSchemaV8 } from './mobile-schema-v8'
+import { mobileSchemaV9 } from './mobile-schema-v9'
 import { createLocalProfileRepository, type ProfileSecretPort } from './local-profile'
 
 function createDatabase(): Database.Database {
@@ -23,7 +24,8 @@ function createDatabase(): Database.Database {
     mobileSchemaV5,
     mobileSchemaV6,
     mobileSchemaV7,
-    mobileSchemaV8
+    mobileSchemaV8,
+    mobileSchemaV9
   ]) {
     for (const sql of migration) db.exec(sql)
   }

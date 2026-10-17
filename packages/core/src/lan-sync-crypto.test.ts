@@ -98,8 +98,7 @@ describe('LAN sync application encryption', () => {
     )
     const tampered = {
       ...envelope,
-      ciphertext:
-        (envelope.ciphertext[0] === 'A' ? 'B' : 'A') + envelope.ciphertext.slice(1)
+      ciphertext: (envelope.ciphertext[0] === 'A' ? 'B' : 'A') + envelope.ciphertext.slice(1)
     }
     expect(() =>
       decryptLanSyncJson(

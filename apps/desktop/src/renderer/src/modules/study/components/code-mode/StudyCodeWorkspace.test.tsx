@@ -40,7 +40,9 @@ const folderNode: StudyNode = {
   updatedAt: 1
 }
 
-function createEmptySummary(overrides: Partial<StudyCodeChangeSummary> = {}): StudyCodeChangeSummary {
+function createEmptySummary(
+  overrides: Partial<StudyCodeChangeSummary> = {}
+): StudyCodeChangeSummary {
   return {
     createdFolders: 0,
     createdMaterials: 0,
@@ -206,7 +208,9 @@ describe('StudyCodeWorkspace', () => {
     fireEvent.change(editor, { target: { value: changedSource } })
     fireEvent.click(screen.getByRole('button', { name: 'Сохранить' }))
 
-    expect(await screen.findByRole('dialog', { name: 'Применить изменения структуры?' })).toBeInTheDocument()
+    expect(
+      await screen.findByRole('dialog', { name: 'Применить изменения структуры?' })
+    ).toBeInTheDocument()
     expect(screen.getByText('Создано материалов')).toBeInTheDocument()
     expect(mocks.applyCode).not.toHaveBeenCalled()
 
@@ -256,7 +260,9 @@ describe('StudyCodeWorkspace', () => {
     fireEvent.change(editor, { target: { value: changedSource } })
     fireEvent.click(screen.getByRole('button', { name: 'Сохранить' }))
 
-    expect(await screen.findByRole('alertdialog', { name: 'Применить удаления?' })).toBeInTheDocument()
+    expect(
+      await screen.findByRole('alertdialog', { name: 'Применить удаления?' })
+    ).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Применить изменения' }))
 
     await waitFor(() =>

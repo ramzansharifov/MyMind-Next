@@ -16,7 +16,7 @@ import type {
   StudyFolderIconName,
   StudyNode
 } from '../../../../shared/contracts/study'
-import type { AppModuleProps } from '../../app/module-registry'
+import type { AppModuleProps } from '../../app/module-contracts'
 import { cn } from '../../shared/lib/cn'
 import { ModuleSidebar } from '../../shared/ui/ModuleSidebar'
 import { getModuleSidebarLayoutClassName } from '../../shared/ui/module-sidebar-layout'

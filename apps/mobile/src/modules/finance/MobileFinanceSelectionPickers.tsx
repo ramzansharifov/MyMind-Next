@@ -211,11 +211,7 @@ export function MobileFinanceTagPicker({
               borderWidth: 1,
               borderColor: selected ? tone + '99' : theme.border,
               borderRadius: 13,
-              backgroundColor: selected
-                ? tone + '1F'
-                : pressed
-                  ? theme.raised
-                  : theme.surface,
+              backgroundColor: selected ? tone + '1F' : pressed ? theme.raised : theme.surface,
               opacity: disabled ? 0.45 : pressed ? 0.76 : 1
             })}
           >

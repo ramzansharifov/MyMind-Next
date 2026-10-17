@@ -12,6 +12,7 @@ import { mobileSchemaV5 } from '@mymind/persistence/mobile-schema-v5'
 import { mobileSchemaV6 } from '@mymind/persistence/mobile-schema-v6'
 import { mobileSchemaV7 } from '@mymind/persistence/mobile-schema-v7'
 import { mobileSchemaV8 } from '@mymind/persistence/mobile-schema-v8'
+import { mobileSchemaV9 } from '@mymind/persistence/mobile-schema-v9'
 import {
   SYNC_MODULE_REGISTRY,
   captureSyncSnapshot,
@@ -64,7 +65,8 @@ function createMobileDatabase(): Database.Database {
     mobileSchemaV5,
     mobileSchemaV6,
     mobileSchemaV7,
-    mobileSchemaV8
+    mobileSchemaV8,
+    mobileSchemaV9
   ]) {
     for (const statement of migration) sqlite.exec(statement)
   }

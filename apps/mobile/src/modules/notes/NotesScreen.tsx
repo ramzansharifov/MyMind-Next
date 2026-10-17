@@ -1,4 +1,3 @@
-import { randomUUID } from 'expo-crypto'
 import {
   ArrowDownAZ,
   CircleSlash2,
@@ -10,18 +9,17 @@ import {
   type LucideIcon
 } from 'lucide-react-native'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { AppState, BackHandler, FlatList, Pressable, Text, TextInput, View } from 'react-native'
+import { AppState, BackHandler, FlatList, Keyboard, Pressable, Text, View } from 'react-native'
 import type { NoteDocument, NoteGroup, NoteRecord, NoteSummary } from '@mymind/contracts/notes'
-import type { StudyTextBlock } from '@mymind/contracts/study'
 import { AutosaveQueue } from '@mymind/core/autosave'
 import * as notesValidation from '@mymind/core/validation/notes'
 import { useServices } from '../../app/context'
 import { notifyDataChanged } from '../../app/changes'
 import { useCollection } from '../../shared/hooks/useCollection'
-import { DocumentEditor } from '../../shared/ui/DocumentEditor'
+import type { NotesRichTextDomRef } from '../../shared/ui/NotesRichTextDom'
 import { FormSheet } from '../../shared/ui/FormSheet'
 import { ActionMenu, ActionMenuDialog } from '../../shared/ui/ActionMenu'
-import { useConfirmation } from '../../shared/ui/ConfirmationProvider'
+import { useConfirmation } from '../../shared/ui/confirmation-context'
 import { useToast } from '../../shared/ui/toast-context'
 import { WorkspaceNodeCard } from '../../shared/ui/Workspace'
 import { MobileCreateAction } from '../../shared/ui/MobileCreateAction'
@@ -39,10 +37,9 @@ import { useTheme } from '../../shared/ui/theme'
 import { SwipeableTabContent } from '../../shared/ui/SwipeableTabContent'
 import { SearchableHeaderRow, SwipeTabBar } from '../../shared/ui/SwipeTabBar'
 import { useSwipeTabFeedback, type SwipeTabFeedback } from '../../shared/ui/useSwipeTabFeedback'
-import { MobileNoteAppendEditor } from './MobileNoteAppendEditor'
-import { createMobileAppendTextBlock, isTextOnlyNote, withoutNoteBlock } from './mobile-note-policy'
+import { MobileNoteCanvas, type MobileNoteMode } from './MobileNoteCanvas'
 
-type NoteEditorMode = 'edit' | 'read'
+type NoteEditorMode = MobileNoteMode
 type NoteSaveState = 'saved' | 'dirty' | 'saving' | 'error'
 type NotesLayout = 'grid' | 'list'
 type NotesSort = 'updated' | 'title'
@@ -339,7 +336,7 @@ export function NotesScreen({
 }: {
   onImmersiveChange?: (immersive: boolean) => void
 }): React.JSX.Element {
-  const { notes: api, documentAssets } = useServices()
+  const { notes: api } = useServices()
   const theme = useTheme()
   const confirm = useConfirmation()
   const toast = useToast()
@@ -355,55 +352,47 @@ export function NotesScreen({
   const [editorMode, setEditorMode] = useState<NoteEditorMode>('edit')
   const [modeChanging, setModeChanging] = useState(false)
   const [saveState, setSaveState] = useState<NoteSaveState>('saved')
-  const [appendBlock, setAppendBlock] = useState<StudyTextBlock | null>(null)
   const [layout, setLayout] = useState<NotesLayout>('list')
   const [sort, setSort] = useState<NotesSort>('updated')
   const [hideEmptyGroups, setHideEmptyGroups] = useState(false)
   const [swipeTabFeedback, showSwipeTabFeedback] = useSwipeTabFeedback<NotesView>()
   const [searchOpen, setSearchOpen] = useState(false)
   const queueRef = useRef<AutosaveQueue<NoteDocument> | null>(null)
-  const appendQueueRef = useRef<AutosaveQueue<StudyTextBlock> | null>(null)
+  const editorRef = useRef<NotesRichTextDomRef | null>(null)
+  const activeNoteRef = useRef<string | null>(null)
+  const latestDocumentRef = useRef<NoteDocument | null>(null)
+  const registerEditor = useCallback((editor: NotesRichTextDomRef | null) => {
+    editorRef.current = editor
+  }, [])
 
   const openNote = useCallback(
     (id: string): void => {
       try {
         const next = api.getNote(id)
+        activeNoteRef.current = id
+        latestDocumentRef.current = next.document
         setRecord(next)
         setDocument(next.document)
-        setAppendBlock(null)
         setEditorError('')
-        setEditorMode(isTextOnlyNote(next.document) ? 'edit' : 'read')
+        setEditorMode('edit')
         setSaveState('saved')
         queueRef.current = new AutosaveQueue<NoteDocument>(
           async (value) => {
             setSaveState('saving')
             try {
               const saved = await api.saveNote({ id, document: value })
-              setRecord(saved)
-              setSaveState('saved')
-              notifyDataChanged()
-            } catch (reason) {
-              setSaveState('error')
-              throw reason
-            }
-          },
-          {
-            delayMs: 350,
-            onError: (reason) => {
-              setSaveState('error')
-              setEditorError(messageFor(reason))
-            }
-          }
-        )
-
-        appendQueueRef.current = new AutosaveQueue<StudyTextBlock>(
-          async (block) => {
-            setSaveState('saving')
-            try {
-              const saved = await api.upsertTextBlock(id, block)
-              setRecord(saved)
-              setDocument(saved.document)
-              setSaveState('saved')
+              if (activeNoteRef.current === id) {
+                setRecord((current) =>
+                  current?.id === id
+                    ? {
+                        ...saved,
+                        title: current.title,
+                        document: latestDocumentRef.current ?? saved.document
+                      }
+                    : current
+                )
+                setSaveState(latestDocumentRef.current === value ? 'saved' : 'dirty')
+              }
               notifyDataChanged()
             } catch (reason) {
               setSaveState('error')
@@ -427,14 +416,13 @@ export function NotesScreen({
 
   const flush = useCallback(async (): Promise<void> => {
     const documentQueue = queueRef.current
-    const appendQueue = appendQueueRef.current
-    if (!documentQueue && !appendQueue) return
-    if (documentQueue?.hasPendingChanges() || appendQueue?.hasPendingChanges()) {
-      setSaveState('saving')
-    }
+    if (!documentQueue) return
     try {
-      await documentQueue?.flush()
-      await appendQueue?.flush()
+      // Persist the native buffer immediately, even if a backgrounded WebView
+      // cannot answer its final snapshot request until the app resumes.
+      await Promise.all([documentQueue.flush(), editorRef.current?.flushEditor()])
+      if (documentQueue.hasPendingChanges()) setSaveState('saving')
+      await documentQueue.flush()
       setSaveState('saved')
       setEditorError('')
     } catch (reason) {
@@ -445,14 +433,16 @@ export function NotesScreen({
 
   const closeEditor = useCallback(async (): Promise<void> => {
     if (closing) return
+    Keyboard.dismiss()
     setClosing(true)
     try {
       await flush()
       queueRef.current = null
-      appendQueueRef.current = null
+      activeNoteRef.current = null
+      editorRef.current = null
+      latestDocumentRef.current = null
       setRecord(null)
       setDocument(null)
-      setAppendBlock(null)
       setEditorMode('edit')
       setSaveState('saved')
       overview.refresh()
@@ -491,36 +481,26 @@ export function NotesScreen({
     return () => subscription.remove()
   }, [flush, record])
 
-  const changeDocument = (next: NoteDocument): void => {
+  const changeDocument = (next: NoteDocument, options?: { saveImmediately?: boolean }): void => {
+    latestDocumentRef.current = next
     setDocument(next)
     setEditorError('')
     setSaveState('dirty')
-    queueRef.current?.schedule(next)
-  }
-
-  const changeAppendBlock = (next: StudyTextBlock): void => {
-    setAppendBlock(next)
-    setEditorError('')
-    setSaveState('dirty')
-    appendQueueRef.current?.schedule(next)
+    const queue = queueRef.current
+    queue?.schedule(next)
+    if (options?.saveImmediately)
+      void queue?.flush().catch((reason) => {
+        setSaveState('error')
+        setEditorError(messageFor(reason))
+      })
   }
 
   const changeEditorMode = (nextMode: NoteEditorMode): void => {
     if (nextMode === editorMode || modeChanging || !document) return
-    if (nextMode === 'edit') {
-      if (!isTextOnlyNote(document)) {
-        setAppendBlock(createMobileAppendTextBlock(randomUUID()))
-      }
-      setEditorMode('edit')
-      return
-    }
-
+    Keyboard.dismiss()
     setModeChanging(true)
     void flush()
-      .then(() => {
-        setAppendBlock(null)
-        setEditorMode('read')
-      })
+      .then(() => setEditorMode(nextMode))
       .catch((reason) => setEditorError(messageFor(reason)))
       .finally(() => setModeChanging(false))
   }
@@ -624,7 +604,6 @@ export function NotesScreen({
         api.moveNote(moved.id, moved.groupId)
         const updated = api.getNote(note.id)
         setRecord(updated)
-        setDocument(updated.document)
         overview.refresh()
       }
     })
@@ -640,7 +619,10 @@ export function NotesScreen({
           id: note.id,
           title: values.title
         })
-        api.renameNote(input.id, input.title)
+        const renamed = api.renameNote(input.id, input.title)
+        setRecord((current) =>
+          current?.id === input.id ? { ...current, title: renamed.title } : current
+        )
         overview.refresh()
         notifyDataChanged()
       }
@@ -669,8 +651,8 @@ export function NotesScreen({
       title: 'Удалить заметку?',
       description: 'Заметка и её локальные данные будут удалены без возможности восстановления.',
       tone: 'danger',
-      onConfirm: () => {
-        api.deleteNote(note.id)
+      onConfirm: async () => {
+        await api.deleteNote(note.id)
         overview.refresh()
         notifyDataChanged()
         toast.success('Заметка удалена')
@@ -689,13 +671,13 @@ export function NotesScreen({
         setClosing(true)
         try {
           queueRef.current?.discardPending()
-          appendQueueRef.current?.discardPending()
           await api.deleteNote(id)
           queueRef.current = null
-          appendQueueRef.current = null
+          activeNoteRef.current = null
+          editorRef.current = null
+          latestDocumentRef.current = null
           setRecord(null)
           setDocument(null)
-          setAppendBlock(null)
           setEditorError('')
           notifyDataChanged()
           overview.refresh()
@@ -708,160 +690,126 @@ export function NotesScreen({
   }
 
   if (record && document) {
-    const textOnly = isTextOnlyNote(document)
-    const appendMode = editorMode === 'edit' && !textOnly
-    const visibleDocument = appendMode
-      ? withoutNoteBlock(document, appendBlock?.id ?? null)
-      : document
-
     return (
-      <View style={{ flex: 1 }}>
-        {editorError ? <ErrorState message={editorError} retry={() => void flush()} /> : null}
-        <DocumentEditor
-          document={visibleDocument}
-          onChange={changeDocument}
-          createId={randomUUID}
-          presentation="notes-clean"
-          mode={appendMode ? 'read' : editorMode}
-          allowedBlockTypes={['text']}
-          readFooter={
-            appendMode && appendBlock ? (
-              <MobileNoteAppendEditor block={appendBlock} update={changeAppendBlock} />
-            ) : null
-          }
-          openAsset={documentAssets.openAsset}
-          resolveAssetUri={documentAssets.resolveAssetUri}
-          onAssetError={(reason) => setEditorError(messageFor(reason))}
-          header={
-            <View
+      <View style={{ flex: 1, backgroundColor: theme.background }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            minHeight: 64,
+            paddingHorizontal: 6,
+            gap: 4,
+            borderBottomWidth: 1,
+            borderColor: theme.border
+          }}
+        >
+          <IconButton
+            label={closing ? 'Сохранение…' : 'Назад'}
+            icon="back"
+            ghost
+            disabled={closing || modeChanging}
+            onPress={() => void closeEditor()}
+          />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Переименовать заметку"
+            onPress={() => renameListedNote(record)}
+            style={{ flex: 1, minWidth: 0, minHeight: 48, justifyContent: 'center', gap: 3 }}
+          >
+            <Text numberOfLines={1} style={{ color: theme.text, fontSize: 17, fontWeight: '700' }}>
+              {record.title}
+            </Text>
+            <Text
               style={{
-                minHeight: 58,
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 8,
-                paddingBottom: 8
+                color:
+                  saveState === 'error'
+                    ? theme.error
+                    : saveState === 'saved'
+                      ? theme.accent
+                      : theme.muted,
+                fontSize: 10
               }}
             >
-              <IconButton
-                label={closing ? 'Сохранение…' : 'Назад'}
-                icon="back"
-                compact
-                ghost
-                disabled={closing}
-                onPress={() => void closeEditor()}
-              />
-              <View style={{ flex: 1, minWidth: 0 }}>
-                {editorMode === 'edit' && !appendMode ? (
-                  <TextInput
-                    accessibilityLabel="Название заметки"
-                    value={record.title}
-                    onChangeText={(title) =>
-                      setRecord((current) => (current ? { ...current, title } : current))
-                    }
-                    onEndEditing={() => {
-                      try {
-                        const input = notesValidation.renameNoteInputSchema.parse({
-                          id: record.id,
-                          title: record.title
-                        })
-                        const renamed = api.renameNote(input.id, input.title)
-                        setRecord((current) => (current ? { ...current, ...renamed } : current))
-                        overview.refresh()
-                      } catch (reason) {
-                        setEditorError(messageFor(reason))
-                      }
-                    }}
-                    style={{
-                      minHeight: 34,
-                      color: theme.text,
-                      paddingHorizontal: 4,
-                      paddingVertical: 2,
-                      fontSize: 20,
-                      lineHeight: 25,
-                      fontWeight: '700'
-                    }}
-                  />
-                ) : (
-                  <Text
-                    numberOfLines={2}
-                    style={{
-                      color: theme.text,
-                      paddingHorizontal: 4,
-                      fontSize: 20,
-                      lineHeight: 25,
-                      fontWeight: '700'
-                    }}
-                  >
-                    {record.title}
-                  </Text>
-                )}
-                <Text
-                  style={{
-                    marginTop: 1,
-                    paddingHorizontal: 4,
-                    color:
-                      saveState === 'error'
-                        ? theme.error
-                        : saveState === 'dirty'
-                          ? '#f59e0b'
-                          : saveState === 'saved'
-                            ? '#22c55e'
-                            : theme.accent,
-                    fontSize: 10.5,
-                    fontWeight: '600'
-                  }}
-                >
-                  {noteSaveLabel(saveState)}
-                </Text>
-              </View>
-              <View
+              {noteSaveLabel(saveState)}
+            </Text>
+          </Pressable>
+          <ActionMenu
+            disabled={closing || modeChanging}
+            title="Заметка"
+            items={[
+              {
+                label: 'Свойства заметки',
+                icon: 'edit',
+                onPress: () => editNoteProperties(record)
+              },
+              { label: 'Удалить заметку', icon: 'delete', danger: true, onPress: deleteCurrentNote }
+            ]}
+          />
+        </View>
+        <View
+          style={{
+            flexDirection: 'row',
+            paddingHorizontal: 10,
+            paddingVertical: 6,
+            gap: 6,
+            borderBottomWidth: 1,
+            borderColor: theme.border
+          }}
+        >
+          {(
+            [
+              ['read', 'Чтение'],
+              ['edit', 'Редактирование'],
+              ['view', 'Вид']
+            ] as const
+          ).map(([mode, label]) => (
+            <Pressable
+              key={mode}
+              accessibilityRole="button"
+              accessibilityLabel={label}
+              accessibilityState={{
+                selected: editorMode === mode,
+                disabled: modeChanging || closing
+              }}
+              disabled={modeChanging || closing}
+              onPress={() => changeEditorMode(mode)}
+              style={{
+                flex: 1,
+                minHeight: 40,
+                justifyContent: 'center',
+                alignItems: 'center',
+                borderRadius: 10,
+                backgroundColor: editorMode === mode ? theme.accent + '20' : theme.surface
+              }}
+            >
+              <Text
                 style={{
-                  flexDirection: 'row',
-                  padding: 3,
-                  borderWidth: 1,
-                  borderColor: theme.border,
-                  borderRadius: 12,
-                  backgroundColor: theme.surface
+                  color: editorMode === mode ? theme.accent : theme.muted,
+                  fontSize: 12,
+                  fontWeight: '600'
                 }}
               >
-                <IconButton
-                  label="Режим чтения"
-                  icon="notes"
-                  compact
-                  ghost
-                  selected={editorMode === 'read'}
-                  disabled={modeChanging || closing}
-                  onPress={() => changeEditorMode('read')}
-                />
-                <IconButton
-                  label="Режим редактирования"
-                  icon="edit"
-                  compact
-                  ghost
-                  selected={editorMode === 'edit'}
-                  disabled={modeChanging || closing}
-                  onPress={() => changeEditorMode('edit')}
-                />
-              </View>
-              <ActionMenu
-                disabled={closing}
-                title="Заметка"
-                items={[
-                  {
-                    label: 'Свойства заметки',
-                    icon: 'edit',
-                    onPress: () => editNoteProperties(record)
-                  },
-                  {
-                    label: 'Удалить заметку',
-                    icon: 'delete',
-                    danger: true,
-                    onPress: deleteCurrentNote
-                  }
-                ]}
-              />
-            </View>
-          }
+                {label}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+        {editorError ? (
+          <ErrorState
+            message={editorError}
+            retry={() => void flush().catch((reason) => setEditorError(messageFor(reason)))}
+          />
+        ) : null}
+        <MobileNoteCanvas
+          key={record.id}
+          noteId={record.id}
+          document={document}
+          mode={editorMode}
+          disabled={closing || modeChanging}
+          onChange={changeDocument}
+          onModeChange={changeEditorMode}
+          registerEditor={registerEditor}
+          onError={(reason) => setEditorError(messageFor(reason))}
         />
         {form && <FormSheet spec={form} close={() => setForm(null)} />}
       </View>

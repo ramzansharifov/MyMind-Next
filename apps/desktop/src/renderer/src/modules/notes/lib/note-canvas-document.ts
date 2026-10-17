@@ -18,6 +18,28 @@ export function getNoteAttachments(document: NoteDocument): NoteAttachmentBlock[
   return document.blocks.filter(isAttachmentBlock)
 }
 
+export interface NoteAttachmentLookup {
+  getAttachment(id: string): NoteAttachmentBlock | undefined
+  update(attachments: readonly NoteAttachmentBlock[]): void
+}
+
+// Tiptap retains its HTML parsers for the editor's lifetime. Keep their lookup
+// current without making parsing depend on a React ref.
+export function createNoteAttachmentLookup(
+  attachments: readonly NoteAttachmentBlock[]
+): NoteAttachmentLookup {
+  let attachmentsById = new Map(attachments.map((attachment) => [attachment.id, attachment]))
+
+  return {
+    getAttachment(id: string): NoteAttachmentBlock | undefined {
+      return attachmentsById.get(id)
+    },
+    update(nextAttachments: readonly NoteAttachmentBlock[]): void {
+      attachmentsById = new Map(nextAttachments.map((attachment) => [attachment.id, attachment]))
+    }
+  }
+}
+
 function isCanvasSource(block: NoteBlock): block is CanvasSource {
   return block.type === 'text' || block.type === 'heading'
 }

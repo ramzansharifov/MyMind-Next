@@ -287,11 +287,11 @@ function StudyInternalLinkNodeView({ node, editor, getPos }: NodeViewProps): Rea
         data-study-internal-link-position={getPos()}
         className={cn('study-internal-link-node', isMissing && 'study-internal-link-node--missing')}
         onPointerDown={handlePointerDown}
-        onClick={(event) => {
+        onClick={(event: React.MouseEvent<HTMLElement>) => {
           event.preventDefault()
           event.stopPropagation()
         }}
-        onKeyDown={(event) => {
+        onKeyDown={(event: React.KeyboardEvent<HTMLElement>) => {
           if (event.key !== 'Enter' && event.key !== ' ') {
             return
           }

@@ -125,11 +125,13 @@ export function AppCheckbox({
   value,
   onChange,
   label,
+  accessibilityLabel,
   disabled = false
 }: {
   value: boolean
   onChange(value: boolean): void
   label?: string
+  accessibilityLabel?: string
   disabled?: boolean
 }): React.JSX.Element {
   const theme = useTheme()
@@ -137,7 +139,7 @@ export function AppCheckbox({
   return (
     <Pressable
       accessibilityRole="checkbox"
-      accessibilityLabel={label}
+      accessibilityLabel={accessibilityLabel ?? label}
       accessibilityState={{ checked: value, disabled }}
       disabled={disabled}
       onPress={() => onChange(!value)}

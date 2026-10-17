@@ -12,7 +12,7 @@ import {
 } from '@mymind/core/validation/nutrition'
 import { notifyDataChanged } from '../../app/changes'
 import { messageFor, numeric } from '../../shared/ui/form-model'
-import { useConfirmation } from '../../shared/ui/ConfirmationProvider'
+import { useConfirmation } from '../../shared/ui/confirmation-context'
 import { AppDialog } from '../../shared/ui/AppDialog'
 import { Button, ErrorState, Label, SearchField } from '../../shared/ui/primitives'
 import { useTheme } from '../../shared/ui/theme'

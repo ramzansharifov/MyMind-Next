@@ -53,14 +53,20 @@ export function StudyHeadingLayoutSettings({
       </SettingsField>
 
       <p className="text-xs leading-5 text-(--app-muted)">
-        «Текст» окрашивает только строки заголовка, «Весь блок» сохраняет текущее заполнение по
-        всей ширине.
+        «Текст» окрашивает только строки заголовка, «Весь блок» сохраняет текущее заполнение по всей
+        ширине.
       </p>
     </aside>
   )
 }
 
-function SettingsField({ label, children }: { label: string; children: ReactNode }): React.JSX.Element {
+function SettingsField({
+  label,
+  children
+}: {
+  label: string
+  children: ReactNode
+}): React.JSX.Element {
   return (
     <label className="grid gap-2">
       <span className="text-xs font-medium text-(--app-muted)">{label}</span>

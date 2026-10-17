@@ -46,7 +46,9 @@ describe('study Code Mode readable names migration', () => {
         sqlite.prepare('SELECT title FROM study_nodes WHERE id = ?').get('existing-material')
       ).toEqual({ title: 'Existing' })
       expect(
-        sqlite.prepare('SELECT document FROM study_materials WHERE node_id = ?').get('existing-material')
+        sqlite
+          .prepare('SELECT document FROM study_materials WHERE node_id = ?')
+          .get('existing-material')
       ).toEqual({ document })
 
       const tables = sqlite

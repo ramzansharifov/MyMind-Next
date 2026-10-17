@@ -1,5 +1,5 @@
 import * as Tabs from '@radix-ui/react-tabs'
-import { ArrowLeft, BookOpen, Check, Edit3, LoaderCircle } from 'lucide-react'
+import { ArrowLeft, BookOpen, Check, Edit3, LoaderCircle, Palette } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import type { NoteDocument, NoteRecord, NoteSummary } from '../../../../../shared/contracts/notes'
@@ -19,7 +19,7 @@ interface NoteEditorProps {
   onNoteUpdated: (note: NoteSummary) => void
 }
 
-type NoteEditorMode = 'edit' | 'read'
+type NoteEditorMode = 'edit' | 'read' | 'view'
 
 export function NoteEditor({ noteId, onBack, onNoteUpdated }: NoteEditorProps): React.JSX.Element {
   const [note, setNote] = useState<NoteRecord | null>(null)
@@ -27,7 +27,8 @@ export function NoteEditor({ noteId, onBack, onNoteUpdated }: NoteEditorProps): 
   const [loadError, setLoadError] = useState<string | null>(null)
   const [saveState, setSaveState] = useState<StudyAutosaveState>('saved')
   const [mode, setMode] = useState<NoteEditorMode>('edit')
-  const [isModeChanging, setIsModeChanging] = useState(false)
+  const [pendingMode, setPendingMode] = useState<NoteEditorMode | null>(null)
+  const isModeChanging = pendingMode !== null
   const [backError, setBackError] = useState<string | null>(null)
   const [modeError, setModeError] = useState<string | null>(null)
   const saveTimerRef = useRef<number | null>(null)
@@ -96,10 +97,20 @@ export function NoteEditor({ noteId, onBack, onNoteUpdated }: NoteEditorProps): 
     }
   }, [autosaveQueue, noteId, onNoteUpdated])
 
-  function updateDocument(document: NoteDocument): void {
+  function updateDocument(
+    document: NoteDocument,
+    { saveImmediately = false }: { saveImmediately?: boolean } = {}
+  ): void {
     setNote((current) => (current ? { ...current, document } : current))
     autosaveQueue.updateDraft(document)
     clearSaveTimer()
+
+    // Appearance choices must reach storage even when the text stays unchanged.
+    // Use the same queue so a pending text save cannot overwrite the newer view.
+    if (saveImmediately) {
+      void autosaveQueue.saveLatest().catch(() => undefined)
+      return
+    }
 
     saveTimerRef.current = window.setTimeout(() => {
       saveTimerRef.current = null
@@ -139,25 +150,27 @@ export function NoteEditor({ noteId, onBack, onNoteUpdated }: NoteEditorProps): 
   }
 
   function handleModeChange(value: string): void {
-    if ((value !== 'edit' && value !== 'read') || value === mode || isModeChanging) return
+    if (
+      (value !== 'edit' && value !== 'read' && value !== 'view') ||
+      value === mode ||
+      isModeChanging
+    )
+      return
 
     setModeError(null)
 
-    if (value === 'edit') {
-      setMode('edit')
-      return
-    }
-
-    setIsModeChanging(true)
+    setPendingMode(value)
 
     void flushLatestDraft()
-      .then(() => setMode('read'))
+      .then(() => setMode(value))
       .catch((reason: unknown) => {
         setModeError(
-          reason instanceof Error ? reason.message : 'Не удалось сохранить заметку перед чтением'
+          reason instanceof Error
+            ? reason.message
+            : 'Не удалось сохранить заметку перед переключением режима'
         )
       })
-      .finally(() => setIsModeChanging(false))
+      .finally(() => setPendingMode(null))
   }
 
   if (isLoading) {
@@ -227,10 +240,11 @@ export function NoteEditor({ noteId, onBack, onNoteUpdated }: NoteEditorProps): 
             >
               <Tabs.Trigger
                 value="read"
+                aria-label="Чтение"
                 disabled={isModeChanging}
                 className="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-[var(--app-muted)] transition-colors outline-none hover:text-[var(--app-text)] disabled:cursor-wait disabled:opacity-60 data-[state=active]:bg-[var(--app-surface-raised)] data-[state=active]:text-[var(--app-text)]"
               >
-                {isModeChanging ? (
+                {pendingMode === 'read' ? (
                   <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
                 ) : (
                   <BookOpen aria-hidden="true" className="size-4" />
@@ -240,11 +254,25 @@ export function NoteEditor({ noteId, onBack, onNoteUpdated }: NoteEditorProps): 
 
               <Tabs.Trigger
                 value="edit"
+                aria-label="Редактирование"
                 disabled={isModeChanging}
                 className="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-[var(--app-muted)] transition-colors outline-none hover:text-[var(--app-text)] disabled:cursor-wait disabled:opacity-60 data-[state=active]:bg-[var(--app-surface-raised)] data-[state=active]:text-[var(--app-text)]"
               >
                 <Edit3 aria-hidden="true" className="size-4" />
                 <span className="max-[760px]:hidden">Редактирование</span>
+              </Tabs.Trigger>
+              <Tabs.Trigger
+                value="view"
+                disabled={isModeChanging}
+                aria-label="Вид"
+                className="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-[var(--app-muted)] transition-colors outline-none hover:text-[var(--app-text)] disabled:cursor-wait disabled:opacity-60 data-[state=active]:bg-[var(--app-surface-raised)] data-[state=active]:text-[var(--app-text)]"
+              >
+                {pendingMode === 'view' ? (
+                  <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
+                ) : (
+                  <Palette aria-hidden="true" className="size-4" />
+                )}
+                <span className="max-[760px]:hidden">Вид</span>
               </Tabs.Trigger>
             </Tabs.List>
           </Tabs.Root>

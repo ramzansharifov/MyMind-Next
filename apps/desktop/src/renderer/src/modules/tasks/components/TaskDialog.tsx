@@ -1,5 +1,5 @@
 import { ListTodo } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 import type {
   CreateTaskInput,
@@ -38,22 +38,35 @@ export function TaskDialog({
   const [status, setStatus] = useState<TaskStatus>('active')
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (!open) return
+  const [formInputs, setFormInputs] = useState<{
+    groups: typeof groups
+    initialGroupId: typeof initialGroupId
+    open: typeof open
+    task: typeof task
+  } | null>(null)
+  if (
+    formInputs === null ||
+    formInputs.groups !== groups ||
+    formInputs.initialGroupId !== initialGroupId ||
+    formInputs.open !== open ||
+    formInputs.task !== task
+  ) {
+    setFormInputs({ groups: groups, initialGroupId: initialGroupId, open: open, task: task })
+    if (open) {
+      const initialGroupExists =
+        initialGroupId !== null && groups.some((group) => group.id === initialGroupId)
+      const initialGroup = task
+        ? (task.groupId ?? NO_GROUP_VALUE)
+        : initialGroupExists && initialGroupId
+          ? initialGroupId
+          : NO_GROUP_VALUE
 
-    const initialGroupExists =
-      initialGroupId !== null && groups.some((group) => group.id === initialGroupId)
-    const initialGroup = task
-      ? (task.groupId ?? NO_GROUP_VALUE)
-      : initialGroupExists && initialGroupId
-        ? initialGroupId
-        : NO_GROUP_VALUE
-
-    setTitle(task?.title ?? '')
-    setGroupId(initialGroup)
-    setStatus(task?.status ?? 'active')
-    setError(null)
-  }, [groups, initialGroupId, open, task])
+      setTitle(task?.title ?? '')
+      setGroupId(initialGroup)
+      setStatus(task?.status ?? 'active')
+      setError(null)
+    }
+  }
 
   async function submit(event: React.FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault()

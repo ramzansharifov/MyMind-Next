@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { FlatList, Image, Pressable, Text, View } from 'react-native'
+import { FlatList, Image, Pressable, Text, View, Platform } from 'react-native'
 import type { MusicItemRecord, MusicPlaylistRecord } from '@mymind/contracts/music'
 import {
   ArrowLeft,
@@ -7,6 +7,7 @@ import {
   Heart,
   ListMusic,
   Music2,
+  MoreHorizontal,
   Pencil,
   Trash2,
   type LucideIcon
@@ -122,6 +123,7 @@ function TrackCard({
           minWidth: 0,
           minHeight: 60,
           paddingHorizontal: 14,
+          paddingRight: Platform.OS === 'web' ? 54 : 14,
           paddingVertical: 12,
           flexDirection: 'row',
           alignItems: 'center',
@@ -154,6 +156,15 @@ function TrackCard({
           </Text>
         </View>
       </Pressable>
+      {Platform.OS === 'web' ? (
+        <View style={{ position: 'absolute', right: 10, top: 12 }}>
+          <IconAction
+            label={`Действия трека «${item.title}»`}
+            icon={MoreHorizontal}
+            onPress={() => setActionsOpen(true)}
+          />
+        </View>
+      ) : null}
       <ActionMenuDialog
         open={actionsOpen}
         onOpenChange={setActionsOpen}

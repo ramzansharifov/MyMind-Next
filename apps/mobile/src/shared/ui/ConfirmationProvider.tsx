@@ -1,33 +1,12 @@
-import {
-  createContext,
-  type PropsWithChildren,
-  useCallback,
-  useContext,
-  useRef,
-  useState
-} from 'react'
+import { type PropsWithChildren, useCallback, useRef, useState } from 'react'
 import { DeleteConfirmationDialog } from './DeleteConfirmationDialog'
-import type { AppDialogTone } from './AppDialog'
+import { ConfirmationContext, type ConfirmationOptions } from './confirmation-context'
+export type { ConfirmationOptions } from './confirmation-context'
 import { messageFor } from './form-model'
-
-export type ConfirmationOptions = {
-  title: string
-  description: string
-  subject?: string
-  confirmLabel?: string
-  submittingLabel?: string
-  tone?: Extract<AppDialogTone, 'danger' | 'warning'>
-  notice?: string | null
-  onConfirm(): void | Promise<void>
-}
 
 type StoredConfirmation = ConfirmationOptions & {
   resolve(result: boolean): void
 }
-
-const ConfirmationContext = createContext<
-  ((options: ConfirmationOptions) => Promise<boolean>) | null
->(null)
 
 export function ConfirmationProvider({ children }: PropsWithChildren): React.JSX.Element {
   const [request, setRequest] = useState<StoredConfirmation | null>(null)
@@ -101,10 +80,4 @@ export function ConfirmationProvider({ children }: PropsWithChildren): React.JSX
       />
     </ConfirmationContext.Provider>
   )
-}
-
-export function useConfirmation(): (options: ConfirmationOptions) => Promise<boolean> {
-  const value = useContext(ConfirmationContext)
-  if (!value) throw new Error('useConfirmation must be used inside ConfirmationProvider')
-  return value
 }

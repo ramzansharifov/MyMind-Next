@@ -206,7 +206,8 @@ function AppContent(): React.JSX.Element {
           className="fixed right-5 bottom-5 z-[79] flex max-w-md items-center gap-3 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-raised)] px-4 py-3 text-sm shadow-2xl"
         >
           <span className="text-[var(--app-muted)]">
-            Этот раздел изменился после синхронизации. Сначала сохраните открытые формы, затем обновите данные.
+            Этот раздел изменился после синхронизации. Сначала сохраните открытые формы, затем
+            обновите данные.
           </span>
           <button
             type="button"

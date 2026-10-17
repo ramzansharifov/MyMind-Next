@@ -1,0 +1,154 @@
+.note-page-stack[data-paper-tone='light'] {
+  color-scheme: light;
+}
+
+.note-page-stack[data-paper-tone='dark'] {
+  color-scheme: dark;
+  --color-red-200: #fecaca;
+  --color-red-300: #fca5a5;
+  --color-red-400: #f87171;
+}
+
+.note-page-stack[data-paper-tone] .note-canvas-text.mymind-rich-text-editor code {
+  color: inherit;
+  background: var(--app-code-surface);
+  border-color: var(--app-border);
+}
+
+.note-page-stack .note-canvas-text blockquote {
+  color: var(--app-text);
+  border-left-color: var(--app-accent-500);
+  background: var(--app-overlay-soft);
+}
+
+.note-page-stack .note-canvas-text .note-highlight-contrast {
+  color: var(--note-highlight-foreground);
+}
+
+.note-page-stack .note-canvas-text ::selection {
+  color: var(--note-highlight-foreground, var(--note-paper-text));
+  background: color-mix(in srgb, var(--app-accent-500) 30%, transparent);
+}
+
+.note-page-stack .note-canvas-text a {
+  color: var(--note-link-color, var(--app-accent-400));
+  text-decoration-color: currentColor;
+}
+
+.note-page-stack .note-canvas-text a:hover {
+  color: var(--note-link-hover, var(--app-accent-300));
+}
+
+.note-page-stack .note-canvas-attachment figcaption,
+.note-page-stack .note-canvas-attachment figure:has([data-study-image-preview]) > .group {
+  background-color: var(--app-overlay-faint);
+}
+
+.note-page-stack .note-canvas-attachment [class*='hover:bg-white/']:hover {
+  background-color: var(--app-control-hover);
+}
+
+.note-page-stack .note-canvas-attachment [class*='focus-visible:bg-white/']:focus-visible {
+  background-color: var(--app-control-hover);
+}
+
+/* Audio belongs to the paper palette; video controls retain their dark overlay. */
+.note-page-stack .note-canvas-attachment .study-audio-player {
+  --media-background-color: var(--app-workspace);
+  --media-primary-color: var(--app-text);
+  --media-secondary-color: var(--app-workspace);
+  --media-range-bar-color: var(--note-control-accent, var(--app-accent-500));
+  --media-range-thumb-background: var(--app-text);
+  --media-range-track-background: var(--app-border-strong);
+  color: var(--app-text);
+  box-shadow: none;
+}
+
+.note-page-stack .note-canvas-attachment .study-audio-player__controls {
+  background: var(--app-workspace);
+}
+
+.note-page-stack .note-canvas-attachment .study-video-player {
+  --app-accent-300: var(--note-video-accent);
+  --app-accent-400: var(--note-video-range-accent);
+}
+
+:is(
+  .note-page-stack[data-paper-tone='light'],
+  :root[data-theme='light'] .note-page-stack[data-paper-tone='theme']
+) {
+  --color-accent-200: var(--app-accent-700);
+  --color-accent-300: var(--app-accent-700);
+  --color-accent-400: var(--app-accent-600);
+  --color-accent-500: var(--app-accent-600);
+  --color-accent-600: var(--app-accent-700);
+  --color-red-200: #b42318;
+  --color-red-300: #b42318;
+  --color-red-400: #dc2626;
+  --note-link-color: var(--app-accent-600);
+  --note-link-hover: var(--app-accent-700);
+  --note-action-color: var(--app-accent-700);
+  --note-action-hover: color-mix(in srgb, var(--app-accent-700) 90%, black);
+  --note-control-accent: var(--app-accent-600);
+}
+
+.note-page-stack .note-canvas-text li[data-type='taskItem'] input[type='checkbox']:checked {
+  border-color: var(--note-control-accent, var(--app-accent-500));
+  background-color: var(--note-control-accent, var(--app-accent-500));
+}
+
+.note-page-stack .note-canvas-attachment[data-selected='true'],
+.note-page-stack .note-canvas-attachment:focus-visible {
+  outline-color: color-mix(
+    in srgb,
+    var(--note-control-accent, var(--app-accent-500)) 80%,
+    transparent
+  );
+}
+
+:is(
+    .note-page-stack[data-paper-tone='light'],
+    :root[data-theme='light'] .note-page-stack[data-paper-tone='theme']
+  )
+  .note-canvas-attachment
+  :is([class~='text-red-200'], [class~='text-red-300'], [class~='text-red-300/80']) {
+  color: #b42318;
+}
+
+:is(
+    .note-page-stack[data-paper-tone='light'],
+    :root[data-theme='light'] .note-page-stack[data-paper-tone='theme']
+  )
+  .note-canvas-attachment
+  button[class~='bg-accent-500'] {
+  background: var(--note-action-color);
+  color: #ffffff;
+}
+
+:is(
+    .note-page-stack[data-paper-tone='light'],
+    :root[data-theme='light'] .note-page-stack[data-paper-tone='theme']
+  )
+  .note-canvas-attachment
+  button[class~='bg-accent-500']:hover {
+  background: var(--note-action-hover);
+}
+
+:is(
+    .note-page-stack[data-paper-tone='light'],
+    :root[data-theme='light'] .note-page-stack[data-paper-tone='theme']
+  )
+  .note-canvas-attachment
+  button[class~='bg-red-500'] {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+:is(
+    .note-page-stack[data-paper-tone='light'],
+    :root[data-theme='light'] .note-page-stack[data-paper-tone='theme']
+  )
+  .note-canvas-attachment
+  button[class~='bg-red-500']:hover {
+  background: #b91c1c;
+}

@@ -1,6 +1,6 @@
 import { Tooltip } from '../../../shared/ui/tooltip'
 import { Dumbbell, Plus, Trash2 } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 
 import type {
   CreateWorkoutSessionInput,
@@ -68,27 +68,33 @@ export function WorkoutSessionDialog({
     [exercises]
   )
 
-  useEffect(() => {
-    if (!open) return
-    setProgramId(session?.programId ?? CUSTOM)
-    setDate(session?.date ?? todayKey())
-    setDuration(
-      session?.durationMinutes === null || !session ? '' : String(session.durationMinutes)
-    )
-    setComment(session?.comment ?? '')
-    setItems(
-      session?.exercises.map((exercise) => ({
-        exerciseId: exercise.exerciseId ?? '',
-        comment: exercise.comment,
-        sets: exercise.sets.map((set) => ({
-          reps: String(set.reps),
-          weightKg: String(set.weightKg)
-        }))
-      })) ?? []
-    )
-    setExerciseToAdd(NONE)
-    setError(null)
-  }, [open, session])
+  const [formInputs, setFormInputs] = useState<{
+    open: typeof open
+    session: typeof session
+  } | null>(null)
+  if (formInputs === null || formInputs.open !== open || formInputs.session !== session) {
+    setFormInputs({ open: open, session: session })
+    if (open) {
+      setProgramId(session?.programId ?? CUSTOM)
+      setDate(session?.date ?? todayKey())
+      setDuration(
+        session?.durationMinutes === null || !session ? '' : String(session.durationMinutes)
+      )
+      setComment(session?.comment ?? '')
+      setItems(
+        session?.exercises.map((exercise) => ({
+          exerciseId: exercise.exerciseId ?? '',
+          comment: exercise.comment,
+          sets: exercise.sets.map((set) => ({
+            reps: String(set.reps),
+            weightKg: String(set.weightKg)
+          }))
+        })) ?? []
+      )
+      setExerciseToAdd(NONE)
+      setError(null)
+    }
+  }
 
   const availableExercises = exercises.filter(
     (exercise) => !items.some((item) => item.exerciseId === exercise.id)

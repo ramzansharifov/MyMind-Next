@@ -1,6 +1,6 @@
 import { Tooltip } from '../../../shared/ui/tooltip'
 import { Plus, TrendingUp, Trash2 } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 
 import type {
   CreateWorkoutProgressEntryInput,
@@ -62,23 +62,28 @@ export function WorkoutProgressDialog({
     [exercises]
   )
 
-  useEffect(() => {
-    if (!open) return
-    setDate(entry?.date ?? todayKey())
-    setBodyWeight(entry?.bodyWeightKg === null || !entry ? '' : String(entry.bodyWeightKg))
-    setWellbeing(entry?.wellbeing ?? '')
-    setNotes(entry?.notes ?? '')
-    setMetrics(
-      entry?.metrics.map((metric) => ({
-        exerciseId: metric.exerciseId ?? '',
-        weightKg: String(metric.weightKg),
-        reps: String(metric.reps),
-        comment: metric.comment
-      })) ?? []
-    )
-    setExerciseToAdd(NONE)
-    setError(null)
-  }, [entry, open])
+  const [formInputs, setFormInputs] = useState<{ entry: typeof entry; open: typeof open } | null>(
+    null
+  )
+  if (formInputs === null || formInputs.entry !== entry || formInputs.open !== open) {
+    setFormInputs({ entry: entry, open: open })
+    if (open) {
+      setDate(entry?.date ?? todayKey())
+      setBodyWeight(entry?.bodyWeightKg === null || !entry ? '' : String(entry.bodyWeightKg))
+      setWellbeing(entry?.wellbeing ?? '')
+      setNotes(entry?.notes ?? '')
+      setMetrics(
+        entry?.metrics.map((metric) => ({
+          exerciseId: metric.exerciseId ?? '',
+          weightKg: String(metric.weightKg),
+          reps: String(metric.reps),
+          comment: metric.comment
+        })) ?? []
+      )
+      setExerciseToAdd(NONE)
+      setError(null)
+    }
+  }
 
   const availableExercises = exercises.filter(
     (exercise) => !metrics.some((metric) => metric.exerciseId === exercise.id)

@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -22,7 +22,6 @@ const workGroup: TaskGroupRecord = {
   id: 'group-work',
   name: 'Работа',
   icon: 'briefcase',
-  color: 'blue',
   position: 0,
   createdAt: 1,
   updatedAt: 1
@@ -32,7 +31,6 @@ const homeGroup: TaskGroupRecord = {
   id: 'group-home',
   name: 'Дом',
   icon: 'home',
-  color: 'emerald',
   position: 1,
   createdAt: 1,
   updatedAt: 1
@@ -85,6 +83,49 @@ beforeEach(() => {
 })
 
 describe('TasksPage', () => {
+  it('shows the group inline after the title and omits it for ungrouped tasks', async () => {
+    mocks.listOverview.mockResolvedValue({
+      groups: [workGroup],
+      tasks: [task, { ...task, id: 'task-ungrouped', title: 'Без привязки', groupId: null }]
+    })
+    render(<TasksPage />)
+    const grouped = await screen.findByRole('button', {
+      name: 'Выполнить задачу «Подготовить отчёт»'
+    })
+    expect(grouped).toHaveTextContent('Подготовить отчёт/Работа')
+    expect(within(grouped).getByText('Работа')).toHaveClass('text-accent-300')
+    const ungrouped = screen.getByRole('button', { name: 'Выполнить задачу «Без привязки»' })
+    expect(ungrouped).toHaveTextContent(/^Без привязки$/)
+  })
+
+  it('opens group actions on right click without changing the active filter', async () => {
+    const user = userEvent.setup()
+    render(<TasksPage />)
+    const groupButton = (await screen.findAllByText('Работа'))[0].closest('button')!
+    expect(
+      screen.queryByRole('button', { name: 'Изменить группу «Работа»' })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Удалить группу «Работа»' })
+    ).not.toBeInTheDocument()
+    await user.pointer({ target: groupButton, keys: '[MouseRight]' })
+    expect(groupButton).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByRole('menuitem', { name: 'Удалить группу «Работа»' })).toBeInTheDocument()
+    await user.click(screen.getByRole('menuitem', { name: 'Изменить группу «Работа»' }))
+    expect(screen.getByRole('heading', { name: 'Изменить группу' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Название')).toHaveValue('Работа')
+    await user.clear(screen.getByLabelText('Название'))
+    await user.type(screen.getByLabelText('Название'), 'Проект')
+    await user.click(screen.getByRole('button', { name: 'Сохранить' }))
+    await waitFor(() =>
+      expect(mocks.updateGroup).toHaveBeenCalledWith({
+        id: workGroup.id,
+        name: 'Проект',
+        icon: 'briefcase'
+      })
+    )
+  })
+
   it('puts search and simple status filters in the header without priority or date filters', async () => {
     render(<TasksPage />)
 
@@ -245,16 +286,15 @@ describe('TasksPage', () => {
     await user.click(await screen.findByRole('button', { name: 'Новая группа' }))
     await user.type(screen.getByLabelText('Название'), 'Дом')
 
-    const noColor = screen.getByRole('button', { name: 'Цвет: Без цвета' })
-    expect(noColor).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.queryByRole('button', { name: /^Цвет:/ })).not.toBeInTheDocument()
+    expect(screen.queryByText('Цвет')).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Создать группу' }))
 
     await waitFor(() =>
       expect(mocks.createGroup).toHaveBeenCalledWith({
         name: 'Дом',
-        icon: 'folder',
-        color: 'accent'
+        icon: 'folder'
       })
     )
   })
@@ -263,7 +303,9 @@ describe('TasksPage', () => {
     const user = userEvent.setup()
     render(<TasksPage />)
 
-    await user.click(await screen.findByRole('button', { name: 'Удалить группу «Работа»' }))
+    const groupButton = (await screen.findAllByText('Работа'))[0].closest('button')!
+    await user.pointer({ target: groupButton, keys: '[MouseRight]' })
+    await user.click(screen.getByRole('menuitem', { name: 'Удалить группу «Работа»' }))
 
     expect(screen.getByRole('heading', { name: 'Удалить группу?' })).toBeInTheDocument()
     expect(

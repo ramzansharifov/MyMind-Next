@@ -1,4 +1,4 @@
-import type { AppViewId } from './module-registry'
+import type { AppViewId } from './module-contracts'
 
 export const APP_MODULE_NAVIGATE_EVENT = 'mymind:module-navigate'
 

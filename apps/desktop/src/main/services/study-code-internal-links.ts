@@ -19,8 +19,10 @@ export interface StudyCodeInternalLinkSymbol {
   headingName?: string
 }
 
-const symbolicLinkPattern = /\[\[([A-Za-z_][A-Za-z0-9_]{0,79})(?:\.([A-Za-z_][A-Za-z0-9_]{0,79}))?(?:\|([^\]\r\n]+))?\]\]/g
-const storedInternalLinkPattern = /<span\b([^>]*\bdata-study-internal-link=(?:"true"|'true')[^>]*)>([\s\S]*?)<\/span>/gi
+const symbolicLinkPattern =
+  /\[\[([A-Za-z_][A-Za-z0-9_]{0,79})(?:\.([A-Za-z_][A-Za-z0-9_]{0,79}))?(?:\|([^\]\r\n]+))?\]\]/g
+const storedInternalLinkPattern =
+  /<span\b([^>]*\bdata-study-internal-link=(?:"true"|'true')[^>]*)>([\s\S]*?)<\/span>/gi
 
 export function hasStudyCodeSymbolicInternalLinks(value: string | undefined): boolean {
   if (!value) return false
@@ -68,30 +70,38 @@ export function symbolizeStoredStudyInternalLinks(
   }
 
   const replacements: Array<{ label: string; token: string }> = []
-  const nextHtml = html.replace(storedInternalLinkPattern, (full, rawAttributes: string, content: string) => {
-    const materialId = readHtmlAttribute(rawAttributes, 'data-material-id')
-    if (!materialId) return full
+  const nextHtml = html.replace(
+    storedInternalLinkPattern,
+    (full, rawAttributes: string, content: string) => {
+      const materialId = readHtmlAttribute(rawAttributes, 'data-material-id')
+      if (!materialId) return full
 
-    const headingId = readHtmlAttribute(rawAttributes, 'data-heading-id')
-    const symbol = resolve({ materialId, headingId })
-    if (!symbol) return full
+      const headingId = readHtmlAttribute(rawAttributes, 'data-heading-id')
+      const symbol = resolve({ materialId, headingId })
+      if (!symbol) return full
 
-    const labelMode = readHtmlAttribute(rawAttributes, 'data-label-mode') === 'custom' ? 'custom' : 'auto'
-    const storedLabel = readHtmlAttribute(rawAttributes, 'data-label')
-    const visibleLabel = decodeHtml(stripTags(content)) || storedLabel || ''
-    const customLabel = labelMode === 'custom' ? storedLabel || visibleLabel : undefined
+      const labelMode =
+        readHtmlAttribute(rawAttributes, 'data-label-mode') === 'custom' ? 'custom' : 'auto'
+      const storedLabel = readHtmlAttribute(rawAttributes, 'data-label')
+      const visibleLabel = decodeHtml(stripTags(content)) || storedLabel || ''
+      const customLabel = labelMode === 'custom' ? storedLabel || visibleLabel : undefined
 
-    if (customLabel?.includes(']') || customLabel?.includes('\n') || customLabel?.includes('\r')) {
-      return full
+      if (
+        customLabel?.includes(']') ||
+        customLabel?.includes('\n') ||
+        customLabel?.includes('\r')
+      ) {
+        return full
+      }
+
+      const reference = symbol.headingName
+        ? `${symbol.materialName}.${symbol.headingName}`
+        : symbol.materialName
+      const token = `[[${reference}${customLabel ? `|${customLabel}` : ''}]]`
+      replacements.push({ label: visibleLabel, token })
+      return token
     }
-
-    const reference = symbol.headingName
-      ? `${symbol.materialName}.${symbol.headingName}`
-      : symbol.materialName
-    const token = `[[${reference}${customLabel ? `|${customLabel}` : ''}]]`
-    replacements.push({ label: visibleLabel, token })
-    return token
-  })
+  )
 
   if (replacements.length === 0) return { text, html }
 
@@ -120,7 +130,9 @@ function replaceSymbolicLinks(
     (_full, materialName: string, headingName: string | undefined, label: string | undefined) => {
       const target = resolve({ materialName, headingName, label })
       const displayLabel = label ?? target.title
-      return renderHtml ? renderInternalLinkHtml(target, displayLabel, label !== undefined) : displayLabel
+      return renderHtml
+        ? renderInternalLinkHtml(target, displayLabel, label !== undefined)
+        : displayLabel
     }
   )
 }

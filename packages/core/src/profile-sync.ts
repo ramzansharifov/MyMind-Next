@@ -32,7 +32,9 @@ function proofMessage(
   serverNonce: string
 ): Uint8Array {
   return encoder.encode(
-    ['mymind-lan-sync', 'v1', role, normalizedLogin, challengeId, clientNonce, serverNonce].join('|')
+    ['mymind-lan-sync', 'v1', role, normalizedLogin, challengeId, clientNonce, serverNonce].join(
+      '|'
+    )
   )
 }
 

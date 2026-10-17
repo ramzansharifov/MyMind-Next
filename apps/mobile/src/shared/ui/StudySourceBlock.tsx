@@ -95,11 +95,7 @@ function HeaderIcon({
         alignItems: 'center',
         justifyContent: 'center',
         borderRadius: 7,
-        backgroundColor: active
-          ? theme.accent + '18'
-          : pressed
-            ? theme.raised
-            : 'transparent',
+        backgroundColor: active ? theme.accent + '18' : pressed ? theme.raised : 'transparent',
         opacity: pressed ? 0.72 : 1
       })}
     >
@@ -234,11 +230,7 @@ export function StudySourceBlock({
         : null}
 
       <HeaderIcon label={copied ? 'Скопировано' : 'Копировать'} onPress={() => void copy()}>
-        {copied ? (
-          <Check size={15} color="#6ee7b7" />
-        ) : (
-          <Copy size={15} color={theme.muted} />
-        )}
+        {copied ? <Check size={15} color="#6ee7b7" /> : <Copy size={15} color={theme.muted} />}
       </HeaderIcon>
       <HeaderIcon
         label={fullscreen ? 'Свернуть блок' : 'Развернуть блок'}

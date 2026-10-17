@@ -1,5 +1,5 @@
 import { Repeat2, Sparkles, Target } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 import type {
   CreateHabitInput,
@@ -55,22 +55,36 @@ export function HabitDialog({
   const [preferredTimes, setPreferredTimes] = useState<Record<number, string>>({})
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (!open) return
-    const initialGroupExists =
-      initialGroupId !== null && groups.some((group) => group.id === initialGroupId)
+  const [formInputs, setFormInputs] = useState<{
+    groups: typeof groups
+    habit: typeof habit
+    initialGroupId: typeof initialGroupId
+    open: typeof open
+  } | null>(null)
+  if (
+    formInputs === null ||
+    formInputs.groups !== groups ||
+    formInputs.habit !== habit ||
+    formInputs.initialGroupId !== initialGroupId ||
+    formInputs.open !== open
+  ) {
+    setFormInputs({ groups: groups, habit: habit, initialGroupId: initialGroupId, open: open })
+    if (open) {
+      const initialGroupExists =
+        initialGroupId !== null && groups.some((group) => group.id === initialGroupId)
 
-    setTitle(habit?.title ?? '')
-    setGroupId(habit?.groupId ?? (initialGroupExists ? initialGroupId : NO_GROUP_VALUE))
-    setTrackingType(habit?.trackingType ?? 'check')
-    setTargetValue(String(habit?.targetValue ?? 1))
-    setUnit(habit?.unit ?? '')
-    setRepeatEveryDays(String(habit?.repeatEveryDays ?? 1))
-    setRecurrenceMode(habit && habit.weekdays.length > 0 ? 'weekdays' : 'interval')
-    setWeekdays(habit?.weekdays ?? [])
-    setPreferredTimes(preferredTimesToRecord(habit))
-    setError(null)
-  }, [groups, habit, initialGroupId, open])
+      setTitle(habit?.title ?? '')
+      setGroupId(habit?.groupId ?? (initialGroupExists ? initialGroupId : NO_GROUP_VALUE))
+      setTrackingType(habit?.trackingType ?? 'check')
+      setTargetValue(String(habit?.targetValue ?? 1))
+      setUnit(habit?.unit ?? '')
+      setRepeatEveryDays(String(habit?.repeatEveryDays ?? 1))
+      setRecurrenceMode(habit && habit.weekdays.length > 0 ? 'weekdays' : 'interval')
+      setWeekdays(habit?.weekdays ?? [])
+      setPreferredTimes(preferredTimesToRecord(habit))
+      setError(null)
+    }
+  }
 
   function changeTrackingType(value: string): void {
     const next = value as HabitTrackingType

@@ -13,7 +13,6 @@ import {
   Wallet,
   type LucideIcon
 } from 'lucide-react'
-
 import type {
   PasswordGroupColor,
   PasswordGroupIcon,
@@ -112,17 +111,6 @@ export const passwordGroupColorClasses: Record<
     border: 'border-pink-400/20',
     dot: 'bg-pink-400'
   }
-}
-
-export function PasswordGroupIconGlyph({
-  icon,
-  className
-}: {
-  icon: PasswordGroupIcon
-  className?: string
-}): React.JSX.Element {
-  const Icon = PASSWORD_GROUP_ICON_OPTIONS.find((option) => option.value === icon)?.icon ?? Folder
-  return <Icon aria-hidden="true" className={className} />
 }
 
 export function passwordTypeLabel(type: PasswordItemType): string {

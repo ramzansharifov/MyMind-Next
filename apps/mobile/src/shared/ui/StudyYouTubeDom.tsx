@@ -4,8 +4,7 @@ import { DomViewportMeta } from './DomViewportMeta'
 
 export default function StudyYouTubeDom({
   embedUrl,
-  title,
-  dom: _dom
+  title
 }: {
   embedUrl: string
   title: string

@@ -13,11 +13,8 @@ import { useId, useMemo, useState } from 'react'
 
 import type { WorkoutSessionRecord } from '../../../../../shared/contracts/workouts'
 import { cn } from '../../../shared/lib/cn'
-import {
-  workoutMuscleGroupClasses,
-  workoutMuscleGroupLabel,
-  WorkoutMuscleGroupIcon
-} from '../workout-options'
+import { workoutMuscleGroupClasses, workoutMuscleGroupLabel } from '../workout-options'
+import { WorkoutMuscleGroupIcon } from '../workout-icons'
 
 interface WorkoutSessionCardProps {
   session: WorkoutSessionRecord

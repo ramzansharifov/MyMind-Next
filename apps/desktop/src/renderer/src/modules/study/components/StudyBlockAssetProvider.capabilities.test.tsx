@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
-import { useRichTextInternalLinksEnabled } from './rich-text/RichTextCapabilities'
+import { useRichTextInternalLinksEnabled } from './rich-text/rich-text-capabilities-context'
 import { StudyBlockAssetProvider } from './StudyBlockAssetProvider'
 
 function CapabilityProbe(): React.JSX.Element {

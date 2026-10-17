@@ -1,6 +1,6 @@
 import { Tooltip } from '../../../shared/ui/tooltip'
 import { Eye, EyeOff, KeyRound, Sparkles, Star, WandSparkles } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 
 import type {
   CreatePasswordItemInput,
@@ -58,20 +58,32 @@ export function PasswordItemDialog({
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (!open) return
-    setType(item?.type ?? 'login')
-    setGroupId(item?.groupId ?? initialGroupId ?? NO_GROUP)
-    setTitle(item?.title ?? '')
-    setUsername(item?.username ?? '')
-    setPassword(item?.password ?? '')
-    setWebsite(item?.website ?? '')
-    setNotes(item?.notes ?? '')
-    setFavorite(item?.favorite ?? false)
-    setPasswordVisible(false)
-    setGeneratorOpen(false)
-    setError(null)
-  }, [initialGroupId, item, open])
+  const [formInputs, setFormInputs] = useState<{
+    initialGroupId: typeof initialGroupId
+    item: typeof item
+    open: typeof open
+  } | null>(null)
+  if (
+    formInputs === null ||
+    formInputs.initialGroupId !== initialGroupId ||
+    formInputs.item !== item ||
+    formInputs.open !== open
+  ) {
+    setFormInputs({ initialGroupId: initialGroupId, item: item, open: open })
+    if (open) {
+      setType(item?.type ?? 'login')
+      setGroupId(item?.groupId ?? initialGroupId ?? NO_GROUP)
+      setTitle(item?.title ?? '')
+      setUsername(item?.username ?? '')
+      setPassword(item?.password ?? '')
+      setWebsite(item?.website ?? '')
+      setNotes(item?.notes ?? '')
+      setFavorite(item?.favorite ?? false)
+      setPasswordVisible(false)
+      setGeneratorOpen(false)
+      setError(null)
+    }
+  }
 
   const groupOptions = useMemo(
     () => [

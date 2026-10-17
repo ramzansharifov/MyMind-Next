@@ -1,0 +1,1 @@
+ALTER TABLE `task_groups` DROP COLUMN `color`;

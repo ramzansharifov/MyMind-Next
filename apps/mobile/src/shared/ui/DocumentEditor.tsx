@@ -33,8 +33,8 @@ import { AppDialog } from './AppDialog'
 import { AppIcon } from './icons'
 import { DocumentRichTextViewer, NotesRichTextBlock } from './NotesRichTextBlock'
 import { NotesBlockSettingsSheet } from './NotesBlockSettings'
+import { DEFAULT_NOTES_RICH_TEXT_STATE } from './notes-rich-text-state'
 import {
-  DEFAULT_NOTES_RICH_TEXT_STATE,
   NotesQuickLinkDialog,
   NotesRichTextInlineControls,
   NotesRichTextSettingsSheet
@@ -44,10 +44,10 @@ import { resolveStudyRichTextHtml } from './richTextHtml'
 import { StudySourceBlock } from './StudySourceBlock'
 import { StudyDividerBlock } from './StudyDividerBlock'
 import { StudyAttachmentBlock } from './StudyAttachmentBlock'
-import { useConfirmation } from './ConfirmationProvider'
+import { useConfirmation } from './confirmation-context'
 import { Button, Label } from './primitives'
 import { useTheme } from './theme'
-import { AudioAssetPlayer, VoiceRecorder, type VoiceRecordingInput } from './VoiceRecorder'
+import { VoiceRecorder, type VoiceRecordingInput } from './VoiceRecorder'
 
 const INSERTABLE_BLOCKS: ReadonlyArray<{
   type: StudyBlockType
@@ -143,12 +143,6 @@ function newAssetBlock(type: StudyAssetKind, id: string, asset: StudyLocalAsset)
   if (type === 'video') return { id, type, source }
   if (type === 'audio') return { id, type, source }
   return { id, type: 'file', source }
-}
-
-function formatBytes(value: number): string {
-  if (value < 1024) return `${value} Б`
-  if (value < 1024 * 1024) return `${Math.round(value / 1024)} КБ`
-  return `${(value / (1024 * 1024)).toFixed(1)} МБ`
 }
 
 function blockLabel(block: StudyBlock): string {
@@ -321,63 +315,6 @@ function BlockInput({
         </View>
       )
   }
-}
-
-function ToolbarButton({
-  label,
-  icon,
-  selected = false,
-  disabled = false,
-  danger = false,
-  onPress
-}: {
-  label: string
-  icon?: 'back' | 'forward' | 'settings' | 'delete' | 'copy'
-  selected?: boolean
-  disabled?: boolean
-  danger?: boolean
-  onPress(): void
-}): React.JSX.Element {
-  const theme = useTheme()
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityState={{ selected, disabled }}
-      disabled={disabled}
-      onPress={onPress}
-      style={({ pressed }) => ({
-        minWidth: icon ? 40 : 42,
-        height: 36,
-        paddingHorizontal: icon ? 0 : 10,
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderRadius: 10,
-        borderWidth: selected ? 1 : 0,
-        borderColor: selected ? theme.accent + '55' : 'transparent',
-        backgroundColor: selected ? theme.accent + '16' : pressed ? theme.raised : 'transparent',
-        opacity: disabled ? 0.32 : pressed ? 0.72 : 1
-      })}
-    >
-      {icon ? (
-        <AppIcon
-          name={icon}
-          size={17}
-          color={danger ? theme.error : selected ? theme.accent : theme.muted}
-        />
-      ) : (
-        <Text
-          style={{
-            color: danger ? theme.error : selected ? theme.accent : theme.text,
-            fontSize: 12.5,
-            fontWeight: '700'
-          }}
-        >
-          {label}
-        </Text>
-      )}
-    </Pressable>
-  )
 }
 
 function BlockHeaderIcon({
@@ -597,118 +534,6 @@ function RichTextFormattingDock({
           openSettings={openSettings}
           openLink={openLink}
         />
-      </ScrollView>
-    </View>
-  )
-}
-
-function NotesBlockToolbar({
-  block,
-  index,
-  count,
-  update,
-  move,
-  remove,
-  duplicate,
-  openSettings,
-  richEditor,
-  richState,
-  openRichSettings,
-  openQuickLink
-}: {
-  block: StudyBlock
-  index: number
-  count: number
-  update(next: StudyBlock): void
-  move(direction: -1 | 1): void
-  remove(): void
-  duplicate(): void
-  openSettings(): void
-  richEditor: NotesRichTextDomRef | null
-  richState: NotesRichTextFormattingState
-  openRichSettings(): void
-  openQuickLink(): void
-}): React.JSX.Element {
-  const theme = useTheme()
-
-  return (
-    <View
-      style={{
-        minHeight: 52,
-        borderTopWidth: 1,
-        borderTopColor: theme.border,
-        backgroundColor: theme.surface
-      }}
-    >
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{
-          minHeight: 52,
-          alignItems: 'center',
-          gap: 3,
-          paddingHorizontal: 8,
-          paddingVertical: 8
-        }}
-      >
-        <View
-          style={{
-            minHeight: 32,
-            justifyContent: 'center',
-            paddingHorizontal: 9,
-            marginRight: 2,
-            borderRadius: 9,
-            backgroundColor: theme.accent + '10'
-          }}
-        >
-          <Text style={{ color: theme.accent, fontSize: 11.5, fontWeight: '700' }}>
-            {blockLabel(block)}
-          </Text>
-        </View>
-
-        {block.type === 'text' ? (
-          <NotesRichTextInlineControls
-            editor={richEditor}
-            state={richState}
-            openSettings={openRichSettings}
-            openLink={openQuickLink}
-          />
-        ) : null}
-
-        {block.type === 'heading'
-          ? ([1, 2, 3] as const).map((level) => (
-              <ToolbarButton
-                key={level}
-                label={`H${level}`}
-                selected={block.level === level}
-                onPress={() => update({ ...block, level })}
-              />
-            ))
-          : null}
-
-        {block.type === 'image' ? (
-          <>
-            <ToolbarButton
-              label="Вписать"
-              selected={(block.imageFit ?? 'contain') === 'contain'}
-              onPress={() => update({ ...block, imageFit: 'contain' })}
-            />
-            <ToolbarButton
-              label="Обрезать"
-              selected={block.imageFit === 'cover'}
-              onPress={() => update({ ...block, imageFit: 'cover' })}
-            />
-          </>
-        ) : null}
-
-        <ToolbarButton label="↑" disabled={index === 0} onPress={() => move(-1)} />
-        <ToolbarButton label="↓" disabled={index === count - 1} onPress={() => move(1)} />
-        <ToolbarButton label="Дублировать блок" icon="copy" onPress={duplicate} />
-        {block.type !== 'text' ? (
-          <ToolbarButton label="Настройки блока" icon="settings" onPress={openSettings} />
-        ) : null}
-        <ToolbarButton label="Удалить блок" icon="delete" danger onPress={remove} />
       </ScrollView>
     </View>
   )
@@ -1178,20 +1003,21 @@ export function DocumentEditor({
   const [richTextState, setRichTextState] = useState<NotesRichTextFormattingState>(
     DEFAULT_NOTES_RICH_TEXT_STATE
   )
-  const richTextRefs = useRef(new Map<string, NotesRichTextDomRef>())
-  const [, setRichEditorEpoch] = useState(0)
+  const [richTextRefs, setRichTextRefs] = useState(() => new Map<string, NotesRichTextDomRef>())
   const assetActions = { importAsset, openAsset, resolveAssetUri, onAssetError }
 
   useEffect(() => {
     documentRef.current = document
-    if (activeBlockId && !document.blocks.some((block) => block.id === activeBlockId)) {
-      setActiveBlockId(null)
-      setSettingsOpen(false)
-      setRichSettingsOpen(false)
-      setQuickLinkOpen(false)
-      setRichTextState(DEFAULT_NOTES_RICH_TEXT_STATE)
-    }
-  }, [activeBlockId, document])
+  }, [document])
+
+  // Clear dependent controls as part of rendering the changed document.
+  if (activeBlockId && !document.blocks.some((block) => block.id === activeBlockId)) {
+    setActiveBlockId(null)
+    setSettingsOpen(false)
+    setRichSettingsOpen(false)
+    setQuickLinkOpen(false)
+    setRichTextState(DEFAULT_NOTES_RICH_TEXT_STATE)
+  }
 
   if (clean && mode === 'read') {
     return (
@@ -1346,7 +1172,7 @@ export function DocumentEditor({
     : -1
   const activeBlock = activeIndex >= 0 ? (document.blocks[activeIndex] ?? null) : null
   const activeRichEditor =
-    activeBlock?.type === 'text' ? (richTextRefs.current.get(activeBlock.id) ?? null) : null
+    activeBlock?.type === 'text' ? (richTextRefs.get(activeBlock.id) ?? null) : null
 
   const list = (
     <FlatList
@@ -1390,9 +1216,13 @@ export function DocumentEditor({
               <NotesRichTextBlock
                 block={item}
                 registerRef={(editor) => {
-                  if (editor) richTextRefs.current.set(item.id, editor)
-                  else richTextRefs.current.delete(item.id)
-                  setRichEditorEpoch((value) => value + 1)
+                  setRichTextRefs((current) => {
+                    if ((current.get(item.id) ?? null) === editor) return current
+                    const next = new Map(current)
+                    if (editor) next.set(item.id, editor)
+                    else next.delete(item.id)
+                    return next
+                  })
                 }}
                 activate={() => {
                   setActiveBlockId(item.id)

@@ -181,7 +181,13 @@ function SourceEditor({
   )
 }
 
-function ReadOnlyCode({ source, language }: { source: string; language: string }): React.JSX.Element {
+function ReadOnlyCode({
+  source,
+  language
+}: {
+  source: string
+  language: string
+}): React.JSX.Element {
   const normalized = normalizeLegacyCodeSource(source)
   return (
     <div className="source-scroll">
@@ -331,7 +337,6 @@ function MermaidPreview({
 
   useEffect(() => {
     if (!source.trim()) {
-      setState(EMPTY_MERMAID)
       return undefined
     }
 

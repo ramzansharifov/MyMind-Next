@@ -61,20 +61,23 @@ describe('registerWorkoutsIpcHandlers', () => {
     )?.[1]
 
     await expect(
-      handler({}, {
-        programId: null,
-        title: '',
-        date: '2026-08-17',
-        durationMinutes: null,
-        comment: '',
-        exercises: [
-          {
-            exerciseId: '123e4567-e89b-12d3-a456-426614174000',
-            comment: '',
-            sets: [{ reps: 0, weightKg: 20 }]
-          }
-        ]
-      })
+      handler(
+        {},
+        {
+          programId: null,
+          title: '',
+          date: '2026-08-17',
+          durationMinutes: null,
+          comment: '',
+          exercises: [
+            {
+              exerciseId: '123e4567-e89b-12d3-a456-426614174000',
+              comment: '',
+              sets: [{ reps: 0, weightKg: 20 }]
+            }
+          ]
+        }
+      )
     ).rejects.toThrow()
   })
 
@@ -86,10 +89,7 @@ describe('registerWorkoutsIpcHandlers', () => {
 
     const sender = { mainFrame: {} }
     await expect(
-      handler(
-        { sender, senderFrame: {} },
-        { entryId: '123e4567-e89b-12d3-a456-426614174000' }
-      )
+      handler({ sender, senderFrame: {} }, { entryId: '123e4567-e89b-12d3-a456-426614174000' })
     ).rejects.toThrow('Untrusted workout photo request')
   })
 })

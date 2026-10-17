@@ -5,6 +5,7 @@ import { randomUUID } from 'node:crypto'
 import Database from 'better-sqlite3'
 import { describe, expect, it } from 'vitest'
 import { mobileSchemaV1 } from './mobile-schema'
+import { mobileSchemaV9 } from './mobile-schema-v9'
 import { mobileSchemaV6 } from './mobile-schema-v6'
 import { createTasksRepository } from './tasks'
 import { createHabitsRepository } from './habits'
@@ -22,6 +23,7 @@ function initialize(db: Database.Database): void {
   db.pragma('foreign_keys = ON')
   db.transaction(() => {
     for (const sql of mobileSchemaV1) db.exec(sql)
+    for (const sql of mobileSchemaV9) db.exec(sql)
   })()
 }
 const taskInput = {
@@ -144,7 +146,7 @@ describe('mobile schema and shared repositories', () => {
         createId: randomUUID,
         now: () => now
       })
-      const group = api.createTaskGroup({ name: 'Работа', icon: 'folder', color: 'accent' })
+      const group = api.createTaskGroup({ name: 'Работа', icon: 'folder' })
       const task = api.createTask(createTaskInputSchema.parse({ ...taskInput, groupId: group.id }))
       now = 2000
       api.updateTask({ ...taskInput, id: task.id, groupId: group.id, status: 'completed' })

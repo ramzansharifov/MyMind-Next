@@ -1,9 +1,7 @@
 import { BarChart3, CalendarDays, Droplets, Flame, Leaf, Utensils } from 'lucide-react'
 
-import type { NutritionMealType, NutritionReport } from '../../../../../shared/contracts/nutrition'
-import { AppDateField } from '../../../shared/ui/AppDateField'
-import { AppSelect } from '../../../shared/ui/AppSelect'
-import { NUTRITION_MEAL_OPTIONS, nutritionMealLabel } from '../nutrition-options'
+import type { NutritionReport } from '../../../../../shared/contracts/nutrition'
+import { nutritionMealLabel } from '../nutrition-options'
 import { formatNutritionNumber } from '../nutrition-utils'
 
 export type NutritionProgressPeriod = '7' | '30' | '90' | '365' | 'custom'
@@ -11,59 +9,14 @@ export type NutritionProgressPeriod = '7' | '30' | '90' | '365' | 'custom'
 interface NutritionProgressViewProps {
   report: NutritionReport | null
   loading: boolean
-  period: NutritionProgressPeriod
-  dateFrom: string
-  dateTo: string
-  mealType: 'all' | NutritionMealType
-  onPeriodChange: (period: NutritionProgressPeriod) => void
-  onDateFromChange: (date: string) => void
-  onDateToChange: (date: string) => void
-  onMealTypeChange: (mealType: 'all' | NutritionMealType) => void
 }
 
 export function NutritionProgressView({
   report,
-  loading,
-  period,
-  dateFrom,
-  dateTo,
-  mealType,
-  onPeriodChange,
-  onDateFromChange,
-  onDateToChange,
-  onMealTypeChange
+  loading
 }: NutritionProgressViewProps): React.JSX.Element {
   return (
     <section className="mt-5 space-y-4">
-      <div className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 shadow-[var(--app-shadow-card)]">
-        <div className="flex flex-wrap gap-2">
-          <div className="min-w-[150px]">
-            <AppSelect
-              ariaLabel="Период прогресса"
-              value={period}
-              options={[
-                { value: '7', label: '7 дней' },
-                { value: '30', label: '30 дней' },
-                { value: '90', label: '90 дней' },
-                { value: '365', label: '365 дней' },
-                { value: 'custom', label: 'Свой период' }
-              ]}
-              onValueChange={(value) => onPeriodChange(value as NutritionProgressPeriod)}
-            />
-          </div>
-          <AppDateField ariaLabel="Начало периода" value={dateFrom} onChange={onDateFromChange} />
-          <AppDateField ariaLabel="Конец периода" value={dateTo} onChange={onDateToChange} />
-          <div className="min-w-[190px]">
-            <AppSelect
-              ariaLabel="Приём пищи в прогрессе"
-              value={mealType}
-              options={[{ value: 'all', label: 'Все приёмы пищи' }, ...NUTRITION_MEAL_OPTIONS]}
-              onValueChange={(value) => onMealTypeChange(value as 'all' | NutritionMealType)}
-            />
-          </div>
-        </div>
-      </div>
-
       {loading && !report ? (
         <div className="flex min-h-64 items-center justify-center rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] text-sm text-[var(--app-muted)]">
           Считаем прогресс…

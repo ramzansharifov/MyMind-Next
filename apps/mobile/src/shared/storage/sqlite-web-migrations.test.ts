@@ -24,7 +24,7 @@ afterEach(() => {
 })
 
 describe('Expo SQLite web migrations', () => {
-  it('migrates through V8 without requiring an exclusive transaction API', async () => {
+  it('migrates through V9 without requiring an exclusive transaction API', async () => {
     const { db, expo } = webDriver()
     const runTransaction = vi.fn(
       async (database: SQLiteDatabase, operation: (tx: SQLiteDatabase) => Promise<void>) => {
@@ -41,8 +41,8 @@ describe('Expo SQLite web migrations', () => {
 
     await initializeMobileDatabase(expo, runTransaction)
 
-    expect(db.pragma('user_version', { simple: true })).toBe(8)
-    expect(runTransaction).toHaveBeenCalledTimes(8)
+    expect(db.pragma('user_version', { simple: true })).toBe(9)
+    expect(runTransaction).toHaveBeenCalledTimes(9)
     expect(
       db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'notes'").get()
     ).toEqual({ name: 'notes' })

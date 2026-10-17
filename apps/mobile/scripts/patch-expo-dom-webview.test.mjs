@@ -35,7 +35,7 @@ assert.match(patched.source, /domReadyRef\.current = true/)
 assert.match(patched.source, /data: latestSmartActionsRef\.current/)
 assert.doesNotMatch(
   patched.source,
-  /\/\/ When the \`marshalProps\` change, emit them to the webview\.\n  React\.useEffect\(\(\) => \{\n    emit/
+  /\/\/ When the `marshalProps` change, emit them to the webview\.\n {2}React\.useEffect\(\(\) => \{\n {4}emit/
 )
 
 const alreadyPatched = patchExpoDomWebViewSource(patched.source)

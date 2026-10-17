@@ -9,5 +9,18 @@ node_modules
 .filetags
 .data
 coverage
-drizzle/meta
+**/drizzle/meta/
 package-lock.json
+
+# Generated Expo native projects and local caches
+/apps/mobile/android/
+/apps/mobile/ios/
+**/.expo/
+
+# Generated Next.js output and PWA assets
+**/.next/
+apps/pwa/public/sw.js
+apps/pwa/public/sqlite/
+apps/pwa/public/icons/
+apps/pwa/public/tldraw/
+apps/pwa/next-env.d.ts

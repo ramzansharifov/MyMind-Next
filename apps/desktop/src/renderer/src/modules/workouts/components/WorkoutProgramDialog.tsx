@@ -1,6 +1,6 @@
 import { Tooltip } from '../../../shared/ui/tooltip'
 import { ArrowDown, ArrowUp, ListPlus, Plus, Trash2 } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 
 import type {
   CreateWorkoutProgramInput,
@@ -43,14 +43,20 @@ export function WorkoutProgramDialog({
   const [exerciseToAdd, setExerciseToAdd] = useState(NONE)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (!open) return
-    setName(program?.name ?? '')
-    setDescription(program?.description ?? '')
-    setItems(program?.exercises.map((item) => ({ exerciseId: item.exerciseId })) ?? [])
-    setExerciseToAdd(NONE)
-    setError(null)
-  }, [open, program])
+  const [formInputs, setFormInputs] = useState<{
+    open: typeof open
+    program: typeof program
+  } | null>(null)
+  if (formInputs === null || formInputs.open !== open || formInputs.program !== program) {
+    setFormInputs({ open: open, program: program })
+    if (open) {
+      setName(program?.name ?? '')
+      setDescription(program?.description ?? '')
+      setItems(program?.exercises.map((item) => ({ exerciseId: item.exerciseId })) ?? [])
+      setExerciseToAdd(NONE)
+      setError(null)
+    }
+  }
 
   const exerciseMap = useMemo(
     () => new Map(exercises.map((exercise) => [exercise.id, exercise])),

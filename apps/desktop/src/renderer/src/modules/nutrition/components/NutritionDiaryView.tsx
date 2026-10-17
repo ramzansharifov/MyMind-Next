@@ -1,14 +1,6 @@
 import { Tooltip } from '../../../shared/ui/tooltip'
 import * as Collapsible from '@radix-ui/react-collapsible'
-import {
-  Braces,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  Droplets,
-  Pencil,
-  Trash2
-} from 'lucide-react'
+import { Braces, ChevronDown, Droplets, Pencil, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 
 import type {
@@ -18,23 +10,14 @@ import type {
   NutritionTargetRecord,
   NutritionValues
 } from '../../../../../shared/contracts/nutrition'
-import { AppDateField } from '../../../shared/ui/AppDateField'
 import { nutritionUnitLabel } from '../nutrition-options'
-import {
-  formatNutritionDate,
-  formatNutritionNumber,
-  nutritionLocalDateKey,
-  nutritionProgress,
-  shiftNutritionDate
-} from '../nutrition-utils'
+import { formatNutritionNumber, nutritionProgress } from '../nutrition-utils'
 
 interface NutritionDiaryViewProps {
   overview: NutritionOverview
-  selectedDate: string
   target: NutritionTargetRecord | null
   busy: boolean
-  showDateNavigation?: boolean
-  onDateChange: (date: string) => void
+  summaryLabel?: string
   onEdit: (entry: NutritionLogEntryRecord) => void
   onDelete: (entry: NutritionLogEntryRecord) => void
   onWaterChange: (delta: number) => void
@@ -49,11 +32,9 @@ const STANDARD_MEALS: Array<{ value: NutritionMealType; label: string }> = [
 
 export function NutritionDiaryView({
   overview,
-  selectedDate,
   target,
   busy,
-  showDateNavigation = true,
-  onDateChange,
+  summaryLabel = 'За день',
   onEdit,
   onDelete,
   onWaterChange
@@ -64,59 +45,12 @@ export function NutritionDiaryView({
 
   return (
     <section className="mt-5 space-y-4">
-      {showDateNavigation && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 shadow-[var(--app-shadow-card)]">
-          <div className="flex items-center gap-1">
-            <Tooltip content="Предыдущий день" side="top">
-              <button
-                type="button"
-                aria-label="Предыдущий день"
-                className="flex size-9 items-center justify-center rounded-xl text-[var(--app-muted)] hover:bg-[var(--app-control-hover)]"
-                onClick={() => onDateChange(shiftNutritionDate(selectedDate, -1))}
-              >
-                <ChevronLeft className="size-4" />
-              </button>
-            </Tooltip>
-            <button
-              type="button"
-              className="min-w-56 rounded-xl px-3 py-2 text-left hover:bg-[var(--app-control-hover)] max-[520px]:min-w-0"
-              onClick={() => onDateChange(nutritionLocalDateKey())}
-            >
-              <div className="text-sm font-semibold text-[var(--app-text)] capitalize">
-                {formatNutritionDate(selectedDate)}
-              </div>
-              <div className="mt-0.5 text-[11px] text-[var(--app-muted)]">
-                {selectedDate === nutritionLocalDateKey()
-                  ? 'Сегодня'
-                  : 'Вернуться к сегодняшнему дню'}
-              </div>
-            </button>
-            <Tooltip content="Следующий день" side="top">
-              <button
-                type="button"
-                aria-label="Следующий день"
-                className="flex size-9 items-center justify-center rounded-xl text-[var(--app-muted)] hover:bg-[var(--app-control-hover)]"
-                onClick={() => onDateChange(shiftNutritionDate(selectedDate, 1))}
-              >
-                <ChevronRight className="size-4" />
-              </button>
-            </Tooltip>
-          </div>
-          <AppDateField
-            value={selectedDate}
-            ariaLabel="Дата дневника питания"
-            className="w-[155px]"
-            onChange={onDateChange}
-          />
-        </div>
-      )}
-
       <DaySummary
         nutrients={nutrients}
         target={target}
         waterMl={overview.day.waterMl}
         busy={busy}
-        label={showDateNavigation ? 'За день' : 'Сегодня'}
+        label={summaryLabel}
         onWaterChange={onWaterChange}
       />
 

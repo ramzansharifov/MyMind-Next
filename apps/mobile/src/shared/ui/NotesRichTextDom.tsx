@@ -1,15 +1,34 @@
 'use dom'
 
-import { Editor, Node, mergeAttributes } from '@tiptap/core'
+import { Editor, Mark, Node, mergeAttributes, type Extensions } from '@tiptap/core'
 import Highlight from '@tiptap/extension-highlight'
 import TextAlign from '@tiptap/extension-text-align'
 import { TextStyleKit } from '@tiptap/extension-text-style'
 import { Placeholder } from '@tiptap/extensions'
 import StarterKit from '@tiptap/starter-kit'
 import { useDOMImperativeHandle, type DOMImperativeFactory } from 'expo/dom'
-import { useCallback, useEffect, useRef, type Ref } from 'react'
+import { useCallback, useEffect, useRef, useState, type Ref } from 'react'
 import type { ResolveStudyInternalLinkTargetInput } from '@mymind/contracts/study'
 import { DomViewportMeta } from './DomViewportMeta'
+import type { NoteDocument, NoteAppearance } from '@mymind/contracts/notes'
+import { DEFAULT_NOTE_APPEARANCE } from '@mymind/contracts/notes'
+import { NodeSelection } from '@tiptap/pm/state'
+import {
+  attachmentDeleteKey,
+  canvasHtml,
+  canvasAttachments,
+  isAttachment,
+  noteCanvasExtensions,
+  type MobileNoteAttachment,
+  type AttachmentAction
+} from '../../modules/notes/MobileNoteExtensions'
+import {
+  NotePagination,
+  NOTE_PAGINATION_LAYOUT_EVENT
+} from '../../modules/notes/MobileNotePagination'
+import { getReadableNoteTextColor } from '../../modules/notes/lib/note-color-contrast'
+import { changeSelectedTextCase } from '../../modules/notes/lib/text-case'
+import { mobileNoteStyles } from '../../modules/notes/mobile-note-styles'
 
 export type NotesRichTextAlignment = 'left' | 'center' | 'right' | 'justify'
 
@@ -22,6 +41,9 @@ export interface NotesRichTextFormattingState {
   blockquote: boolean
   bulletList: boolean
   orderedList: boolean
+  taskList?: boolean
+  divider?: { variant: string; thickness: number }
+  attachmentId?: string
   alignment: NotesRichTextAlignment
   linkActive: boolean
   href: string
@@ -42,6 +64,10 @@ export type NotesRichTextCommand =
   | 'bulletList'
   | 'orderedList'
   | 'indent'
+  | 'taskList'
+  | 'lowercase'
+  | 'uppercase'
+  | 'titlecase'
   | 'outdent'
   | 'alignLeft'
   | 'alignCenter'
@@ -55,6 +81,11 @@ export type NotesRichTextCommand =
 type NotesDomBridgeMethod = DOMImperativeFactory[string]
 
 export interface NotesRichTextDomRef extends DOMImperativeFactory {
+  insertAttachment: NotesDomBridgeMethod
+  updateAttachment: NotesDomBridgeMethod
+  deleteAttachment: NotesDomBridgeMethod
+  insertDivider: NotesDomBridgeMethod
+  flushEditor: (...args: Parameters<NotesDomBridgeMethod>) => Promise<void>
   command: NotesDomBridgeMethod
   setFontSize: NotesDomBridgeMethod
   setTextColor: NotesDomBridgeMethod
@@ -66,6 +97,17 @@ export interface NotesRichTextDomRef extends DOMImperativeFactory {
 }
 
 export interface NotesRichTextDomProps {
+  noteDocument?: NoteDocument
+  noteAppearance?: NoteAppearance
+  assetUris?: Record<string, string>
+  onCanvasChange?: (
+    html: string,
+    text: string,
+    attachments: MobileNoteAttachment[],
+    requestId?: string
+  ) => Promise<void>
+  onEditorReady?: () => Promise<void>
+  onAttachmentPress?: (id: string, action: AttachmentAction) => Promise<void>
   ref: Ref<NotesRichTextDomRef>
   dom?: import('expo/dom').DOMProps
   html: string
@@ -73,6 +115,7 @@ export interface NotesRichTextDomProps {
   mutedColor: string
   borderColor: string
   surfaceColor: string
+  workspaceColor?: string
   accentColor: string
   editable?: boolean
   onChange: (html: string, plainText: string) => Promise<void>
@@ -183,9 +226,19 @@ const StudyInternalLinkNode = Node.create({
   }
 })
 
-function createExtensions(readOnly: boolean) {
+function createExtensions(readOnly: boolean): Extensions {
   return [
-    StarterKit.configure({
+    StarterKit.extend({
+      addExtensions() {
+        return (this.parent?.() ?? []).map((extension) =>
+          extension.name === 'code' && extension instanceof Mark
+            ? extension.extend({ excludes: '' })
+            : extension
+        )
+      }
+    }).configure({
+      bulletList: { keepMarks: true },
+      orderedList: { keepMarks: true },
       heading: false,
       codeBlock: false,
       horizontalRule: false,
@@ -242,6 +295,20 @@ function formattingState(editor: Editor): NotesRichTextFormattingState {
     blockquote: editor.isActive('blockquote'),
     bulletList: editor.isActive('bulletList'),
     orderedList: editor.isActive('orderedList'),
+    taskList: editor.extensionManager.extensions.some((extension) => extension.name === 'taskList')
+      ? editor.isActive('taskList')
+      : undefined,
+    divider: editor.isActive('noteDivider')
+      ? {
+          variant: editor.getAttributes('noteDivider').variant,
+          thickness: editor.getAttributes('noteDivider').thickness
+        }
+      : undefined,
+    attachmentId:
+      editor.state.selection instanceof NodeSelection &&
+      isAttachment(editor.state.selection.node.type.name)
+        ? editor.state.selection.node.attrs.attachment?.id
+        : undefined,
     alignment: alignment(paragraph.textAlign),
     linkActive: editor.isActive('link'),
     href: typeof link.href === 'string' ? link.href : '',
@@ -271,10 +338,17 @@ function safeSelection(editor: Editor, selection: SavedSelection | null): SavedS
 export default function NotesRichTextDom({
   ref,
   html,
+  noteDocument,
+  noteAppearance,
+  assetUris,
+  onCanvasChange,
+  onAttachmentPress,
+  onEditorReady,
   textColor,
   mutedColor,
   borderColor,
   surfaceColor,
+  workspaceColor,
   accentColor,
   editable = true,
   onChange,
@@ -284,13 +358,38 @@ export default function NotesRichTextDom({
   onOpenInternalLink,
   onOpenExternalLink
 }: NotesRichTextDomProps): React.JSX.Element {
+  const canvasDocumentRef = useRef(noteDocument)
+  const assetsRef = useRef(assetUris)
+  const refreshersRef = useRef(new Set<() => void>())
+  const [pageCount, setPageCount] = useState(1)
+  const appearance = noteAppearance ?? noteDocument?.appearance ?? DEFAULT_NOTE_APPEARANCE
+  const canvasMode = Boolean(noteDocument)
+  const paper =
+    appearance.paperColor === 'theme' ? surfaceColor : appearance.paperColor || 'transparent'
+  const foreground =
+    (appearance.paperColor &&
+      appearance.paperColor !== 'theme' &&
+      getReadableNoteTextColor(appearance.paperColor)) ||
+    textColor
   const mountRef = useRef<HTMLDivElement | null>(null)
   const editorRef = useRef<Editor | null>(null)
   const savedSelectionRef = useRef<SavedSelection | null>(null)
+  const lastFormattingRef = useRef('')
   // The DOM editor owns its document for the lifetime of this mount. Props cross the
   // Expo DOM bridge asynchronously, so feeding every emitted HTML value back through
   // setContent can replay an older document over newer input and invalidate DOM selection.
-  const initialHtmlRef = useRef(html || '<p></p>')
+  const [initialContent] = useState(() => ({
+    html: noteDocument ? canvasHtml(noteDocument) : html || '<p></p>',
+    canvasMode: Boolean(noteDocument),
+    editable
+  }))
+  const canvasCallbacks = useRef({ onCanvasChange, onAttachmentPress, onEditorReady })
+  useEffect(() => {
+    canvasCallbacks.current = { onCanvasChange, onAttachmentPress, onEditorReady }
+  }, [onCanvasChange, onAttachmentPress, onEditorReady])
+  useEffect(() => {
+    assetsRef.current = assetUris
+  }, [assetUris])
   const callbacksRef = useRef({
     onChange,
     onFocusEditor,
@@ -320,7 +419,11 @@ export default function NotesRichTextDom({
 
   const emitFormatting = useCallback((editor: Editor): void => {
     if (editor.isDestroyed) return
-    void callbacksRef.current.onFormattingState(formattingState(editor))
+    const state = formattingState(editor)
+    const signature = JSON.stringify(state)
+    if (lastFormattingRef.current === signature) return
+    lastFormattingRef.current = signature
+    void callbacksRef.current.onFormattingState(state)
   }, [])
 
   const rememberSelection = useCallback(
@@ -347,6 +450,89 @@ export default function NotesRichTextDom({
   useDOMImperativeHandle(
     ref,
     () => ({
+      flushEditor: async (...args) => {
+        const requestId = typeof args[0] === 'string' ? args[0] : undefined
+        const editor = editorRef.current
+        if (!editor || editor.isDestroyed) return
+        if (canvasMode)
+          await canvasCallbacks.current.onCanvasChange?.(
+            editor.getHTML(),
+            editor.getText({ blockSeparator: '\n\n' }),
+            canvasAttachments(editor),
+            requestId
+          )
+        else
+          await callbacksRef.current.onChange(
+            editor.getHTML(),
+            editor.getText({ blockSeparator: '\n\n' })
+          )
+      },
+      insertAttachment: (...args) => {
+        const editor = editorRef.current
+        if (!editor || !editor.isEditable || typeof args[0] !== 'string') return
+        const block = JSON.parse(args[0]) as MobileNoteAttachment
+        const content = [
+          {
+            type: args[1] === true ? 'noteVoiceRecording' : 'noteAttachment',
+            attrs: { attachment: block }
+          },
+          { type: 'paragraph' }
+        ]
+        const chain = commandChain(editor)
+        if (editor.state.selection instanceof NodeSelection)
+          chain.insertContentAt(editor.state.selection.to, content).run()
+        else chain.insertContent(content).run()
+        rememberSelection(editor)
+      },
+      updateAttachment: (...args) => {
+        const editor = editorRef.current
+        if (!editor || !editor.isEditable || typeof args[0] !== 'string') return
+        const block = JSON.parse(args[0]) as MobileNoteAttachment
+        editor.commands.command(({ tr }) => {
+          let changed = false
+          tr.doc.descendants((node, pos) => {
+            if (isAttachment(node.type.name) && node.attrs.attachment?.id === block.id) {
+              tr.setNodeMarkup(pos, undefined, { ...node.attrs, attachment: block })
+              changed = true
+            }
+          })
+          return changed
+        })
+      },
+      deleteAttachment: (...args) => {
+        const editor = editorRef.current
+        if (!editor || !editor.isEditable || typeof args[0] !== 'string') return
+        const id = args[0]
+        editor.commands.command(({ tr }) => {
+          let target: { pos: number; size: number } | undefined
+          tr.doc.descendants((node, pos) => {
+            if (isAttachment(node.type.name) && node.attrs.attachment?.id === id)
+              target = { pos, size: node.nodeSize }
+          })
+          if (!target) return false
+          tr.delete(target.pos, target.pos + target.size).setMeta(attachmentDeleteKey, id)
+          return true
+        })
+      },
+      insertDivider: (...args) => {
+        const editor = editorRef.current
+        if (!editor || !editor.isEditable) return
+        const attrs = { variant: args[0] || 'solid', thickness: args[1] || 3 }
+        if (editor.isActive('noteDivider') && args[2] !== true)
+          editor.commands.updateAttributes('noteDivider', attrs)
+        else if (editor.state.selection instanceof NodeSelection)
+          commandChain(editor)
+            .insertContentAt(editor.state.selection.to, [
+              { type: 'noteDivider', attrs },
+              { type: 'paragraph' }
+            ])
+            .run()
+        else
+          commandChain(editor)
+            .insertContent([{ type: 'noteDivider', attrs }, { type: 'paragraph' }])
+            .run()
+        rememberSelection(editor)
+      },
       command: (...args) => {
         const editor = editorRef.current
         const command = args[0]
@@ -378,11 +564,25 @@ export default function NotesRichTextDom({
           case 'orderedList':
             chain.toggleOrderedList().run()
             break
+          case 'taskList':
+            chain.toggleTaskList().run()
+            break
+          case 'lowercase':
+          case 'uppercase':
+          case 'titlecase':
+            chain
+              .command(
+                changeSelectedTextCase(
+                  command === 'lowercase' ? 'lower' : command === 'uppercase' ? 'upper' : 'title'
+                )
+              )
+              .run()
+            break
           case 'indent':
-            chain.sinkListItem('listItem').run()
+            chain.sinkListItem(editor.isActive('taskList') ? 'taskItem' : 'listItem').run()
             break
           case 'outdent':
-            chain.liftListItem('listItem').run()
+            chain.liftListItem(editor.isActive('taskList') ? 'taskItem' : 'listItem').run()
             break
           case 'alignLeft':
             chain.setTextAlign('left').run()
@@ -484,17 +684,39 @@ export default function NotesRichTextDom({
         editor.commands.setTextSelection(selection)
       }
     }),
-    [commandChain, rememberSelection]
+    [canvasMode, commandChain, rememberSelection]
   )
 
   useEffect(() => {
     const element = mountRef.current
     if (!element) return undefined
+    const { canvasMode, editable } = initialContent
 
     const editor = new Editor({
       element,
-      extensions: createExtensions(!editable),
-      content: initialHtmlRef.current,
+      extensions: [
+        ...createExtensions(!editable),
+        ...(canvasMode
+          ? [
+              ...noteCanvasExtensions({
+                getAttachment: (id) =>
+                  (editorRef.current &&
+                    canvasAttachments(editorRef.current).find((block) => block.id === id)) ||
+                  (canvasDocumentRef.current?.blocks.find(
+                    (block) =>
+                      block.id === id && ['image', 'video', 'audio', 'file'].includes(block.type)
+                  ) as MobileNoteAttachment | undefined),
+                getUri: (id) => assetsRef.current?.[id],
+                onPress: (id, action) => {
+                  void canvasCallbacks.current.onAttachmentPress?.(id, action)
+                },
+                refreshers: refreshersRef.current
+              }),
+              NotePagination.configure({ onPageCountChange: setPageCount })
+            ]
+          : [])
+      ],
+      content: initialContent.html,
       editable,
       editorProps: {
         attributes: {
@@ -517,12 +739,19 @@ export default function NotesRichTextDom({
       onUpdate: ({ editor: current }) => {
         const nextHtml = current.getHTML()
         const nextText = current.getText({ blockSeparator: '\n\n' })
-        void callbacksRef.current.onChange(nextHtml, nextText)
+        if (canvasMode)
+          void canvasCallbacks.current.onCanvasChange?.(
+            nextHtml,
+            nextText,
+            canvasAttachments(current)
+          )
+        else void callbacksRef.current.onChange(nextHtml, nextText)
         emitFormatting(current)
       }
     })
 
     editorRef.current = editor
+    void canvasCallbacks.current.onEditorReady?.()
     rememberSelection(editor)
 
     const dom = editor.view.dom
@@ -532,7 +761,7 @@ export default function NotesRichTextDom({
     }
 
     const handleReadOnlyClick = (event: MouseEvent): void => {
-      if (editable) return
+      if (editor.isEditable) return
       const element = event.target instanceof Element ? event.target : null
       if (!element) return
 
@@ -568,25 +797,70 @@ export default function NotesRichTextDom({
       if (editorRef.current === editor) editorRef.current = null
       editor.destroy()
     }
-  }, [editable, emitFormatting, rememberSelection])
+  }, [emitFormatting, initialContent, rememberSelection])
+
+  useEffect(() => {
+    const editor = editorRef.current
+    if (!editor || editor.isDestroyed) return
+    editor.setEditable(editable, false)
+    editor.view.dom.setAttribute('role', editable ? 'textbox' : 'document')
+    refreshersRef.current.forEach((refresh) => refresh())
+  }, [editable])
+
+  const uriSignature = JSON.stringify(assetUris)
+  useEffect(() => {
+    refreshersRef.current.forEach((refresh) => refresh())
+  }, [uriSignature])
+  useEffect(() => {
+    editorRef.current?.view.dom.dispatchEvent(new Event(NOTE_PAGINATION_LAYOUT_EVENT))
+  }, [appearance.variant, appearance.paperColor, appearance.paperPattern])
 
   return (
     <>
       <DomViewportMeta />
       <main
         className="notes-rich-root"
+        data-note-canvas={canvasMode ? 'true' : undefined}
+        data-note-layout={appearance.variant}
+        data-paper-pattern={appearance.paperPattern}
         style={
           {
-            '--text': textColor,
-            '--muted': mutedColor,
-            '--border': borderColor,
-            '--surface': surfaceColor,
+            '--paper': paper,
+            '--workspace': workspaceColor ?? surfaceColor,
+            '--page-count': pageCount,
+            '--text': canvasMode ? foreground : textColor,
+            '--muted':
+              canvasMode && paper !== 'transparent'
+                ? 'color-mix(in srgb, var(--text) 68%, var(--paper))'
+                : mutedColor,
+            '--border':
+              canvasMode && paper !== 'transparent'
+                ? 'color-mix(in srgb, var(--text) 18%, var(--paper))'
+                : borderColor,
+            '--surface':
+              canvasMode && paper !== 'transparent'
+                ? 'color-mix(in srgb, var(--text) 5%, var(--paper))'
+                : surfaceColor,
             '--accent': accentColor
           } as React.CSSProperties
         }
       >
+        {canvasMode && appearance.variant !== 'canvas' && (
+          <div className="mobile-note-pages" aria-hidden="true">
+            {Array.from({ length: pageCount }, (_, index) => (
+              <div key={index} className="mobile-note-page" style={{ top: index * 1152 }} />
+            ))}
+          </div>
+        )}
         <div ref={mountRef} />
-        <style>{styles}</style>
+        {canvasMode && appearance.variant !== 'canvas' && (
+          <div className="mobile-note-gutters" aria-hidden="true">
+            {Array.from({ length: pageCount - 1 }, (_, index) => (
+              <div key={index} style={{ top: (index + 1) * 1120 + index * 32 }} />
+            ))}
+          </div>
+        )}
+        <style>{styles + (canvasMode ? mobileNoteStyles : '')}</style>
       </main>
     </>
   )
@@ -651,8 +925,8 @@ const styles = `
   .notes-editor code {
     padding: 0.125rem 0.375rem;
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-    font-size: 0.9em;
-    color: var(--text);
+    font-size: inherit;
+    color: inherit;
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 0.375rem;

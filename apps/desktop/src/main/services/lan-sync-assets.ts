@@ -1,13 +1,6 @@
 import { createHash } from 'node:crypto'
 import { createReadStream } from 'node:fs'
-import {
-  appendFile,
-  mkdir,
-  rename,
-  writeFile,
-  rm,
-  stat
-} from 'node:fs/promises'
+import { appendFile, mkdir, rename, writeFile, rm, stat } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 
 import type {
@@ -231,7 +224,6 @@ export function normalizeDesktopWorkoutPhotoUrls(
     database.prepare("UPDATE sync_runtime SET value = '0' WHERE key = 'applying_remote'").run()
   }
 }
-
 
 export async function removeDesktopSyncAssets(
   references: readonly SyncAssetReference[]

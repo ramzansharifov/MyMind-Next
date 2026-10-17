@@ -1,5 +1,7 @@
 # MyMind
 
+Параллельная PWA на Next.js находится в [`apps/pwa`](apps/pwa/README.md). Запуск: `npm run dev:pwa`; production и офлайн: `npm run build:pwa` и `npm run start:pwa`. Данные хранятся локально на устройстве. Текущие Android/iOS-версии сохраняются.
+
 MyMind теперь организован как monorepo с двумя приложениями:
 
 `	ext

@@ -1,10 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import {
-  createTaskGroupInputSchema,
-  createTaskInputSchema,
-  updateTaskInputSchema
-} from './tasks'
+import { createTaskGroupInputSchema, createTaskInputSchema, updateTaskInputSchema } from './tasks'
 
 const baseTask = {
   title: 'Подготовить отчёт',
@@ -54,22 +50,14 @@ describe('tasks validation', () => {
     expect(
       createTaskGroupInputSchema.parse({
         name: 'Работа',
-        icon: 'briefcase',
-        color: 'blue'
+        icon: 'briefcase'
       })
-    ).toEqual({ name: 'Работа', icon: 'briefcase', color: 'blue' })
-    expect(
-      createTaskGroupInputSchema.parse({
-        name: 'Без собственного цвета',
-        icon: 'folder',
-        color: 'accent'
-      })
-    ).toEqual({ name: 'Без собственного цвета', icon: 'folder', color: 'accent' })
+    ).toEqual({ name: 'Работа', icon: 'briefcase' })
     expect(() =>
       createTaskGroupInputSchema.parse({
         name: 'Работа',
         icon: 'briefcase',
-        color: 'unknown'
+        color: 'blue'
       })
     ).toThrow()
   })

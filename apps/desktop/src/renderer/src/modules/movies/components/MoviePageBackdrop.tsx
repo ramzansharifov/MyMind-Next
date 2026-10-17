@@ -4,9 +4,7 @@ interface MoviePageBackdropProps {
   posterUrl: string
 }
 
-export function MoviePageBackdrop({
-  posterUrl
-}: MoviePageBackdropProps): React.JSX.Element | null {
+export function MoviePageBackdrop({ posterUrl }: MoviePageBackdropProps): React.JSX.Element | null {
   const [failed, setFailed] = useState(false)
   if (failed) return null
 

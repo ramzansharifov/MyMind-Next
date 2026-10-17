@@ -78,7 +78,7 @@ export function MobileFinanceAccountDetailSheet({
         limit: 20,
         offset: 0
       }).items,
-    [account.id, account.updatedAt, api]
+    [account, api]
   )
 
   const accountEntries = transactions.flatMap((transaction) =>

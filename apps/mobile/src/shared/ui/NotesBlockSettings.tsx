@@ -563,13 +563,15 @@ export function NotesBlockSettingsSheet({
   update,
   close,
   importAsset,
-  onAssetError
+  onAssetError,
+  footer
 }: {
   block: StudyBlock
   update(block: StudyBlock): void
   close(): void
   importAsset?: (kind: StudyAssetKind) => Promise<StudyLocalAsset | null>
   onAssetError?: (reason: unknown) => void
+  footer?: React.ReactNode
 }): React.JSX.Element {
   const title = useMemo(() => {
     switch (block.type) {
@@ -920,6 +922,7 @@ export function NotesBlockSettingsSheet({
           </>
         ) : null}
 
+        {footer}
       </ScrollView>
     </AppDialog>
   )

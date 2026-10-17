@@ -60,11 +60,7 @@ export function ModuleTabs<T extends string>({
                 gap: 7,
                 paddingHorizontal: compact ? 12 : 14,
                 borderRadius: compact ? 8 : 12,
-                backgroundColor: selected
-                  ? theme.accent
-                  : pressed
-                    ? theme.raised
-                    : 'transparent',
+                backgroundColor: selected ? theme.accent : pressed ? theme.raised : 'transparent',
                 opacity: item.disabled ? 0.38 : pressed ? 0.78 : 1
               })}
             >

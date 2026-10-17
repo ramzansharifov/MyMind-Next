@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { useEffect, type ReactElement, type ReactNode } from 'react'
+import { useMemo, useEffect, type ReactElement, type ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const drawStyleHarness = vi.hoisted(() => ({
@@ -106,95 +106,98 @@ vi.mock('tldraw', () => ({
     const QuickActions = components?.QuickActions
     const Background = components?.Background
 
-    const editor = {
-      run: (callback: () => void) => callback(),
-      getCurrentPageId: () => testHarness.currentPageId,
-      getCurrentPage: () =>
-        testHarness.pages.find((page) => page.id === testHarness.currentPageId) ??
-        testHarness.pages[0],
-      getPages: () => testHarness.pages,
-      getPage: (pageId: string) => testHarness.pages.find((page) => page.id === pageId),
-      setCurrentPage: (page: string | { id: string }) => {
-        testHarness.currentPageId = typeof page === 'string' ? page : page.id
-        testHarness.setCurrentPage(page)
-      },
-      updatePage: (partial: { id: string; meta?: Record<string, unknown>; name?: string }) => {
-        const page = testHarness.pages.find((candidate) => candidate.id === partial.id)
-        if (page) {
-          if (partial.meta) page.meta = partial.meta
-          if (partial.name) page.name = partial.name
-        }
-        testHarness.updatePage(partial)
-      },
-      renamePage: (page: string | { id: string }, name: string) => {
-        const pageId = typeof page === 'string' ? page : page.id
-        const existing = testHarness.pages.find((candidate) => candidate.id === pageId)
-        if (existing) existing.name = name
-        testHarness.renamePage(page, name)
-      },
-      getPageShapeIds: (pageId: string) => {
-        testHarness.getPageShapeIds(pageId)
-        return new Set(testHarness.pageShapeIds[pageId] ?? [])
-      },
-      getCurrentPageShapeIds: () =>
-        new Set(testHarness.pageShapeIds[testHarness.currentPageId] ?? []),
-      getCurrentPageBounds: () => undefined,
-      getShape: (shapeId: string) => testHarness.shapes.get(shapeId),
-      getShapeUtil: () => ({
-        getGeometry: (shape: { props?: { w?: number; h?: number } }) => {
-          const w = shape.props?.w ?? 100
-          const h = shape.props?.h ?? 100
-          return {
-            bounds: { x: 0, y: 0, w, h, maxX: w, maxY: h }
+    const editor = useMemo(
+      () => ({
+        run: (callback: () => void) => callback(),
+        getCurrentPageId: () => testHarness.currentPageId,
+        getCurrentPage: () =>
+          testHarness.pages.find((page) => page.id === testHarness.currentPageId) ??
+          testHarness.pages[0],
+        getPages: () => testHarness.pages,
+        getPage: (pageId: string) => testHarness.pages.find((page) => page.id === pageId),
+        setCurrentPage: (page: string | { id: string }) => {
+          testHarness.currentPageId = typeof page === 'string' ? page : page.id
+          testHarness.setCurrentPage(page)
+        },
+        updatePage: (partial: { id: string; meta?: Record<string, unknown>; name?: string }) => {
+          const page = testHarness.pages.find((candidate) => candidate.id === partial.id)
+          if (page) {
+            if (partial.meta) page.meta = partial.meta
+            if (partial.name) page.name = partial.name
           }
+          testHarness.updatePage(partial)
+        },
+        renamePage: (page: string | { id: string }, name: string) => {
+          const pageId = typeof page === 'string' ? page : page.id
+          const existing = testHarness.pages.find((candidate) => candidate.id === pageId)
+          if (existing) existing.name = name
+          testHarness.renamePage(page, name)
+        },
+        getPageShapeIds: (pageId: string) => {
+          testHarness.getPageShapeIds(pageId)
+          return new Set(testHarness.pageShapeIds[pageId] ?? [])
+        },
+        getCurrentPageShapeIds: () =>
+          new Set(testHarness.pageShapeIds[testHarness.currentPageId] ?? []),
+        getCurrentPageBounds: () => undefined,
+        getShape: (shapeId: string) => testHarness.shapes.get(shapeId),
+        getShapeUtil: () => ({
+          getGeometry: (shape: { props?: { w?: number; h?: number } }) => {
+            const w = shape.props?.w ?? 100
+            const h = shape.props?.h ?? 100
+            return {
+              bounds: { x: 0, y: 0, w, h, maxX: w, maxY: h }
+            }
+          }
+        }),
+        getShapePageBounds: () => undefined,
+        moveShapesToPage: (shapeIds: string[], targetPageId: string) => {
+          shapeIds.forEach((shapeId) => {
+            const shape = testHarness.shapes.get(shapeId)
+            if (shape) testHarness.shapes.set(shapeId, { ...shape, parentId: targetPageId })
+          })
+          testHarness.currentPageId = targetPageId
+          testHarness.moveShapesToPage(shapeIds, targetPageId)
+        },
+        updateShapes: (updates: Array<Record<string, unknown>>) => {
+          updates.forEach((update) => {
+            const id = update.id as string
+            const shape = testHarness.shapes.get(id)
+            if (shape) testHarness.shapes.set(id, { ...shape, ...update })
+          })
+          testHarness.updateShapes(updates)
+        },
+        deletePage: (pageId: string) => {
+          testHarness.pages = testHarness.pages.filter((page) => page.id !== pageId)
+          delete testHarness.pageShapeIds[pageId]
+          testHarness.deletePage(pageId)
+        },
+        resizeToBounds: testHarness.resizeToBounds,
+        zoomToBounds: testHarness.zoomToBounds,
+        getViewportPageBounds: () => ({ x: -200, y: -200, w: 1400, h: 5200, maxY: 5000 }),
+        pageToViewport: ({ x, y }: { x: number; y: number }) => ({ x: x + 24, y: y + 24 }),
+        getZoomLevel: () => 0.5,
+        getCurrentToolId: () => testHarness.currentToolId,
+        screenToPage: ({ x, y }: { x: number; y: number }) => ({ x, y }),
+        pageToScreen: ({ x, y }: { x: number; y: number }) => ({ x, y }),
+        inputs: {
+          getOriginPagePoint: () => testHarness.originPagePoint
+        },
+        updatePointer: testHarness.updatePointer,
+        sideEffects: {
+          registerBeforeCreateHandler: testHarness.registerBeforeCreateHandler,
+          registerBeforeChangeHandler: testHarness.registerBeforeChangeHandler,
+          registerAfterCreateHandler: testHarness.registerAfterCreateHandler
         }
       }),
-      getShapePageBounds: () => undefined,
-      moveShapesToPage: (shapeIds: string[], targetPageId: string) => {
-        shapeIds.forEach((shapeId) => {
-          const shape = testHarness.shapes.get(shapeId)
-          if (shape) testHarness.shapes.set(shapeId, { ...shape, parentId: targetPageId })
-        })
-        testHarness.currentPageId = targetPageId
-        testHarness.moveShapesToPage(shapeIds, targetPageId)
-      },
-      updateShapes: (updates: Array<Record<string, unknown>>) => {
-        updates.forEach((update) => {
-          const id = update.id as string
-          const shape = testHarness.shapes.get(id)
-          if (shape) testHarness.shapes.set(id, { ...shape, ...update })
-        })
-        testHarness.updateShapes(updates)
-      },
-      deletePage: (pageId: string) => {
-        testHarness.pages = testHarness.pages.filter((page) => page.id !== pageId)
-        delete testHarness.pageShapeIds[pageId]
-        testHarness.deletePage(pageId)
-      },
-      resizeToBounds: testHarness.resizeToBounds,
-      zoomToBounds: testHarness.zoomToBounds,
-      getViewportPageBounds: () => ({ x: -200, y: -200, w: 1400, h: 5200, maxY: 5000 }),
-      pageToViewport: ({ x, y }: { x: number; y: number }) => ({ x: x + 24, y: y + 24 }),
-      getZoomLevel: () => 0.5,
-      getCurrentToolId: () => testHarness.currentToolId,
-      screenToPage: ({ x, y }: { x: number; y: number }) => ({ x, y }),
-      pageToScreen: ({ x, y }: { x: number; y: number }) => ({ x, y }),
-      inputs: {
-        getOriginPagePoint: () => testHarness.originPagePoint
-      },
-      updatePointer: testHarness.updatePointer,
-      sideEffects: {
-        registerBeforeCreateHandler: testHarness.registerBeforeCreateHandler,
-        registerBeforeChangeHandler: testHarness.registerBeforeChangeHandler,
-        registerAfterCreateHandler: testHarness.registerAfterCreateHandler
-      }
-    }
+      []
+    )
 
     testHarness.activeEditor = editor
     useEffect(() => {
       const cleanup = onMount?.(editor)
       return typeof cleanup === 'function' ? cleanup : undefined
-    }, [onMount])
+    }, [editor, onMount])
 
     return (
       <div data-testid="tldraw-canvas">

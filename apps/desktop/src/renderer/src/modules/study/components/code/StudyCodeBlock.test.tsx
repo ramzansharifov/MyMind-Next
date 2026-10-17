@@ -81,7 +81,9 @@ describe('StudyCodeBlock', () => {
     expect(
       dialog.querySelector('[data-study-code-block][data-fullscreen="true"]')
     ).toBeInTheDocument()
-    expect(dialog.querySelector('.study-source-editor-body[data-fullscreen="true"]')).toBeInTheDocument()
+    expect(
+      dialog.querySelector('.study-source-editor-body[data-fullscreen="true"]')
+    ).toBeInTheDocument()
 
     await user.click(
       within(dialog).getByRole('button', {

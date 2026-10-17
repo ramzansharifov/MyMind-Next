@@ -16,7 +16,7 @@ import {
 } from 'lucide-react-native'
 
 import { AppDialog } from '../../shared/ui/AppDialog'
-import { useConfirmation } from '../../shared/ui/ConfirmationProvider'
+import { useConfirmation } from '../../shared/ui/confirmation-context'
 import { Button, IconButton } from '../../shared/ui/primitives'
 import { useTheme } from '../../shared/ui/theme'
 import { formatMovieRuntime, isEpisodicMovieType, movieTypeLabel } from './movie-presentation'

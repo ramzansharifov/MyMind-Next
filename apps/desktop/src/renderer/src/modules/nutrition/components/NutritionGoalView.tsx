@@ -75,17 +75,13 @@ export function NutritionGoalView({
         className="overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[var(--app-shadow-card)]"
         onSubmit={(event) => void submit(event).catch(() => undefined)}
       >
-        <div className="flex items-start gap-3 border-b border-[var(--app-border)] px-5 py-5">
+        <div className="flex items-center gap-3 border-b border-[var(--app-border)] px-5 py-4">
           <span className="bg-accent-500/10 text-accent-300 flex size-10 shrink-0 items-center justify-center rounded-xl">
             <Target className="size-5" />
           </span>
-          <div className="min-w-0">
-            <h2 className="text-base font-semibold text-[var(--app-text)]">Общая цель питания</h2>
-            <p className="mt-1 max-w-2xl text-xs leading-5 text-[var(--app-muted)]">
-              Это единые ориентиры для питания. Они не привязаны к конкретному дню и применяются в
-              «Сегодня», «Дневнике» и «Прогрессе» ко всем датам.
-            </p>
-          </div>
+          <h2 className="min-w-0 text-base font-semibold text-[var(--app-text)]">
+            Общая цель питания
+          </h2>
         </div>
 
         <div className="grid gap-4 p-5 sm:grid-cols-2 xl:grid-cols-3">
