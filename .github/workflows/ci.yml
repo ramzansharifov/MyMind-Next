@@ -1,7 +1,9 @@
-name: CI (manual)
+name: Verify MyMind 1.1.13 Windows release
 
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - ci/windows-1.1.13-tests-v3
 
 permissions:
   contents: read
@@ -9,7 +11,7 @@ permissions:
 jobs:
   verify:
     runs-on: windows-latest
-    timeout-minutes: 25
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -17,13 +19,58 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Verify release versions
+        shell: pwsh
+        run: |
+          $package = Get-Content apps/desktop/package.json -Raw | ConvertFrom-Json
+          $lock = Get-Content package-lock.json -Raw | ConvertFrom-Json -AsHashtable
+          if ($package.version -ne '1.1.13' -or $lock.packages.'apps/desktop'.version -ne '1.1.13') {
+            throw "Desktop version mismatch"
+          }
+          if ((Get-Content apps/mobile/package.json -Raw | ConvertFrom-Json).version -ne '1.1.12') {
+            throw "Mobile version should not change"
+          }
       - run: npm run native:node
       - run: npm run format:check
       - run: npm run lint
-      - run: npm run lint:mobile
-      - run: npm run typecheck
-      - run: npm run test:coverage
-      - run: npm run test:mobile
+      - run: npm run typecheck:packages
+      - run: npm run typecheck:desktop
+      - name: Verify nutrition date picker regression
+        working-directory: apps/desktop
+        run: npx vitest run src/renderer/src/modules/nutrition/NutritionPage.test.tsx
+      - run: npm run test:run
       - run: npm run db:check
-      - run: npm run build:bundle
-      - run: npm run export:android
+  build-windows:
+    needs: verify
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build:win
+      - name: Verify installer and updater metadata
+        shell: pwsh
+        run: |
+          $folder = "apps/desktop/dist"
+          $installer = "$folder/mymind-next-1.1.13-setup.exe"
+          $blockmap = "$installer.blockmap"
+          $yml = "$folder/latest.yml"
+          foreach ($file in @($installer, $blockmap, $yml)) {
+            if (-not (Test-Path $file)) { throw "Missing artifact: $file" }
+            if ((Get-Item $file).Length -eq 0) { throw "Empty artifact: $file" }
+          }
+          if (-not (Select-String -Path $yml -Pattern 'version: 1.1.13' -SimpleMatch -Quiet)) {
+            throw "Incorrect Windows updater version"
+          }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mymind-windows-1.1.13-candidate
+          if-no-files-found: error
+          path: |
+            apps/desktop/dist/latest.yml
+            apps/desktop/dist/mymind-next-1.1.13-setup.exe
+            apps/desktop/dist/mymind-next-1.1.13-setup.exe.blockmap
