@@ -134,7 +134,9 @@ describe('NutritionPage JSON-only flow', () => {
     expect(screen.queryByLabelText('Дата дневника питания')).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Дневник' }))
-    expect(await screen.findByLabelText('Дата дневника питания')).toBeInTheDocument()
+    expect(
+      await screen.findByLabelText('Дата дневника питания', { selector: 'input' })
+    ).toBeInTheDocument()
   })
 
   it('edits one global goal without choosing an effective date', async () => {
