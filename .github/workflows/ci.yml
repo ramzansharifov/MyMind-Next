@@ -1,15 +1,17 @@
-name: CI (manual)
+name: Build MyMind 1.1.13 Windows candidate
 
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - ci/windows-1.1.13-package
 
 permissions:
   contents: read
 
 jobs:
-  verify:
+  build-windows:
     runs-on: windows-latest
-    timeout-minutes: 25
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -17,13 +19,27 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run native:node
-      - run: npm run format:check
-      - run: npm run lint
-      - run: npm run lint:mobile
-      - run: npm run typecheck
-      - run: npm run test:coverage
-      - run: npm run test:mobile
-      - run: npm run db:check
-      - run: npm run build:bundle
-      - run: npm run export:android
+      - run: npm run build:win
+      - name: Verify release output
+        shell: pwsh
+        run: |
+          $files = @(
+            "apps/desktop/dist/mymind-next-1.1.13-setup.exe",
+            "apps/desktop/dist/mymind-next-1.1.13-setup.exe.blockmap",
+            "apps/desktop/dist/latest.yml"
+          )
+          foreach ($file in $files) {
+            if (-not (Test-Path $file)) { throw "Missing artifact: $file" }
+            if ((Get-Item $file).Length -eq 0) { throw "Empty artifact: $file" }
+          }
+          if (-not (Select-String apps/desktop/dist/latest.yml -Pattern 'version: 1.1.13' -SimpleMatch -Quiet)) {
+            throw "Updater manifest version mismatch"
+          }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mymind-windows-1.1.13-candidate
+          if-no-files-found: error
+          path: |
+            apps/desktop/dist/latest.yml
+            apps/desktop/dist/mymind-next-1.1.13-setup.exe
+            apps/desktop/dist/mymind-next-1.1.13-setup.exe.blockmap
