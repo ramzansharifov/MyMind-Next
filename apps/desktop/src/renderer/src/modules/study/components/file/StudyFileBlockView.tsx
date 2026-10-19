@@ -51,9 +51,10 @@ export function StudyFileBlockView({
   const asset = block.source.type === 'local' ? block.source.asset : undefined
 
   const assetClient = useStudyBlockAssetClient()
-  const sourceUrl = asset && assetClient.resolveAssetUri
-    ? assetClient.resolveAssetUri(asset)
-    : getStudyAttachmentSourceUrl(block)
+  const sourceUrl =
+    asset && assetClient.resolveAssetUri
+      ? assetClient.resolveAssetUri(asset)
+      : getStudyAttachmentSourceUrl(block)
 
   const youtubeVideo =
     block.type === 'video' && block.source.type === 'url'
