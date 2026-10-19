@@ -4,7 +4,7 @@ test('local profile: encrypted credentials survive restart and disabled LAN repo
   page
 }) => {
   await open(page, 'settings')
-  await page.getByText('Открыть профиль и LAN-синхронизацию', { exact: true }).click()
+  await page.getByRole('button', { name: 'Профиль и синхронизация', exact: true }).click()
   await page.getByRole('textbox', { name: 'Логин профиля', exact: true }).fill('pwa-browser-test')
   await page
     .getByRole('textbox', { name: 'Пароль профиля', exact: true })
@@ -13,7 +13,7 @@ test('local profile: encrypted credentials survive restart and disabled LAN repo
   await page.getByRole('button', { name: 'Создать профиль', exact: true }).click()
   await expect(page.getByRole('button', { name: 'Сохранить имя и пол', exact: true })).toBeVisible()
   await open(page, 'settings')
-  await page.getByText('Открыть профиль и LAN-синхронизацию', { exact: true }).click()
+  await page.getByRole('button', { name: 'Профиль и синхронизация', exact: true }).click()
   await expect(page.getByRole('textbox', { name: 'Логин профиля', exact: true })).toHaveValue(
     'pwa-browser-test'
   )

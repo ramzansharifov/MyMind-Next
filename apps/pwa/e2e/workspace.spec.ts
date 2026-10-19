@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
-import { navigate } from './helpers'
+import { navigate, createNote, localData } from './helpers'
+import { routeTitles, type Route } from '../src/components/navigation'
 
 test('study editor and drawing canvas work offline and keep their content', async ({
   page,
@@ -71,7 +72,7 @@ test('all modules open from the production offline cache, including full editors
     'settings'
   ]) {
     await navigate(page, route)
-    await expect(page.locator(`nav a[href="#${route}"]`)).toHaveAttribute('aria-current', 'page')
+    await expect(page.locator('.app-header')).toContainText(routeTitles[route as Route])
     await expect(page.locator('.module')).toBeVisible()
     await expect(page.locator('.module')).not.toContainText('Открываем раздел…')
     await expect(page.getByText('Раздел не удалось открыть')).toHaveCount(0)
@@ -84,7 +85,7 @@ test('full editors fit a phone viewport', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   for (const route of ['study', 'boards', 'workouts', 'notes']) {
     await page.goto(`/#${route}`)
-    await expect(page.locator('.desktop-module')).toBeVisible()
+    await expect(page.locator('.module')).toBeVisible()
     await expect(page.locator('.module')).not.toContainText('Открываем раздел…')
     await expect(page.locator('.workspace [role="alert"]')).toHaveCount(0)
     if (route === 'study' || route === 'boards') {
@@ -107,18 +108,16 @@ test('rich note survives reload and a real backup download/restore roundtrip', a
   const errors: string[] = []
   page.on('pageerror', (error) => errors.push(error.message))
   await page.goto('/#notes')
-  await page.getByRole('button', { name: 'Новая заметка', exact: true }).first().click()
-  await page.getByLabel('Название заметки', { exact: true }).fill('PWA browser persistence')
-  await page.getByRole('button', { name: 'Создать', exact: true }).click()
-  await expect(page.locator('.tiptap').first()).toBeVisible()
-  await page.locator('.tiptap').first().fill('Saved locally in the full editor')
+  await createNote(page, 'PWA browser persistence')
+  await expect(page.locator('.notes-editor')).toBeVisible()
+  await page.locator('.notes-editor').fill('Saved locally in the full editor')
   await navigate(page, 'home')
   await expect(page.locator('.save-status')).toHaveText('Сохранено на устройстве')
   await page.reload()
   await navigate(page, 'notes')
   await page.getByText('PWA browser persistence', { exact: true }).first().click()
-  await expect(page.locator('.tiptap').first()).toContainText('Saved locally in the full editor')
-  await navigate(page, 'settings')
+  await expect(page.locator('.notes-editor')).toContainText('Saved locally in the full editor')
+  await localData(page)
   const downloading = page.waitForEvent('download', { timeout: 10_000 })
   await page.getByRole('button', { name: 'Скачать резервную копию', exact: true }).click()
   const backup = await downloading
@@ -126,8 +125,8 @@ test('rich note survives reload and a real backup download/restore roundtrip', a
   expect(backupPath).toBeTruthy()
   await navigate(page, 'notes')
   await page.getByText('PWA browser persistence', { exact: true }).first().click()
-  await page.locator('.tiptap').first().fill('Changed after backup')
-  await navigate(page, 'settings')
+  await page.locator('.notes-editor').fill('Changed after backup')
+  await localData(page)
   await page.getByRole('button', { name: 'Восстановить из файла', exact: true }).click()
   const choosing = page.waitForEvent('filechooser', { timeout: 10_000 })
   await page.getByRole('button', { name: 'Выбрать файл и восстановить', exact: true }).click()
@@ -136,6 +135,6 @@ test('rich note survives reload and a real backup download/restore roundtrip', a
   await expect(page.locator('.workspace')).toHaveAttribute('aria-busy', 'false')
   await navigate(page, 'notes')
   await page.getByText('PWA browser persistence', { exact: true }).first().click()
-  await expect(page.locator('.tiptap').first()).toContainText('Saved locally in the full editor')
+  await expect(page.locator('.notes-editor')).toContainText('Saved locally in the full editor')
   expect(errors).toEqual([])
 })

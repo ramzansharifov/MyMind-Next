@@ -1,4 +1,5 @@
 import { test as base, expect, type Page } from '@playwright/test'
+import { routeTitles, type Route } from '../src/components/navigation'
 
 export const test = base.extend<{ healthy: void }>({
   healthy: [
@@ -13,11 +14,17 @@ export const test = base.extend<{ healthy: void }>({
 })
 export { expect }
 export async function navigate(page: Page, route: string): Promise<void> {
-  const link = page.locator(`nav a[href="#${route}"]`)
-  await expect(link).toBeAttached()
-  if (!(await link.isVisible()))
-    await page.getByRole('button', { name: 'Открыть меню навигации', exact: true }).click()
-  await link.click()
+  const menu = page.getByRole('button', { name: 'Открыть меню навигации', exact: true })
+  if (
+    !(await menu.count()) &&
+    (await page.getByRole('button', { name: 'Назад', exact: true }).count())
+  )
+    await page.getByRole('button', { name: 'Назад', exact: true }).click()
+  await menu.click()
+  await page
+    .getByRole('button', { name: routeTitles[route as Route], exact: true })
+    .last()
+    .click()
   await expect(page.locator('.module')).toBeVisible()
 }
 export async function storedAssets(page: Page): Promise<Array<{ path: string; size: number }>> {
@@ -60,6 +67,20 @@ export async function save(page: Page): Promise<void> {
   await page.getByRole('button', { name: 'Сохранить', exact: true }).click()
   await expect(page.getByRole('button', { name: 'Сохранить', exact: true })).toHaveCount(0)
   await expect(page.locator('.save-status')).toHaveText('Сохранено на устройстве')
+}
+export async function createNote(page: Page, title: string): Promise<void> {
+  await page.getByRole('button', { name: 'Создать', exact: true }).click()
+  await page.getByRole('button', { name: 'Новая заметка', exact: true }).click()
+  await page.getByRole('textbox', { name: 'Название', exact: true }).fill(title)
+  await save(page)
+  await expect(page.locator('.notes-editor')).toBeVisible()
+  await expect(
+    page.getByRole('button', { name: 'Форматирование текста', exact: true })
+  ).toBeInViewport()
+}
+export async function localData(page: Page): Promise<void> {
+  await navigate(page, 'settings')
+  await page.getByRole('button', { name: 'Локальные данные', exact: true }).click()
 }
 export async function confirmRemoval(page: Page, label = 'Удалить'): Promise<void> {
   await page.getByRole('button', { name: label, exact: true }).click()

@@ -332,9 +332,15 @@ function noteMatches(note: NoteSummary, query: string): boolean {
 }
 
 export function NotesScreen({
-  onImmersiveChange
+  onImmersiveChange,
+  onDraftChange,
+  resourceId,
+  onResourceHandled
 }: {
   onImmersiveChange?: (immersive: boolean) => void
+  onDraftChange?: (draft: { flush(): Promise<void>; hasUnsavedChanges(): boolean } | null) => void
+  resourceId?: string | null
+  onResourceHandled?: () => void
 }): React.JSX.Element {
   const { notes: api } = useServices()
   const theme = useTheme()
@@ -414,6 +420,20 @@ export function NotesScreen({
     [api]
   )
 
+  useEffect(() => {
+    if (!resourceId) return
+    let active = true
+    queueMicrotask(() => {
+      if (active) {
+        openNote(resourceId)
+        onResourceHandled?.()
+      }
+    })
+    return () => {
+      active = false
+    }
+  }, [resourceId, openNote, onResourceHandled])
+
   const flush = useCallback(async (): Promise<void> => {
     const documentQueue = queueRef.current
     if (!documentQueue) return
@@ -463,6 +483,15 @@ export function NotesScreen({
   }, [closeEditor, record])
 
   const editorOpen = record !== null
+
+  useEffect(() => {
+    onDraftChange?.(
+      editorOpen
+        ? { flush, hasUnsavedChanges: () => queueRef.current?.hasPendingChanges() ?? false }
+        : null
+    )
+    return () => onDraftChange?.(null)
+  }, [editorOpen, flush, onDraftChange])
 
   useEffect(() => {
     onImmersiveChange?.(editorOpen)

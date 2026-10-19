@@ -1,4 +1,4 @@
-import { createElement, forwardRef } from 'react'
+import { createElement, forwardRef, useEffect, useRef } from 'react'
 import * as web from 'react-native-web'
 export * from 'react-native-web'
 
@@ -32,3 +32,40 @@ export const TextInput = accessible(web.TextInput)
 export const ScrollView = accessible(web.ScrollView)
 export const TouchableOpacity = accessible(web.TouchableOpacity)
 export const TouchableWithoutFeedback = accessible(web.TouchableWithoutFeedback)
+
+export const Modal = forwardRef(function PwaModal(
+  // eslint-disable-next-line react/prop-types -- The native Modal contract is forwarded unchanged.
+  { visible = true, onRequestClose, ...props },
+  ref
+) {
+  const close = useRef(onRequestClose)
+  useEffect(() => {
+    close.current = onRequestClose
+  }, [onRequestClose])
+  useEffect(() => {
+    if (!visible) return
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      close.current?.()
+      return true
+    })
+    return () => subscription.remove()
+  }, [visible])
+  return createElement(web.Modal, { ...props, visible, onRequestClose, ref })
+})
+
+const backHandlers = new Set()
+export function dispatchHardwareBack() {
+  for (const handler of [...backHandlers].reverse()) {
+    if (handler()) return true
+  }
+  return false
+}
+export const BackHandler = {
+  addEventListener(_event, handler) {
+    backHandlers.add(handler)
+    return { remove: () => backHandlers.delete(handler) }
+  },
+  exitApp() {
+    return undefined
+  }
+}

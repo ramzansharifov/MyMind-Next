@@ -27,8 +27,7 @@ declare module 'expo-document-picker' {
   }
 
   export type DocumentPickerResult =
-    | { canceled: true; assets: null }
-    | { canceled: false; assets: DocumentPickerAsset[] }
+    { canceled: true; assets: null } | { canceled: false; assets: DocumentPickerAsset[] }
 
   export function getDocumentAsync(options: {
     type?: string | string[]

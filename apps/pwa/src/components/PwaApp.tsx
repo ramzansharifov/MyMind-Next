@@ -1,4 +1,12 @@
-import { lazy, Suspense, useCallback, useEffect, useState, useSyncExternalStore } from 'react'
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore
+} from 'react'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { View, useColorScheme } from 'react-native'
 import { appearanceTokens } from '@mymind/design'
@@ -9,11 +17,10 @@ import {
 import { appearancePreferencesSchema } from '@mymind/core/validation/preferences'
 import { ServicesContext } from '../../../mobile/src/app/context'
 import type { MobileServices } from '../../../mobile/src/app/services'
-import {
-  navigationRoutes as mobileRoutes,
-  routeTitles as mobileTitles,
-  type Route as MobileRoute
-} from '../../../mobile/src/app/navigation'
+import { navigationRoutes, routeTitles, routeIcons, type Route } from './navigation'
+import { MobileAppHeader } from '../../../mobile/src/app/MobileAppHeader'
+import { AppNavigationDrawer } from '../../../mobile/src/app/MobileNavigationDrawer'
+import { dispatchHardwareBack } from '../platform/react-native'
 import {
   flushActiveStudyDraft,
   getActiveStudyDraftHandle
@@ -42,28 +49,11 @@ import {
   getActiveNotesDraftHandle
 } from '../../../desktop/src/renderer/src/modules/notes/lib/notes-draft-lifecycle'
 
-type Route = MobileRoute | 'study' | 'boards' | 'workouts'
-const navigationRoutes: Route[] = [
-  'home',
-  'study',
-  'boards',
-  ...mobileRoutes.filter((route) => route !== 'home' && route !== 'settings'),
-  'workouts',
-  'settings'
-]
-const routeTitles: Record<Route, string> = {
-  ...mobileTitles,
-  study: 'Учёба',
-  boards: 'Доски',
-  workouts: 'Тренировки'
-}
 const DesktopModules = lazy(() => import('./DesktopModules'))
 const flushDesktopDrafts = (): Promise<void[]> =>
   Promise.all([flushActiveStudyDraft(), flushActiveBoardDraft(), flushActiveNotesDraft()])
 
-const Home = lazy(() =>
-  import('../../../mobile/src/app/Home').then((module) => ({ default: module.Home }))
-)
+const Home = lazy(() => import('./PwaHome'))
 const Tasks = lazy(() =>
   import('../../../mobile/src/modules/tasks/TasksScreen').then((module) => ({
     default: module.TasksScreen
@@ -105,6 +95,12 @@ const Passwords = lazy(() =>
   }))
 )
 
+const Notes = lazy(() =>
+  import('../../../mobile/src/modules/notes/NotesScreen').then((module) => ({
+    default: module.NotesScreen
+  }))
+)
+
 let startup: Promise<{ db: PwaDatabase; services: PwaServices }> | undefined
 function initialize(): NonNullable<typeof startup> {
   startup ??= openPwaDatabase().then(async (db) => ({ db, services: await createPwaServices(db) }))
@@ -136,6 +132,14 @@ function Workspace({
   const [route, setRoute] = useState<Route>(currentRoute)
   const [resourceId, setResourceId] = useState<string | null>(null)
   const [menu, setMenu] = useState(false)
+  const mobileDraft = useRef<{ flush(): Promise<void>; hasUnsavedChanges(): boolean } | null>(null)
+  const registerMobileDraft = useCallback((draft: typeof mobileDraft.current) => {
+    mobileDraft.current = draft
+  }, [])
+  const flushDrafts = useCallback(
+    () => Promise.all([flushDesktopDrafts(), mobileDraft.current?.flush()]),
+    []
+  )
   const [immersive, setImmersive] = useState(false)
   const [operationBusy, setBusy] = useState(false)
   const syncBusy = useSyncExternalStore(syncActivity.subscribe, syncActivity.snapshot)
@@ -144,6 +148,23 @@ function Workspace({
   const [appearance, setAppearance] = useState(() => appearanceFrom(initialServices))
   const system = useColorScheme()
   const pwa = usePwa()
+  useEffect(() => {
+    const viewport = window.visualViewport
+    const resize = (): void => {
+      document.documentElement.style.setProperty(
+        '--pwa-height',
+        `${Math.min(window.innerHeight, viewport?.height ?? window.innerHeight)}px`
+      )
+    }
+    resize()
+    viewport?.addEventListener('resize', resize)
+    window.addEventListener('resize', resize)
+    return () => {
+      viewport?.removeEventListener('resize', resize)
+      window.removeEventListener('resize', resize)
+      document.documentElement.style.removeProperty('--pwa-height')
+    }
+  }, [])
   const saveState = useSyncExternalStore(db.subscribe, () => db.state)
   const dark = (appearance.theme === 'system' ? system : appearance.theme) !== 'light'
   const palette = {
@@ -153,10 +174,10 @@ function Workspace({
   const navigate = useCallback(
     (next: Route): void => {
       if (busy) return
-      void flushDesktopDrafts()
+      void flushDrafts()
         .then(() =>
           db.flush().then(() => {
-            window.location.hash = next
+            if (window.location.hash !== `#${next}`) history.pushState(null, '', `#${next}`)
             setRoute(next)
             setResourceId(null)
             setImmersive(false)
@@ -165,7 +186,7 @@ function Workspace({
         )
         .catch((reason: unknown) => setError(String(reason)))
     },
-    [busy, db]
+    [busy, db, flushDrafts]
   )
   useEffect(() => {
     const hash = (): void => {
@@ -186,6 +207,7 @@ function Workspace({
         busy ||
         getActiveStudyDraftHandle()?.hasUnsavedChanges() ||
         getActiveBoardDraftHandle()?.hasUnsavedChanges() ||
+        mobileDraft.current?.hasUnsavedChanges() ||
         getActiveNotesDraftHandle()?.hasUnsavedChanges()
       ) {
         event.preventDefault()
@@ -194,7 +216,7 @@ function Workspace({
     }
     const hidden = (): void => {
       if (document.visibilityState === 'hidden')
-        void flushDesktopDrafts()
+        void flushDrafts()
           .then(db.flush)
           .catch(() => undefined)
     }
@@ -204,7 +226,7 @@ function Workspace({
       window.removeEventListener('beforeunload', beforeUnload)
       document.removeEventListener('visibilitychange', hidden)
     }
-  }, [busy, db, immersive])
+  }, [busy, db, immersive, flushDrafts])
   useEffect(() => {
     const notified = (event: MessageEvent): void => {
       if (
@@ -220,7 +242,7 @@ function Workspace({
     const requested = (event: Event): void => {
       const request = (event as CustomEvent<AppModuleNavigationRequest>).detail
       if (!request?.view || !navigationRoutes.includes(request.view as Route) || busy) return
-      void flushDesktopDrafts()
+      void flushDrafts()
         .then(db.flush)
         .then(() => {
           const next = request.view as Route
@@ -233,7 +255,26 @@ function Workspace({
     }
     window.addEventListener(APP_MODULE_NAVIGATE_EVENT, requested)
     return () => window.removeEventListener(APP_MODULE_NAVIGATE_EVENT, requested)
-  }, [busy, db, immersive, route])
+  }, [busy, db, immersive, route, flushDrafts])
+  useEffect(() => {
+    const back = (): void => {
+      if (busy || menu || dispatchHardwareBack()) {
+        setMenu(false)
+        history.pushState(null, '', '#' + route)
+      }
+    }
+    const escape = (event: KeyboardEvent): void => {
+      if (event.key !== 'Escape' || event.defaultPrevented || busy) return
+      if (menu) setMenu(false)
+      else dispatchHardwareBack()
+    }
+    window.addEventListener('popstate', back)
+    window.addEventListener('keydown', escape)
+    return () => {
+      window.removeEventListener('popstate', back)
+      window.removeEventListener('keydown', escape)
+    }
+  }, [busy, menu, route])
   const restored = async (): Promise<void> => {
     const next = await createPwaServices(db)
     services.dispose()
@@ -261,62 +302,39 @@ function Workspace({
                     } as React.CSSProperties
                   }
                 >
+                  <AppNavigationDrawer
+                    visible={menu}
+                    currentRoute={route}
+                    close={() => setMenu(false)}
+                    navigate={navigate}
+                    entries={navigationRoutes
+                      .filter((item) => item !== 'settings')
+                      .map((item) => ({
+                        route: item,
+                        title: routeTitles[item],
+                        icon: routeIcons[item]
+                      }))}
+                    settingsEntry={{
+                      route: 'settings',
+                      title: routeTitles.settings,
+                      icon: routeIcons.settings
+                    }}
+                    versionLabel="PWA · На устройстве"
+                  />
                   {!immersive ? (
-                    <>
-                      <header className="app-header">
-                        <a
-                          href="#home"
-                          onClick={(event) => {
-                            event.preventDefault()
-                            navigate('home')
-                          }}
-                          className="brand"
-                        >
-                          MyMind<span>Личное пространство</span>
-                        </a>
-                        <div className="connection" role="status">
-                          {!pwa.online
-                            ? 'Без интернета'
-                            : pwa.offlineReady
-                              ? 'Готово к офлайн'
-                              : 'Локальные данные'}
-                        </div>
-                        <button
-                          aria-label="Открыть меню навигации"
-                          aria-expanded={menu}
-                          aria-controls="navigation"
-                          onClick={() => setMenu((value) => !value)}
-                        >
-                          ☰
-                        </button>
-                      </header>
-                      <nav
-                        id="navigation"
-                        aria-label="Разделы"
-                        className={menu ? 'navigation expanded' : 'navigation'}
-                      >
-                        {navigationRoutes.map((item) => (
-                          <a
-                            key={item}
-                            href={`#${item}`}
-                            aria-current={route === item ? 'page' : undefined}
-                            aria-disabled={busy}
-                            onClick={(event) => {
-                              event.preventDefault()
-                              navigate(item)
-                            }}
-                          >
-                            {routeTitles[item]}
-                          </a>
-                        ))}
-                      </nav>
-                    </>
+                    <header className="app-header">
+                      <MobileAppHeader
+                        title={routeTitles[route]}
+                        icon={routeIcons[route]}
+                        disabled={busy}
+                        onMenuPress={() => setMenu(true)}
+                      />
+                    </header>
                   ) : null}
                   <main
                     className={immersive ? 'workspace immersive' : 'workspace'}
                     aria-busy={busy}
                   >
-                    {!immersive ? <h1>{routeTitles[route]}</h1> : null}
                     {error ? <p role="alert">{error}</p> : null}
                     <PwaReminders services={services} db={db} paused={busy} />
                     <View style={{ flex: 1, minHeight: 0 }}>
@@ -330,20 +348,15 @@ function Workspace({
                         >
                           <div className="module" key={`${route}:${epoch}`}>
                             {route === 'home' ? (
-                              <>
-                                <div className="extra-modules">
-                                  {(['study', 'boards', 'workouts'] as const).map((item) => (
-                                    <button key={item} onClick={() => navigate(item)}>
-                                      {routeTitles[item]}
-                                    </button>
-                                  ))}
-                                </div>
-                                <Home services={services} navigate={navigate} />
-                              </>
-                            ) : route === 'study' ||
-                              route === 'boards' ||
-                              route === 'workouts' ||
-                              route === 'notes' ? (
+                              <Home services={services} navigate={navigate} />
+                            ) : route === 'notes' ? (
+                              <Notes
+                                onImmersiveChange={setImmersive}
+                                onDraftChange={registerMobileDraft}
+                                resourceId={resourceId}
+                                onResourceHandled={() => setResourceId(null)}
+                              />
+                            ) : route === 'study' || route === 'boards' || route === 'workouts' ? (
                               <DesktopModules
                                 route={route}
                                 appearance={appearance}
@@ -394,6 +407,13 @@ function Workspace({
                       </ModuleErrorBoundary>
                     </View>
                   </main>
+                  <div className="connection sr-only" role="status">
+                    {!pwa.online
+                      ? 'Без интернета'
+                      : pwa.offlineReady
+                        ? 'Готово к офлайн'
+                        : 'Локальные данные'}
+                  </div>
                   <footer className={`save-status ${saveState}`} role="status" aria-live="polite">
                     {saveState === 'saved' ? (
                       'Сохранено на устройстве'

@@ -1,7 +1,24 @@
 import { describe, expect, it } from 'vitest'
-import { browserAccessibilityProps } from './react-native'
+import { BackHandler, dispatchHardwareBack, browserAccessibilityProps } from './react-native'
 
 describe('native accessibility semantics in the browser', () => {
+  it('routes browser Back to the most recent native screen and removes closed handlers', () => {
+    const calls: string[] = []
+    const screen = BackHandler.addEventListener('hardwareBackPress', () => {
+      calls.push('screen')
+      return true
+    })
+    const nested = BackHandler.addEventListener('hardwareBackPress', () => {
+      calls.push('nested')
+      return true
+    })
+    expect(dispatchHardwareBack()).toBe(true)
+    nested.remove()
+    expect(dispatchHardwareBack()).toBe(true)
+    screen.remove()
+    expect(dispatchHardwareBack()).toBe(false)
+    expect(calls).toEqual(['nested', 'screen'])
+  })
   it('maps checked and unchecked, selected and disabled states without forwarding unsupported grouped props', () => {
     expect(
       browserAccessibilityProps({

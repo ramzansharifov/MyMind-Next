@@ -37,7 +37,13 @@ test('habits: create, record progress, rename, restart and delete with history',
   await page.getByText('PWA habit', { exact: true }).click({ delay: 550 })
   await page.getByRole('button', { name: 'Изменить', exact: true }).click()
   await page.getByRole('textbox', { name: 'Название', exact: true }).fill('PWA edited habit')
+  await expect(page.getByRole('textbox', { name: 'Название', exact: true })).toHaveValue(
+    'PWA edited habit'
+  )
   await save(page)
+  await expect(
+    page.getByRole('button', { name: 'Изменить привычку PWA edited habit', exact: true })
+  ).toBeVisible()
   await open(page, 'habits')
   await expect(page.getByText('1 / 1', { exact: true })).toBeVisible()
   await page

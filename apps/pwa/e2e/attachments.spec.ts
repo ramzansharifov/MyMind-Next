@@ -1,16 +1,15 @@
-import { test, expect, open, storedAssets, navigate } from './helpers'
+import { test, expect, open, storedAssets, navigate, createNote, localData } from './helpers'
 
 test('notes: local image and Chromium voice recording persist, restore and clean up', async ({
   page,
   browserName
 }) => {
   await open(page, 'notes')
-  await page.getByRole('button', { name: 'Новая заметка', exact: true }).first().click()
-  await page.getByLabel('Название заметки', { exact: true }).fill('PWA attachments')
-  await page.getByRole('button', { name: 'Создать', exact: true }).click()
-  await page.getByRole('button', { name: 'Добавить изображение', exact: true }).click()
+  await createNote(page, 'PWA attachments')
+  await page.getByRole('button', { name: 'Добавить вложение или разделитель', exact: true }).click()
+  await page.getByRole('button', { name: 'Добавить: Изображение', exact: true }).click()
   const choosing = page.waitForEvent('filechooser')
-  await page.getByRole('button', { name: 'Выбрать файл', exact: true }).last().click()
+  await page.getByRole('button', { name: 'Выбрать', exact: true }).last().click()
   await (
     await choosing
   ).setFiles({
@@ -21,22 +20,25 @@ test('notes: local image and Chromium voice recording persist, restore and clean
       'base64'
     )
   })
-  const image = page.locator('.note-canvas-attachment img[data-study-image-preview]').first()
+  const image = page.locator('.mobile-note-attachment img').first()
   await expect(image).toBeVisible()
   await expect
     .poll(() =>
       image.evaluate((element: HTMLImageElement) => element.complete && element.naturalWidth > 0)
     )
     .toBe(true)
-  await page.getByRole('button', { name: 'Закрыть настройки вложения', exact: true }).click()
+  await page.getByRole('button', { name: 'Закрыть', exact: true }).last().click()
   if (browserName === 'chromium') {
     // Only Chromium supplies a test microphone to the real MediaRecorder pipeline.
     // WebKit still runs the image, persistence and backup/restore checks below.
-    await page.getByRole('button', { name: 'Добавить голосовую запись', exact: true }).click()
-    await page.getByRole('button', { name: 'Начать запись', exact: true }).click()
-    await expect(page.getByText(/Идёт запись · 0:0[1-9]/)).toBeVisible({ timeout: 10_000 })
-    await page.getByRole('button', { name: 'Завершить запись', exact: true }).click()
-    await expect(page.locator('.note-canvas-attachment audio')).toHaveAttribute('src', /^blob:/)
+    await page
+      .getByRole('button', { name: 'Добавить вложение или разделитель', exact: true })
+      .click()
+    await page.getByRole('button', { name: 'Добавить: Голосовое', exact: true }).click()
+    await page.getByRole('button', { name: 'Записать голос', exact: true }).click()
+    await expect(page.getByText(/Запись · 00:0[1-9]/)).toBeVisible({ timeout: 10_000 })
+    await page.getByRole('button', { name: 'Остановить и добавить', exact: true }).click()
+    await expect(page.locator('.mobile-note-attachment audio')).toHaveAttribute('src', /^blob:/)
   }
   await navigate(page, 'home')
   await expect.poll(() => storedAssets(page)).toHaveLength(browserName === 'chromium' ? 2 : 1)
@@ -44,14 +46,12 @@ test('notes: local image and Chromium voice recording persist, restore and clean
   expect(initial.every((asset) => asset.size > 0)).toBe(true)
   await open(page, 'notes')
   await page.getByText('PWA attachments', { exact: true }).first().click()
-  await expect(
-    page.locator('.note-canvas-attachment img[data-study-image-preview]')
-  ).toHaveAttribute('src', /^blob:/)
+  await expect(page.locator('.mobile-note-attachment img')).toHaveAttribute('src', /^blob:/)
   if (browserName === 'chromium') {
-    await expect(page.locator('.note-canvas-attachment audio')).toHaveAttribute('src', /^blob:/)
+    await expect(page.locator('.mobile-note-attachment audio')).toHaveAttribute('src', /^blob:/)
     expect(
       await page
-        .locator('.note-canvas-attachment audio')
+        .locator('.mobile-note-attachment audio')
         .evaluate(async (element: HTMLAudioElement) => {
           await element.play()
           element.pause()
@@ -59,7 +59,7 @@ test('notes: local image and Chromium voice recording persist, restore and clean
         })
     ).toBe(true)
   }
-  await navigate(page, 'settings')
+  await localData(page)
   const downloading = page.waitForEvent('download')
   await page.getByRole('button', { name: 'Скачать резервную копию', exact: true }).click()
   const backup = await downloading,
@@ -76,16 +76,12 @@ test('notes: local image and Chromium voice recording persist, restore and clean
   await expect
     .poll(() =>
       page
-        .locator('.note-canvas-attachment img[data-study-image-preview]')
+        .locator('.mobile-note-attachment img')
         .evaluate((element: HTMLImageElement) => element.complete && element.naturalWidth > 0)
     )
     .toBe(true)
-  await page.getByRole('button', { name: 'Вернуться к списку заметок', exact: true }).click()
-  await page
-    .getByRole('button', { name: 'Действия заметки «PWA attachments»', exact: true })
-    .first()
-    .click()
-  await page.getByRole('menuitem', { name: 'Удалить', exact: true }).click()
+  await page.getByRole('button', { name: 'Дополнительные действия', exact: true }).click()
+  await page.getByRole('button', { name: 'Удалить заметку', exact: true }).click()
   await page.getByRole('button', { name: 'Удалить', exact: true }).last().click()
   await expect.poll(() => storedAssets(page)).toHaveLength(0)
 })

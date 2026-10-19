@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { BackHandler, Platform, Pressable, Text, useColorScheme, View } from 'react-native'
+import { BackHandler, Platform, useColorScheme, View } from 'react-native'
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
 import { StatusBar } from 'expo-status-bar'
 import { appearanceTokens } from '@mymind/design'
@@ -16,7 +16,7 @@ import { exportMobileBackup, restoreMobileBackup } from '../shared/backup/mobile
 import { openMobileDatabase } from '../shared/storage/mobileDatabase'
 import { ThemeContext } from '../shared/ui/theme'
 import { ErrorState, LoadingState } from '../shared/ui/primitives'
-import { AppIcon } from '../shared/ui/icons'
+import { MobileAppHeader } from './MobileAppHeader'
 import { messageFor } from '../shared/ui/form-model'
 import { ConfirmationProvider } from '../shared/ui/ConfirmationProvider'
 import { ToastProvider } from '../shared/ui/ToastProvider'
@@ -208,114 +208,12 @@ export default function MobileApp(): React.JSX.Element {
                 />
 
                 {!immersive ? (
-                  <View style={{ paddingHorizontal: 16, paddingTop: 10, paddingBottom: 12 }}>
-                    <View
-                      style={{
-                        minHeight: 80,
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        gap: 10,
-                        paddingHorizontal: 12,
-                        paddingVertical: 12,
-                        overflow: 'hidden',
-                        borderWidth: 1,
-                        borderColor: palette.border,
-                        borderRadius: 28,
-                        backgroundColor: palette.surface,
-                        elevation: 2
-                      }}
-                    >
-                      <View
-                        pointerEvents="none"
-                        style={{
-                          position: 'absolute',
-                          top: -82,
-                          right: 18,
-                          width: 190,
-                          height: 190,
-                          borderRadius: 95,
-                          backgroundColor: palette.accent + '12'
-                        }}
-                      />
-                      <View
-                        pointerEvents="none"
-                        style={{
-                          position: 'absolute',
-                          bottom: -100,
-                          left: -54,
-                          width: 176,
-                          height: 176,
-                          borderRadius: 88,
-                          backgroundColor: palette.accent + '08'
-                        }}
-                      />
-
-                      <View
-                        style={{
-                          flex: 1,
-                          minWidth: 0,
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          gap: 12
-                        }}
-                      >
-                        <View
-                          style={{
-                            width: 48,
-                            height: 48,
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            borderWidth: 1,
-                            borderColor: palette.accent + '33',
-                            borderRadius: 16,
-                            backgroundColor: palette.accent + '14'
-                          }}
-                        >
-                          <AppIcon
-                            name={routeIcons[route]}
-                            size={23}
-                            strokeWidth={2}
-                            color={palette.accent}
-                          />
-                        </View>
-
-                        <Text
-                          numberOfLines={1}
-                          style={{
-                            flex: 1,
-                            color: palette.text,
-                            fontSize: 25,
-                            lineHeight: 31,
-                            fontWeight: '600',
-                            letterSpacing: -0.8
-                          }}
-                        >
-                          {routeTitles[route]}
-                        </Text>
-                      </View>
-
-                      <Pressable
-                        accessibilityRole="button"
-                        accessibilityLabel="Открыть меню навигации"
-                        disabled={backupOperation !== null}
-                        hitSlop={6}
-                        onPress={() => setNavigationOpen(true)}
-                        style={({ pressed }) => ({
-                          width: 44,
-                          height: 44,
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          borderWidth: 1,
-                          borderColor: palette.border,
-                          borderRadius: 14,
-                          backgroundColor: pressed ? palette.raised : palette.background + '99',
-                          opacity: backupOperation ? 0.45 : pressed ? 0.76 : 1
-                        })}
-                      >
-                        <AppIcon name="menu" size={21} strokeWidth={2} color={palette.muted} />
-                      </Pressable>
-                    </View>
-                  </View>
+                  <MobileAppHeader
+                    title={routeTitles[route]}
+                    icon={routeIcons[route]}
+                    disabled={backupOperation !== null}
+                    onMenuPress={() => setNavigationOpen(true)}
+                  />
                 ) : null}
 
                 {error ? (

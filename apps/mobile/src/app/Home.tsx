@@ -4,7 +4,7 @@ import type { CalendarUnreadReminderRecord } from '@mymind/contracts/calendar'
 import type { HabitUnreadReminderRecord } from '@mymind/contracts/habits'
 
 import { ErrorState, IconButton } from '../shared/ui/primitives'
-import { AppIcon } from '../shared/ui/icons'
+import { AppIcon, type AppIconName } from '../shared/ui/icons'
 import { messageFor } from '../shared/ui/form-model'
 import { useTheme } from '../shared/ui/theme'
 import { routeIcons, type Route } from './navigation'
@@ -27,10 +27,12 @@ const HOME_MODULES: Array<{ route: Exclude<Route, 'home' | 'more' | 'settings'>;
 
 export function Home({
   services,
-  navigate
+  navigate,
+  additionalModules = []
 }: {
   services: MobileServices
   navigate(route: Route): void
+  additionalModules?: Array<{ route: string; title: string; icon: AppIconName; onPress(): void }>
 }): React.JSX.Element {
   const theme = useTheme()
   const [error, setError] = useState('')
@@ -87,7 +89,14 @@ export function Home({
     <View style={{ flex: 1 }}>
       {error ? <ErrorState message={error} retry={refresh} /> : null}
       <FlatList
-        data={HOME_MODULES}
+        data={[
+          ...HOME_MODULES.map((item) => ({
+            ...item,
+            icon: routeIcons[item.route],
+            onPress: () => navigate(item.route)
+          })),
+          ...additionalModules
+        ]}
         numColumns={2}
         keyExtractor={(item) => item.route}
         columnWrapperStyle={{ gap: 10 }}
@@ -128,7 +137,7 @@ export function Home({
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={item.title}
-              onPress={() => navigate(item.route)}
+              onPress={item.onPress}
               style={({ pressed }) => ({
                 flex: 1,
                 minHeight: 112,
@@ -154,7 +163,7 @@ export function Home({
                   backgroundColor: theme.accent + '12'
                 }}
               >
-                <AppIcon name={routeIcons[item.route]} size={19} color={theme.accent} />
+                <AppIcon name={item.icon} size={19} color={theme.accent} />
                 {hasNotification ? (
                   <View
                     accessibilityLabel="Есть непрочитанные напоминания"

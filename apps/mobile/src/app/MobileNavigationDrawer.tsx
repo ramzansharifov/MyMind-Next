@@ -1,9 +1,10 @@
+import type { ReactNode } from 'react'
 import { Modal, Pressable, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { navigationRoutes, routeIcons, routeTitles, type Route } from './navigation'
 import type { MobileUpdaterController } from './useMobileUpdater'
-import { AppIcon } from '../shared/ui/icons'
+import { AppIcon, type AppIconName } from '../shared/ui/icons'
 import { useTheme } from '../shared/ui/theme'
 
 const moduleRoutes = navigationRoutes.filter((route) => route !== 'settings')
@@ -22,30 +23,40 @@ function updateLabel(updater: MobileUpdaterController): string | null {
   return null
 }
 
-export function MobileNavigationDrawer({
+export interface NavigationItem<T extends string> {
+  route: T
+  title: string
+  icon: AppIconName
+}
+export function AppNavigationDrawer<T extends string>({
   visible,
   currentRoute,
-  updater,
+  entries,
+  settingsEntry,
+  versionLabel,
+  updateContent,
   close,
   navigate
 }: {
   visible: boolean
-  currentRoute: Route
-  updater: MobileUpdaterController
+  currentRoute: T
+  entries: readonly NavigationItem<T>[]
+  settingsEntry: NavigationItem<T>
+  versionLabel: string
+  updateContent?: ReactNode
   close(): void
-  navigate(route: Route): void
+  navigate(route: T): void
 }): React.JSX.Element {
   const theme = useTheme()
-  const updateText = updateLabel(updater)
-
-  const renderRoute = (route: Route): React.JSX.Element => {
+  const renderRoute = (entry: NavigationItem<T>): React.JSX.Element => {
+    const route = entry.route
     const selected = route === currentRoute
 
     return (
       <Pressable
         key={route}
         accessibilityRole="button"
-        accessibilityLabel={routeTitles[route]}
+        accessibilityLabel={entry.title}
         accessibilityState={{ selected }}
         onPress={() => navigate(route)}
         style={({ pressed }) => ({
@@ -74,11 +85,7 @@ export function MobileNavigationDrawer({
             backgroundColor: selected ? theme.accent + '12' : theme.background
           }}
         >
-          <AppIcon
-            name={routeIcons[route]}
-            size={18}
-            color={selected ? theme.accent : theme.muted}
-          />
+          <AppIcon name={entry.icon} size={18} color={selected ? theme.accent : theme.muted} />
         </View>
 
         <Text
@@ -91,7 +98,7 @@ export function MobileNavigationDrawer({
             fontWeight: selected ? '700' : '600'
           }}
         >
-          {routeTitles[route]}
+          {entry.title}
         </Text>
 
         {selected ? (
@@ -158,9 +165,7 @@ export function MobileNavigationDrawer({
 
             <View style={{ flex: 1 }}>
               <Text style={{ color: theme.text, fontSize: 17, fontWeight: '700' }}>MyMind</Text>
-              <Text style={{ marginTop: 2, color: theme.muted, fontSize: 11 }}>
-                v{updater.status.currentVersion}
-              </Text>
+              <Text style={{ marginTop: 2, color: theme.muted, fontSize: 11 }}>{versionLabel}</Text>
             </View>
 
             <Pressable
@@ -182,49 +187,13 @@ export function MobileNavigationDrawer({
             </Pressable>
           </View>
 
-          {updateText ? (
-            <View style={{ paddingHorizontal: 12, paddingTop: 10 }}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={
-                  updater.status.phase === 'available' ? 'Обновить MyMind' : updateText
-                }
-                disabled={updater.status.phase !== 'available'}
-                onPress={() => void updater.update()}
-                style={({ pressed }) => ({
-                  minHeight: 48,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 10,
-                  paddingHorizontal: 12,
-                  borderWidth: 1,
-                  borderColor: theme.accent + '33',
-                  borderRadius: 14,
-                  backgroundColor: theme.accent + (pressed ? '1F' : '12'),
-                  opacity: updater.status.phase === 'available' && pressed ? 0.75 : 1
-                })}
-              >
-                <AppIcon name="download" size={18} color={theme.accent} />
-                <Text
-                  numberOfLines={1}
-                  style={{ flex: 1, color: theme.text, fontSize: 13, fontWeight: '600' }}
-                >
-                  {updateText}
-                </Text>
-                {updater.status.phase === 'available' ? (
-                  <Text style={{ color: theme.accent, fontSize: 12, fontWeight: '700' }}>
-                    Обновить
-                  </Text>
-                ) : null}
-              </Pressable>
-            </View>
-          ) : null}
+          {updateContent}
 
           <ScrollView
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ padding: 12, paddingBottom: 18, gap: 4 }}
           >
-            {moduleRoutes.map(renderRoute)}
+            {entries.map(renderRoute)}
 
             <View
               style={{
@@ -235,7 +204,7 @@ export function MobileNavigationDrawer({
               }}
             />
 
-            {renderRoute('settings')}
+            {renderRoute(settingsEntry)}
           </ScrollView>
         </SafeAreaView>
 
@@ -247,5 +216,71 @@ export function MobileNavigationDrawer({
         />
       </View>
     </Modal>
+  )
+}
+
+export function MobileNavigationDrawer({
+  visible,
+  currentRoute,
+  updater,
+  close,
+  navigate
+}: {
+  visible: boolean
+  currentRoute: Route
+  updater: MobileUpdaterController
+  close(): void
+  navigate(route: Route): void
+}): React.JSX.Element {
+  const theme = useTheme()
+  const updateText = updateLabel(updater)
+  const updateContent = updateText ? (
+    <View style={{ paddingHorizontal: 12, paddingTop: 10 }}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={updater.status.phase === 'available' ? 'Обновить MyMind' : updateText}
+        disabled={updater.status.phase !== 'available'}
+        onPress={() => void updater.update()}
+        style={({ pressed }) => ({
+          minHeight: 48,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 10,
+          paddingHorizontal: 12,
+          borderWidth: 1,
+          borderColor: theme.accent + '33',
+          borderRadius: 14,
+          backgroundColor: theme.accent + (pressed ? '1F' : '12'),
+          opacity: updater.status.phase === 'available' && pressed ? 0.75 : 1
+        })}
+      >
+        <AppIcon name="download" size={18} color={theme.accent} />
+        <Text
+          numberOfLines={1}
+          style={{ flex: 1, color: theme.text, fontSize: 13, fontWeight: '600' }}
+        >
+          {updateText}
+        </Text>
+        {updater.status.phase === 'available' ? (
+          <Text style={{ color: theme.accent, fontSize: 12, fontWeight: '700' }}>Обновить</Text>
+        ) : null}
+      </Pressable>
+    </View>
+  ) : null
+  return (
+    <AppNavigationDrawer
+      visible={visible}
+      currentRoute={currentRoute}
+      close={close}
+      navigate={navigate}
+      entries={moduleRoutes.map((route) => ({
+        route,
+        title: routeTitles[route],
+        icon: routeIcons[route]
+      }))}
+      settingsEntry={{ route: 'settings', title: routeTitles.settings, icon: routeIcons.settings }}
+      versionLabel={'v' + updater.status.currentVersion}
+      updateContent={updateContent}
+    />
   )
 }
