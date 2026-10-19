@@ -1,29 +1,71 @@
-name: CI (manual)
+name: Publish MyMind 1.1.13 Windows only
 
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - ci/publish-windows-1.1.13
 
 permissions:
-  contents: read
+  contents: write
+  actions: read
 
 jobs:
-  verify:
-    runs-on: windows-latest
-    timeout-minutes: 25
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Download already verified Windows installer
+        uses: actions/download-artifact@v4
         with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - run: npm run native:node
-      - run: npm run format:check
-      - run: npm run lint
-      - run: npm run lint:mobile
-      - run: npm run typecheck
-      - run: npm run test:coverage
-      - run: npm run test:mobile
-      - run: npm run db:check
-      - run: npm run build:bundle
-      - run: npm run export:android
+          name: mymind-windows-1.1.13-candidate
+          run-id: 39196937855
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ramzansharifov/MyMind-Next
+          path: release/windows
+      - name: Verify installer and updater payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s release/windows/latest.yml
+          test -s release/windows/mymind-next-1.1.13-setup.exe
+          test -s release/windows/mymind-next-1.1.13-setup.exe.blockmap
+          grep -Fq 'version: 1.1.13' release/windows/latest.yml
+          grep -Fq 'mymind-next-1.1.13-setup.exe' release/windows/latest.yml
+          sha256sum release/windows/mymind-next-1.1.13-setup.exe
+      - name: Prepare release notes
+        shell: bash
+        run: |
+          cat > release-notes.md <<'EOF'
+          MyMind 1.1.13 — Windows desktop release.
+
+          Includes desktop improvements since v1.1.12: continuous A4 boards and PDF export fixes, note editor appearance and pagination, study material improvements, and updates to tasks, habits and other modules.
+
+          Windows download: mymind-next-1.1.13-setup.exe
+
+          This is a Windows-only release. The Android app remains at v1.1.12; PWA deployment is handled separately.
+          EOF
+      - name: Publish Windows GitHub release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: v1.1.13
+          RELEASE_SHA: b091bbea98a9375d84e8f60694209db7f63ab781
+        run: |
+          set -euo pipefail
+          if ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create "$TAG" \
+              --repo "$GITHUB_REPOSITORY" \
+              --target "$RELEASE_SHA" \
+              --title "MyMind 1.1.13 (Windows)" \
+              --notes-file release-notes.md \
+              --draft
+          fi
+          gh release upload "$TAG" \
+            --repo "$GITHUB_REPOSITORY" --clobber \
+            release/windows/latest.yml \
+            release/windows/mymind-next-1.1.13-setup.exe \
+            release/windows/mymind-next-1.1.13-setup.exe.blockmap
+          gh release edit "$TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --draft=false --prerelease=false --latest
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY"
