@@ -46,14 +46,16 @@ test('selected accent reaches document-level portal controls and persists across
     .toBe('#f43f5e')
 })
 
-test('movie watchlist badge follows the selected accent instead of fixed purple', async ({ page }) => {
+test('movie watchlist badge follows the selected accent instead of fixed purple', async ({
+  page
+}) => {
   await setAccent(page, 'Изумрудный')
   await open(page, 'movies')
   await page.getByRole('button', { name: 'Добавить фильм', exact: true }).click()
   await page.getByRole('button', { name: 'Из JSON', exact: true }).click()
-  await page.getByRole('textbox', { name: 'JSON фильмов', exact: true }).fill(
-    JSON.stringify([{ title: 'Accent test movie', year: 2026, genres: ['Драма'] }])
-  )
+  await page
+    .getByRole('textbox', { name: 'JSON фильмов', exact: true })
+    .fill(JSON.stringify([{ title: 'Accent test movie', year: 2026, genres: ['Драма'] }]))
   await page.getByRole('button', { name: 'Применить JSON', exact: true }).click()
   const badge = page.getByText('Хочу посмотреть', { exact: true }).first()
   await expect(badge).toBeVisible()
