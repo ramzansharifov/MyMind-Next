@@ -4,6 +4,7 @@ import {
   Easing,
   FlatList,
   PanResponder,
+  Platform,
   Pressable,
   ScrollView,
   Text,
@@ -738,6 +739,7 @@ export function FinanceScreen(): React.JSX.Element {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ gap: 18, paddingBottom: 96 }}
       >
+        {Platform.OS === 'web' ? header : null}
         <View
           style={{
             padding: 16,
@@ -871,6 +873,7 @@ export function FinanceScreen(): React.JSX.Element {
     content = (
       <FlatList
         data={transactions}
+        ListHeaderComponent={Platform.OS === 'web' ? header : null}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ paddingBottom: 96 }}
         ListEmptyComponent={<FinanceEmpty text="Операций пока нет." icon={ReceiptText} />}
@@ -883,6 +886,7 @@ export function FinanceScreen(): React.JSX.Element {
     content = (
       <FlatList
         data={accounts}
+        ListHeaderComponent={Platform.OS === 'web' ? header : null}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ paddingBottom: 96 }}
         ListEmptyComponent={<FinanceEmpty text="Создайте первый счёт." icon={Landmark} />}
@@ -893,6 +897,7 @@ export function FinanceScreen(): React.JSX.Element {
     content = (
       <FlatList
         data={tags}
+        ListHeaderComponent={Platform.OS === 'web' ? header : null}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ paddingBottom: 96 }}
         ListEmptyComponent={<FinanceEmpty text="Создайте первый тег." icon={Tags} />}
@@ -903,6 +908,7 @@ export function FinanceScreen(): React.JSX.Element {
     content = (
       <FlatList
         data={limits}
+        ListHeaderComponent={Platform.OS === 'web' ? header : null}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ paddingBottom: 96 }}
         ListEmptyComponent={<FinanceEmpty text="Лимитов пока нет." icon={Gauge} />}
@@ -913,6 +919,7 @@ export function FinanceScreen(): React.JSX.Element {
     content = (
       <FlatList
         data={templates}
+        ListHeaderComponent={Platform.OS === 'web' ? header : null}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ paddingBottom: 96 }}
         ListEmptyComponent={<FinanceEmpty text="Шаблонов пока нет." icon={Copy} />}
@@ -926,6 +933,7 @@ export function FinanceScreen(): React.JSX.Element {
         accounts={accounts}
         tags={tags}
         baseCurrencyCode={data.dashboard.settings.baseCurrencyCode}
+        header={Platform.OS === 'web' ? header : null}
       />
     )
   }
@@ -1032,7 +1040,7 @@ export function FinanceScreen(): React.JSX.Element {
 
   return (
     <View style={{ flex: 1 }}>
-      {header}
+      {Platform.OS !== 'web' ? header : null}
       <View style={{ flex: 1, overflow: 'hidden' }}>
         <Animated.View
           style={{
