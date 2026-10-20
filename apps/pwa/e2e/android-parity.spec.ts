@@ -102,3 +102,23 @@ test('Android note: formatting, browser Back and resized viewport preserve the d
   await page.getByRole('button', { name: 'Редактирование', exact: true }).click()
   await expect(editor).toHaveAttribute('contenteditable', 'true')
 })
+
+test('Android drawer remains scrollable and reachable on compact phone screens', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 480 })
+  await open(page, 'home')
+  await page.getByRole('button', { name: 'Открыть меню навигации', exact: true }).click()
+
+  const list = page.getByTestId('mymind-navigation-items')
+  await expect(list).toBeVisible()
+  const layout = await list.evaluate((element) => ({
+    height: element.getBoundingClientRect().height,
+    clientHeight: element.clientHeight,
+    scrollHeight: element.scrollHeight
+  }))
+  expect(layout.height).toBeGreaterThan(100)
+  expect(layout.height).toBeLessThan(480)
+  expect(layout.scrollHeight).toBeGreaterThan(layout.clientHeight)
+
+  await page.getByRole('button', { name: 'Настройки', exact: true }).last().click()
+  await expect(page.locator('.app-header')).toContainText('Настройки')
+})
