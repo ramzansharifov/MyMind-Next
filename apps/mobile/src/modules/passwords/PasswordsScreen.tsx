@@ -1,6 +1,15 @@
 import { runAfterInteraction } from '../../shared/ui/run-after-interaction'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { AppState, Linking, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native'
+import {
+  AppState,
+  Linking,
+  Platform,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  View
+} from 'react-native'
 import {
   Heart,
   KeyRound,
