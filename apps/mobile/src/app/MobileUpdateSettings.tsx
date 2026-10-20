@@ -1,6 +1,6 @@
 import { Text, View } from 'react-native'
 
-import type { MobileUpdaterController } from './useMobileUpdater'
+import type { MobileUpdaterController } from '../shared/update/mobileUpdateCore'
 import { Button, ErrorState, Label } from '../shared/ui/primitives'
 import { WorkspacePanel } from '../shared/ui/Workspace'
 import { useTheme } from '../shared/ui/theme'

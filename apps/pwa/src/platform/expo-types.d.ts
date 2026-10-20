@@ -14,6 +14,49 @@ declare module 'expo-crypto' {
   export function getRandomValues<T extends Uint8Array>(array: T): T
 }
 
+/** Type-only native recording surface. Webpack replaces VoiceRecorder with MediaRecorder. */
+declare module 'expo-audio' {
+  interface RecordingPreset {
+    readonly extension: string
+  }
+  interface Recorder {
+    readonly uri: string | null
+    prepareToRecordAsync(): Promise<void>
+    record(): void
+    stop(): Promise<void>
+  }
+  interface Player {
+    play(): void
+    pause(): void
+    seekTo(seconds: number): Promise<void>
+  }
+  export const RecordingPresets: { readonly HIGH_QUALITY: RecordingPreset }
+  export const AudioModule: {
+    getRecordingPermissionsAsync(): Promise<{ granted: boolean }>
+    requestRecordingPermissionsAsync(): Promise<{ granted: boolean }>
+  }
+  export function setAudioModeAsync(options: {
+    allowsRecording?: boolean
+    playsInSilentMode?: boolean
+  }): Promise<void>
+  export function useAudioRecorder(options: RecordingPreset): Recorder
+  export function useAudioRecorderState(
+    recorder: Recorder,
+    interval?: number
+  ): {
+    isRecording: boolean
+    durationMillis: number
+  }
+  export function useAudioPlayer(source: string, options?: { updateInterval?: number }): Player
+  export function useAudioPlayerStatus(player: Player): {
+    playing: boolean
+    isLoaded: boolean
+    currentTime: number
+    duration: number
+    error: string | null
+  }
+}
+
 declare module 'expo-clipboard' {
   export function getStringAsync(): Promise<string>
   export function setStringAsync(value: string): Promise<boolean>

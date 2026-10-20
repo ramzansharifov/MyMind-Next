@@ -3,7 +3,7 @@ import type { MobileBackupSummary, MobileRestoreResult } from '../shared/backup/
 import { SettingsScreen } from './SettingsScreen'
 import { ReminderSettings } from './ReminderSettings'
 import { MobileUpdateSettings } from './MobileUpdateSettings'
-import type { MobileUpdaterController } from './useMobileUpdater'
+import type { MobileUpdaterController } from '../shared/update/mobileUpdateCore'
 
 export function Settings({
   updater,

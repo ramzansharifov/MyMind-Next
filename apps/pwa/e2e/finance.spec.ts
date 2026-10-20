@@ -52,6 +52,8 @@ test('finance: transfers, templates, limits, reports and editing survive restart
   await page.getByRole('button', { name: 'Использовать', exact: true }).click()
   await expect(page.getByRole('textbox', { name: 'Сумма', exact: true })).toHaveValue('25.00')
   await page.getByRole('dialog').getByRole('button', { name: 'Создать', exact: true }).click()
+  await expect(page.getByText('Parity shopping: 0% → 25%', { exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Подтвердить расход', exact: true }).click()
   await expect(page.getByRole('textbox', { name: 'Сумма', exact: true })).toHaveCount(0)
   await open(page, 'finance')
   await expect(page.getByLabel('Общий баланс', { exact: true })).toContainText('475,00')
