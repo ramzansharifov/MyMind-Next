@@ -315,9 +315,7 @@ function Workspace({
                     <View style={{ flex: 1, minHeight: 0 }}>
                       <ModuleErrorBoundary key={`${route}:${epoch}`}>
                         <Suspense
-                          fallback={
-                            <LoadingState />
-                          }
+                          fallback={<LoadingState />}
                         >
                           <div className="module" key={`${route}:${epoch}`}>
                             {route === 'home' ? (
