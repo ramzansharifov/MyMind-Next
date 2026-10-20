@@ -190,6 +190,8 @@ export function AppNavigationDrawer<T extends string>({
           {updateContent}
 
           <ScrollView
+            testID="mymind-navigation-items"
+            style={{ flex: 1, minHeight: 0 }}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ padding: 12, paddingBottom: 18, gap: 4 }}
           >
@@ -223,50 +225,53 @@ export function MobileNavigationDrawer({
   visible,
   currentRoute,
   updater,
+  versionLabel,
   close,
   navigate
 }: {
   visible: boolean
   currentRoute: Route
-  updater: MobileUpdaterController
+  updater?: MobileUpdaterController
+  versionLabel?: string
   close(): void
   navigate(route: Route): void
 }): React.JSX.Element {
   const theme = useTheme()
-  const updateText = updateLabel(updater)
-  const updateContent = updateText ? (
-    <View style={{ paddingHorizontal: 12, paddingTop: 10 }}>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={updater.status.phase === 'available' ? 'Обновить MyMind' : updateText}
-        disabled={updater.status.phase !== 'available'}
-        onPress={() => void updater.update()}
-        style={({ pressed }) => ({
-          minHeight: 48,
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 10,
-          paddingHorizontal: 12,
-          borderWidth: 1,
-          borderColor: theme.accent + '33',
-          borderRadius: 14,
-          backgroundColor: theme.accent + (pressed ? '1F' : '12'),
-          opacity: updater.status.phase === 'available' && pressed ? 0.75 : 1
-        })}
-      >
-        <AppIcon name="download" size={18} color={theme.accent} />
-        <Text
-          numberOfLines={1}
-          style={{ flex: 1, color: theme.text, fontSize: 13, fontWeight: '600' }}
+  const updateText = updater ? updateLabel(updater) : null
+  const updateContent =
+    updater && updateText ? (
+      <View style={{ paddingHorizontal: 12, paddingTop: 10 }}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={updater.status.phase === 'available' ? 'Обновить MyMind' : updateText}
+          disabled={updater.status.phase !== 'available'}
+          onPress={() => void updater.update()}
+          style={({ pressed }) => ({
+            minHeight: 48,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 10,
+            paddingHorizontal: 12,
+            borderWidth: 1,
+            borderColor: theme.accent + '33',
+            borderRadius: 14,
+            backgroundColor: theme.accent + (pressed ? '1F' : '12'),
+            opacity: updater.status.phase === 'available' && pressed ? 0.75 : 1
+          })}
         >
-          {updateText}
-        </Text>
-        {updater.status.phase === 'available' ? (
-          <Text style={{ color: theme.accent, fontSize: 12, fontWeight: '700' }}>Обновить</Text>
-        ) : null}
-      </Pressable>
-    </View>
-  ) : null
+          <AppIcon name="download" size={18} color={theme.accent} />
+          <Text
+            numberOfLines={1}
+            style={{ flex: 1, color: theme.text, fontSize: 13, fontWeight: '600' }}
+          >
+            {updateText}
+          </Text>
+          {updater.status.phase === 'available' ? (
+            <Text style={{ color: theme.accent, fontSize: 12, fontWeight: '700' }}>Обновить</Text>
+          ) : null}
+        </Pressable>
+      </View>
+    ) : null
   return (
     <AppNavigationDrawer
       visible={visible}
@@ -279,7 +284,7 @@ export function MobileNavigationDrawer({
         icon: routeIcons[route]
       }))}
       settingsEntry={{ route: 'settings', title: routeTitles.settings, icon: routeIcons.settings }}
-      versionLabel={'v' + updater.status.currentVersion}
+      versionLabel={versionLabel ?? (updater ? 'v' + updater.status.currentVersion : '')}
       updateContent={updateContent}
     />
   )

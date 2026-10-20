@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { ErrorState } from '../../../mobile/src/shared/ui/primitives'
 import type { MobileServices } from '../../../mobile/src/app/services'
 import { notifyDataChanged, subscribeDataChanges } from '../../../mobile/src/app/changes'
 import { scanReminders, showReminder } from '../reminders/scheduler'
@@ -52,5 +53,5 @@ export function PwaReminders({
       window.removeEventListener('focus', scan)
     }
   }, [db, paused, services])
-  return error ? <p role="alert">{error}</p> : null
+  return error ? <ErrorState message={error} /> : null
 }
