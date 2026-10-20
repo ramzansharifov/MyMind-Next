@@ -215,4 +215,159 @@ export function MobileCreateActionOverlayProvider({
 
   return (
     <MobileCreateActionOverlayContext.Provider value={controller}>
-      <View style={{ flex: 1, minHei
+      <View style={{ flex: 1, minHeight: 0, backgroundColor: theme.background }}>
+        <BlurTargetView
+          ref={blurTarget}
+          style={{ flex: 1, minHeight: 0, backgroundColor: theme.background }}
+        >
+          {children}
+        </BlurTargetView>
+
+        {overlay && current ? (
+          <Animated.View
+            pointerEvents={confirmation ? 'box-none' : 'none'}
+            accessibilityElementsHidden={!confirmation}
+            importantForAccessibility={confirmation ? 'yes' : 'no-hide-descendants'}
+            style={[
+              StyleSheet.absoluteFill,
+              {
+                zIndex: 1000,
+                opacity,
+                backgroundColor: darkTheme ? '#050608' : '#E8EDF3'
+              }
+            ]}
+          >
+            <BlurView
+              pointerEvents="none"
+              blurTarget={blurTarget}
+              blurMethod="dimezisBlurView"
+              intensity={darkTheme ? 12 : 18}
+              tint={darkTheme ? 'dark' : 'light'}
+              style={[
+                StyleSheet.absoluteFill,
+                {
+                  opacity: darkTheme ? 0.52 : 0.78
+                }
+              ]}
+            />
+            <View
+              pointerEvents="none"
+              style={[
+                StyleSheet.absoluteFill,
+                {
+                  backgroundColor: darkTheme ? '#000000ED' : '#0F172A70'
+                }
+              ]}
+            />
+
+            <Animated.View
+              pointerEvents={confirmation ? 'box-none' : 'none'}
+              style={{
+                flex: 1,
+                alignItems: 'center',
+                justifyContent: 'center',
+                paddingHorizontal: 22,
+                opacity: contentOpacity,
+                transform: [{ translateY: contentTranslateY }]
+              }}
+            >
+              <View
+                pointerEvents="none"
+                style={{
+                  position: 'absolute',
+                  top: 18,
+                  minHeight: 38,
+                  maxWidth: '92%',
+                  paddingHorizontal: 14,
+                  paddingVertical: 8,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: 14,
+                  borderWidth: 1,
+                  borderColor: darkTheme ? '#FFFFFF12' : theme.border,
+                  backgroundColor: darkTheme ? '#0B0D11E8' : '#FFFFFFE6'
+                }}
+              >
+                <Text
+                  style={{
+                    color: darkTheme ? '#D8DCE4' : theme.text,
+                    fontSize: 11.5,
+                    lineHeight: 17,
+                    fontWeight: '600',
+                    textAlign: 'center'
+                  }}
+                >
+                  {confirmation
+                    ? 'Проведите вверх или вниз · затем нажмите «Дальше»'
+                    : 'Проведите вверх или вниз · выберите действие'}
+                </Text>
+              </View>
+
+              <View
+                onStartShouldSetResponder={() => Boolean(confirmation)}
+                onMoveShouldSetResponder={() => Boolean(confirmation)}
+                onResponderGrant={(event: GestureResponderEvent) => {
+                  if (!confirmation || !overlay.items.length) return
+                  gestureStartYRef.current = event.nativeEvent.pageY
+                  gestureBaseIndexRef.current = overlay.index
+                  confirmationMotion.cancel()
+                  offsetY.stopAnimation()
+                  offsetY.setValue(0)
+                }}
+                onResponderMove={(event: GestureResponderEvent) => {
+                  if (!confirmation || !overlay.items.length) return
+                  const selection = mobileCreateActionSelection(
+                    event.nativeEvent.pageY - gestureStartYRef.current,
+                    overlay.items.length,
+                    gestureBaseIndexRef.current,
+                    MOBILE_CREATE_ACTION_STEP
+                  )
+                  confirmationMotion.schedule(selection)
+                }}
+                onResponderRelease={settleInteractiveCarousel}
+                onResponderTerminationRequest={() => false}
+                onResponderTerminate={settleInteractiveCarousel}
+                style={{
+                  width: '100%',
+                  maxWidth: 360,
+                  height: CAROUSEL_HEIGHT,
+                  overflow: 'hidden'
+                }}
+              >
+                {visibleCarouselSlots(overlay.items.length, overlay.index).map(
+                  ({ index: itemIndex, slot }) => {
+                    const item = overlay.items[itemIndex]
+
+                    const actionColor = item.color ?? theme.accent
+                    const scaleRange = slotScaleRange(slot)
+                    const opacityRange = slotOpacityRange(slot)
+                    const translateY = offsetY.interpolate({
+                      inputRange: [-HALF_STEP, HALF_STEP],
+                      outputRange: [
+                        slot * MOBILE_CREATE_ACTION_STEP - HALF_STEP,
+                        slot * MOBILE_CREATE_ACTION_STEP + HALF_STEP
+                      ],
+                      extrapolate: 'clamp'
+                    })
+                    const scale = offsetY.interpolate({
+                      inputRange: [-HALF_STEP, 0, HALF_STEP],
+                      outputRange: scaleRange,
+                      extrapolate: 'clamp'
+                    })
+                    const cardOpacity = offsetY.interpolate({
+                      inputRange: [-HALF_STEP, 0, HALF_STEP],
+                      outputRange: opacityRange,
+                      extrapolate: 'clamp'
+                    })
+                    const active = slot === 0
+
+                    return (
+                      <Animated.View
+                        key={overlay.items.length === 2 ? item.key + ':' + slot : item.key}
+                        pointerEvents="none"
+                        style={{
+                          position: 'absolute',
+                          top: CARD_CENTER_TOP,
+                          right: 0,
+                          left: 0,
+                          height: CARD_HE
