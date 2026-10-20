@@ -113,16 +113,16 @@ export function NutritionReportsView({ header }: { header?: ReactNode } = {}): R
           <>
             {header}
             <NutritionReportHeader
-            report={report}
-            period={period}
-            customFrom={customFrom}
-            customTo={customTo}
-            mealType={mealType}
-            onPeriod={(next) => {
-              if (next === 'custom') chooseCustomPeriod()
-              else setPeriod(next)
-            }}
-            onMealType={setMealType}
+              report={report}
+              period={period}
+              customFrom={customFrom}
+              customTo={customTo}
+              mealType={mealType}
+              onPeriod={(next) => {
+                if (next === 'custom') chooseCustomPeriod()
+                else setPeriod(next)
+              }}
+              onMealType={setMealType}
             />
           </>
         }
