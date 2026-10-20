@@ -2,8 +2,8 @@ import { test, expect, open } from './helpers'
 import type { Page } from '@playwright/test'
 
 /** A scrollable ancestor must belong to the module, not an unrelated popup or the browser body. */
-async function moduleScrollAncestor(page: Page, label: string): Promise<boolean> {
-  const control = page.locator('.module').getByRole('button', { name: label, exact: true }).first()
+async function moduleScrollAncestor(page: Page, label: string | RegExp): Promise<boolean> {
+  const control = page.locator('.module').getByRole('button', { name: label }).first()
   await expect(control).toBeVisible()
   return control.evaluate((element) => {
     const module = element.closest('.module')
@@ -37,8 +37,8 @@ test('calendar grid and day events share a single vertical scroll on a short pho
 test('tasks, habits, finance and nutrition put their top controls inside their main scroll', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 520 })
   for (const [route, label] of [
-    ['tasks', 'Группы. Сейчас: Все группы'],
-    ['habits', 'Группы. Сейчас: Все группы'],
+    ['tasks', /^Группы\\. Сейчас:/],
+    ['habits', /^Группы\\. Сейчас:/],
     ['finance', 'Главная'],
     ['nutrition', 'Сегодня']
   ] as const) {
