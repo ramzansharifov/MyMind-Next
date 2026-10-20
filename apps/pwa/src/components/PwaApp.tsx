@@ -314,9 +314,7 @@ function Workspace({
                     <PwaReminders services={services} db={db} paused={busy} />
                     <View style={{ flex: 1, minHeight: 0 }}>
                       <ModuleErrorBoundary key={`${route}:${epoch}`}>
-                        <Suspense
-                          fallback={<LoadingState />}
-                        >
+                        <Suspense fallback={<LoadingState />}>
                           <div className="module" key={`${route}:${epoch}`}>
                             {route === 'home' ? (
                               <Home services={services} navigate={navigate} />
