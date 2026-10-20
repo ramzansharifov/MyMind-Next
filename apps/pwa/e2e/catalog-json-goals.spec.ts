@@ -1,5 +1,5 @@
 import { test, expect, open, save, navigate } from './helpers'
-import { MOBILE_CREATE_ACTION_STEP } from '../../../mobile/src/shared/ui/mobile-create-action-gesture'
+import { MOBILE_CREATE_ACTION_STEP } from '../../mobile/src/shared/ui/mobile-create-action-gesture'
 
 for (const [route, add, input, output, jsonButton] of [
   ['movies', 'Добавить фильм', 'JSON фильмов', 'JSON данных фильмов', 'JSON библиотеки'],
