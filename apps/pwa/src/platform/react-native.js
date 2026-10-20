@@ -5,6 +5,10 @@ export * from 'react-native-web'
 /** RN's grouped accessibility props are not supported by React Native Web 0.21. */
 export function browserAccessibilityProps(props) {
   const { accessibilityState, accessibilityValue, ...result } = props
+  // Native controls that claim touch at the start own dragging in both directions.
+  // Otherwise Chrome/Safari can cancel their responder to begin a browser pan.
+  if (props.onStartShouldSetResponder && props.onResponderMove)
+    result.style = [{ touchAction: 'none' }, props.style]
   // Native responder controls (the hold-to-create button) also need browser keyboard activation.
   if (props.accessibilityRole === 'button' && props.onAccessibilityTap) {
     result.tabIndex ??= accessibilityState?.disabled ? -1 : 0

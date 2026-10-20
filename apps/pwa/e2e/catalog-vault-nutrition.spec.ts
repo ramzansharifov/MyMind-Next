@@ -110,12 +110,12 @@ test('password vault: wrong password, encrypted persistence, unlock, edit and de
   await expect(page.getByRole('textbox', { name: 'Пароль', exact: true })).toHaveValue(
     'Secret-never-plaintext-482!'
   )
-  await expect(page.getByRole('textbox', { name: 'Пароль', exact: true })).toHaveAttribute(
+  await expect(page.getByRole('textbox', { name: 'Пароль', exact: true })).toHaveJSProperty(
     'type',
     'password'
   )
   await page.getByRole('button', { name: 'Показать', exact: true }).click()
-  await expect(page.getByRole('textbox', { name: 'Пароль', exact: true })).toHaveAttribute(
+  await expect(page.getByRole('textbox', { name: 'Пароль', exact: true })).toHaveJSProperty(
     'type',
     'text'
   )
