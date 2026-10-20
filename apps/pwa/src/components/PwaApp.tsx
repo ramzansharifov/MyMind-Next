@@ -107,6 +107,11 @@ function currentRoute(): Route {
   return routeFromHash(window.location.hash)
 }
 
+// A new Android route must deliberately wire its screen here instead of opening Settings.
+function unreachableRoute(route: never): never {
+  throw new Error(`Неизвестный раздел: ${String(route)}`)
+}
+
 function Workspace({
   db,
   initialServices
@@ -353,7 +358,7 @@ function Workspace({
                               <Finance />
                             ) : route === 'passwords' ? (
                               <Passwords />
-                            ) : (
+                            ) : route === 'settings' ? (
                               <PwaSettings
                                 services={services}
                                 db={db}
@@ -372,6 +377,8 @@ function Workspace({
                                   }
                                 }}
                               />
+                            ) : (
+                              unreachableRoute(route)
                             )}
                           </div>
                         </Suspense>

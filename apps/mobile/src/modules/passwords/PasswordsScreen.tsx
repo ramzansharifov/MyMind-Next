@@ -1,3 +1,4 @@
+import { runAfterInteraction } from '../../shared/ui/run-after-interaction'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AppState, Linking, Pressable, ScrollView, Text, TextInput, View } from 'react-native'
 import {
@@ -59,19 +60,6 @@ const PASSWORD_TABS: ReadonlyArray<{ id: Tab; label: string; icon: LucideIcon }>
   { id: 'favorites', label: 'Избранное', icon: Heart },
   { id: 'security', label: 'Безопасность', icon: ShieldCheck }
 ]
-
-type IdleGlobal = typeof globalThis & {
-  requestIdleCallback?: (callback: () => void) => number
-}
-
-function runWhenIdle(callback: () => void): void {
-  const requestIdle = (globalThis as IdleGlobal).requestIdleCallback
-  if (typeof requestIdle === 'function') {
-    requestIdle(callback)
-    return
-  }
-  setTimeout(callback, 0)
-}
 
 function SecurityMetric({
   label,
@@ -471,7 +459,7 @@ export function PasswordsScreen(): React.JSX.Element {
 
   const openTool = (action: () => void): void => {
     setToolsOpen(false)
-    runWhenIdle(action)
+    runAfterInteraction(action)
   }
 
   if (!status.unlocked) {
@@ -825,7 +813,7 @@ export function PasswordsScreen(): React.JSX.Element {
               icon="folder"
               onPress={() => {
                 setFiltersOpen(false)
-                runWhenIdle(() => setGroupsOpen(true))
+                runAfterInteraction(() => setGroupsOpen(true))
               }}
             />
           </View>

@@ -19,7 +19,17 @@ for (const [route, add, input, output, jsonButton] of [
       year: 2026,
       genres: ['Драма']
     }
-    await editor.fill(JSON.stringify([item]))
+    await editor.fill(
+      JSON.stringify([
+        item,
+        {
+          title: 'Parity excluded filter fixture',
+          artist: 'Other artist',
+          year: 2025,
+          type: 'series'
+        }
+      ])
+    )
     await page.getByRole('button', { name: 'Применить JSON', exact: true }).click()
     await expect(editor).toHaveCount(0)
     await open(page, route)
@@ -28,6 +38,10 @@ for (const [route, add, input, output, jsonButton] of [
     const exported = page.getByLabel(output, { exact: true })
     await expect(exported).toBeVisible()
     const text = (await exported.textContent())!
+    await page.screenshot({
+      path: `.data/pwa-json-${test.info().project.name}-${route}.png`,
+      animations: 'disabled'
+    })
     expect(text).toContain(item.title)
     expect(() => JSON.parse(text)).not.toThrow()
     await page.getByRole('button', { name: 'Закрыть', exact: true }).last().click()
@@ -37,6 +51,24 @@ for (const [route, add, input, output, jsonButton] of [
     await expect(page.getByText(item.title, { exact: true })).toHaveCount(0)
     await search.fill('Parity JSON')
     await expect(page.getByText(item.title, { exact: true })).toBeVisible()
+    await search.fill('')
+    const filters = page.getByRole('button', {
+      name: route === 'movies' ? 'Фильтры и сортировка' : 'Фильтры музыки',
+      exact: true
+    })
+    await filters.click()
+    if (route === 'movies') await page.getByRole('button', { name: 'Фильм', exact: true }).click()
+    else {
+      await page.getByRole('button', { name: 'Исполнитель', exact: true }).click()
+      await page.getByRole('button', { name: 'Local artist', exact: true }).click()
+    }
+    await save(page)
+    await expect(page.getByText(item.title, { exact: true })).toBeVisible()
+    await expect(page.getByText('Parity excluded filter fixture', { exact: true })).toHaveCount(0)
+    await filters.click()
+    await page.getByRole('button', { name: 'Сбросить', exact: true }).click()
+    await save(page)
+    await expect(page.getByText('Parity excluded filter fixture', { exact: true })).toBeVisible()
   })
 }
 

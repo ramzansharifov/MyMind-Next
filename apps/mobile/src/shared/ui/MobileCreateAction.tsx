@@ -1,3 +1,4 @@
+import { runAfterInteraction } from './run-after-interaction'
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { Pressable, Text, View, type GestureResponderEvent } from 'react-native'
 
@@ -19,19 +20,6 @@ export interface MobileCreateActionItem {
   disabled?: boolean
   onPress(): void
   onHoldSelect?(): void
-}
-
-type IdleGlobal = typeof globalThis & {
-  requestIdleCallback?: (callback: () => void) => number
-}
-
-function runWhenIdle(callback: () => void): void {
-  const requestIdle = (globalThis as IdleGlobal).requestIdleCallback
-  if (typeof requestIdle === 'function') {
-    requestIdle(callback)
-    return
-  }
-  setTimeout(callback, 0)
 }
 
 const HOLD_DELAY_MS = 380
@@ -81,7 +69,7 @@ export function MobileCreateAction({
   const perform = useCallback(
     (action: MobileCreateActionItem): void => {
       if (disabled || action.disabled) return
-      runWhenIdle(() => action.onPress())
+      runAfterInteraction(() => action.onPress())
     },
     [disabled]
   )

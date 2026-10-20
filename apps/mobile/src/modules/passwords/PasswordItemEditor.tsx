@@ -251,7 +251,12 @@ export function PasswordItemEditor({
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
             <Button label="Генератор" onPress={() => setGeneratorOpen(true)} />
             {password ? (
-              <Button label="Копировать пароль" onPress={() => void copy(password)} />
+              <Button
+                label="Копировать пароль"
+                onPress={() =>
+                  void copy(password).catch((reason: unknown) => setError(messageFor(reason)))
+                }
+              />
             ) : null}
           </View>
 
@@ -362,7 +367,14 @@ export function PasswordItemEditor({
                     }
                   />
                   {field.value ? (
-                    <Button label="Копировать" onPress={() => void copy(field.value)} />
+                    <Button
+                      label="Копировать"
+                      onPress={() =>
+                        void copy(field.value).catch((reason: unknown) =>
+                          setError(messageFor(reason))
+                        )
+                      }
+                    />
                   ) : null}
                   <Button
                     label="Удалить поле"
