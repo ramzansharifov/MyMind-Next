@@ -370,4 +370,158 @@ export function MobileCreateActionOverlayProvider({
                           top: CARD_CENTER_TOP,
                           right: 0,
                           left: 0,
-                          height: CARD_HE
+                          height: CARD_HEIGHT,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          opacity: cardOpacity,
+                          transform: [{ translateY }, { scale }]
+                        }}
+                      >
+                        <View
+                          style={{
+                            width: '88%',
+                            maxWidth: 310,
+                            height: CARD_HEIGHT,
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            gap: 14,
+                            paddingHorizontal: 16,
+                            paddingVertical: 14,
+                            borderWidth: 1,
+                            borderColor: active
+                              ? actionColor + '78'
+                              : actionColor + (darkTheme ? '2E' : '38'),
+                            borderRadius: 22,
+                            backgroundColor: darkTheme
+                              ? active
+                                ? '#111318FA'
+                                : '#111318F2'
+                              : active
+                                ? '#FFFFFFFA'
+                                : '#F8FAFCF2',
+                            elevation: 8,
+                            shadowColor: '#000000',
+                            shadowOpacity: 0.22,
+                            shadowRadius: 14,
+                            shadowOffset: { width: 0, height: 7 }
+                          }}
+                        >
+                          <View
+                            style={{
+                              width: 48,
+                              height: 48,
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              borderWidth: 1,
+                              borderColor: actionColor + (active ? '5C' : '36'),
+                              borderRadius: 15,
+                              backgroundColor: actionColor + (active ? '1D' : '12')
+                            }}
+                          >
+                            <AppIcon
+                              name={item.icon ?? 'add'}
+                              size={active ? 23 : 21}
+                              strokeWidth={2.3}
+                              color={actionColor}
+                            />
+                          </View>
+
+                          <View style={{ flex: 1, minWidth: 0 }}>
+                            <Text
+                              numberOfLines={1}
+                              style={{
+                                color: theme.text,
+                                fontSize: active ? 20 : 17,
+                                lineHeight: active ? 25 : 22,
+                                fontWeight: '700',
+                                letterSpacing: active ? -0.3 : -0.15
+                              }}
+                            >
+                              {item.label}
+                            </Text>
+                            {item.description ? (
+                              <Text
+                                numberOfLines={1}
+                                style={{
+                                  marginTop: 5,
+                                  color: theme.muted,
+                                  fontSize: active ? 12 : 11.5,
+                                  lineHeight: 16,
+                                  fontWeight: '500'
+                                }}
+                              >
+                                {item.description}
+                              </Text>
+                            ) : null}
+                          </View>
+
+                          {active ? (
+                            <View
+                              style={{
+                                width: 28,
+                                height: 28,
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                borderRadius: 9,
+                                backgroundColor: actionColor + '12'
+                              }}
+                            >
+                              <AppIcon name="check" size={15} color={actionColor} />
+                            </View>
+                          ) : null}
+                        </View>
+                      </Animated.View>
+                    )
+                  }
+                )}
+              </View>
+            </Animated.View>
+
+            {Platform.OS === 'web' && overlay.items.length > 1 ? (
+              <View
+                pointerEvents="none"
+                style={{
+                  position: 'absolute',
+                  bottom: confirmation ? 87 : 44,
+                  left: 0,
+                  right: 0,
+                  alignItems: 'center'
+                }}
+              >
+                <Text
+                  style={{
+                    color: darkTheme ? '#C5CAD3' : '#4B5563',
+                    fontSize: 12,
+                    fontWeight: '700',
+                    fontVariant: ['tabular-nums']
+                  }}
+                >
+                  {overlay.index + 1} / {overlay.items.length}
+                </Text>
+              </View>
+            ) : null}
+
+            {confirmation ? (
+              <>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Закрыть выбор действия"
+                  onPress={hide}
+                  style={({ pressed }) => ({
+                    position: 'absolute',
+                    top: 18,
+                    right: 18,
+                    width: 38,
+                    height: 38,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderRadius: 12,
+                    backgroundColor: darkTheme ? '#111318E8' : '#FFFFFFE8',
+                    opacity: pressed ? 0.72 : 1
+                  })}
+                >
+                  <AppIcon name="close" size={18} color={theme.muted} />
+                </Pressable>
+
+                <View
+      
