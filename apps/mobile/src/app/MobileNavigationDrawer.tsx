@@ -190,6 +190,7 @@ export function AppNavigationDrawer<T extends string>({
           {updateContent}
 
           <ScrollView
+            style={{ flex: 1, minHeight: 0 }}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ padding: 12, paddingBottom: 18, gap: 4 }}
           >
@@ -223,18 +224,20 @@ export function MobileNavigationDrawer({
   visible,
   currentRoute,
   updater,
+  versionLabel,
   close,
   navigate
 }: {
   visible: boolean
   currentRoute: Route
-  updater: MobileUpdaterController
+  updater?: MobileUpdaterController
+  versionLabel?: string
   close(): void
   navigate(route: Route): void
 }): React.JSX.Element {
   const theme = useTheme()
-  const updateText = updateLabel(updater)
-  const updateContent = updateText ? (
+  const updateText = updater ? updateLabel(updater) : null
+  const updateContent = updater && updateText ? (
     <View style={{ paddingHorizontal: 12, paddingTop: 10 }}>
       <Pressable
         accessibilityRole="button"
@@ -279,7 +282,7 @@ export function MobileNavigationDrawer({
         icon: routeIcons[route]
       }))}
       settingsEntry={{ route: 'settings', title: routeTitles.settings, icon: routeIcons.settings }}
-      versionLabel={'v' + updater.status.currentVersion}
+      versionLabel={versionLabel ?? (updater ? 'v' + updater.status.currentVersion : '')}
       updateContent={updateContent}
     />
   )
