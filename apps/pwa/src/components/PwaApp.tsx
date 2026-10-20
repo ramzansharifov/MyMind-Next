@@ -179,7 +179,9 @@ function Workspace({
       '--border': palette.border,
       '--accent': palette.accent
     }
-    const previous = Object.entries(tokens).map(([name]) => [name, style.getPropertyValue(name)] as const)
+    const previous = Object.entries(tokens).map(
+      ([name]) => [name, style.getPropertyValue(name)] as const
+    )
     for (const [name, value] of Object.entries(tokens)) style.setProperty(name, value)
     return () => {
       for (const [name, value] of previous) {
