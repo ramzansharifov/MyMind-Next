@@ -11,7 +11,11 @@ async function moduleScrollAncestor(
   await expect(control).toBeVisible()
   return control.evaluate((element) => {
     const module = element.closest('.module')
-    for (let parent = element.parentElement; parent && parent !== module; parent = parent.parentElement) {
+    for (
+      let parent = element.parentElement;
+      parent && parent !== module;
+      parent = parent.parentElement
+    ) {
       const overflow = getComputedStyle(parent).overflowY
       if (overflow === 'auto' || overflow === 'scroll') return true
     }
@@ -19,7 +23,9 @@ async function moduleScrollAncestor(
   })
 }
 
-test('calendar grid and day events share a single vertical scroll on a short phone', async ({ page }) => {
+test('calendar grid and day events share a single vertical scroll on a short phone', async ({
+  page
+}) => {
   await page.setViewportSize({ width: 390, height: 480 })
   await open(page, 'calendar')
   const today = page.locator('.module').getByRole('button', { name: 'Сегодня', exact: true })
@@ -29,7 +35,8 @@ test('calendar grid and day events share a single vertical scroll on a short pho
   const before = await today.evaluate((element) => element.getBoundingClientRect().top)
   await page.mouse.move(180, 325)
   await page.mouse.wheel(0, 650)
-  await expect.poll(() => today.evaluate((element) => element.getBoundingClientRect().top))
+  await expect
+    .poll(() => today.evaluate((element) => element.getBoundingClientRect().top))
     .toBeLessThan(before - 40)
 
   await page.mouse.wheel(0, -900)
@@ -38,7 +45,9 @@ test('calendar grid and day events share a single vertical scroll on a short pho
   await expect(page.locator('.module')).toContainText('Выбранный день')
 })
 
-test('tasks, habits, finance and nutrition put their top controls inside their main scroll', async ({ page }) => {
+test('tasks, habits, finance and nutrition put their top controls inside their main scroll', async ({
+  page
+}) => {
   await page.setViewportSize({ width: 390, height: 520 })
   for (const [route, label] of [
     ['tasks', /Группы/],
@@ -48,7 +57,11 @@ test('tasks, habits, finance and nutrition put their top controls inside their m
   ] as const) {
     await open(page, route)
     expect(
-      await moduleScrollAncestor(page, label, route === 'finance' || route === 'nutrition' ? 'tab' : 'button'),
+      await moduleScrollAncestor(
+        page,
+        label,
+        route === 'finance' || route === 'nutrition' ? 'tab' : 'button'
+      ),
       `${route}: header must move with list`
     ).toBe(true)
   }
