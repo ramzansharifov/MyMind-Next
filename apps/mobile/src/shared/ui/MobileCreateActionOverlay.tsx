@@ -524,4 +524,48 @@ export function MobileCreateActionOverlayProvider({
                 </Pressable>
 
                 <View
-      
+                  pointerEvents="box-none"
+                  style={{
+                    position: 'absolute',
+                    right: 0,
+                    bottom: 18,
+                    left: 0,
+                    alignItems: 'center'
+                  }}
+                >
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={confirmation.label}
+                    onPress={() => {
+                      const selected = overlay.items[overlay.index]
+                      if (!selected) return
+                      const callback = confirmation.onConfirm
+                      setConfirmation(null)
+                      callback(selected.key)
+                    }}
+                    style={({ pressed }) => ({
+                      minWidth: 170,
+                      minHeight: 48,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      paddingHorizontal: 24,
+                      borderRadius: 15,
+                      borderWidth: 1,
+                      borderColor: (current.color ?? theme.accent) + '55',
+                      backgroundColor: current.color ?? theme.accent,
+                      opacity: pressed ? 0.8 : 1
+                    })}
+                  >
+                    <Text style={{ color: '#ffffff', fontSize: 14, fontWeight: '700' }}>
+                      {confirmation.label}
+                    </Text>
+                  </Pressable>
+                </View>
+              </>
+            ) : null}
+          </Animated.View>
+        ) : null}
+      </View>
+    </MobileCreateActionOverlayContext.Provider>
+  )
+}
