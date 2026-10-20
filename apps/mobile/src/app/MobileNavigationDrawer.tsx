@@ -190,6 +190,7 @@ export function AppNavigationDrawer<T extends string>({
           {updateContent}
 
           <ScrollView
+            testID="mymind-navigation-items"
             style={{ flex: 1, minHeight: 0 }}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ padding: 12, paddingBottom: 18, gap: 4 }}
