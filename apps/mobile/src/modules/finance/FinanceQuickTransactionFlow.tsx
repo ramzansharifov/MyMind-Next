@@ -596,4 +596,201 @@ export function FinanceQuickTransactionFlow({
             type: 'transfer',
             sourceAccountId: source.id,
             destinationAccountId: destination.id,
-         
+            sourceAmountMinor: amountMinor,
+            destinationAmountMinor,
+            exchangeRateScaled: FINANCE_RATE_SCALE,
+            occurredAt,
+            comment: '',
+            templateId: null
+          })
+        )
+      } else {
+        if (!tagId) throw new Error('Выберите тег')
+        api.createTransaction(
+          validation.createFinanceTransactionInputSchema.parse({
+            type,
+            accountId: source.id,
+            amountMinor,
+            tagId,
+            occurredAt,
+            comment: '',
+            templateId: null
+          })
+        )
+      }
+
+      notifyDataChanged()
+      onSaved()
+      toast.success('Операция создана')
+      createOverlay?.hide()
+      onClose()
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Не удалось сохранить операцию')
+    } finally {
+      setPending(false)
+    }
+  }
+
+  return (
+    <Modal
+      visible
+      transparent
+      statusBarTranslucent
+      navigationBarTranslucent
+      animationType="none"
+      onRequestClose={close}
+    >
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={StyleSheet.absoluteFill}
+      >
+        <View style={{ flex: 1, paddingHorizontal: 18, paddingTop: 18, paddingBottom: 22 }}>
+          <View
+            style={{
+              minHeight: 44,
+              position: 'relative',
+              justifyContent: 'flex-start'
+            }}
+          >
+            <View
+              style={{
+                minHeight: 38,
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                alignItems: 'center',
+                gap: 6,
+                paddingRight: 48
+              }}
+            >
+              <QuickSelectionChip label={operationLabel} tone={tone} icon={operationIcon} />
+
+              {sourceAccount ? (
+                <QuickSelectionChip
+                  key={`source:${sourceAccount.id}`}
+                  label={
+                    type === 'transfer' ? `Списание: ${sourceAccount.name}` : sourceAccount.name
+                  }
+                  tone={tone}
+                />
+              ) : null}
+
+              {destinationAccount ? (
+                <QuickSelectionChip
+                  key={`destination:${destinationAccount.id}`}
+                  label={`Зачисление: ${destinationAccount.name}`}
+                  tone={tone}
+                />
+              ) : null}
+
+              {selectedTag ? (
+                <QuickSelectionChip
+                  key={`tag:${selectedTag.id}`}
+                  label={selectedTag.name}
+                  tone={tone}
+                  icon="tag"
+                />
+              ) : null}
+            </View>
+
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Закрыть быстрый ввод"
+              disabled={pending}
+              onPress={close}
+              style={({ pressed }) => ({
+                position: 'absolute',
+                top: 0,
+                right: 0,
+                width: 38,
+                height: 38,
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: 12,
+                backgroundColor: '#111318E8',
+                opacity: pressed ? 0.72 : 1
+              })}
+            >
+              <AppIcon name="close" size={18} color={theme.muted} />
+            </Pressable>
+          </View>
+
+          <Animated.View
+            style={{
+              flex: 1,
+              alignItems: 'center',
+              justifyContent: 'center',
+              opacity: stageOpacity,
+              transform: [{ translateY: stageTranslateY }, { scale: stageScale }]
+            }}
+          >
+            <Text
+              style={{
+                color: theme.text,
+                fontSize: 23,
+                lineHeight: 29,
+                fontWeight: '700',
+                textAlign: 'center',
+                letterSpacing: -0.4
+              }}
+            >
+              {stageTitle(stage, type)}
+            </Text>
+
+            {stage !== 'amount' ? (
+              <>
+                <Text
+                  style={{
+                    marginTop: 8,
+                    color: theme.muted,
+                    fontSize: 11.5,
+                    lineHeight: 17,
+                    fontWeight: '600',
+                    textAlign: 'center'
+                  }}
+                >
+                  Проведите вверх или вниз · затем нажмите «Дальше»
+                </Text>
+
+                <View style={{ marginTop: 12, width: '100%', alignItems: 'center' }}>
+                  <QuickCarousel
+                    options={currentOptions}
+                    selectedIndex={Math.min(carouselIndex, Math.max(0, currentOptions.length - 1))}
+                    onSelectedIndexChange={setCarouselIndex}
+                    onBusyChange={setCarouselBusy}
+                  />
+                </View>
+              </>
+            ) : (
+              <View
+                style={{
+                  width: '100%',
+                  maxWidth: 330,
+                  marginTop: 24,
+                  gap: 12
+                }}
+              >
+                <View
+                  style={{
+                    paddingHorizontal: 18,
+                    paddingVertical: 18,
+                    borderWidth: 1,
+                    borderColor: tone + '55',
+                    borderRadius: 22,
+                    backgroundColor: '#111318F7'
+                  }}
+                >
+                  <TextInput
+                    autoFocus
+                    accessibilityLabel="Сумма операции"
+                    keyboardType="decimal-pad"
+                    value={amount}
+                    onChangeText={(value) => {
+                      setAmount(value)
+                      setError('')
+                      setImpact(null)
+                      setImpactConfirmed(false)
+                    }}
+                    placeholder="0.00"
+                    placeholderTextColor={theme.muted}
+                    selectionColor={tone}
+            
