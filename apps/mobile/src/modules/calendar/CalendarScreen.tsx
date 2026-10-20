@@ -1,6 +1,6 @@
 import { runAfterInteraction } from '../../shared/ui/run-after-interaction'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { FlatList, Pressable, ScrollView, Text, View } from 'react-native'
+import { FlatList, Platform, Pressable, ScrollView, Text, View } from 'react-native'
 import { Bell, CalendarDays, Clock3, Repeat2 } from 'lucide-react-native'
 import type {
   CalendarOccurrenceRecord,
@@ -280,8 +280,8 @@ export function CalendarScreen(): React.JSX.Element {
     runAfterInteraction(() => edit(item))
   }
 
-  return (
-    <View style={{ flex: 1, minHeight: 0 }}>
+  const calendarHeader = (
+    <>
       <View style={{ gap: 10, marginBottom: 12 }}>
         <View
           style={{
@@ -545,14 +545,19 @@ export function CalendarScreen(): React.JSX.Element {
 
       {state.error ? <ErrorState message={state.error} retry={state.refresh} /> : null}
       {unread.error ? <ErrorState message={unread.error} retry={unread.refresh} /> : null}
+    </>
+  )
 
-      {state.loading ? (
-        <LoadingState />
-      ) : (
-        <FlatList
-          data={selectedDayEvents}
+  return (
+    <View style={{ flex: 1, minHeight: 0 }}>
+      {Platform.OS !== 'web' ? calendarHeader : null}
+      <FlatList
+          data={state.loading ? [] : selectedDayEvents}
+          ListHeaderComponent={Platform.OS === 'web' ? calendarHeader : null}
           keyExtractor={eventKey}
-          ListEmptyComponent={<EmptyState text="На этот день событий нет." />}
+          ListEmptyComponent={
+            state.loading ? <LoadingState /> : <EmptyState text="На этот день событий нет." />
+          }
           refreshing={state.loading}
           onRefresh={() => {
             state.refresh()
@@ -620,8 +625,7 @@ export function CalendarScreen(): React.JSX.Element {
               }
             />
           )}
-        />
-      )}
+      />
 
       <MobileCreateAction
         iconOnly
