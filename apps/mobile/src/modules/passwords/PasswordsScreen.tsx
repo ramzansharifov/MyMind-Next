@@ -1,6 +1,15 @@
 import { runAfterInteraction } from '../../shared/ui/run-after-interaction'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { AppState, Linking, Pressable, ScrollView, Text, TextInput, View } from 'react-native'
+import {
+  AppState,
+  Linking,
+  Platform,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  View
+} from 'react-native'
 import {
   Heart,
   KeyRound,
@@ -470,155 +479,8 @@ export function PasswordsScreen(): React.JSX.Element {
   if (!overview)
     return <ErrorState message={error || 'Не удалось открыть хранилище'} retry={refresh} />
 
-  let content: React.JSX.Element
-  if (tab === 'security') {
-    content = (
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 96, gap: 16 }}
-      >
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-          <SecurityMetric label="Всего" value={securitySummary.total} />
-          <SecurityMetric label="Слабые" value={securitySummary.weak} tone="danger" />
-          <SecurityMetric label="Повторы" value={securitySummary.reused} tone="warning" />
-          <SecurityMetric label="Старые" value={securitySummary.old} tone="warning" />
-        </View>
-
-        <View
-          style={{
-            padding: 14,
-            borderWidth: 1,
-            borderColor: theme.border,
-            borderRadius: 16,
-            backgroundColor: theme.surface
-          }}
-        >
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-            <View
-              style={{
-                width: 36,
-                height: 36,
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: 12,
-                backgroundColor: theme.accent + '10'
-              }}
-            >
-              <ShieldCheck size={17} color={theme.accent} />
-            </View>
-            <View style={{ minWidth: 0, flex: 1 }}>
-              <Text style={{ color: theme.text, fontSize: 14, fontWeight: '700' }}>
-                Защита хранилища
-              </Text>
-              <Text style={{ marginTop: 3, color: theme.muted, fontSize: 11.5, lineHeight: 17 }}>
-                Шифрование, автоблокировка и очистка скопированных секретов включены.
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        {groupScopedItems.some((item) => item.securityIssues.length > 0) ? (
-          groupScopedItems
-            .filter((item) => item.securityIssues.length > 0)
-            .map((item) => (
-              <WorkspaceNodeCard
-                key={item.id}
-                title={item.title}
-                subtitle={[
-                  item.username,
-                  ...item.securityIssues.map((value) => securityLabels[value])
-                ]
-                  .filter(Boolean)
-                  .join(' · ')}
-                leadingIcon="info"
-                onPress={() => openItem(item)}
-              />
-            ))
-        ) : (
-          <EmptyState text="Проблем безопасности не найдено." />
-        )}
-      </ScrollView>
-    )
-  } else {
-    content = (
-      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 96 }}>
-        {filteredItems.length ? (
-          filteredItems.map((item) => {
-            const itemGroup = item.groupId
-              ? (overview.groups.find((candidate) => candidate.id === item.groupId) ?? null)
-              : null
-            return (
-              <WorkspaceNodeCard
-                key={item.id}
-                title={item.title}
-                subtitle={itemSubtitle(item, overview)}
-                leading={
-                  itemGroup ? (
-                    <VisualIconBadge value={itemGroup.icon} colorKey={itemGroup.color} />
-                  ) : undefined
-                }
-                leadingIcon={itemGroup ? undefined : 'passwords'}
-                onPress={() => openItem(item)}
-                action={
-                  <ActionMenu
-                    title={item.title}
-                    items={[
-                      ...(item.username
-                        ? [
-                            {
-                              key: 'copy-login',
-                              label: 'Скопировать логин',
-                              icon: 'copy' as const,
-                              onPress: () => void copyField(item, 'username')
-                            }
-                          ]
-                        : []),
-                      {
-                        key: 'copy-password',
-                        label: 'Скопировать пароль',
-                        icon: 'copy',
-                        onPress: () => void copyField(item, 'password')
-                      },
-                      ...(item.website
-                        ? [
-                            {
-                              key: 'website',
-                              label: 'Открыть сайт',
-                              icon: 'forward' as const,
-                              onPress: () => void openWebsite(item)
-                            }
-                          ]
-                        : []),
-                      {
-                        key: 'edit',
-                        label: 'Изменить',
-                        icon: 'edit',
-                        onPress: () => openItem(item)
-                      },
-                      {
-                        key: 'delete',
-                        label: 'Удалить',
-                        icon: 'delete',
-                        danger: true,
-                        onPress: () => deleteItem(item)
-                      }
-                    ]}
-                  />
-                }
-              />
-            )
-          })
-        ) : (
-          <EmptyState
-            text={tab === 'favorites' ? 'Избранных записей пока нет.' : 'Записей пока нет.'}
-          />
-        )}
-      </ScrollView>
-    )
-  }
-
-  return (
-    <View style={{ flex: 1, minHeight: 0 }}>
+  const tabHeader = (
+    <>
       <View style={{ gap: 10, paddingBottom: 12 }}>
         <SwipeTabBar
           items={PASSWORD_TABS}
@@ -713,6 +575,161 @@ export function PasswordsScreen(): React.JSX.Element {
 
         {error ? <ErrorState message={error} retry={refresh} /> : null}
       </View>
+    </>
+  )
+
+  let content: React.JSX.Element
+  if (tab === 'security') {
+    content = (
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 96, gap: 16 }}
+      >
+        {Platform.OS === 'web' ? tabHeader : null}
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+          <SecurityMetric label="Всего" value={securitySummary.total} />
+          <SecurityMetric label="Слабые" value={securitySummary.weak} tone="danger" />
+          <SecurityMetric label="Повторы" value={securitySummary.reused} tone="warning" />
+          <SecurityMetric label="Старые" value={securitySummary.old} tone="warning" />
+        </View>
+
+        <View
+          style={{
+            padding: 14,
+            borderWidth: 1,
+            borderColor: theme.border,
+            borderRadius: 16,
+            backgroundColor: theme.surface
+          }}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <View
+              style={{
+                width: 36,
+                height: 36,
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: 12,
+                backgroundColor: theme.accent + '10'
+              }}
+            >
+              <ShieldCheck size={17} color={theme.accent} />
+            </View>
+            <View style={{ minWidth: 0, flex: 1 }}>
+              <Text style={{ color: theme.text, fontSize: 14, fontWeight: '700' }}>
+                Защита хранилища
+              </Text>
+              <Text style={{ marginTop: 3, color: theme.muted, fontSize: 11.5, lineHeight: 17 }}>
+                Шифрование, автоблокировка и очистка скопированных секретов включены.
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        {groupScopedItems.some((item) => item.securityIssues.length > 0) ? (
+          groupScopedItems
+            .filter((item) => item.securityIssues.length > 0)
+            .map((item) => (
+              <WorkspaceNodeCard
+                key={item.id}
+                title={item.title}
+                subtitle={[
+                  item.username,
+                  ...item.securityIssues.map((value) => securityLabels[value])
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
+                leadingIcon="info"
+                onPress={() => openItem(item)}
+              />
+            ))
+        ) : (
+          <EmptyState text="Проблем безопасности не найдено." />
+        )}
+      </ScrollView>
+    )
+  } else {
+    content = (
+      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 96 }}>
+        {Platform.OS === 'web' ? tabHeader : null}
+        {filteredItems.length ? (
+          filteredItems.map((item) => {
+            const itemGroup = item.groupId
+              ? (overview.groups.find((candidate) => candidate.id === item.groupId) ?? null)
+              : null
+            return (
+              <WorkspaceNodeCard
+                key={item.id}
+                title={item.title}
+                subtitle={itemSubtitle(item, overview)}
+                leading={
+                  itemGroup ? (
+                    <VisualIconBadge value={itemGroup.icon} colorKey={itemGroup.color} />
+                  ) : undefined
+                }
+                leadingIcon={itemGroup ? undefined : 'passwords'}
+                onPress={() => openItem(item)}
+                action={
+                  <ActionMenu
+                    title={item.title}
+                    items={[
+                      ...(item.username
+                        ? [
+                            {
+                              key: 'copy-login',
+                              label: 'Скопировать логин',
+                              icon: 'copy' as const,
+                              onPress: () => void copyField(item, 'username')
+                            }
+                          ]
+                        : []),
+                      {
+                        key: 'copy-password',
+                        label: 'Скопировать пароль',
+                        icon: 'copy',
+                        onPress: () => void copyField(item, 'password')
+                      },
+                      ...(item.website
+                        ? [
+                            {
+                              key: 'website',
+                              label: 'Открыть сайт',
+                              icon: 'forward' as const,
+                              onPress: () => void openWebsite(item)
+                            }
+                          ]
+                        : []),
+                      {
+                        key: 'edit',
+                        label: 'Изменить',
+                        icon: 'edit',
+                        onPress: () => openItem(item)
+                      },
+                      {
+                        key: 'delete',
+                        label: 'Удалить',
+                        icon: 'delete',
+                        danger: true,
+                        onPress: () => deleteItem(item)
+                      }
+                    ]}
+                  />
+                }
+              />
+            )
+          })
+        ) : (
+          <EmptyState
+            text={tab === 'favorites' ? 'Избранных записей пока нет.' : 'Записей пока нет.'}
+          />
+        )}
+      </ScrollView>
+    )
+  }
+
+  return (
+    <View style={{ flex: 1, minHeight: 0 }}>
+      {Platform.OS !== 'web' ? tabHeader : null}
 
       <SwipeableTabContent
         tabs={PASSWORD_TAB_IDS}

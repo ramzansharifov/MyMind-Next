@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState, type ReactNode } from 'react'
 import { FlatList, Text, View } from 'react-native'
 import {
   NUTRITION_MEAL_TYPES,
@@ -36,7 +36,7 @@ const macroLabels: Record<'protein' | 'fat' | 'carbs', string> = {
   carbs: 'Углеводы'
 }
 
-export function NutritionReportsView(): React.JSX.Element {
+export function NutritionReportsView({ header }: { header?: ReactNode } = {}): React.JSX.Element {
   const { nutrition: api } = useServices()
   const today = localDateKey()
   const defaults = useMemo(() => reportDateRange('30', '', '', today), [today])
@@ -110,18 +110,21 @@ export function NutritionReportsView(): React.JSX.Element {
         keyExtractor={(item) => item.date}
         contentContainerStyle={{ paddingBottom: 32 }}
         ListHeaderComponent={
-          <NutritionReportHeader
-            report={report}
-            period={period}
-            customFrom={customFrom}
-            customTo={customTo}
-            mealType={mealType}
-            onPeriod={(next) => {
-              if (next === 'custom') chooseCustomPeriod()
-              else setPeriod(next)
-            }}
-            onMealType={setMealType}
-          />
+          <>
+            {header}
+            <NutritionReportHeader
+              report={report}
+              period={period}
+              customFrom={customFrom}
+              customTo={customTo}
+              mealType={mealType}
+              onPeriod={(next) => {
+                if (next === 'custom') chooseCustomPeriod()
+                else setPeriod(next)
+              }}
+              onMealType={setMealType}
+            />
+          </>
         }
         ListEmptyComponent={<EmptyState text="За выбранный период пока нет записей." />}
         renderItem={({ item }) => (

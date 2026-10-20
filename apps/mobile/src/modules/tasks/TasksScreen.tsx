@@ -203,11 +203,8 @@ export function TasksScreen(): React.JSX.Element {
     ).includes(normalizedQuery)
   })
 
-  return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={{ flex: 1, minHeight: 0 }}
-    >
+  const tabHeader = (
+    <>
       <View style={{ marginBottom: 12 }}>
         <SwipeTabBar
           items={STATUS_FILTERS}
@@ -284,6 +281,15 @@ export function TasksScreen(): React.JSX.Element {
       </View>
 
       {state.error && <ErrorState message={state.error} retry={state.refresh} />}
+    </>
+  )
+
+  return (
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={{ flex: 1, minHeight: 0 }}
+    >
+      {Platform.OS !== 'web' || state.loading ? tabHeader : null}
 
       <SwipeableTabContent
         tabs={TASK_STATUS_TABS}
@@ -297,6 +303,7 @@ export function TasksScreen(): React.JSX.Element {
         ) : (
           <FlatList
             style={{ flex: 1 }}
+            ListHeaderComponent={Platform.OS === 'web' ? tabHeader : null}
             data={tasks}
             keyExtractor={(item) => item.id}
             contentContainerStyle={{ paddingBottom: 8 }}

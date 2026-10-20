@@ -1,6 +1,6 @@
 import { runAfterInteraction } from '../../shared/ui/run-after-interaction'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { FlatList, Pressable, ScrollView, Text, View } from 'react-native'
+import { FlatList, Platform, Pressable, ScrollView, Text, View } from 'react-native'
 import { Bell, CalendarDays, Clock3, Repeat2 } from 'lucide-react-native'
 import type {
   CalendarOccurrenceRecord,
@@ -280,8 +280,8 @@ export function CalendarScreen(): React.JSX.Element {
     runAfterInteraction(() => edit(item))
   }
 
-  return (
-    <View style={{ flex: 1, minHeight: 0 }}>
+  const calendarHeader = (
+    <>
       <View style={{ gap: 10, marginBottom: 12 }}>
         <View
           style={{
@@ -545,83 +545,87 @@ export function CalendarScreen(): React.JSX.Element {
 
       {state.error ? <ErrorState message={state.error} retry={state.refresh} /> : null}
       {unread.error ? <ErrorState message={unread.error} retry={unread.refresh} /> : null}
+    </>
+  )
 
-      {state.loading ? (
-        <LoadingState />
-      ) : (
-        <FlatList
-          data={selectedDayEvents}
-          keyExtractor={eventKey}
-          ListEmptyComponent={<EmptyState text="На этот день событий нет." />}
-          refreshing={state.loading}
-          onRefresh={() => {
-            state.refresh()
-            unread.refresh()
-          }}
-          contentContainerStyle={{ paddingBottom: 96 }}
-          renderItem={({ item }) => (
-            <WorkspaceNodeCard
-              title={item.title}
-              subtitle={calendarOccurrenceSubtitle(item)}
-              leadingIcon="calendar"
-              onPress={() => openEvent(item)}
-              action={
-                <ActionMenu
-                  title={item.title}
-                  description={dateTitle(item.occurrenceDate)}
-                  items={[
-                    {
-                      key: 'edit',
-                      label: 'Редактировать',
-                      icon: 'edit',
-                      onPress: () => edit(item)
-                    },
-                    ...(item.kind === 'annual'
-                      ? [
-                          {
-                            key: 'skip-year',
-                            label: `Убрать только в ${item.occurrenceDate.slice(0, 4)} году`,
-                            icon: 'skip' as const,
-                            onPress: () =>
-                              state.confirmDelete(
-                                'Скрыть это повторение?',
-                                () => {
-                                  setSelectedEventKey(null)
-                                  api.setCalendarOccurrenceHidden({
-                                    eventId: item.eventId,
-                                    occurrenceDate: item.occurrenceDate,
-                                    hidden: true
-                                  })
-                                },
-                                'Остальные ежегодные повторения сохранятся.'
-                              )
-                          }
-                        ]
-                      : []),
-                    {
-                      key: 'delete',
-                      label: item.kind === 'annual' ? 'Удалить всю серию' : 'Удалить событие',
-                      icon: 'delete',
-                      danger: true,
-                      onPress: () =>
-                        state.confirmDelete(
-                          item.kind === 'annual' ? 'Удалить всю серию?' : 'Удалить событие?',
-                          () => {
-                            setSelectedEventKey(null)
-                            api.deleteCalendarEvent(item.eventId)
-                          },
-                          item.kind === 'annual'
-                            ? 'Будут удалены все ежегодные повторения и заметки.'
-                            : 'Событие и заметка будут удалены.'
-                        )
-                    }
-                  ]}
-                />
-              }
-            />
-          )}
-        />
-      )}
+  return (
+    <View style={{ flex: 1, minHeight: 0 }}>
+      {Platform.OS !== 'web' ? calendarHeader : null}
+      <FlatList
+        data={state.loading ? [] : selectedDayEvents}
+        ListHeaderComponent={Platform.OS === 'web' ? calendarHeader : null}
+        keyExtractor={eventKey}
+        ListEmptyComponent={
+          state.loading ? <LoadingState /> : <EmptyState text="На этот день событий нет." />
+        }
+        refreshing={state.loading}
+        onRefresh={() => {
+          state.refresh()
+          unread.refresh()
+        }}
+        contentContainerStyle={{ paddingBottom: 96 }}
+        renderItem={({ item }) => (
+          <WorkspaceNodeCard
+            title={item.title}
+            subtitle={calendarOccurrenceSubtitle(item)}
+            leadingIcon="calendar"
+            onPress={() => openEvent(item)}
+            action={
+              <ActionMenu
+                title={item.title}
+                description={dateTitle(item.occurrenceDate)}
+                items={[
+                  {
+                    key: 'edit',
+                    label: 'Редактировать',
+                    icon: 'edit',
+                    onPress: () => edit(item)
+                  },
+                  ...(item.kind === 'annual'
+                    ? [
+                        {
+                          key: 'skip-year',
+                          label: `Убрать только в ${item.occurrenceDate.slice(0, 4)} году`,
+                          icon: 'skip' as const,
+                          onPress: () =>
+                            state.confirmDelete(
+                              'Скрыть это повторение?',
+                              () => {
+                                setSelectedEventKey(null)
+                                api.setCalendarOccurrenceHidden({
+                                  eventId: item.eventId,
+                                  occurrenceDate: item.occurrenceDate,
+                                  hidden: true
+                                })
+                              },
+                              'Остальные ежегодные повторения сохранятся.'
+                            )
+                        }
+                      ]
+                    : []),
+                  {
+                    key: 'delete',
+                    label: item.kind === 'annual' ? 'Удалить всю серию' : 'Удалить событие',
+                    icon: 'delete',
+                    danger: true,
+                    onPress: () =>
+                      state.confirmDelete(
+                        item.kind === 'annual' ? 'Удалить всю серию?' : 'Удалить событие?',
+                        () => {
+                          setSelectedEventKey(null)
+                          api.deleteCalendarEvent(item.eventId)
+                        },
+                        item.kind === 'annual'
+                          ? 'Будут удалены все ежегодные повторения и заметки.'
+                          : 'Событие и заметка будут удалены.'
+                      )
+                  }
+                ]}
+              />
+            }
+          />
+        )}
+      />
 
       <MobileCreateAction
         iconOnly
