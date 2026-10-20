@@ -20,7 +20,7 @@ import type { MobileServices } from '../../../mobile/src/app/services'
 import { navigationRoutes, routeTitles, routeIcons, type Route } from './navigation'
 import { routeFromHash } from './routing'
 import { MobileAppHeader } from '../../../mobile/src/app/MobileAppHeader'
-import { AppNavigationDrawer } from '../../../mobile/src/app/MobileNavigationDrawer'
+import { MobileNavigationDrawer } from '../../../mobile/src/app/MobileNavigationDrawer'
 import { dispatchHardwareBack } from '../platform/react-native'
 import {
   APP_MODULE_NAVIGATE_EVENT,
@@ -36,6 +36,7 @@ import { PwaSettings } from './PwaSettings'
 import { usePwa } from './usePwa'
 import { ModuleErrorBoundary } from './ModuleErrorBoundary'
 import { PwaReminders } from './PwaReminders'
+import { ErrorState, LoadingState } from '../../../mobile/src/shared/ui/primitives'
 import { syncActivity } from '../sync/activity'
 import packageInfo from '../../package.json'
 
@@ -288,23 +289,11 @@ function Workspace({
                     } as React.CSSProperties
                   }
                 >
-                  <AppNavigationDrawer
+                  <MobileNavigationDrawer
                     visible={menu}
                     currentRoute={route}
                     close={() => setMenu(false)}
                     navigate={navigate}
-                    entries={navigationRoutes
-                      .filter((item) => item !== 'settings')
-                      .map((item) => ({
-                        route: item,
-                        title: routeTitles[item],
-                        icon: routeIcons[item]
-                      }))}
-                    settingsEntry={{
-                      route: 'settings',
-                      title: routeTitles.settings,
-                      icon: routeIcons.settings
-                    }}
                     versionLabel={`v${packageInfo.version}`}
                   />
                   {!immersive ? (
@@ -321,15 +310,13 @@ function Workspace({
                     className={immersive ? 'workspace immersive' : 'workspace'}
                     aria-busy={busy}
                   >
-                    {error ? <p role="alert">{error}</p> : null}
+                    {error ? <ErrorState message={error} /> : null}
                     <PwaReminders services={services} db={db} paused={busy} />
                     <View style={{ flex: 1, minHeight: 0 }}>
                       <ModuleErrorBoundary key={`${route}:${epoch}`}>
                         <Suspense
                           fallback={
-                            <div role="status" className="startup">
-                              Открываем раздел…
-                            </div>
+                            <LoadingState />
                           }
                         >
                           <div className="module" key={`${route}:${epoch}`}>
