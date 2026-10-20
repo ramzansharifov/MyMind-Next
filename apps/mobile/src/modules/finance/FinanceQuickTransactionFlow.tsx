@@ -793,4 +793,130 @@ export function FinanceQuickTransactionFlow({
                     placeholder="0.00"
                     placeholderTextColor={theme.muted}
                     selectionColor={tone}
-            
+                    style={{
+                      color: theme.text,
+                      fontSize: 34,
+                      lineHeight: 42,
+                      fontWeight: '700',
+                      textAlign: 'center',
+                      fontVariant: ['tabular-nums']
+                    }}
+                  />
+                  <Text
+                    style={{
+                      marginTop: 6,
+                      color: theme.muted,
+                      fontSize: 12,
+                      lineHeight: 17,
+                      fontWeight: '600',
+                      textAlign: 'center'
+                    }}
+                  >
+                    {sourceAccount
+                      ? type === 'transfer' && destinationAccount
+                        ? `${sourceAccount.currencyCode} → ${destinationAccount.currencyCode}`
+                        : sourceAccount.currencyCode
+                      : 'Выберите счёт'}
+                  </Text>
+                </View>
+
+                {error ? (
+                  <Text
+                    style={{
+                      color: theme.error,
+                      fontSize: 12,
+                      lineHeight: 17,
+                      textAlign: 'center'
+                    }}
+                  >
+                    {error}
+                  </Text>
+                ) : null}
+
+                {impact ? (
+                  <View
+                    style={{
+                      padding: 11,
+                      borderWidth: 1,
+                      borderColor: '#f59e0b55',
+                      borderRadius: 13,
+                      backgroundColor: '#f59e0b12'
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: '#fbbf24',
+                        fontSize: 11.5,
+                        lineHeight: 16,
+                        fontWeight: '700',
+                        textAlign: 'center'
+                      }}
+                    >
+                      Расход затронет {impact.items.length} лимит(а). Нажмите ещё раз для
+                      подтверждения.
+                    </Text>
+                  </View>
+                ) : null}
+              </View>
+            )}
+          </Animated.View>
+
+          <View
+            pointerEvents="box-none"
+            style={{
+              position: 'absolute',
+              right: 0,
+              bottom: 20,
+              left: 0,
+              alignItems: 'center'
+            }}
+          >
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={
+                stage === 'amount'
+                  ? pending
+                    ? 'Сохранение'
+                    : impactConfirmed
+                      ? 'Подтвердить расход'
+                      : 'Создать операцию'
+                  : 'Дальше'
+              }
+              disabled={
+                pending || carouselBusy || (stage !== 'amount' && currentOptions.length === 0)
+              }
+              onPress={stage === 'amount' ? save : confirmCarouselSelection}
+              style={({ pressed }) => ({
+                minWidth: 176,
+                minHeight: 50,
+                alignItems: 'center',
+                justifyContent: 'center',
+                paddingHorizontal: 24,
+                borderRadius: 15,
+                borderWidth: 1,
+                borderColor: tone + '55',
+                backgroundColor: tone,
+                opacity:
+                  pending || carouselBusy || (stage !== 'amount' && currentOptions.length === 0)
+                    ? 0.45
+                    : pressed
+                      ? 0.8
+                      : 1
+              })}
+            >
+              <Text style={{ color: '#ffffff', fontSize: 14, fontWeight: '700' }}>
+                {stage === 'amount'
+                  ? pending
+                    ? 'Сохранение…'
+                    : impactConfirmed
+                      ? 'Подтвердить расход'
+                      : 'Создать'
+                  : 'Дальше'}
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
+  )
+}
