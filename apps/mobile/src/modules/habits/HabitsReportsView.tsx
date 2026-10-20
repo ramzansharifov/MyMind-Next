@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState, type ReactNode } from 'react'
 import { ScrollView, Text, TextInput, View } from 'react-native'
 import type { HabitReportDay } from '@mymind/contracts/habits'
 import { localDateKey } from '@mymind/core/habits'
@@ -25,6 +25,7 @@ interface Props {
   api: MobileServices['habits']
   groupId: string | null | undefined
   scopeLabel: string
+  header?: ReactNode
 }
 
 const reportRangeOptions: Array<{ key: MobileHabitReportRange; label: string }> = [
@@ -77,7 +78,7 @@ function MetricCard({ label, value }: { label: string; value: string }): React.J
   )
 }
 
-export function HabitsReportsView({ api, groupId, scopeLabel }: Props): React.JSX.Element {
+export function HabitsReportsView({ api, groupId, scopeLabel, header }: Props): React.JSX.Element {
   const theme = useTheme()
   const today = localDateKey()
   const initialCustom = useMemo(() => defaultHabitCustomRange(today), [today])
@@ -148,6 +149,7 @@ export function HabitsReportsView({ api, groupId, scopeLabel }: Props): React.JS
       keyboardShouldPersistTaps="handled"
       contentContainerStyle={{ gap: 12, paddingBottom: 40 }}
     >
+      {header}
       <Label>Период</Label>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
         {reportRangeOptions.map((option) => (
