@@ -2,8 +2,12 @@ import { test, expect, open } from './helpers'
 import type { Page } from '@playwright/test'
 
 /** A scrollable ancestor must belong to the module, not an unrelated popup or the browser body. */
-async function moduleScrollAncestor(page: Page, label: string | RegExp): Promise<boolean> {
-  const control = page.locator('.module').getByRole('button', { name: label }).first()
+async function moduleScrollAncestor(
+  page: Page,
+  label: string | RegExp,
+  role: 'button' | 'tab' = 'button'
+): Promise<boolean> {
+  const control = page.locator('.module').getByRole(role, { name: label }).first()
   await expect(control).toBeVisible()
   return control.evaluate((element) => {
     const module = element.closest('.module')
@@ -43,6 +47,9 @@ test('tasks, habits, finance and nutrition put their top controls inside their m
     ['nutrition', 'Сегодня']
   ] as const) {
     await open(page, route)
-    expect(await moduleScrollAncestor(page, label), `${route}: header must move with list`).toBe(true)
+    expect(
+      await moduleScrollAncestor(page, label, route === 'finance' || route === 'nutrition' ? 'tab' : 'button'),
+      `${route}: header must move with list`
+    ).toBe(true)
   }
 })
