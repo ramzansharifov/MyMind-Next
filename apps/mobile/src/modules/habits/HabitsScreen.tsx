@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
-import { FlatList, Pressable, ScrollView, Text, View } from 'react-native'
+import { FlatList, Platform, Pressable, ScrollView, Text, View } from 'react-native'
 import {
   BarChart3,
   CalendarDays,
@@ -221,8 +221,8 @@ export function HabitsScreen(): React.JSX.Element {
 
   const activeGroupLabel = scopeLabel
 
-  return (
-    <View style={{ flex: 1, minHeight: 0 }}>
+  const tabHeader = (
+    <>
       <View style={{ marginBottom: 12, gap: 10 }}>
         <SwipeTabBar
           items={VIEW_FILTERS}
@@ -388,6 +388,12 @@ export function HabitsScreen(): React.JSX.Element {
       </View>
 
       {state.error && <ErrorState message={state.error} retry={state.refresh} />}
+    </>
+  )
+
+  return (
+    <View style={{ flex: 1, minHeight: 0 }}>
+      {Platform.OS !== 'web' || state.loading ? tabHeader : null}
 
       <SwipeableTabContent
         tabs={HABIT_VIEW_TABS}
@@ -400,11 +406,17 @@ export function HabitsScreen(): React.JSX.Element {
           <LoadingState />
         ) : view === 'reports' ? (
           <View style={{ flex: 1, minHeight: 0 }}>
-            <HabitsReportsView api={api} groupId={group} scopeLabel={scopeLabel} />
+            <HabitsReportsView
+              api={api}
+              groupId={group}
+              scopeLabel={scopeLabel}
+              header={Platform.OS === 'web' ? tabHeader : null}
+            />
           </View>
         ) : (
           <FlatList
             style={{ flex: 1 }}
+            ListHeaderComponent={Platform.OS === 'web' ? tabHeader : null}
             data={visible}
             keyExtractor={(item) => item.id}
             contentContainerStyle={{ paddingBottom: 8 }}
