@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState, type ReactNode } from 'react'
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native'
 import {
   Activity,
@@ -38,6 +38,7 @@ interface Props {
   accounts: FinanceAccountSummary[]
   tags: FinanceTagSummary[]
   baseCurrencyCode: string
+  header?: ReactNode
 }
 
 const reportRangeOptions: Array<{ key: MobileFinanceReportRange; label: string }> = [
@@ -352,7 +353,8 @@ export function FinanceReportsView({
   api,
   accounts,
   tags,
-  baseCurrencyCode
+  baseCurrencyCode,
+  header
 }: Props): React.JSX.Element {
   const theme = useTheme()
   const initialCustom = useMemo(() => defaultFinanceCustomRange(), [])
@@ -506,6 +508,7 @@ export function FinanceReportsView({
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ gap: 14, paddingBottom: 96 }}
       >
+        {header}
         <View style={{ flexDirection: 'row', gap: 8 }}>
           <Pressable
             accessibilityRole="button"
