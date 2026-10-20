@@ -405,4 +405,195 @@ export function FinanceQuickTransactionFlow({
   const [stageIndex, setStageIndex] = useState(0)
   const stage = stages[stageIndex]
   const [carouselIndex, setCarouselIndex] = useState(0)
-  const [sourc
+  const [sourceAccountId, setSourceAccountId] = useState('')
+  const [destinationAccountId, setDestinationAccountId] = useState('')
+  const [tagId, setTagId] = useState('')
+  const [amount, setAmount] = useState('')
+  const [pending, setPending] = useState(false)
+  const [error, setError] = useState('')
+  const [impact, setImpact] = useState<FinanceLimitImpact | null>(null)
+  const [impactConfirmed, setImpactConfirmed] = useState(false)
+  const [stageOpacity] = useState(() => new Animated.Value(0))
+  const [stageTranslateY] = useState(() => new Animated.Value(-62))
+  const [stageScale] = useState(() => new Animated.Value(0.97))
+  const [carouselBusy, setCarouselBusy] = useState(false)
+
+  const tone = financeOperationTone(type, theme.accent)
+  const operationLabel = type === 'income' ? 'Доход' : type === 'expense' ? 'Расход' : 'Перевод'
+  const operationIcon: AppIconName =
+    type === 'income' ? 'income' : type === 'expense' ? 'expense' : 'transfer'
+
+  const sourceAccount = accounts.find((account) => account.id === sourceAccountId)
+  const destinationAccount = accounts.find((account) => account.id === destinationAccountId)
+  const selectedTag = tags.find((tag) => tag.id === tagId)
+
+  const enterStage = useCallback((): void => {
+    stageOpacity.setValue(0)
+    stageTranslateY.setValue(-62)
+    stageScale.setValue(0.97)
+    Animated.parallel([
+      Animated.timing(stageOpacity, {
+        toValue: 1,
+        duration: 210,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true
+      }),
+      Animated.spring(stageTranslateY, {
+        toValue: 0,
+        damping: 24,
+        stiffness: 230,
+        mass: 0.78,
+        overshootClamping: true,
+        useNativeDriver: true
+      }),
+      Animated.spring(stageScale, {
+        toValue: 1,
+        damping: 24,
+        stiffness: 230,
+        mass: 0.78,
+        overshootClamping: true,
+        useNativeDriver: true
+      })
+    ]).start()
+  }, [stageOpacity, stageScale, stageTranslateY])
+
+  useEffect(() => {
+    requestAnimationFrame(enterStage)
+  }, [enterStage])
+
+  const transitionNext = (): void => {
+    if (stageIndex >= stages.length - 1) return
+
+    Animated.parallel([
+      Animated.timing(stageOpacity, {
+        toValue: 0,
+        duration: 190,
+        easing: Easing.in(Easing.cubic),
+        useNativeDriver: true
+      }),
+      Animated.timing(stageTranslateY, {
+        toValue: 136,
+        duration: 215,
+        easing: Easing.in(Easing.cubic),
+        useNativeDriver: true
+      }),
+      Animated.timing(stageScale, {
+        toValue: 0.96,
+        duration: 215,
+        easing: Easing.in(Easing.cubic),
+        useNativeDriver: true
+      })
+    ]).start(() => {
+      setStageIndex((index) => index + 1)
+      setCarouselIndex(0)
+      requestAnimationFrame(enterStage)
+    })
+  }
+
+  const close = (): void => {
+    if (pending) return
+    createOverlay?.hide()
+    onClose()
+  }
+
+  const accountOptions = useMemo(
+    () =>
+      accounts.map<CarouselOption>((account) => ({
+        key: account.id,
+        title: account.name,
+        subtitle: `${formatMoneyMinor(account.balanceMinor, account.currencyCode)} · ${account.currencyCode}`,
+        tone: theme.accent,
+        icon: { kind: 'visual', value: account.icon }
+      })),
+    [accounts, theme.accent]
+  )
+
+  const destinationOptions = useMemo(
+    () => accountOptions.filter((option) => option.key !== sourceAccountId),
+    [accountOptions, sourceAccountId]
+  )
+
+  const tagOptions = useMemo(
+    () =>
+      compatibleTags.map<CarouselOption>((tag) => ({
+        key: tag.id,
+        title: tag.name,
+        subtitle:
+          tag.type === 'both' ? 'Доходы и расходы' : tag.type === 'income' ? 'Доход' : 'Расход',
+        tone: financeOperationTone(type, theme.accent),
+        icon: { kind: 'glyph', value: tag.icon }
+      })),
+    [compatibleTags, theme.accent, type]
+  )
+
+  const currentOptions =
+    stage === 'source-account'
+      ? accountOptions
+      : stage === 'destination-account'
+        ? destinationOptions
+        : tagOptions
+
+  const confirmCarouselSelection = (): void => {
+    if (carouselBusy) return
+    const safeIndex = Math.min(carouselIndex, Math.max(0, currentOptions.length - 1))
+    const option = currentOptions[safeIndex]
+    if (!option) {
+      setError('Нет доступных вариантов для выбора')
+      return
+    }
+
+    setError('')
+    setImpact(null)
+    setImpactConfirmed(false)
+
+    if (stage === 'source-account') {
+      setSourceAccountId(option.key)
+      if (destinationAccountId === option.key) setDestinationAccountId('')
+    } else if (stage === 'destination-account') {
+      setDestinationAccountId(option.key)
+    } else if (stage === 'tag') {
+      setTagId(option.key)
+    }
+
+    transitionNext()
+  }
+
+  const save = (): void => {
+    if (pending) return
+    setError('')
+
+    try {
+      const source = accounts.find((account) => account.id === sourceAccountId)
+      if (!source) throw new Error('Выберите счёт')
+      const amountMinor = parseMoneyToMinor(amount, source.currencyCode)
+      if (amountMinor <= 0) throw new Error('Сумма должна быть больше нуля')
+      const occurredAt = Date.now()
+
+      if (type === 'expense' && !impactConfirmed) {
+        if (!tagId) throw new Error('Выберите тег')
+        const nextImpact = api.previewExpenseImpact({
+          accountId: source.id,
+          tagId,
+          amountMinor,
+          occurredAt,
+          excludeTransactionId: null
+        })
+        if (nextImpact.items.length) {
+          setImpact(nextImpact)
+          setImpactConfirmed(true)
+          return
+        }
+      }
+
+      setPending(true)
+
+      if (type === 'transfer') {
+        const destination = accounts.find((account) => account.id === destinationAccountId)
+        if (!destination) throw new Error('Выберите счёт зачисления')
+        const destinationAmountMinor = parseMoneyToMinor(amount, destination.currencyCode)
+        api.createTransaction(
+          validation.createFinanceTransactionInputSchema.parse({
+            type: 'transfer',
+            sourceAccountId: source.id,
+            destinationAccountId: destination.id,
+         
