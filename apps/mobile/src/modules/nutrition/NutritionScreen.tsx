@@ -1,5 +1,5 @@
-import { useCallback, useMemo, useState } from 'react'
-import { Pressable, ScrollView, Text, TextInput, View } from 'react-native'
+import { useCallback, useMemo, useState, type ReactNode } from 'react'
+import { Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native'
 import type {
   NutritionLogEntryRecord,
   NutritionTargetRecord,
@@ -519,8 +519,10 @@ function NutritionMealSection({
 
 function NutritionGoalCard({
   target,
-  onSave
+  onSave,
+  header
 }: {
+  header?: ReactNode
   target: NutritionTargetRecord | null
   onSave(input: {
     calories: number | null
@@ -550,6 +552,7 @@ function NutritionGoalCard({
 
   return (
     <ScrollView contentContainerStyle={{ paddingBottom: 28 }}>
+      {header}
       <View
         style={{
           overflow: 'hidden',
@@ -896,7 +899,7 @@ export function NutritionScreen(): React.JSX.Element {
 
     return (
       <View style={{ flex: 1 }}>
-        {header}
+        {Platform.OS !== 'web' ? header : null}
         {overview.error ? <ErrorState message={overview.error} retry={overview.refresh} /> : null}
         <SwipeableTabContent
           tabs={NUTRITION_TAB_IDS}
@@ -908,6 +911,7 @@ export function NutritionScreen(): React.JSX.Element {
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ gap: 12, paddingBottom: 96 }}
           >
+            {Platform.OS === 'web' ? header : null}
             <NutritionDaySummary
               nutrients={day?.nutrients ?? zeroNutrients}
               target={target ?? null}
@@ -977,7 +981,7 @@ export function NutritionScreen(): React.JSX.Element {
   if (tab === 'goal') {
     return (
       <View style={{ flex: 1 }}>
-        {header}
+        {Platform.OS !== 'web' ? header : null}
         {overview.error ? <ErrorState message={overview.error} retry={overview.refresh} /> : null}
         <SwipeableTabContent
           tabs={NUTRITION_TAB_IDS}
@@ -988,6 +992,7 @@ export function NutritionScreen(): React.JSX.Element {
           <NutritionGoalCard
             key={data?.currentTarget?.id ?? 'nutrition-goal-empty'}
             target={data?.currentTarget ?? null}
+            header={Platform.OS === 'web' ? header : null}
             onSave={(input) =>
               overview.mutate(() => {
                 api.setTargets(input)
@@ -1002,7 +1007,7 @@ export function NutritionScreen(): React.JSX.Element {
   if (tab === 'progress') {
     return (
       <View style={{ flex: 1 }}>
-        {header}
+        {Platform.OS !== 'web' ? header : null}
         {overview.error ? <ErrorState message={overview.error} retry={overview.refresh} /> : null}
         <SwipeableTabContent
           tabs={NUTRITION_TAB_IDS}
@@ -1010,7 +1015,7 @@ export function NutritionScreen(): React.JSX.Element {
           onChange={changeTab}
           onSwipeChange={showSwipeTabFeedback}
         >
-          <NutritionReportsView />
+          <NutritionReportsView header={Platform.OS === 'web' ? header : null} />
         </SwipeableTabContent>
       </View>
     )
