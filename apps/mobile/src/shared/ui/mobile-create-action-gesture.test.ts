@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   MOBILE_CREATE_ACTION_STEP,
   mobileCreateActionSelection,
+  visibleCarouselSlots,
   wrapCarouselIndex
 } from './mobile-create-action-gesture'
 
@@ -42,6 +43,19 @@ describe('mobile create action carousel', () => {
       index: 1,
       offsetY: 54
     })
+  })
+
+  it('renders both neighbours for a two-action wheel', () => {
+    expect(visibleCarouselSlots(2, 0)).toEqual([
+      { index: 1, slot: -1 },
+      { index: 0, slot: 0 },
+      { index: 1, slot: 1 }
+    ])
+    expect(visibleCarouselSlots(2, 1)).toEqual([
+      { index: 0, slot: -1 },
+      { index: 1, slot: 0 },
+      { index: 0, slot: 1 }
+    ])
   })
 
   it('handles empty action lists', () => {

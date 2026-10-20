@@ -9,6 +9,7 @@ import {
   mobileCreateActionSelection
 } from './mobile-create-action-gesture'
 import { useMobileCreateActionOverlay } from './MobileCreateActionOverlayContext'
+import { useFrameGesture } from './useFrameGesture'
 import { useTheme } from './theme'
 
 export interface MobileCreateActionItem {
@@ -52,6 +53,9 @@ export function MobileCreateAction({
   const currentYRef = useRef(0)
   const anchorYRef = useRef(0)
   const selectedIndexRef = useRef(0)
+  const carouselMotion = useFrameGesture((selection: { index: number; offsetY: number }) => {
+    overlay?.update(selection.index, selection.offsetY)
+  })
 
   const enabledActions = useMemo(
     () => actions.filter((action) => !disabled && !action.disabled),
@@ -95,9 +99,10 @@ export function MobileCreateAction({
       holdActiveRef.current = true
       selectedIndexRef.current = 0
       anchorYRef.current = currentYRef.current
+      carouselMotion.cancel()
       overlay.show(enabledActions, 0)
     }, HOLD_DELAY_MS)
-  }, [clearHoldTimer, enabledActions, overlay])
+  }, [carouselMotion, clearHoldTimer, enabledActions, overlay])
 
   const updateCarousel = useCallback(
     (moveY: number): void => {
@@ -111,15 +116,16 @@ export function MobileCreateAction({
         MOBILE_CREATE_ACTION_STEP
       )
       selectedIndexRef.current = selection.index
-      overlay.update(selection.index, selection.offsetY)
+      carouselMotion.schedule(selection)
     },
-    [enabledActions, overlay]
+    [carouselMotion, enabledActions, overlay]
   )
 
   const finishGesture = useCallback((): void => {
     touchActiveRef.current = false
     setPressed(false)
     clearHoldTimer()
+    carouselMotion.flush()
 
     if (holdActiveRef.current && overlay && enabledActions.length) {
       holdActiveRef.current = false
@@ -156,17 +162,26 @@ export function MobileCreateAction({
       currentYRef.current - startYRef.current
     )
     if (moved <= TAP_MOVE_TOLERANCE) launchDefaultAction()
-  }, [clearHoldTimer, confirmHoldSelection, enabledActions, launchDefaultAction, overlay, perform])
+  }, [
+    carouselMotion,
+    clearHoldTimer,
+    confirmHoldSelection,
+    enabledActions,
+    launchDefaultAction,
+    overlay,
+    perform
+  ])
 
   const cancelGesture = useCallback((): void => {
     touchActiveRef.current = false
     setPressed(false)
     clearHoldTimer()
+    carouselMotion.cancel()
 
     if (!holdActiveRef.current || !overlay) return
     holdActiveRef.current = false
     overlay.hide()
-  }, [clearHoldTimer, overlay])
+  }, [carouselMotion, clearHoldTimer, overlay])
 
   if (!actions.length) return null
 

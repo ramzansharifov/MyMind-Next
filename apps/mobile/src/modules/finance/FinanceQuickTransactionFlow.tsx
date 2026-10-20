@@ -27,11 +27,13 @@ import { AppIcon, type AppIconName } from '../../shared/ui/icons'
 import {
   MOBILE_CREATE_ACTION_STEP,
   mobileCreateActionSelection,
+  visibleCarouselSlots,
   wrapCarouselIndex
 } from '../../shared/ui/mobile-create-action-gesture'
 import { useMobileCreateActionOverlay } from '../../shared/ui/MobileCreateActionOverlayContext'
 import { VisualIconBadge, VisualIconGlyph } from '../../shared/ui/VisualPickers'
 import { useTheme } from '../../shared/ui/theme'
+import { useFrameGesture } from '../../shared/ui/useFrameGesture'
 import { useToast } from '../../shared/ui/toast-context'
 import {
   financeQuickCompatibleTags,
@@ -55,14 +57,6 @@ const CAROUSEL_HEIGHT = 382
 const CARD_HEIGHT = 108
 const CARD_TOP = (CAROUSEL_HEIGHT - CARD_HEIGHT) / 2
 const HALF_STEP = MOBILE_CREATE_ACTION_STEP / 2
-
-function relativeCarouselSlot(itemIndex: number, currentIndex: number, length: number): number {
-  if (length <= 1) return 0
-
-  let slot = wrapCarouselIndex(itemIndex - currentIndex, length)
-  if (slot > length / 2) slot -= length
-  return slot
-}
 
 function slotScaleRange(slot: number): [number, number, number] {
   if (slot === 0) return [0.95, 1, 0.95]
@@ -161,8 +155,18 @@ function QuickCarousel({
   const [offsetY] = useState(() => new Animated.Value(0))
   const gestureStartYRef = useRef(0)
   const gestureBaseIndexRef = useRef(0)
+  const displayedIndexRef = useRef(selectedIndex)
+  displayedIndexRef.current = selectedIndex
+  const motion = useFrameGesture((selection: { index: number; offsetY: number }) => {
+    offsetY.setValue(selection.offsetY)
+    if (displayedIndexRef.current !== selection.index) {
+      displayedIndexRef.current = selection.index
+      onSelectedIndexChange(selection.index)
+    }
+  })
 
   const settle = (): void => {
+    motion.flush()
     offsetY.stopAnimation()
     Animated.spring(offsetY, {
       toValue: 0,
@@ -187,6 +191,7 @@ function QuickCarousel({
         gestureStartYRef.current = event.nativeEvent.pageY
         gestureBaseIndexRef.current = selectedIndex
         onBusyChange(true)
+        motion.cancel()
         offsetY.stopAnimation()
         offsetY.setValue(0)
       }}
@@ -198,8 +203,7 @@ function QuickCarousel({
           gestureBaseIndexRef.current,
           MOBILE_CREATE_ACTION_STEP
         )
-        offsetY.setValue(selection.offsetY)
-        if (selection.index !== selectedIndex) onSelectedIndexChange(selection.index)
+        motion.schedule(selection)
       }}
       onResponderRelease={settle}
       onResponderTerminationRequest={() => false}
@@ -211,9 +215,8 @@ function QuickCarousel({
         overflow: 'hidden'
       }}
     >
-      {options.map((option, optionIndex) => {
-        const slot = relativeCarouselSlot(optionIndex, selectedIndex, options.length)
-        if (Math.abs(slot) > 2) return null
+      {visibleCarouselSlots(options.length, selectedIndex).map(({ index: optionIndex, slot }) => {
+        const option = options[optionIndex]
 
         const scale = offsetY.interpolate({
           inputRange: [-HALF_STEP, 0, HALF_STEP],
@@ -237,7 +240,7 @@ function QuickCarousel({
 
         return (
           <Animated.View
-            key={option.key}
+            key={options.length === 2 ? option.key + ':' + slot : option.key}
             pointerEvents="none"
             style={{
               position: 'absolute',
@@ -265,11 +268,11 @@ function QuickCarousel({
                 borderColor: active ? option.tone + '78' : option.tone + '2E',
                 borderRadius: 22,
                 backgroundColor: active ? '#111318FA' : '#111318F2',
-                elevation: active ? 16 : 5,
+                elevation: 8,
                 shadowColor: '#000000',
-                shadowOpacity: active ? 0.34 : 0.16,
-                shadowRadius: active ? 22 : 10,
-                shadowOffset: { width: 0, height: active ? 12 : 5 }
+                shadowOpacity: 0.22,
+                shadowRadius: 14,
+                shadowOffset: { width: 0, height: 7 }
               }}
             >
               {option.icon.kind === 'visual' ? (
@@ -349,6 +352,23 @@ function QuickCarousel({
           </Animated.View>
         )
       })}
+      {Platform.OS === 'web' && options.length > 1 ? (
+        <View
+          pointerEvents="none"
+          style={{ position: 'absolute', bottom: 2, left: 0, right: 0, alignItems: 'center' }}
+        >
+          <Text
+            style={{
+              color: theme.muted,
+              fontSize: 12,
+              fontWeight: '700',
+              fontVariant: ['tabular-nums']
+            }}
+          >
+            {selectedIndex + 1} / {options.length}
+          </Text>
+        </View>
+      ) : null}
     </View>
   )
 }

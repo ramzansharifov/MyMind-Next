@@ -2,6 +2,7 @@ import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react'
 import {
   Animated,
   Easing,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -14,6 +15,7 @@ import { AppIcon } from './icons'
 import {
   MOBILE_CREATE_ACTION_STEP,
   mobileCreateActionSelection,
+  visibleCarouselSlots,
   wrapCarouselIndex
 } from './mobile-create-action-gesture'
 import {
@@ -21,6 +23,7 @@ import {
   type MobileCreateActionOverlayItem
 } from './MobileCreateActionOverlayContext'
 import { useTheme } from './theme'
+import { useFrameGesture } from './useFrameGesture'
 
 interface MobileCreateActionOverlayState {
   items: readonly MobileCreateActionOverlayItem[]
@@ -36,14 +39,6 @@ const CAROUSEL_HEIGHT = 382
 const CARD_HEIGHT = 108
 const CARD_CENTER_TOP = (CAROUSEL_HEIGHT - CARD_HEIGHT) / 2
 const HALF_STEP = MOBILE_CREATE_ACTION_STEP / 2
-
-function relativeCarouselSlot(itemIndex: number, currentIndex: number, length: number): number {
-  if (length <= 1) return 0
-
-  let slot = wrapCarouselIndex(itemIndex - currentIndex, length)
-  if (slot > length / 2) slot -= length
-  return slot
-}
 
 function slotScaleRange(slot: number): [number, number, number] {
   if (slot === 0) return [0.95, 1, 0.95]
@@ -77,12 +72,19 @@ export function MobileCreateActionOverlayProvider({
   const generationRef = useRef(0)
   const gestureStartYRef = useRef(0)
   const gestureBaseIndexRef = useRef(0)
+  const confirmationMotion = useFrameGesture((selection: { index: number; offsetY: number }) => {
+    offsetY.setValue(selection.offsetY)
+    setOverlay((state) =>
+      state && state.index !== selection.index ? { ...state, index: selection.index } : state
+    )
+  })
 
   const show = useCallback(
     (items: readonly MobileCreateActionOverlayItem[], index: number): void => {
       if (!items.length) return
 
       generationRef.current += 1
+      confirmationMotion.cancel()
       setConfirmation(null)
       opacity.stopAnimation()
       offsetY.stopAnimation()
@@ -105,7 +107,7 @@ export function MobileCreateActionOverlayProvider({
         }).start()
       })
     },
-    [contentOpacity, contentTranslateY, offsetY, opacity]
+    [confirmationMotion, contentOpacity, contentTranslateY, offsetY, opacity]
   )
 
   const update = useCallback(
@@ -124,6 +126,7 @@ export function MobileCreateActionOverlayProvider({
 
   const awaitConfirmation = useCallback(
     (label: string, onConfirm: (key: string) => void): void => {
+      confirmationMotion.flush()
       offsetY.stopAnimation()
       Animated.spring(offsetY, {
         toValue: 0,
@@ -135,7 +138,7 @@ export function MobileCreateActionOverlayProvider({
       }).start()
       setConfirmation({ label, onConfirm })
     },
-    [offsetY]
+    [confirmationMotion, offsetY]
   )
 
   const handoff = useCallback((): void => {
@@ -160,6 +163,7 @@ export function MobileCreateActionOverlayProvider({
 
   const hide = useCallback((): void => {
     const generation = generationRef.current
+    confirmationMotion.cancel()
     setConfirmation(null)
     offsetY.stopAnimation()
     Animated.parallel([
@@ -180,7 +184,7 @@ export function MobileCreateActionOverlayProvider({
     ]).start(({ finished }) => {
       if (finished && generation === generationRef.current) setOverlay(null)
     })
-  }, [offsetY, opacity])
+  }, [confirmationMotion, offsetY, opacity])
 
   const controller = useMemo(
     () => ({
@@ -197,6 +201,7 @@ export function MobileCreateActionOverlayProvider({
   const darkTheme = theme.background.toLowerCase() === '#0a0b0d'
 
   const settleInteractiveCarousel = (): void => {
+    confirmationMotion.flush()
     offsetY.stopAnimation()
     Animated.spring(offsetY, {
       toValue: 0,
@@ -305,6 +310,7 @@ export function MobileCreateActionOverlayProvider({
                   if (!confirmation || !overlay.items.length) return
                   gestureStartYRef.current = event.nativeEvent.pageY
                   gestureBaseIndexRef.current = overlay.index
+                  confirmationMotion.cancel()
                   offsetY.stopAnimation()
                   offsetY.setValue(0)
                 }}
@@ -316,12 +322,7 @@ export function MobileCreateActionOverlayProvider({
                     gestureBaseIndexRef.current,
                     MOBILE_CREATE_ACTION_STEP
                   )
-                  offsetY.setValue(selection.offsetY)
-                  setOverlay((state) =>
-                    state && state.index !== selection.index
-                      ? { ...state, index: selection.index }
-                      : state
-                  )
+                  confirmationMotion.schedule(selection)
                 }}
                 onResponderRelease={settleInteractiveCarousel}
                 onResponderTerminationRequest={() => false}
@@ -333,147 +334,172 @@ export function MobileCreateActionOverlayProvider({
                   overflow: 'hidden'
                 }}
               >
-                {overlay.items.map((item, itemIndex) => {
-                  const slot = relativeCarouselSlot(itemIndex, overlay.index, overlay.items.length)
-                  if (Math.abs(slot) > 2) return null
+                {visibleCarouselSlots(overlay.items.length, overlay.index).map(
+                  ({ index: itemIndex, slot }) => {
+                    const item = overlay.items[itemIndex]
 
-                  const actionColor = item.color ?? theme.accent
-                  const scaleRange = slotScaleRange(slot)
-                  const opacityRange = slotOpacityRange(slot)
-                  const translateY = offsetY.interpolate({
-                    inputRange: [-HALF_STEP, HALF_STEP],
-                    outputRange: [
-                      slot * MOBILE_CREATE_ACTION_STEP - HALF_STEP,
-                      slot * MOBILE_CREATE_ACTION_STEP + HALF_STEP
-                    ],
-                    extrapolate: 'clamp'
-                  })
-                  const scale = offsetY.interpolate({
-                    inputRange: [-HALF_STEP, 0, HALF_STEP],
-                    outputRange: scaleRange,
-                    extrapolate: 'clamp'
-                  })
-                  const cardOpacity = offsetY.interpolate({
-                    inputRange: [-HALF_STEP, 0, HALF_STEP],
-                    outputRange: opacityRange,
-                    extrapolate: 'clamp'
-                  })
-                  const active = slot === 0
+                    const actionColor = item.color ?? theme.accent
+                    const scaleRange = slotScaleRange(slot)
+                    const opacityRange = slotOpacityRange(slot)
+                    const translateY = offsetY.interpolate({
+                      inputRange: [-HALF_STEP, HALF_STEP],
+                      outputRange: [
+                        slot * MOBILE_CREATE_ACTION_STEP - HALF_STEP,
+                        slot * MOBILE_CREATE_ACTION_STEP + HALF_STEP
+                      ],
+                      extrapolate: 'clamp'
+                    })
+                    const scale = offsetY.interpolate({
+                      inputRange: [-HALF_STEP, 0, HALF_STEP],
+                      outputRange: scaleRange,
+                      extrapolate: 'clamp'
+                    })
+                    const cardOpacity = offsetY.interpolate({
+                      inputRange: [-HALF_STEP, 0, HALF_STEP],
+                      outputRange: opacityRange,
+                      extrapolate: 'clamp'
+                    })
+                    const active = slot === 0
 
-                  return (
-                    <Animated.View
-                      key={item.key}
-                      pointerEvents="none"
-                      style={{
-                        position: 'absolute',
-                        top: CARD_CENTER_TOP,
-                        right: 0,
-                        left: 0,
-                        height: CARD_HEIGHT,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        opacity: cardOpacity,
-                        transform: [{ translateY }, { scale }]
-                      }}
-                    >
-                      <View
+                    return (
+                      <Animated.View
+                        key={overlay.items.length === 2 ? item.key + ':' + slot : item.key}
+                        pointerEvents="none"
                         style={{
-                          width: '88%',
-                          maxWidth: 310,
+                          position: 'absolute',
+                          top: CARD_CENTER_TOP,
+                          right: 0,
+                          left: 0,
                           height: CARD_HEIGHT,
-                          flexDirection: 'row',
                           alignItems: 'center',
-                          gap: 14,
-                          paddingHorizontal: 16,
-                          paddingVertical: 14,
-                          borderWidth: 1,
-                          borderColor: active
-                            ? actionColor + '78'
-                            : actionColor + (darkTheme ? '2E' : '38'),
-                          borderRadius: 22,
-                          backgroundColor: darkTheme
-                            ? active
-                              ? '#111318FA'
-                              : '#111318F2'
-                            : active
-                              ? '#FFFFFFFA'
-                              : '#F8FAFCF2',
-                          elevation: active ? 16 : 5,
-                          shadowColor: '#000000',
-                          shadowOpacity: active ? 0.34 : 0.16,
-                          shadowRadius: active ? 22 : 10,
-                          shadowOffset: { width: 0, height: active ? 12 : 5 }
+                          justifyContent: 'center',
+                          opacity: cardOpacity,
+                          transform: [{ translateY }, { scale }]
                         }}
                       >
                         <View
                           style={{
-                            width: 48,
-                            height: 48,
+                            width: '88%',
+                            maxWidth: 310,
+                            height: CARD_HEIGHT,
+                            flexDirection: 'row',
                             alignItems: 'center',
-                            justifyContent: 'center',
+                            gap: 14,
+                            paddingHorizontal: 16,
+                            paddingVertical: 14,
                             borderWidth: 1,
-                            borderColor: actionColor + (active ? '5C' : '36'),
-                            borderRadius: 15,
-                            backgroundColor: actionColor + (active ? '1D' : '12')
+                            borderColor: active
+                              ? actionColor + '78'
+                              : actionColor + (darkTheme ? '2E' : '38'),
+                            borderRadius: 22,
+                            backgroundColor: darkTheme
+                              ? active
+                                ? '#111318FA'
+                                : '#111318F2'
+                              : active
+                                ? '#FFFFFFFA'
+                                : '#F8FAFCF2',
+                            elevation: 8,
+                            shadowColor: '#000000',
+                            shadowOpacity: 0.22,
+                            shadowRadius: 14,
+                            shadowOffset: { width: 0, height: 7 }
                           }}
                         >
-                          <AppIcon
-                            name={item.icon ?? 'add'}
-                            size={active ? 23 : 21}
-                            strokeWidth={2.3}
-                            color={actionColor}
-                          />
-                        </View>
-
-                        <View style={{ flex: 1, minWidth: 0 }}>
-                          <Text
-                            numberOfLines={1}
+                          <View
                             style={{
-                              color: theme.text,
-                              fontSize: active ? 20 : 17,
-                              lineHeight: active ? 25 : 22,
-                              fontWeight: '700',
-                              letterSpacing: active ? -0.3 : -0.15
+                              width: 48,
+                              height: 48,
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              borderWidth: 1,
+                              borderColor: actionColor + (active ? '5C' : '36'),
+                              borderRadius: 15,
+                              backgroundColor: actionColor + (active ? '1D' : '12')
                             }}
                           >
-                            {item.label}
-                          </Text>
-                          {item.description ? (
+                            <AppIcon
+                              name={item.icon ?? 'add'}
+                              size={active ? 23 : 21}
+                              strokeWidth={2.3}
+                              color={actionColor}
+                            />
+                          </View>
+
+                          <View style={{ flex: 1, minWidth: 0 }}>
                             <Text
                               numberOfLines={1}
                               style={{
-                                marginTop: 5,
-                                color: theme.muted,
-                                fontSize: active ? 12 : 11.5,
-                                lineHeight: 16,
-                                fontWeight: '500'
+                                color: theme.text,
+                                fontSize: active ? 20 : 17,
+                                lineHeight: active ? 25 : 22,
+                                fontWeight: '700',
+                                letterSpacing: active ? -0.3 : -0.15
                               }}
                             >
-                              {item.description}
+                              {item.label}
                             </Text>
+                            {item.description ? (
+                              <Text
+                                numberOfLines={1}
+                                style={{
+                                  marginTop: 5,
+                                  color: theme.muted,
+                                  fontSize: active ? 12 : 11.5,
+                                  lineHeight: 16,
+                                  fontWeight: '500'
+                                }}
+                              >
+                                {item.description}
+                              </Text>
+                            ) : null}
+                          </View>
+
+                          {active ? (
+                            <View
+                              style={{
+                                width: 28,
+                                height: 28,
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                borderRadius: 9,
+                                backgroundColor: actionColor + '12'
+                              }}
+                            >
+                              <AppIcon name="check" size={15} color={actionColor} />
+                            </View>
                           ) : null}
                         </View>
-
-                        {active ? (
-                          <View
-                            style={{
-                              width: 28,
-                              height: 28,
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              borderRadius: 9,
-                              backgroundColor: actionColor + '12'
-                            }}
-                          >
-                            <AppIcon name="check" size={15} color={actionColor} />
-                          </View>
-                        ) : null}
-                      </View>
-                    </Animated.View>
-                  )
-                })}
+                      </Animated.View>
+                    )
+                  }
+                )}
               </View>
             </Animated.View>
+
+            {Platform.OS === 'web' && overlay.items.length > 1 ? (
+              <View
+                pointerEvents="none"
+                style={{
+                  position: 'absolute',
+                  bottom: confirmation ? 87 : 44,
+                  left: 0,
+                  right: 0,
+                  alignItems: 'center'
+                }}
+              >
+                <Text
+                  style={{
+                    color: darkTheme ? '#C5CAD3' : '#4B5563',
+                    fontSize: 12,
+                    fontWeight: '700',
+                    fontVariant: ['tabular-nums']
+                  }}
+                >
+                  {overlay.index + 1} / {overlay.items.length}
+                </Text>
+              </View>
+            ) : null}
 
             {confirmation ? (
               <>
