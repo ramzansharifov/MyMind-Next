@@ -166,6 +166,37 @@ function Workspace({
     ...(dark ? appearanceTokens.dark : appearanceTokens.light),
     accent: appearanceTokens.accents[appearance.accent]
   }
+  // React Native Web modals are rendered in a portal outside .pwa. Keep the
+  // document-level CSS tokens synchronized so portal focus rings and web
+  // controls receive the selected accent rather than a violet fallback.
+  useEffect(() => {
+    const style = document.documentElement.style
+    const tokens = {
+      '--background': palette.background,
+      '--surface': palette.surface,
+      '--text': palette.text,
+      '--muted': palette.muted,
+      '--border': palette.border,
+      '--accent': palette.accent
+    }
+    const previous = Object.entries(tokens).map(
+      ([name]) => [name, style.getPropertyValue(name)] as const
+    )
+    for (const [name, value] of Object.entries(tokens)) style.setProperty(name, value)
+    return () => {
+      for (const [name, value] of previous) {
+        if (value) style.setProperty(name, value)
+        else style.removeProperty(name)
+      }
+    }
+  }, [
+    palette.background,
+    palette.surface,
+    palette.text,
+    palette.muted,
+    palette.border,
+    palette.accent
+  ])
   const navigate = useCallback(
     (next: Route): void => {
       if (busy) return

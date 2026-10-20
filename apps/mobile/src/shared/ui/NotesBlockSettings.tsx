@@ -573,6 +573,7 @@ export function NotesBlockSettingsSheet({
   onAssetError?: (reason: unknown) => void
   footer?: React.ReactNode
 }): React.JSX.Element {
+  const theme = useTheme()
   const title = useMemo(() => {
     switch (block.type) {
       case 'heading':
@@ -907,7 +908,7 @@ export function NotesBlockSettingsSheet({
                 {DIVIDER_COLORS.map((color) => (
                   <ColorSwatch
                     key={color}
-                    color={color}
+                    color={color === '#6d5dfc' ? theme.accent : color}
                     selected={(block.color ?? '#6d5dfc').toLowerCase() === color.toLowerCase()}
                     onPress={() => update({ ...block, color })}
                   />
