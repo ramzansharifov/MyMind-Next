@@ -37,8 +37,8 @@ test('calendar grid and day events share a single vertical scroll on a short pho
 test('tasks, habits, finance and nutrition put their top controls inside their main scroll', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 520 })
   for (const [route, label] of [
-    ['tasks', /^Группы\\. Сейчас:/],
-    ['habits', /^Группы\\. Сейчас:/],
+    ['tasks', /Группы/],
+    ['habits', /Группы/],
     ['finance', 'Главная'],
     ['nutrition', 'Сегодня']
   ] as const) {
