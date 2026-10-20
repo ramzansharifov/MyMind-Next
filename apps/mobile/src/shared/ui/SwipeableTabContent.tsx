@@ -3,6 +3,7 @@ import {
   Animated,
   Easing,
   PanResponder,
+  Platform,
   View,
   useWindowDimensions,
   type GestureResponderEvent,
@@ -145,6 +146,8 @@ export function SwipeableTabContent<T extends string>({
     <View style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
       <Animated.View
         style={{
+          // Let the browser scroll vertically while the shared responder owns horizontal swipes.
+          ...(Platform.OS === 'web' ? { touchAction: 'pan-y' as const } : {}),
           flex: 1,
           minHeight: 0,
           opacity,

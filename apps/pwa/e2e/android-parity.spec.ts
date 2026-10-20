@@ -1,4 +1,5 @@
 import { test, expect, open, navigate, createNote } from './helpers'
+import { navigationRoutes, routeTitles } from '../../mobile/src/app/navigation'
 
 test('Android shell: shared header, module cards and drawer work at phone size', async ({
   page
@@ -6,10 +7,26 @@ test('Android shell: shared header, module cards and drawer work at phone size',
   await open(page, 'home')
   await expect(page.locator('.app-header')).toContainText('Главная')
   await expect(page.locator('.connection')).not.toBeInViewport()
-  for (const title of ['Заметки', 'Задачи', 'Привычки', 'Учёба', 'Доски', 'Тренировки'])
+  const modules = navigationRoutes.filter((route) => route !== 'home' && route !== 'settings')
+  await expect(page.locator('.module').getByRole('button')).toHaveText(
+    modules.map((route) => routeTitles[route])
+  )
+  for (const title of modules.map((route) => routeTitles[route]))
     await expect(page.getByRole('button', { name: title, exact: true })).toBeVisible()
   await page.getByRole('button', { name: 'Открыть меню навигации', exact: true }).click()
   await expect(page.getByRole('button', { name: 'Закрыть меню', exact: true })).toBeVisible()
+  const drawerButtons = page.locator('[role="dialog"]').getByRole('button')
+  await expect
+    .poll(() =>
+      drawerButtons.evaluateAll((elements) =>
+        elements.map((element) => element.getAttribute('aria-label'))
+      )
+    )
+    .toEqual([
+      'Закрыть меню',
+      ...navigationRoutes.map((route) => routeTitles[route]),
+      'Закрыть меню навигации'
+    ])
   await page.screenshot({
     path: `.data/pwa-android-drawer-${test.info().project.name}.png`,
     animations: 'disabled'

@@ -5,6 +5,19 @@ export * from 'react-native-web'
 /** RN's grouped accessibility props are not supported by React Native Web 0.21. */
 export function browserAccessibilityProps(props) {
   const { accessibilityState, accessibilityValue, ...result } = props
+  // Native responder controls (the hold-to-create button) also need browser keyboard activation.
+  if (props.accessibilityRole === 'button' && props.onAccessibilityTap) {
+    result.tabIndex ??= accessibilityState?.disabled ? -1 : 0
+    result.onKeyDown ??= (event) => {
+      if (!accessibilityState?.disabled && !event.repeat && ['Enter', ' '].includes(event.key)) {
+        event.preventDefault()
+        props.onAccessibilityTap()
+      }
+    }
+    result.onClick ??= (event) => {
+      if (!accessibilityState?.disabled && event.detail === 0) props.onAccessibilityTap()
+    }
+  }
   for (const key of ['busy', 'checked', 'disabled', 'expanded', 'selected']) {
     if (accessibilityState?.[key] !== undefined && result[`aria-${key}`] === undefined)
       result[`aria-${key}`] = accessibilityState[key]

@@ -6,6 +6,7 @@ import { migrateDatabase } from './migrations'
 import { PwaDatabase } from './database'
 import { openPwaDisk } from './indexed-db'
 import { exportBackup, restoreBackup } from './backup'
+import { backupSummary } from './backup-summary'
 import { createPwaAssetStore } from './assets'
 import { createNotesRepository } from '@mymind/persistence/notes'
 import { createCanonicalStudyAssetUrl } from '@mymind/core/study-assets'
@@ -268,6 +269,10 @@ describe('PWA backup and persistent attachments', () => {
       blob: new Blob(['photo bytes'], { type: 'image/png' })
     })
     const archive = await exportBackup(source)
+    const summary = await backupSummary(archive)
+    expect(summary.files).toBe(2)
+    expect(summary.bytes).toBe(archive.size)
+    expect(summary.createdAt).toBeGreaterThan(0)
     const target = await fixture()
     preference(target, 'old')
     await target.flush()

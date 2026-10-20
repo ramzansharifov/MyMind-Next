@@ -61,12 +61,12 @@ test('notes: local image and Chromium voice recording persist, restore and clean
   }
   await localData(page)
   const downloading = page.waitForEvent('download')
-  await page.getByRole('button', { name: 'Скачать резервную копию', exact: true }).click()
+  await page.getByRole('button', { name: 'Создать backup', exact: true }).click()
   const backup = await downloading,
     path = await backup.path()
   await page.getByRole('button', { name: 'Восстановить из файла', exact: true }).click()
   const restore = page.waitForEvent('filechooser')
-  await page.getByRole('button', { name: 'Выбрать файл и восстановить', exact: true }).click()
+  await page.getByRole('button', { name: 'Выбрать файл', exact: true }).click()
   await (await restore).setFiles(path!)
   await expect(page.locator('.workspace')).toHaveAttribute('aria-busy', 'false')
   await expect(page.getByRole('alertdialog')).toHaveCount(0)

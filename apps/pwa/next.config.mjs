@@ -26,8 +26,7 @@ export default {
       'expo-crypto': path.resolve(directory, 'src/platform/crypto.ts'),
       'expo-clipboard': path.resolve(directory, 'src/platform/clipboard.ts'),
       'expo/dom': path.resolve(directory, 'src/platform/dom.ts'),
-      'expo-blur': path.resolve(directory, 'src/platform/blur.tsx'),
-      '@tldraw/assets/imports.vite': path.resolve(directory, 'src/desktop/tldraw-assets.ts')
+      'expo-blur': path.resolve(directory, 'src/platform/blur.tsx')
     }
     config.resolve.extensions = ['.web.tsx', '.web.ts', '.web.js', ...config.resolve.extensions]
     config.resolve.fallback = { ...config.resolve.fallback, fs: false, path: false, crypto: false }

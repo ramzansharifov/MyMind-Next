@@ -253,9 +253,9 @@ export default function RichContentDom({
 }
 
 const styles = `
-  html, body, #root { margin: 0; width: 100%; min-height: 1px; background: transparent; }
-  * { box-sizing: border-box; }
-  body { overflow: hidden; }
+  html:not(:has(.pwa)), body:not(:has(.pwa)), #root { margin: 0; width: 100%; min-height: 1px; background: transparent; }
+  .rich-root, .rich-root * { box-sizing: border-box; }
+  body:not(:has(.pwa)) { overflow: hidden; }
   .rich-root {
     width: 100%;
     color: var(--text);

@@ -5,6 +5,7 @@ import { NOTE_VOICE_RECORDING_MAX_BYTES } from '@mymind/contracts/notes'
 import { View } from 'react-native'
 import { Button, Label } from '../../../mobile/src/shared/ui/primitives'
 import { useTheme } from '../../../mobile/src/shared/ui/theme'
+import { AudioPlaybackControls } from '../../../mobile/src/shared/ui/AudioPlaybackControls'
 
 export interface VoiceRecordingInput {
   uri: string
@@ -187,14 +188,74 @@ export function AudioAssetPlayer({
   uri: string
   onError?: (reason: unknown) => void
 }): React.JSX.Element {
+  const audio = useRef<HTMLAudioElement>(null)
+  const [state, setState] = useState({
+    playing: false,
+    loaded: false,
+    currentTime: 0,
+    duration: 0,
+    error: ''
+  })
+  useEffect(() => {
+    const element = audio.current
+    const pause = (): void => {
+      if (document.visibilityState === 'hidden') element?.pause()
+    }
+    document.addEventListener('visibilitychange', pause)
+    return () => {
+      element?.pause()
+      document.removeEventListener('visibilitychange', pause)
+    }
+  }, [uri])
+  const update = (): void => {
+    const element = audio.current
+    if (element)
+      setState({
+        playing: !element.paused,
+        loaded: element.readyState >= 1,
+        currentTime: element.currentTime,
+        duration: element.duration,
+        error: element.error?.message ?? ''
+      })
+  }
   return (
-    <audio
-      aria-label="Голосовая запись"
-      controls
-      preload="metadata"
-      src={uri}
-      onError={() => onError?.(new Error('Не удалось воспроизвести запись'))}
-      style={{ width: '100%' }}
-    />
+    <View style={{ gap: 6 }}>
+      <audio
+        ref={audio}
+        key={uri}
+        aria-label="Голосовая запись"
+        hidden
+        preload="metadata"
+        src={uri}
+        onLoadedMetadata={update}
+        onDurationChange={update}
+        onTimeUpdate={update}
+        onPlay={update}
+        onPause={update}
+        onEnded={update}
+        onError={() => {
+          update()
+          onError?.(new Error('Не удалось воспроизвести запись'))
+        }}
+      />
+      <AudioPlaybackControls
+        {...state}
+        toggle={() => {
+          const element = audio.current
+          if (!element) return
+          if (!element.paused) element.pause()
+          else {
+            if (element.ended) element.currentTime = 0
+            void element.play().catch((reason: unknown) => {
+              setState((value) => ({
+                ...value,
+                error: reason instanceof Error ? reason.message : String(reason)
+              }))
+              onError?.(reason)
+            })
+          }
+        }}
+      />
+    </View>
   )
 }

@@ -14,6 +14,7 @@ import type { NoteVoiceRecordingMimeType } from '@mymind/contracts/notes'
 import type { StudyLocalAsset } from '@mymind/contracts/study'
 import { Button, Label } from './primitives'
 import { useTheme } from './theme'
+import { AudioPlaybackControls } from './AudioPlaybackControls'
 
 export interface VoiceRecordingInput {
   uri: string
@@ -27,10 +28,6 @@ function durationLabel(milliseconds: number): string {
   const minutes = Math.floor(totalSeconds / 60)
   const seconds = totalSeconds % 60
   return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
-}
-
-function playbackLabel(seconds: number): string {
-  return durationLabel(Math.round(Math.max(0, seconds) * 1000))
 }
 
 function discardRecording(uri: string | null): void {
@@ -254,18 +251,13 @@ export function AudioAssetPlayer({ uri, onError }: AudioAssetPlayerProps): React
   }
 
   return (
-    <View style={{ gap: 6 }}>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-        <Button
-          label={status.playing ? 'Пауза' : status.isLoaded ? 'Воспроизвести' : 'Загрузка…'}
-          disabled={!status.isLoaded}
-          onPress={() => void toggle()}
-        />
-      </View>
-      <Label muted>
-        {playbackLabel(status.currentTime)} / {playbackLabel(status.duration)}
-      </Label>
-      {status.error ? <Label muted>Не удалось воспроизвести: {status.error}</Label> : null}
-    </View>
+    <AudioPlaybackControls
+      playing={status.playing}
+      loaded={status.isLoaded}
+      currentTime={status.currentTime}
+      duration={status.duration}
+      error={status.error}
+      toggle={() => void toggle()}
+    />
   )
 }
