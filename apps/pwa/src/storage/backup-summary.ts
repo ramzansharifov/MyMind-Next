@@ -15,5 +15,9 @@ export async function backupSummary(file: Blob): Promise<MobileBackupSummary> {
     ),
     file.size
   )
-  return { createdAt: manifest.createdAt, files: manifest.entries.length, bytes: file.size }
+  return {
+    createdAt: manifest.createdAt,
+    files: manifest.entries.filter((entry) => entry.kind === 'file').length,
+    bytes: manifest.entries.reduce((total, entry) => total + entry.size, 0)
+  }
 }
