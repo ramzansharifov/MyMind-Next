@@ -250,7 +250,6 @@ function ReminderInbox({
                 {reminder.subtitle}
               </Text>
             </Pressable>
-            <IconButton label="Открыть" icon="forward" compact onPress={open} />
             <IconButton
               label="Прочитано"
               icon="check"
