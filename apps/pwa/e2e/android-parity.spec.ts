@@ -103,7 +103,9 @@ test('Android note: formatting, browser Back and resized viewport preserve the d
   await expect(editor).toHaveAttribute('contenteditable', 'true')
 })
 
-test('Android drawer remains scrollable and reachable on compact phone screens', async ({ page }) => {
+test('Android drawer remains scrollable and reachable on compact phone screens', async ({
+  page
+}) => {
   await page.setViewportSize({ width: 320, height: 480 })
   await open(page, 'home')
   await page.getByRole('button', { name: 'Открыть меню навигации', exact: true }).click()
