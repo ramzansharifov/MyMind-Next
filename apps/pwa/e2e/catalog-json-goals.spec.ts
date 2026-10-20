@@ -1,4 +1,5 @@
 import { test, expect, open, save, navigate } from './helpers'
+import { MOBILE_CREATE_ACTION_STEP } from '../../../mobile/src/shared/ui/mobile-create-action-gesture'
 
 for (const [route, add, input, output, jsonButton] of [
   ['movies', 'Добавить фильм', 'JSON фильмов', 'JSON данных фильмов', 'JSON библиотеки'],
@@ -171,6 +172,18 @@ test('real Chromium touch swipes, hold selection and finance carousel save an op
     })
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
   await expect(carousel).not.toHaveAttribute('aria-label', initialAccount!)
+  await expect(page.getByRole('button', { name: 'Дальше', exact: true })).toBeEnabled()
+  // A fast reverse-and-release must retain the last touch position even if no paint occurred.
+  await cdp.send('Input.dispatchTouchEvent', {
+    type: 'touchStart',
+    touchPoints: [{ x, y }]
+  })
+  await cdp.send('Input.dispatchTouchEvent', {
+    type: 'touchMove',
+    touchPoints: [{ x, y: y + MOBILE_CREATE_ACTION_STEP }]
+  })
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+  await expect(carousel).toHaveAttribute('aria-label', initialAccount!)
   await page.getByRole('button', { name: 'Дальше', exact: true }).click()
   await expect(page.getByText('Выберите тег', { exact: true })).toBeVisible()
   await page.getByRole('button', { name: 'Дальше', exact: true }).click()
