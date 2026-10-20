@@ -18,7 +18,6 @@ const assets = [
   '/manifest.webmanifest',
   ...(await files(path.join(root, '.next/static'), '/_next/static')),
   ...(await files(path.join(root, 'public/icons'), '/icons')),
-  ...(await files(path.join(root, 'public/tldraw'), '/tldraw')),
   '/sqlite/sql-wasm.wasm'
 ]
 const buildId = (await readFile(path.join(root, '.next/BUILD_ID'), 'utf8')).trim()

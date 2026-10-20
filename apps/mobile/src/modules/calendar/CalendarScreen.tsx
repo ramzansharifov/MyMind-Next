@@ -1,3 +1,4 @@
+import { runAfterInteraction } from '../../shared/ui/run-after-interaction'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { FlatList, Pressable, ScrollView, Text, View } from 'react-native'
 import { Bell, CalendarDays, Clock3, Repeat2 } from 'lucide-react-native'
@@ -78,19 +79,6 @@ const MONTHS_GENITIVE = [
   'ноября',
   'декабря'
 ] as const
-
-type IdleGlobal = typeof globalThis & {
-  requestIdleCallback?: (callback: () => void) => number
-}
-
-function runWhenIdle(callback: () => void): void {
-  const requestIdle = (globalThis as IdleGlobal).requestIdleCallback
-  if (typeof requestIdle === 'function') {
-    requestIdle(callback)
-    return
-  }
-  setTimeout(callback, 0)
-}
 
 function monthTitle(month: string): string {
   const date = calendarParseDate(month)
@@ -289,7 +277,7 @@ export function CalendarScreen(): React.JSX.Element {
     if (!selectedEvent) return
     const item = selectedEvent
     setSelectedEventKey(null)
-    runWhenIdle(() => edit(item))
+    runAfterInteraction(() => edit(item))
   }
 
   return (
@@ -383,7 +371,7 @@ export function CalendarScreen(): React.JSX.Element {
                   onPress={() => selectDate(day)}
                   onLongPress={() => {
                     selectDate(day)
-                    runWhenIdle(() => edit(undefined, day))
+                    runAfterInteraction(() => edit(undefined, day))
                   }}
                   style={({ pressed }) => ({
                     width: '14.285714%',

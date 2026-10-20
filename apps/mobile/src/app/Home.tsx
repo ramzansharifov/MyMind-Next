@@ -4,35 +4,23 @@ import type { CalendarUnreadReminderRecord } from '@mymind/contracts/calendar'
 import type { HabitUnreadReminderRecord } from '@mymind/contracts/habits'
 
 import { ErrorState, IconButton } from '../shared/ui/primitives'
-import { AppIcon, type AppIconName } from '../shared/ui/icons'
+import { AppIcon } from '../shared/ui/icons'
 import { messageFor } from '../shared/ui/form-model'
 import { useTheme } from '../shared/ui/theme'
-import { routeIcons, type Route } from './navigation'
+import { navigationRoutes, routeTitles, routeIcons, type Route } from './navigation'
 import { subscribeDataChanges } from './changes'
 import type { MobileServices } from './services'
 
-const HOME_MODULES: Array<{ route: Exclude<Route, 'home' | 'more' | 'settings'>; title: string }> =
-  [
-    { route: 'notes', title: 'Заметки' },
-    { route: 'tasks', title: 'Задачи' },
-    { route: 'habits', title: 'Привычки' },
-    { route: 'nutrition', title: 'Питание' },
-    { route: 'calendar', title: 'Календарь' },
-    { route: 'diary', title: 'Дневник' },
-    { route: 'movies', title: 'Фильмы' },
-    { route: 'music', title: 'Музыка' },
-    { route: 'finance', title: 'Финансы' },
-    { route: 'passwords', title: 'Пароли' }
-  ]
+const HOME_MODULES = navigationRoutes
+  .filter((route) => route !== 'home' && route !== 'settings')
+  .map((route) => ({ route, title: routeTitles[route] }))
 
 export function Home({
   services,
-  navigate,
-  additionalModules = []
+  navigate
 }: {
   services: MobileServices
   navigate(route: Route): void
-  additionalModules?: Array<{ route: string; title: string; icon: AppIconName; onPress(): void }>
 }): React.JSX.Element {
   const theme = useTheme()
   const [error, setError] = useState('')
@@ -89,14 +77,11 @@ export function Home({
     <View style={{ flex: 1 }}>
       {error ? <ErrorState message={error} retry={refresh} /> : null}
       <FlatList
-        data={[
-          ...HOME_MODULES.map((item) => ({
-            ...item,
-            icon: routeIcons[item.route],
-            onPress: () => navigate(item.route)
-          })),
-          ...additionalModules
-        ]}
+        data={HOME_MODULES.map((item) => ({
+          ...item,
+          icon: routeIcons[item.route],
+          onPress: () => navigate(item.route)
+        }))}
         numColumns={2}
         keyExtractor={(item) => item.route}
         columnWrapperStyle={{ gap: 10 }}

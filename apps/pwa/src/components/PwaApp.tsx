@@ -18,17 +18,10 @@ import { appearancePreferencesSchema } from '@mymind/core/validation/preferences
 import { ServicesContext } from '../../../mobile/src/app/context'
 import type { MobileServices } from '../../../mobile/src/app/services'
 import { navigationRoutes, routeTitles, routeIcons, type Route } from './navigation'
+import { routeFromHash } from './routing'
 import { MobileAppHeader } from '../../../mobile/src/app/MobileAppHeader'
 import { AppNavigationDrawer } from '../../../mobile/src/app/MobileNavigationDrawer'
 import { dispatchHardwareBack } from '../platform/react-native'
-import {
-  flushActiveStudyDraft,
-  getActiveStudyDraftHandle
-} from '../../../desktop/src/renderer/src/modules/study/lib/study-draft-lifecycle'
-import {
-  flushActiveBoardDraft,
-  getActiveBoardDraftHandle
-} from '../../../desktop/src/renderer/src/modules/boards/lib/board-draft-lifecycle'
 import {
   APP_MODULE_NAVIGATE_EVENT,
   type AppModuleNavigationRequest
@@ -44,16 +37,11 @@ import { usePwa } from './usePwa'
 import { ModuleErrorBoundary } from './ModuleErrorBoundary'
 import { PwaReminders } from './PwaReminders'
 import { syncActivity } from '../sync/activity'
-import {
-  flushActiveNotesDraft,
-  getActiveNotesDraftHandle
-} from '../../../desktop/src/renderer/src/modules/notes/lib/notes-draft-lifecycle'
+import packageInfo from '../../package.json'
 
-const DesktopModules = lazy(() => import('./DesktopModules'))
-const flushDesktopDrafts = (): Promise<void[]> =>
-  Promise.all([flushActiveStudyDraft(), flushActiveBoardDraft(), flushActiveNotesDraft()])
-
-const Home = lazy(() => import('./PwaHome'))
+const Home = lazy(() =>
+  import('../../../mobile/src/app/Home').then((module) => ({ default: module.Home }))
+)
 const Tasks = lazy(() =>
   import('../../../mobile/src/modules/tasks/TasksScreen').then((module) => ({
     default: module.TasksScreen
@@ -116,8 +104,12 @@ function appearanceFrom(services: MobileServices): AppearancePreferences {
   }
 }
 function currentRoute(): Route {
-  const value = window.location.hash.slice(1) as Route
-  return navigationRoutes.includes(value) ? value : 'home'
+  return routeFromHash(window.location.hash)
+}
+
+// A new Android route must deliberately wire its screen here instead of opening Settings.
+function unreachableRoute(route: never): never {
+  throw new Error(`Неизвестный раздел: ${String(route)}`)
 }
 
 function Workspace({
@@ -130,16 +122,18 @@ function Workspace({
   const [services, setServices] = useState(initialServices)
   const [epoch, setEpoch] = useState(0)
   const [route, setRoute] = useState<Route>(currentRoute)
+  useEffect(() => {
+    // Canonicalize legacy desktop-only and malformed deep links without touching storage.
+    if (window.location.hash !== '#' + currentRoute())
+      history.replaceState(null, '', '#' + currentRoute())
+  }, [])
   const [resourceId, setResourceId] = useState<string | null>(null)
   const [menu, setMenu] = useState(false)
   const mobileDraft = useRef<{ flush(): Promise<void>; hasUnsavedChanges(): boolean } | null>(null)
   const registerMobileDraft = useCallback((draft: typeof mobileDraft.current) => {
     mobileDraft.current = draft
   }, [])
-  const flushDrafts = useCallback(
-    () => Promise.all([flushDesktopDrafts(), mobileDraft.current?.flush()]),
-    []
-  )
+  const flushDrafts = useCallback(() => Promise.resolve(mobileDraft.current?.flush()), [])
   const [immersive, setImmersive] = useState(false)
   const [operationBusy, setBusy] = useState(false)
   const syncBusy = useSyncExternalStore(syncActivity.subscribe, syncActivity.snapshot)
@@ -201,15 +195,7 @@ function Workspace({
   }, [busy, immersive, navigate, route])
   useEffect(() => {
     const beforeUnload = (event: BeforeUnloadEvent): void => {
-      if (
-        db.state !== 'saved' ||
-        immersive ||
-        busy ||
-        getActiveStudyDraftHandle()?.hasUnsavedChanges() ||
-        getActiveBoardDraftHandle()?.hasUnsavedChanges() ||
-        mobileDraft.current?.hasUnsavedChanges() ||
-        getActiveNotesDraftHandle()?.hasUnsavedChanges()
-      ) {
+      if (db.state !== 'saved' || immersive || busy || mobileDraft.current?.hasUnsavedChanges()) {
         event.preventDefault()
         event.returnValue = ''
       }
@@ -319,7 +305,7 @@ function Workspace({
                       title: routeTitles.settings,
                       icon: routeIcons.settings
                     }}
-                    versionLabel="PWA · На устройстве"
+                    versionLabel={`v${packageInfo.version}`}
                   />
                   {!immersive ? (
                     <header className="app-header">
@@ -356,16 +342,6 @@ function Workspace({
                                 resourceId={resourceId}
                                 onResourceHandled={() => setResourceId(null)}
                               />
-                            ) : route === 'study' || route === 'boards' || route === 'workouts' ? (
-                              <DesktopModules
-                                route={route}
-                                appearance={appearance}
-                                dark={dark}
-                                focus={immersive}
-                                setFocus={setImmersive}
-                                resourceId={resourceId}
-                                handled={() => setResourceId(null)}
-                              />
                             ) : route === 'tasks' ? (
                               <Tasks />
                             ) : route === 'habits' ? (
@@ -382,7 +358,7 @@ function Workspace({
                               <Finance />
                             ) : route === 'passwords' ? (
                               <Passwords />
-                            ) : (
+                            ) : route === 'settings' ? (
                               <PwaSettings
                                 services={services}
                                 db={db}
@@ -401,6 +377,8 @@ function Workspace({
                                   }
                                 }}
                               />
+                            ) : (
+                              unreachableRoute(route)
                             )}
                           </div>
                         </Suspense>

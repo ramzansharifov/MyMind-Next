@@ -88,7 +88,7 @@ describe('Expo SQLite adapter', () => {
     expect(() => insert.run('bad', {})).toThrow('Неподдерживаемый параметр')
   })
 
-  it('migrates a fresh database through V8 and preserves preferences across reopen', async () => {
+  it('migrates a fresh database through V9 and preserves preferences across reopen', async () => {
     const { db, expo } = nativeDriver()
     vi.mocked(openDatabaseAsync).mockResolvedValue(expo)
 
@@ -96,8 +96,11 @@ describe('Expo SQLite adapter', () => {
     db.prepare('INSERT INTO mobile_preferences VALUES (?, ?)').run('test', 'saved')
     await openMobileDatabase()
 
-    expect(db.pragma('user_version', { simple: true })).toBe(8)
+    expect(db.pragma('user_version', { simple: true })).toBe(9)
     expect(db.pragma('foreign_keys', { simple: true })).toBe(1)
+    expect(db.prepare('PRAGMA table_info(task_groups)').all()).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ name: 'color' })])
+    )
     expect(db.prepare('SELECT value FROM mobile_preferences WHERE key = ?').get('test')).toEqual({
       value: 'saved'
     })
@@ -136,7 +139,7 @@ describe('Expo SQLite adapter', () => {
 
     await openMobileDatabase()
 
-    expect(db.pragma('user_version', { simple: true })).toBe(8)
+    expect(db.pragma('user_version', { simple: true })).toBe(9)
     expect(db.prepare('SELECT title FROM tasks WHERE id = ?').get('task-before-notes')).toEqual({
       title: 'Сохранить меня'
     })
@@ -164,7 +167,7 @@ describe('Expo SQLite adapter', () => {
     )
     vi.mocked(openDatabaseAsync).mockResolvedValue(expo)
     await openMobileDatabase()
-    expect(db.pragma('user_version', { simple: true })).toBe(8)
+    expect(db.pragma('user_version', { simple: true })).toBe(9)
     expect(db.prepare('SELECT title FROM notes WHERE id = ?').get('note-before-study')).toEqual({
       title: 'Старая заметка'
     })
@@ -186,7 +189,7 @@ describe('Expo SQLite adapter', () => {
     )
     vi.mocked(openDatabaseAsync).mockResolvedValue(expo)
     await openMobileDatabase()
-    expect(db.pragma('user_version', { simple: true })).toBe(8)
+    expect(db.pragma('user_version', { simple: true })).toBe(9)
     expect(
       db.prepare('SELECT title FROM study_nodes WHERE id = ?').get('material-before-boards')
     ).toEqual({
@@ -207,7 +210,7 @@ describe('Expo SQLite adapter', () => {
     ).run('board-before-workouts', snapshot)
     vi.mocked(openDatabaseAsync).mockResolvedValue(expo)
     await openMobileDatabase()
-    expect(db.pragma('user_version', { simple: true })).toBe(8)
+    expect(db.pragma('user_version', { simple: true })).toBe(9)
     expect(
       db
         .prepare('SELECT snapshot FROM board_documents WHERE node_id = ?')
@@ -227,7 +230,7 @@ describe('Expo SQLite adapter', () => {
     ).run('session-before-nutrition', 'Сохранённая тренировка', '2026-09-06', 45)
     vi.mocked(openDatabaseAsync).mockResolvedValue(expo)
     await openMobileDatabase()
-    expect(db.pragma('user_version', { simple: true })).toBe(8)
+    expect(db.pragma('user_version', { simple: true })).toBe(9)
     expect(
       db.prepare('SELECT title FROM workout_sessions WHERE id = ?').get('session-before-nutrition')
     ).toEqual({
@@ -252,7 +255,7 @@ describe('Expo SQLite adapter', () => {
 
     await openMobileDatabase()
 
-    expect(db.pragma('user_version', { simple: true })).toBe(8)
+    expect(db.pragma('user_version', { simple: true })).toBe(9)
     expect(
       db
         .prepare('SELECT title_snapshot FROM nutrition_log_entries WHERE id = ?')
@@ -276,7 +279,7 @@ describe('Expo SQLite adapter', () => {
 
     await openMobileDatabase()
 
-    expect(db.pragma('user_version', { simple: true })).toBe(8)
+    expect(db.pragma('user_version', { simple: true })).toBe(9)
     expect(
       db.prepare('SELECT name FROM finance_accounts WHERE id = ?').get('account-before-passwords')
     ).toEqual({ name: 'Сохранённый счёт' })

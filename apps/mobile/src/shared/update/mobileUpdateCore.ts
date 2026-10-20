@@ -30,6 +30,13 @@ export interface MobileUpdateStatus {
   error: string | null
 }
 
+/** UI contract shared without importing the native APK updater implementation. */
+export interface MobileUpdaterController {
+  status: MobileUpdateStatus
+  check(): Promise<void>
+  update(): Promise<void>
+}
+
 const VERSION_PATTERN = /^(\d+)\.(\d+)\.(\d+)$/
 const MOBILE_APK_PATTERN = /^mymind-mobile-(\d+\.\d+\.\d+)\.apk$/
 

@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from 'next'
-import './desktop.css'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -7,7 +6,7 @@ export const metadata: Metadata = {
   description: 'Личное пространство. Данные хранятся на вашем устройстве.',
   applicationName: 'MyMind',
   appleWebApp: { capable: true, statusBarStyle: 'default', title: 'MyMind' },
-  icons: { apple: '/icons/apple-touch-icon.png' }
+  icons: { icon: '/icons/icon-192.png', apple: '/icons/apple-touch-icon.png' }
 }
 export const viewport: Viewport = {
   width: 'device-width',

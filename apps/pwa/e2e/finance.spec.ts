@@ -1,5 +1,79 @@
 import { test, expect, open, save, confirmRemoval } from './helpers'
 
+test('finance: transfers, templates, limits, reports and editing survive restart', async ({
+  page
+}) => {
+  await open(page, 'finance')
+  for (const [title, balance] of [
+    ['Parity cash', '500'],
+    ['Parity card', '0']
+  ]) {
+    await page.getByRole('button', { name: 'Создать', exact: true }).click()
+    await page.getByRole('button', { name: 'Новый счёт', exact: true }).click()
+    await page.getByRole('textbox', { name: 'Название', exact: true }).fill(title)
+    await page.getByRole('textbox', { name: 'Начальный баланс', exact: true }).fill(balance)
+    await save(page)
+  }
+  await page.getByRole('button', { name: 'Создать', exact: true }).click()
+  await page.getByRole('button', { name: 'Новый тег', exact: true }).click()
+  await page.getByRole('textbox', { name: 'Название тега', exact: true }).fill('Parity shopping')
+  await page.getByRole('button', { name: 'Создать тег', exact: true }).click()
+  await page.getByRole('button', { name: 'Создать', exact: true }).click()
+  await page.getByRole('button', { name: 'Перевод', exact: true }).click()
+  await page.getByRole('radio', { name: 'Parity cash, TJS', exact: true }).first().click()
+  await page.getByRole('radio', { name: 'Parity card, TJS', exact: true }).last().click()
+  await page.getByRole('textbox', { name: 'Сумма', exact: true }).fill('100')
+  await page.getByRole('dialog').getByRole('button', { name: 'Создать', exact: true }).click()
+  await expect(page.getByRole('textbox', { name: 'Сумма', exact: true })).toHaveCount(0)
+  await open(page, 'finance')
+  await expect(page.getByLabel('Общий баланс', { exact: true })).toContainText('500,00')
+  await page.getByRole('tab', { name: 'Шаблоны', exact: true }).click()
+  await page.getByRole('button', { name: 'Новый шаблон', exact: true }).click()
+  await page.getByRole('textbox', { name: 'Название шаблона', exact: true }).fill('Parity template')
+  await page.getByRole('radio', { name: 'Parity cash, TJS', exact: true }).click()
+  await page.getByRole('radio', { name: 'Parity shopping', exact: true }).click()
+  await page.getByRole('textbox', { name: 'Сумма шаблона', exact: true }).fill('25')
+  await page.getByRole('button', { name: 'Создать шаблон', exact: true }).click()
+  await expect(page.getByRole('textbox', { name: 'Название шаблона', exact: true })).toHaveCount(0)
+  await page.getByRole('tab', { name: 'Лимиты', exact: true }).click()
+  await page.getByRole('button', { name: 'Новый лимит', exact: true }).click()
+  await page.getByRole('textbox', { name: 'Сумма лимита', exact: true }).fill('100')
+  await page.getByRole('button', { name: 'Создать лимит', exact: true }).click()
+  await expect(page.getByRole('textbox', { name: 'Сумма лимита', exact: true })).toHaveCount(0)
+  await open(page, 'finance')
+  await page.getByRole('tab', { name: 'Шаблоны', exact: true }).click()
+  await page.getByRole('button', { name: /^Parity template,/ }).click()
+  await page.getByRole('button', { name: 'Изменить шаблон', exact: true }).click()
+  await page
+    .getByRole('textbox', { name: 'Название шаблона', exact: true })
+    .fill('Parity edited template')
+  await save(page)
+  await page.getByRole('button', { name: /^Parity edited template,/ }).click()
+  await page.getByRole('button', { name: 'Использовать', exact: true }).click()
+  await expect(page.getByRole('textbox', { name: 'Сумма', exact: true })).toHaveValue('25.00')
+  await page.getByRole('dialog').getByRole('button', { name: 'Создать', exact: true }).click()
+  await expect(page.getByText('Parity shopping: 0% → 25%', { exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Подтвердить расход', exact: true }).click()
+  await expect(page.getByRole('textbox', { name: 'Сумма', exact: true })).toHaveCount(0)
+  await open(page, 'finance')
+  await expect(page.getByLabel('Общий баланс', { exact: true })).toContainText('475,00')
+  await page.getByRole('tab', { name: 'Лимиты', exact: true }).click()
+  await page.getByRole('button', { name: /^Parity shopping,/ }).click()
+  await page.getByRole('button', { name: 'Изменить лимит', exact: true }).click()
+  await expect(page.getByRole('textbox', { name: 'Сумма лимита', exact: true })).toHaveValue(
+    '100.00'
+  )
+  await page.getByRole('textbox', { name: 'Сумма лимита', exact: true }).fill('150')
+  await save(page)
+  await page.getByRole('button', { name: /^Parity shopping,/ }).click()
+  await confirmRemoval(page, 'Удалить лимит')
+  await page.getByRole('tab', { name: 'Шаблоны', exact: true }).click()
+  await page.getByRole('button', { name: /^Parity edited template,/ }).click()
+  await confirmRemoval(page, 'Удалить шаблон')
+  await page.getByRole('tab', { name: 'Отчёты', exact: true }).click()
+  await expect(page.locator('.module')).toContainText('25,00')
+})
+
 test('finance: account, category, income, expense, balance, edit, restart and deletion', async ({
   page
 }) => {

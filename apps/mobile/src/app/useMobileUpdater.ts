@@ -8,7 +8,8 @@ import {
 } from '../shared/update/mobileUpdate'
 import {
   initialMobileUpdateStatus,
-  type MobileUpdateStatus
+  type MobileUpdateStatus,
+  type MobileUpdaterController
 } from '../shared/update/mobileUpdateCore'
 
 const STARTUP_CHECK_DELAY_MS = 15_000
@@ -21,11 +22,7 @@ function errorMessage(reason: unknown): string {
   return reason instanceof Error ? reason.message : String(reason)
 }
 
-export interface MobileUpdaterController {
-  status: MobileUpdateStatus
-  check(): Promise<void>
-  update(): Promise<void>
-}
+export type { MobileUpdaterController } from '../shared/update/mobileUpdateCore'
 
 export function useMobileUpdater(): MobileUpdaterController {
   const busyRef = useRef(false)

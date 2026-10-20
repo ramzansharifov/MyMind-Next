@@ -6,6 +6,13 @@ export const test = base.extend<{ healthy: void }>({
     async ({ page }, use) => {
       const errors: string[] = []
       page.on('pageerror', (error) => errors.push(error.message))
+      page.on('console', (message) => {
+        if (message.type() !== 'error') return
+        // The profile scenario deliberately requests the disabled LAN endpoint (503).
+        if (message.location().url.includes('/api/lan-sync/') && message.text().includes('503'))
+          return
+        errors.push(`${message.location().url}: ${message.text()}`)
+      })
       await use()
       expect(errors, 'uncaught browser errors').toEqual([])
     },
@@ -13,13 +20,14 @@ export const test = base.extend<{ healthy: void }>({
   ]
 })
 export { expect }
+let formScreenshot = 0
 export async function navigate(page: Page, route: string): Promise<void> {
   const menu = page.getByRole('button', { name: 'Открыть меню навигации', exact: true })
-  if (
-    !(await menu.count()) &&
-    (await page.getByRole('button', { name: 'Назад', exact: true }).count())
-  )
-    await page.getByRole('button', { name: 'Назад', exact: true }).click()
+  const back = page.getByRole('button', { name: 'Назад', exact: true })
+  // RN Modal hides the underlying screen until its exit animation finishes.
+  await expect(menu.or(back).first()).toBeVisible()
+  if (await back.isVisible()) await back.click()
+  await expect(menu).toBeVisible()
   await menu.click()
   await page
     .getByRole('button', { name: routeTitles[route as Route], exact: true })
@@ -57,13 +65,21 @@ export async function storedAssets(page: Page): Promise<Array<{ path: string; si
   )
 }
 export async function open(page: Page, route: string): Promise<void> {
-  await page.goto(`/#${route}`)
-  // Hash navigation keeps the same JS runtime; force a new document to test durable storage.
-  await page.reload()
+  // A distinct document URL avoids racing an old runtime's guarded hash listener during backup.
+  // The origin and IndexedDB are unchanged; this must test a genuinely new application runtime.
+  await page.goto(`/?runtime=${crypto.randomUUID()}#${route}`)
   await expect(page.locator('.module')).toBeVisible()
   await expect(page.locator('.save-status')).toHaveText('Сохранено на устройстве')
 }
 export async function save(page: Page): Promise<void> {
+  await expect(page.getByRole('dialog').last()).toBeVisible()
+  await page.screenshot({
+    path: `.data/pwa-forms/${test.info().project.name}-${test
+      .info()
+      .title.replace(/[^a-z0-9-]+/gi, '-')
+      .slice(0, 70)}-${formScreenshot++}.png`,
+    animations: 'disabled'
+  })
   await page.getByRole('button', { name: 'Сохранить', exact: true }).click()
   await expect(page.getByRole('button', { name: 'Сохранить', exact: true })).toHaveCount(0)
   await expect(page.locator('.save-status')).toHaveText('Сохранено на устройстве')

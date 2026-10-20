@@ -78,8 +78,12 @@ test('nutrition: water and food entries persist, edit and delete through the bro
 })
 
 test('password vault: wrong password, encrypted persistence, unlock, edit and delete', async ({
-  page
+  page,
+  context,
+  browserName
 }) => {
+  if (browserName === 'chromium')
+    await context.grantPermissions(['clipboard-read', 'clipboard-write'])
   await open(page, 'passwords')
   const master = 'Pwa-test-master-passphrase-46!'
   await page.getByRole('textbox', { name: 'Мастер-пароль', exact: true }).fill(master)
@@ -106,6 +110,29 @@ test('password vault: wrong password, encrypted persistence, unlock, edit and de
   await expect(page.getByRole('textbox', { name: 'Пароль', exact: true })).toHaveValue(
     'Secret-never-plaintext-482!'
   )
+  await expect(page.getByRole('textbox', { name: 'Пароль', exact: true })).toHaveJSProperty(
+    'type',
+    'password'
+  )
+  await page.getByRole('button', { name: 'Показать', exact: true }).click()
+  await expect(page.getByRole('textbox', { name: 'Пароль', exact: true })).toHaveJSProperty(
+    'type',
+    'text'
+  )
+  await page.getByRole('button', { name: 'Скрыть', exact: true }).click()
+  if (browserName === 'chromium') {
+    await page.getByRole('button', { name: 'Копировать пароль', exact: true }).click()
+    await expect
+      .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+      .toBe('Secret-never-plaintext-482!')
+  }
+  await page.evaluate(() => {
+    navigator.clipboard.writeText = async () => {
+      throw new DOMException('Clipboard permission denied', 'NotAllowedError')
+    }
+  })
+  await page.getByRole('button', { name: 'Копировать пароль', exact: true }).click()
+  await expect(page.getByText('Clipboard permission denied', { exact: true })).toBeVisible()
   await page.getByRole('textbox', { name: 'Название', exact: true }).fill('PWA edited login')
   await save(page)
   await page.getByRole('button', { name: 'Дополнительные действия', exact: true }).click()

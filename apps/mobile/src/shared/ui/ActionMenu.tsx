@@ -1,3 +1,4 @@
+import { runAfterInteraction } from './run-after-interaction'
 import { useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { AppDialog } from './AppDialog'
@@ -12,19 +13,6 @@ export type ActionMenuItem = {
   danger?: boolean
   disabled?: boolean
   onPress(): void
-}
-
-type IdleGlobal = typeof globalThis & {
-  requestIdleCallback?: (callback: () => void) => number
-}
-
-function runWhenIdle(callback: () => void): void {
-  const requestIdle = (globalThis as IdleGlobal).requestIdleCallback
-  if (typeof requestIdle === 'function') {
-    requestIdle(callback)
-    return
-  }
-  setTimeout(callback, 0)
 }
 
 export function ActionMenuDialog({
@@ -63,7 +51,7 @@ export function ActionMenuDialog({
               onPress={() => {
                 if (item.disabled) return
                 onOpenChange(false)
-                runWhenIdle(() => item.onPress())
+                runAfterInteraction(() => item.onPress())
               }}
               style={({ pressed }) => ({
                 minHeight: 52,

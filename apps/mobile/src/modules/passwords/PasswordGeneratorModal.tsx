@@ -127,7 +127,13 @@ export function PasswordGeneratorModal({
                 label={visible ? 'Скрыть' : 'Показать'}
                 onPress={() => setVisible(!visible)}
               />
-              <Button label="Копировать" icon="copy" onPress={() => void copy(value)} />
+              <Button
+                label="Копировать"
+                icon="copy"
+                onPress={() =>
+                  void copy(value).catch((reason: unknown) => setError(messageFor(reason)))
+                }
+              />
               {onUseValue ? (
                 <Button
                   label="Использовать"
