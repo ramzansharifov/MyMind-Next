@@ -148,7 +148,11 @@ function MovieCard({
             )}
             <Text
               numberOfLines={1}
-              style={{ color: watched ? '#a7f3d0' : theme.accent, fontSize: 10.5, fontWeight: '600' }}
+              style={{
+                color: watched ? '#a7f3d0' : theme.accent,
+                fontSize: 10.5,
+                fontWeight: '600'
+              }}
             >
               {watched ? 'Просмотрено' : 'Хочу посмотреть'}
             </Text>
