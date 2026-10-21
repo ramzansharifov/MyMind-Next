@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   description: 'Личное пространство. Данные хранятся на вашем устройстве.',
   applicationName: 'MyMind',
   appleWebApp: { capable: true, statusBarStyle: 'default', title: 'MyMind' },
-  icons: { icon: '/icons/icon-192-v3.png', apple: '/icons/apple-touch-icon-v2.png' }
+  icons: { icon: '/icons/icon-192-v4.png', apple: '/icons/apple-touch-icon-v2.png' }
 }
 export const viewport: Viewport = {
   width: 'device-width',
