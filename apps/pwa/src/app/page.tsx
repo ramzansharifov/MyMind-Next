@@ -1,14 +1,11 @@
 'use client'
 
 import dynamic from 'next/dynamic'
+import { PwaLoading } from '../components/PwaLoading'
 
 const Workspace = dynamic(() => import('../components/PwaApp'), {
   ssr: false,
-  loading: () => (
-    <div className="startup" role="status">
-      Открываем MyMind…
-    </div>
-  )
+  loading: () => <PwaLoading message="Открываем MyMind" />
 })
 
 export default function Page(): React.JSX.Element {
