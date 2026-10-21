@@ -96,7 +96,7 @@ button:disabled {
   width: 68px;
   height: 68px;
   border-radius: 19px;
-  background: var(--surface) url('/icons/icon-192-v3.png') center / cover no-repeat;
+  background: var(--surface) url('/icons/icon-192-v4.png') center / cover no-repeat;
   box-shadow: 0 8px 26px rgb(0 0 0 / 8%);
 }
 .pwa-loading-module-icon {
