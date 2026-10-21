@@ -4,10 +4,7 @@ type PwaLoadingProps = {
 }
 
 /** A lightweight browser-only fallback, safe to show before local SQLite is available. */
-export function PwaLoading({
-  variant = 'app',
-  message
-}: PwaLoadingProps): React.JSX.Element {
+export function PwaLoading({ variant = 'app', message }: PwaLoadingProps): React.JSX.Element {
   const initial = variant === 'app'
   return (
     <div
