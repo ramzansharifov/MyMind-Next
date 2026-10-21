@@ -16,21 +16,21 @@ test('installed MyMind manifest refreshes icon metadata without changing app ide
   expect(manifest.theme_color).toBe('#0a0b0d')
   expect(manifest.icons).toEqual(
     expect.arrayContaining([
-      expect.objectContaining({ src: '/icons/icon-192-v2.png', purpose: 'any' }),
-      expect.objectContaining({ src: '/icons/icon-512-v2.png', purpose: 'any' }),
-      expect.objectContaining({ src: '/icons/maskable-512-v2.png', purpose: 'maskable' })
+      expect.objectContaining({ src: '/icons/icon-192-v3.png', purpose: 'any' }),
+      expect.objectContaining({ src: '/icons/icon-512-v3.png', purpose: 'any' }),
+      expect.objectContaining({ src: '/icons/maskable-512-v3.png', purpose: 'maskable' })
     ])
   )
   await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content', '#0a0b0d')
 })
 
-test('launch artwork is smaller, padded and matches the native dark background', async ({
+test('Android splash PNGs have transparent margins, not a painted black square', async ({
   request
 }) => {
   for (const [name, size] of [
-    ['icon-192-v2', 192],
-    ['icon-512-v2', 512],
-    ['maskable-512-v2', 512]
+    ['icon-192-v3', 192],
+    ['icon-512-v3', 512],
+    ['maskable-512-v3', 512]
   ] as const) {
     const response = await request.get(`/icons/${name}.png`)
     expect(response.ok()).toBe(true)
@@ -42,17 +42,31 @@ test('launch artwork is smaller, padded and matches the native dark background',
       .toBuffer({ resolveWithObject: true })
     expect(info.width).toBe(size)
     expect(info.height).toBe(size)
-    expect(Array.from(data.subarray(0, 4))).toEqual([10, 11, 13, 255])
+    // The system splash paints the backdrop; transparency prevents a visible
+    // rectangular matte around the original rounded-square logo.
+    expect(data[3]).toBe(0)
+    expect(data[(size - 1) * 4 + 3]).toBe(0)
+    const center = (Math.floor(size / 2) * size + Math.floor(size / 2)) * 4
+    expect(data[center + 3]).toBe(255)
 
     if (size === 512) {
-      // Android crops maskable artwork; outside the central safe zone should
-      // be only the shell background, with no dark square or visible logo.
+      // Keep both the ordinary and maskable icon's outer safe zone empty.
       const x = Math.floor(size * 0.14)
       const y = Math.floor(size * 0.5)
       const offset = (y * size + x) * 4
-      expect(Array.from(data.subarray(offset, offset + 4))).toEqual([10, 11, 13, 255])
-      const center = (Math.floor(size / 2) * size + Math.floor(size / 2)) * 4
-      expect(Array.from(data.subarray(center, center + 3))).not.toEqual([10, 11, 13])
+      expect(data[offset + 3]).toBe(0)
     }
   }
+})
+
+test('Apple touch icon keeps a solid background and does not regress', async ({ request }) => {
+  const response = await request.get('/icons/apple-touch-icon-v2.png')
+  expect(response.ok()).toBe(true)
+  const { data, info } = await sharp(await response.body())
+    .ensureAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true })
+  expect(info.width).toBe(180)
+  expect(info.height).toBe(180)
+  expect(Array.from(data.subarray(0, 4))).toEqual([10, 11, 13, 255])
 })
