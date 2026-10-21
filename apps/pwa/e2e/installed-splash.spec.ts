@@ -64,9 +64,7 @@ test('maskable WebAPK splash icon has opaque 24-bit RGB matching background_colo
   expect(metadata.channels).toBe(3)
   expect(metadata.hasAlpha).toBe(false)
 
-  const { data, info } = await sharp(file)
-    .raw()
-    .toBuffer({ resolveWithObject: true })
+  const { data, info } = await sharp(file).raw().toBuffer({ resolveWithObject: true })
   const pixel = (x: number, y: number): number[] => {
     const offset = (y * info.width + x) * info.channels
     return Array.from(data.subarray(offset, offset + info.channels))
