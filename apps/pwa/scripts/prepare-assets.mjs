@@ -1,4 +1,4 @@
-import { mkdir, copyFile } from 'node:fs/promises'
+import { mkdir, copyFile, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -42,9 +42,6 @@ for (const { name, size, scale } of icons) {
   // New URLs tell Chrome that installed icon metadata changed (Chrome 144+
   // no longer re-downloads unchanged icon URLs during manifest updates).
   for (const filename of [name, `${name}-v2`]) {
-    await mkdir(path.join(root, 'public/icons'), { recursive: true })
-    await import('node:fs/promises').then(({ writeFile }) =>
-      writeFile(path.join(root, 'public/icons', `${filename}.png`), image)
-    )
+    await writeFile(path.join(root, 'public/icons', `${filename}.png`), image)
   }
 }
