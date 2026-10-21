@@ -124,6 +124,8 @@ test('real Chromium touch swipes, hold selection and finance carousel save an op
     'Trusted touch injection requires mobile Chromium CDP'
   )
   await open(page, 'nutrition')
+  // Saving the SQLite shell does not mean the asynchronously populated tab is ready.
+  await expect(page.getByRole('tab', { name: 'Дневник', exact: true })).toBeVisible()
   const cdp = await context.newCDPSession(page)
   await cdp.send('Input.dispatchTouchEvent', {
     type: 'touchStart',
