@@ -48,9 +48,10 @@ for (const { name, size, scale, transparent } of icons) {
 
   // Retain previous URLs for older manifests and notification icons. A new
   // versioned URL ensures Android WebAPK notices the revised maskable image.
-  const names = name === 'apple-touch-icon'
-    ? [name, `${name}-v2`]
-    : [name, `${name}-v2`, `${name}-v3`, `${name}-v4`]
+  const names =
+    name === 'apple-touch-icon'
+      ? [name, `${name}-v2`]
+      : [name, `${name}-v2`, `${name}-v3`, `${name}-v4`]
   for (const filename of names) {
     await writeFile(path.join(root, 'public/icons', `${filename}.png`), image)
   }
