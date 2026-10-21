@@ -469,7 +469,6 @@ export default function PwaApp(): React.JSX.Element {
         <button onClick={() => location.reload()}>Повторить запуск</button>
       </div>
     )
-  if (!value)
-    return <PwaLoading message="Загружаем локальную библиотеку" />
+  if (!value) return <PwaLoading message="Загружаем локальную библиотеку" />
   return <Workspace db={value.db} initialServices={value.services} />
 }
