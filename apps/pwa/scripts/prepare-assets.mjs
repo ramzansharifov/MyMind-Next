@@ -13,14 +13,38 @@ await copyFile(
   path.join(root, 'public/sqlite/sql-wasm.wasm')
 )
 const icon = path.resolve(root, '../mobile/assets/icon.png')
-for (const [name, size] of [
-  ['icon-192', 192],
-  ['icon-512', 512],
-  ['maskable-512', 512],
-  ['apple-touch-icon', 180]
-]) {
-  await sharp(icon)
-    .resize(size, size, { fit: 'contain', background: '#13111c' })
+// Keep the native splash and the background around installed PWA artwork in
+// sync with MyMind's actual dark shell. The original icon contains transparent
+// margins: resizing it directly preserves those margins but leaves the older
+// violet-black background around a disproportionately large icon.
+const background = '#0a0b0d'
+const icons = [
+  { name: 'icon-192', size: 192, scale: 0.9 },
+  { name: 'icon-512', size: 512, scale: 0.56 },
+  // A maskable square needs full-bleed background and artwork within the
+  // inscribed-circle safe zone (56% of its width).
+  { name: 'maskable-512', size: 512, scale: 0.56 },
+  { name: 'apple-touch-icon', size: 180, scale: 0.9 }
+]
+for (const { name, size, scale } of icons) {
+  const artwork = await sharp(icon)
+    .resize(Math.round(size * scale), Math.round(size * scale), { fit: 'contain' })
     .png()
-    .toFile(path.join(root, 'public/icons', `${name}.png`))
+    .toBuffer()
+  const image = await sharp({
+    create: { width: size, height: size, channels: 4, background }
+  })
+    .composite([{ input: artwork, gravity: 'centre' }])
+    .png()
+    .toBuffer()
+
+  // Old paths remain available for previously cached manifests/notifications.
+  // New URLs tell Chrome that installed icon metadata changed (Chrome 144+
+  // no longer re-downloads unchanged icon URLs during manifest updates).
+  for (const filename of [name, `${name}-v2`]) {
+    await mkdir(path.join(root, 'public/icons'), { recursive: true })
+    await import('node:fs/promises').then(({ writeFile }) =>
+      writeFile(path.join(root, 'public/icons', `${filename}.png`), image)
+    )
+  }
 }
