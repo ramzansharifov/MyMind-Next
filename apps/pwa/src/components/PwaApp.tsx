@@ -36,7 +36,8 @@ import { PwaSettings } from './PwaSettings'
 import { usePwa } from './usePwa'
 import { ModuleErrorBoundary } from './ModuleErrorBoundary'
 import { PwaReminders } from './PwaReminders'
-import { ErrorState, LoadingState } from '../../../mobile/src/shared/ui/primitives'
+import { ErrorState } from '../../../mobile/src/shared/ui/primitives'
+import { PwaLoading } from './PwaLoading'
 import { syncActivity } from '../sync/activity'
 import packageInfo from '../../package.json'
 
@@ -171,6 +172,9 @@ function Workspace({
   // controls receive the selected accent rather than a violet fallback.
   useEffect(() => {
     const style = document.documentElement.style
+    const previousScheme = style.colorScheme
+    const themeMeta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')
+    const previousThemeColor = themeMeta?.content
     const tokens = {
       '--background': palette.background,
       '--surface': palette.surface,
@@ -183,7 +187,11 @@ function Workspace({
       ([name]) => [name, style.getPropertyValue(name)] as const
     )
     for (const [name, value] of Object.entries(tokens)) style.setProperty(name, value)
+    style.colorScheme = dark ? 'dark' : 'light'
+    if (themeMeta) themeMeta.content = palette.background
     return () => {
+      style.colorScheme = previousScheme
+      if (themeMeta && previousThemeColor !== undefined) themeMeta.content = previousThemeColor
       for (const [name, value] of previous) {
         if (value) style.setProperty(name, value)
         else style.removeProperty(name)
@@ -195,7 +203,8 @@ function Workspace({
     palette.text,
     palette.muted,
     palette.border,
-    palette.accent
+    palette.accent,
+    dark
   ])
   const navigate = useCallback(
     (next: Route): void => {
@@ -345,7 +354,13 @@ function Workspace({
                     <PwaReminders services={services} db={db} paused={busy} />
                     <View style={{ flex: 1, minHeight: 0 }}>
                       <ModuleErrorBoundary key={`${route}:${epoch}`}>
-                        <Suspense fallback={<LoadingState />}>
+                        <Suspense
+                          fallback={
+                            <div className="module">
+                              <PwaLoading variant="module" />
+                            </div>
+                          }
+                        >
                           <div className="module" key={`${route}:${epoch}`}>
                             {route === 'home' ? (
                               <Home services={services} navigate={navigate} />
@@ -454,11 +469,6 @@ export default function PwaApp(): React.JSX.Element {
         <button onClick={() => location.reload()}>Повторить запуск</button>
       </div>
     )
-  if (!value)
-    return (
-      <div className="startup" role="status">
-        Открываем локальную библиотеку…
-      </div>
-    )
+  if (!value) return <PwaLoading message="Загружаем локальную библиотеку" />
   return <Workspace db={value.db} initialServices={value.services} />
 }

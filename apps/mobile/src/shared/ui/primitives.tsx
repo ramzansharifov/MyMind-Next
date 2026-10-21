@@ -1,5 +1,5 @@
 import type { PropsWithChildren } from 'react'
-import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native'
+import { ActivityIndicator, Platform, Pressable, Text, TextInput, View } from 'react-native'
 import { designTokens } from '@mymind/design'
 import { AppIcon, type AppIconName } from './icons'
 import { useTheme } from './theme'
@@ -389,6 +389,64 @@ export function ErrorState({
 
 export function LoadingState(): React.JSX.Element {
   const theme = useTheme()
+  // The web loader should occupy the module naturally instead of leaving a
+  // tiny spinner stranded at the top while IndexedDB-backed screens initialize.
+  if (Platform.OS === 'web') {
+    return (
+      <View
+        style={{
+          flex: 1,
+          minHeight: 190,
+          padding: 22,
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 12
+        }}
+      >
+        <View
+          style={{
+            width: 44,
+            height: 44,
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: 14,
+            borderWidth: 1,
+            borderColor: theme.accent + '30',
+            backgroundColor: theme.accent + '10'
+          }}
+        >
+          <ActivityIndicator accessibilityLabel="Загрузка" color={theme.accent} />
+        </View>
+        <Text style={{ color: theme.muted, fontSize: 13, textAlign: 'center' }}>
+          Загружаем содержимое…
+        </Text>
+        <View style={{ width: '100%', maxWidth: 320, gap: 9, marginTop: 14 }}>
+          <View
+            style={{ width: 118, height: 12, borderRadius: 8, backgroundColor: theme.border }}
+          />
+          <View
+            style={{
+              height: 54,
+              borderRadius: 14,
+              borderWidth: 1,
+              borderColor: theme.border,
+              backgroundColor: theme.surface
+            }}
+          />
+          <View
+            style={{
+              height: 54,
+              borderRadius: 14,
+              borderWidth: 1,
+              borderColor: theme.border,
+              backgroundColor: theme.surface,
+              opacity: 0.55
+            }}
+          />
+        </View>
+      </View>
+    )
+  }
   return (
     <View style={{ padding: 32, alignItems: 'center', justifyContent: 'center', gap: 10 }}>
       <ActivityIndicator accessibilityLabel="Загрузка" color={theme.accent} />
