@@ -58,7 +58,7 @@ export async function showReminder(notice: ReminderNotice): Promise<void> {
     await registration.showNotification(notice.title, {
       body: notice.body,
       tag: notice.tag,
-      icon: '/icons/icon-192.png',
+      icon: '/icons/icon-192-v2.png',
       data: { route: notice.route }
     })
   } else {
