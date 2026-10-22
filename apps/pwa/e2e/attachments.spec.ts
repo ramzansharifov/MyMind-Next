@@ -6,8 +6,7 @@ test('notes: local image and Chromium voice recording persist, restore and clean
 }) => {
   await open(page, 'notes')
   await createNote(page, 'PWA attachments')
-  await page.getByRole('button', { name: 'Добавить вложение или разделитель', exact: true }).click()
-  await page.getByRole('button', { name: 'Добавить: Изображение', exact: true }).click()
+  await page.getByRole('button', { name: 'Вставить изображение', exact: true }).click()
   const choosing = page.waitForEvent('filechooser')
   await page.getByRole('button', { name: 'Выбрать', exact: true }).last().click()
   await (
@@ -31,10 +30,7 @@ test('notes: local image and Chromium voice recording persist, restore and clean
   if (browserName === 'chromium') {
     // Only Chromium supplies a test microphone to the real MediaRecorder pipeline.
     // WebKit still runs the image, persistence and backup/restore checks below.
-    await page
-      .getByRole('button', { name: 'Добавить вложение или разделитель', exact: true })
-      .click()
-    await page.getByRole('button', { name: 'Добавить: Голосовое', exact: true }).click()
+    await page.getByRole('button', { name: 'Добавить голосовую запись', exact: true }).click()
     await page.getByRole('button', { name: 'Записать голос', exact: true }).click()
     await expect(page.getByText(/Запись · 00:0[1-9]/)).toBeVisible({ timeout: 10_000 })
     await page.getByRole('button', { name: 'Остановить и добавить', exact: true }).click()
