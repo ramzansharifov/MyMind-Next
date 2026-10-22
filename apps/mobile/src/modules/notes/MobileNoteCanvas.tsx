@@ -15,7 +15,10 @@ import {
 import {
   File,
   Image,
+  Link2,
   Mic,
+  Minus,
+  Type,
   Plus,
   Settings2,
   Video,
@@ -38,7 +41,6 @@ import { NotesBlockSettingsSheet } from '../../shared/ui/NotesBlockSettings'
 import { DEFAULT_NOTES_RICH_TEXT_STATE } from '../../shared/ui/notes-rich-text-state'
 import {
   NotesQuickLinkDialog,
-  NotesRichTextInlineControls,
   NotesRichTextSettingsSheet
 } from '../../shared/ui/NotesRichTextControls'
 import NotesRichTextDom, { type NotesRichTextDomRef } from '../../shared/ui/NotesRichTextDom'
@@ -170,7 +172,7 @@ export function MobileNoteCanvas({
   )
   const [formatting, setFormatting] = useState(DEFAULT_NOTES_RICH_TEXT_STATE)
   const [panel, setPanel] = useState<
-    'text' | 'insert' | 'link' | 'attachment' | 'voice' | 'legacy' | 'preview' | null
+    'text' | 'insert' | 'divider' | 'link' | 'attachment' | 'voice' | 'legacy' | 'preview' | null
   >(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [voiceBusy, setVoiceBusy] = useState(false)
@@ -261,7 +263,7 @@ export function MobileNoteCanvas({
     }
   }
   const openPanel = (next: typeof panel): void => {
-    if (next === 'insert' && formatting.divider) {
+    if ((next === 'insert' || next === 'divider') && formatting.divider) {
       setDividerStyle(formatting.divider.variant)
       setDividerSize(formatting.divider.thickness)
     }
@@ -311,6 +313,60 @@ export function MobileNoteCanvas({
       }
     }
   }
+
+  const renderDividerControls = (): React.JSX.Element => (
+    <View style={{ gap: 14 }}>
+          <Label muted>Разделитель</Label>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            {[
+              ['solid', '━━━━'],
+              ['tapered', '━◆━'],
+              ['dashed', '┅┅┅'],
+              ['dotted', '••••']
+            ].map(([variant, label]) => (
+              <Button
+                key={variant}
+                accessibilityLabel={`Разделитель: ${variant}`}
+                label={label}
+                selected={dividerStyle === variant}
+                onPress={() => setDividerStyle(variant)}
+              />
+            ))}
+          </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+            <Button
+              label="−"
+              accessibilityLabel="Уменьшить толщину разделителя"
+              disabled={dividerSize === 1}
+              onPress={() => setDividerSize((size) => size - 1)}
+            />
+            <Label>{dividerSize} px</Label>
+            <Button
+              label="+"
+              accessibilityLabel="Увеличить толщину разделителя"
+              disabled={dividerSize === 12}
+              onPress={() => setDividerSize((size) => size + 1)}
+            />
+          </View>
+          <Button
+            label={formatting.divider ? 'Применить к разделителю' : 'Добавить разделитель'}
+            primary
+            onPress={() => {
+              editor.insertDivider(dividerStyle, dividerSize)
+              setPanel(null)
+            }}
+          />
+          {formatting.divider ? (
+            <Button
+              label="Добавить новый разделитель"
+              onPress={() => {
+                editor.insertDivider(dividerStyle, dividerSize, true)
+                setPanel(null)
+              }}
+            />
+          ) : null}
+    </View>
+  )
 
   return (
     <KeyboardAvoidingView
@@ -377,35 +433,36 @@ export function MobileNoteCanvas({
             />
             <CanvasTool
               label="Форматирование текста"
-              icon={Settings2}
+              icon={Type}
               onPress={() => openPanel('text')}
             />
-            <ScrollView
-              horizontal
-              style={{ flex: 1 }}
-              keyboardShouldPersistTaps="always"
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ paddingHorizontal: 8, alignItems: 'center', gap: 4 }}
-            >
-              {attachment ? (
-                <CanvasTool
-                  label="Настройки выбранного вложения"
-                  icon={Settings2}
-                  onPress={() => openPanel('attachment')}
-                />
-              ) : null}
-              <NotesRichTextInlineControls
-                editor={editor}
-                state={formatting}
-                showSettings={false}
-                openSettings={() => openPanel('text')}
-                openLink={() => openPanel('link')}
-              />
-              {legacy.length ? (
-                <Button label="Другие материалы" onPress={() => openPanel('legacy')} />
-              ) : null}
-            </ScrollView>
+            <View style={{ flex: 1, minWidth: 4 }} />
+            <CanvasTool
+              label="Вставить изображение"
+              icon={Image}
+              onPress={() => void addAttachment('image')}
+            />
+            <CanvasTool
+              label="Вставить разделитель"
+              icon={Minus}
+              onPress={() => openPanel('divider')}
+            />
+            <CanvasTool
+              label="Добавить ссылку"
+              icon={Link2}
+              onPress={() => openPanel('link')}
+            />
+            <CanvasTool
+              label="Добавить голосовую запись"
+              icon={Mic}
+              onPress={() => void addAttachment('voice')}
+            />
           </View>
+          {legacy.length ? (
+            <View style={{ paddingHorizontal: 8, paddingTop: 6 }}>
+              <Button label="Другие материалы" onPress={() => openPanel('legacy')} />
+            </View>
+          ) : null}
         </View>
       ) : legacy.length ? (
         <Button label="Другие материалы" onPress={() => openPanel('legacy')} />
@@ -477,56 +534,20 @@ export function MobileNoteCanvas({
               </Pressable>
             ))}
           </View>
-          <Label muted>Разделитель</Label>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-            {[
-              ['solid', '━━━━'],
-              ['tapered', '━◆━'],
-              ['dashed', '┅┅┅'],
-              ['dotted', '••••']
-            ].map(([variant, label]) => (
-              <Button
-                key={variant}
-                accessibilityLabel={`Разделитель: ${variant}`}
-                label={label}
-                selected={dividerStyle === variant}
-                onPress={() => setDividerStyle(variant)}
-              />
-            ))}
-          </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
-            <Button
-              label="−"
-              accessibilityLabel="Уменьшить толщину разделителя"
-              disabled={dividerSize === 1}
-              onPress={() => setDividerSize((size) => size - 1)}
-            />
-            <Label>{dividerSize} px</Label>
-            <Button
-              label="+"
-              accessibilityLabel="Увеличить толщину разделителя"
-              disabled={dividerSize === 12}
-              onPress={() => setDividerSize((size) => size + 1)}
-            />
-          </View>
-          <Button
-            label={formatting.divider ? 'Применить к разделителю' : 'Добавить разделитель'}
-            primary
-            onPress={() => {
-              editor.insertDivider(dividerStyle, dividerSize)
-              setPanel(null)
-            }}
-          />
-          {formatting.divider ? (
-            <Button
-              label="Добавить новый разделитель"
-              onPress={() => {
-                editor.insertDivider(dividerStyle, dividerSize, true)
-                setPanel(null)
-              }}
-            />
-          ) : null}
+          {renderDividerControls()}
         </ScrollView>
+      </AppDialog>
+
+      <AppDialog
+        open={panel === 'divider'}
+        title="Разделитель"
+        icon="add"
+        presentation="sheet"
+        onOpenChange={(open) => {
+          if (!open) setPanel(null)
+        }}
+      >
+        <View style={{ padding: 16, paddingBottom: 28 }}>{renderDividerControls()}</View>
       </AppDialog>
 
       {panel === 'attachment' && attachment && !voice ? (
