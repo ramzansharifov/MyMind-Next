@@ -14,6 +14,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: pwa-notes-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   notes:
     runs-on: ubuntu-latest
