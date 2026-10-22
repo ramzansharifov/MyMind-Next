@@ -73,7 +73,8 @@ test('rich note survives reload and a real backup download/restore roundtrip', a
   bytes[bytes.length - 1] ^= 1
   const invalid = page.waitForEvent('filechooser')
   await page.getByRole('button', { name: 'Проверить резервную копию', exact: true }).click()
-  await (await invalid).setFiles({
+  const invalidChooser = await invalid
+  await invalidChooser.setFiles({
     name: 'bad.mymindbackup',
     mimeType: 'application/octet-stream',
     buffer: bytes
