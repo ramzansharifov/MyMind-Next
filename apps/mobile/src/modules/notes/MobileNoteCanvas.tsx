@@ -460,7 +460,7 @@ export function MobileNoteCanvas({
                 label="Создать чек-лист"
                 icon={ListTodo}
                 selected={Boolean(formatting.taskList)}
-                onPress={() => editor.command('taskList')}
+                onPress={() => void editor.command('taskList')}
               />
             ) : null}
             <View style={{ flex: 1, minWidth: 4 }} />
@@ -545,27 +545,27 @@ export function MobileNoteCanvas({
             )
               .filter((item) => !isPwa || (item.kind !== 'image' && item.kind !== 'voice'))
               .map((item) => (
-              <Pressable
-                key={item.kind}
-                accessibilityRole="button"
-                accessibilityLabel={`Добавить: ${item.label}`}
-                onPress={() => void addAttachment(item.kind)}
-                style={{
-                  width: '30%',
-                  minHeight: 84,
-                  gap: 8,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  borderWidth: 1,
-                  borderColor: theme.border,
-                  borderRadius: 12,
-                  backgroundColor: theme.surface
-                }}
-              >
-                <item.icon size={24} color={theme.accent} />
-                <Text style={{ color: theme.text, fontSize: 12 }}>{item.label}</Text>
-              </Pressable>
-            ))}
+                <Pressable
+                  key={item.kind}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Добавить: ${item.label}`}
+                  onPress={() => void addAttachment(item.kind)}
+                  style={{
+                    width: '30%',
+                    minHeight: 84,
+                    gap: 8,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderWidth: 1,
+                    borderColor: theme.border,
+                    borderRadius: 12,
+                    backgroundColor: theme.surface
+                  }}
+                >
+                  <item.icon size={24} color={theme.accent} />
+                  <Text style={{ color: theme.text, fontSize: 12 }}>{item.label}</Text>
+                </Pressable>
+              ))}
           </View>
           {!isPwa ? renderDividerControls() : null}
         </ScrollView>
