@@ -107,22 +107,27 @@ test('notes: bullet and numbered lists accept typing, Enter and retain compact s
   page
 }) => {
   await page.setViewportSize({ width: 320, height: 568 })
-  await open(page, 'notes')
-  await createNote(page, 'List formatting parity')
-  const editor = page.locator('.notes-editor')
-  const formatButton = page.getByRole('button', { name: 'Форматирование текста', exact: true })
 
-  for (const kind of ['Маркированный список', 'Нумерованный список']) {
-    await formatButton.click()
+  for (const [kind, selector] of [
+    ['Маркированный список', 'ul:not([data-type="taskList"])'],
+    ['Нумерованный список', 'ol']
+  ] as const) {
+    // Start each list from an empty note; do not depend on cursor position
+    // inherited from a previous list, especially on mobile Safari.
+    await open(page, 'notes')
+    await createNote(page, `List parity: ${kind}`)
+    const editor = page.locator('.notes-editor')
+    await page.getByRole('button', { name: 'Форматирование текста', exact: true }).click()
     await page.getByRole('button', { name: kind, exact: true }).click()
     await page.getByRole('button', { name: 'Закрыть', exact: true }).last().click()
 
-    await editor.click()
+    const list = editor.locator(selector).first()
+    await expect(list).toBeVisible()
+    await list.locator('li').first().click()
     await page.keyboard.type('Первый пункт')
     await page.keyboard.press('Enter')
     await page.keyboard.type('Следующий пункт')
 
-    const list = kind === 'Маркированный список' ? editor.locator('ul:not([data-type="taskList"])').first() : editor.locator('ol').first()
     await expect(list.locator('li')).toHaveCount(2)
     await expect(list).toContainText('Следующий пункт')
     const measurements = await list.locator('li').evaluateAll((elements) =>
@@ -133,9 +138,5 @@ test('notes: bullet and numbered lists accept typing, Enter and retain compact s
     )
     expect(measurements[0].height).toBeLessThan(56)
     expect(measurements[1].top - measurements[0].bottom).toBeLessThan(18)
-
-    // Start a new paragraph before testing the next list type.
-    await page.keyboard.press('Enter')
-    await page.keyboard.press('Enter')
   }
 })
