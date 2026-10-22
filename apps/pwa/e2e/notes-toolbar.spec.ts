@@ -61,13 +61,35 @@ test('notes: checklist shortcut inserts editable checkboxes and persists checked
 
   const taskList = editor.locator('ul[data-type="taskList"]')
   await expect(taskList).toBeVisible()
-  console.log('CHECKLIST_DOM', await taskList.evaluate((element) => element.outerHTML))
-  console.log('EDITOR_ACTIVE', await page.evaluate(() => ({
-    active: document.activeElement?.outerHTML.slice(0, 260),
-    selection: String(window.getSelection()?.anchorNode?.parentElement?.outerHTML.slice(0, 260))
-  })))
-  await taskList.locator('li[data-type="taskItem"] p').first().click()
+  // Clicking the bottom action must leave the caret inside the new list item.
+  // No extra tap on a blank row is allowed before typing.
+  await expect(taskList.locator('li[data-type="taskItem"]')).toHaveCount(1)
+  await expect.poll(() => editor.evaluate((el) => el.contains(document.activeElement))).toBe(true)
   await page.keyboard.type('Тестовый пункт')
+  await expect(taskList).toContainText('Тестовый пункт')
+  await page.keyboard.press('Enter')
+  await page.keyboard.type('Второй пункт')
+  await expect(taskList.locator('li[data-type="taskItem"]')).toHaveCount(2)
+  await expect(taskList).toContainText('Второй пункт')
+  const layout = await taskList.locator('li[data-type="taskItem"]').evaluateAll((rows) =>
+    rows.map((row) => {
+      const rect = row.getBoundingClientRect()
+      const content = row.querySelector('div')
+      const label = row.querySelector('label')
+      const text = content?.getBoundingClientRect()
+      const control = label?.getBoundingClientRect()
+      return {
+        rowHeight: rect.height,
+        rowTop: rect.top,
+        rowBottom: rect.bottom,
+        labelTop: control?.top ?? 0,
+        contentTop: text?.top ?? 0
+      }
+    })
+  )
+  expect(layout[0].rowHeight).toBeLessThan(60)
+  expect(layout[1].rowTop - layout[0].rowBottom).toBeLessThan(16)
+  expect(Math.abs(layout[0].labelTop - layout[0].contentTop)).toBeLessThan(22)
 
   const checkbox = taskList.locator('input[type="checkbox"]').first()
   await expect(checkbox).not.toBeChecked()
@@ -79,5 +101,6 @@ test('notes: checklist shortcut inserts editable checkboxes and persists checked
   await page.getByRole('button', { name: 'Checklist note', exact: true }).click()
   const restored = page.locator('.notes-editor ul[data-type="taskList"]')
   await expect(restored).toContainText('Тестовый пункт')
+  await expect(restored).toContainText('Второй пункт')
   await expect(restored.locator('input[type="checkbox"]').first()).toBeChecked()
 })
