@@ -13,23 +13,17 @@ test('installed PWA checks for new site versions at launch and on return without
   })
 
   await open(page, 'home')
-  await expect
-    .poll(() =>
-      page.evaluate(() => (window as typeof window & { __pwaUpdateChecks?: number }).__pwaUpdateChecks ?? 0)
+  const checks = (): Promise<number> =>
+    page.evaluate(
+      () => (window as typeof window & { __pwaUpdateChecks?: number }).__pwaUpdateChecks ?? 0
     )
-    .toBeGreaterThan(0)
+  await expect.poll(checks).toBeGreaterThan(0)
 
-  const initialChecks = await page.evaluate(
-    () => (window as typeof window & { __pwaUpdateChecks?: number }).__pwaUpdateChecks ?? 0
-  )
+  const initialChecks = await checks()
   // Foreground checks are throttled so an active installation does not poll
   // repeatedly as the user switches quickly between apps.
   await page.evaluate(() => window.dispatchEvent(new Event('focus')))
-  await expect
-    .poll(() =>
-      page.evaluate(() => (window as typeof window & { __pwaUpdateChecks?: number }).__pwaUpdateChecks ?? 0)
-    )
-    .toBe(initialChecks)
+  await expect.poll(checks).toBe(initialChecks)
 
   // Simulate the next foreground event after the throttle window.
   await page.evaluate(() => {
@@ -38,10 +32,6 @@ test('installed PWA checks for new site versions at launch and on return without
     window.dispatchEvent(new Event('focus'))
     Date.now = original
   })
-  await expect
-    .poll(() =>
-      page.evaluate(() => (window as typeof window & { __pwaUpdateChecks?: number }).__pwaUpdateChecks ?? 0)
-    )
-    .toBe(initialChecks + 1)
+  await expect.poll(checks).toBe(initialChecks + 1)
   await expect(page.locator('.save-status')).toHaveText('Сохранено на устройстве')
 })
