@@ -1,4 +1,6 @@
 import { sha256 } from '@noble/hashes/sha2.js'
+import type { Database } from 'sql.js'
+import type { MobileBackupSummary } from '../../../mobile/src/shared/backup/mobileBackup'
 import {
   MOBILE_BACKUP_FORMAT,
   MOBILE_BACKUP_VERSION,
@@ -67,7 +69,12 @@ export async function exportBackup(db: PwaDatabase): Promise<Blob> {
   )
 }
 
-export async function restoreBackup(db: PwaDatabase, file: Blob): Promise<void> {
+// Read and validate the complete archive without touching IndexedDB or the
+// live SQLite handle. Reuse this exact validation for inspection and restore.
+async function readVerifiedBackup(
+  db: PwaDatabase,
+  file: Blob
+): Promise<{ candidate: Database; assets: StoredAsset[]; summary: MobileBackupSummary }> {
   if (file.size > PWA_BACKUP_MAX_BYTES)
     throw new Error('Размер резервной копии превышает ограничение формата MyMind (4 ГБ).')
   const header = new Uint8Array(await file.slice(0, MOBILE_BACKUP_HEADER_SIZE).arrayBuffer())
@@ -117,6 +124,31 @@ export async function restoreBackup(db: PwaDatabase, file: Blob): Promise<void> 
       expected.close()
     }
     validateLibraryAssets(candidate, assets)
+    return {
+      candidate,
+      assets,
+      summary: {
+        createdAt: manifest.createdAt,
+        files: manifest.entries.filter((entry) => entry.kind === 'file').length,
+        bytes: manifest.entries.reduce((total, entry) => total + entry.size, 0)
+      }
+    }
+  } catch (error) {
+    candidate.close()
+    throw error
+  }
+}
+
+/** Verify hashes, structure, foreign keys and attachments without importing. */
+export async function verifyBackup(db: PwaDatabase, file: Blob): Promise<MobileBackupSummary> {
+  const { candidate, summary } = await readVerifiedBackup(db, file)
+  candidate.close()
+  return summary
+}
+
+export async function restoreBackup(db: PwaDatabase, file: Blob): Promise<void> {
+  const { candidate, assets } = await readVerifiedBackup(db, file)
+  try {
     await db.replace(candidate, assets)
   } catch (error) {
     candidate.close()
