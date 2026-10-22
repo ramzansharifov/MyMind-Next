@@ -1,5 +1,7 @@
 import {
   ArrowDownAZ,
+  BookOpen,
+  Pencil,
   CircleSlash2,
   Clock3,
   Folder,
@@ -762,10 +764,46 @@ export function NotesScreen({
               {noteSaveLabel(saveState)}
             </Text>
           </Pressable>
+          {(
+            [
+              { mode: 'read', label: 'Чтение', icon: BookOpen },
+              { mode: 'edit', label: 'Редактирование', icon: Pencil }
+            ] as const
+          ).map(({ mode, label, icon: ModeIcon }) => (
+            <Pressable
+              key={mode}
+              accessibilityRole="button"
+              accessibilityLabel={label}
+              accessibilityState={{
+                selected: editorMode === mode,
+                disabled: closing || modeChanging
+              }}
+              disabled={closing || modeChanging}
+              hitSlop={4}
+              onPress={() => changeEditorMode(mode)}
+              style={({ pressed }) => ({
+                width: 40,
+                height: 40,
+                borderRadius: 12,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor:
+                  editorMode === mode ? theme.accent + '20' : pressed ? theme.raised : 'transparent',
+                opacity: closing || modeChanging ? 0.45 : 1
+              })}
+            >
+              <ModeIcon size={19} color={editorMode === mode ? theme.accent : theme.muted} />
+            </Pressable>
+          ))}
           <ActionMenu
             disabled={closing || modeChanging}
             title="Заметка"
             items={[
+              {
+                label: 'Вид заметки',
+                icon: 'settings',
+                onPress: () => changeEditorMode('view')
+              },
               {
                 label: 'Свойства заметки',
                 icon: 'edit',
@@ -774,54 +812,6 @@ export function NotesScreen({
               { label: 'Удалить заметку', icon: 'delete', danger: true, onPress: deleteCurrentNote }
             ]}
           />
-        </View>
-        <View
-          style={{
-            flexDirection: 'row',
-            paddingHorizontal: 10,
-            paddingVertical: 6,
-            gap: 6,
-            borderBottomWidth: 1,
-            borderColor: theme.border
-          }}
-        >
-          {(
-            [
-              ['read', 'Чтение'],
-              ['edit', 'Редактирование'],
-              ['view', 'Вид']
-            ] as const
-          ).map(([mode, label]) => (
-            <Pressable
-              key={mode}
-              accessibilityRole="button"
-              accessibilityLabel={label}
-              accessibilityState={{
-                selected: editorMode === mode,
-                disabled: modeChanging || closing
-              }}
-              disabled={modeChanging || closing}
-              onPress={() => changeEditorMode(mode)}
-              style={{
-                flex: 1,
-                minHeight: 40,
-                justifyContent: 'center',
-                alignItems: 'center',
-                borderRadius: 10,
-                backgroundColor: editorMode === mode ? theme.accent + '20' : theme.surface
-              }}
-            >
-              <Text
-                style={{
-                  color: editorMode === mode ? theme.accent : theme.muted,
-                  fontSize: 12,
-                  fontWeight: '600'
-                }}
-              >
-                {label}
-              </Text>
-            </Pressable>
-          ))}
         </View>
         {editorError ? (
           <ErrorState
