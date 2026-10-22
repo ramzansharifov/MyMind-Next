@@ -628,10 +628,10 @@ export default function NotesRichTextDom({
             applyBlockFormatting((candidate) => candidate.setTextAlign('justify'))
             break
           case 'undo':
-            editor.chain().undo().run()
+            editor.chain().focus().undo().run()
             break
           case 'redo':
-            editor.chain().redo().run()
+            editor.chain().focus().redo().run()
             break
           case 'clearFormatting':
             chain.unsetAllMarks().clearNodes().setTextAlign('left').run()
