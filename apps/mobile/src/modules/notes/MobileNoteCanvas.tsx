@@ -460,7 +460,14 @@ export function MobileNoteCanvas({
                 label="Создать чек-лист"
                 icon={ListTodo}
                 selected={Boolean(formatting.taskList)}
-                onPress={() => void editor.command('taskList')}
+                onPress={() => {
+                  // Expo DOM commands cross the browser/native bridge. Restoring focus
+                  // after the command resolves keeps the task row ready for typing.
+                  void (async () => {
+                    await editor.command('taskList')
+                    await editor.focusEditor()
+                  })().catch(onError)
+                }}
               />
             ) : null}
             <View style={{ flex: 1, minWidth: 4 }} />
