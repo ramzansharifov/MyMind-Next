@@ -31,7 +31,7 @@ jobs:
       - run: npm ci
       - run: npm run build:pwa
       - run: npx playwright install --with-deps chrome
-      - run: npx playwright test --config apps/pwa/playwright.config.mts apps/pwa/e2e/notes-toolbar.spec.ts --project=phone
+      - run: npx playwright test --config apps/pwa/playwright.config.mts apps/pwa/e2e/notes-toolbar.spec.ts --project=phone --project=desktop
       - if: always()
         uses: actions/upload-artifact@v4
         with:
