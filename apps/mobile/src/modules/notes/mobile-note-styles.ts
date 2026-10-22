@@ -3,6 +3,15 @@ export const mobileNoteStyles = `
   .notes-rich-root[data-note-canvas] { position: relative; isolation: isolate; width: calc(100% - 16px); margin: 12px 8px; min-height: calc(var(--page-count) * 1120px + (var(--page-count) - 1) * 32px); }
   [data-note-canvas] .notes-editor { position: relative; z-index: 1; display: grid; align-content: start; gap: 12px; padding: 24px 20px; min-height: calc(var(--page-count) * 1120px + (var(--page-count) - 1) * 32px); font-size: 1rem; line-height: 1.85; }
   [data-note-canvas] .notes-editor > * { margin: 0; min-width: 0; }
+  /* The generic editor adds 0.75rem between top-level nodes in addition to
+     the canvas grid's 12px gap. Desktop uses only the grid gap. */
+  [data-note-canvas] .notes-editor > * + * { margin-top: 0; }
+  /* UA default paragraph margins inside each li were adding ~2 lines of
+     empty space per bullet / numbered / task entry (and breaking pagination). */
+  [data-note-canvas] .notes-editor li p { margin: 0; min-height: 0; }
+  [data-note-canvas] .notes-editor li { min-width: 0; }
+  [data-note-canvas] .notes-editor li[data-type=taskItem] > div > ul,
+  [data-note-canvas] .notes-editor li[data-type=taskItem] > div > ol { margin-block: 0.25rem; }
   .mobile-note-pages, .mobile-note-gutters { position: absolute; inset: 0; pointer-events: none; }
   .mobile-note-page { position: absolute; width: 100%; height: 1120px; border: 1px solid var(--border); border-radius: 8px; background-color: var(--paper); }
   [data-note-layout=card] .mobile-note-page { border-width: 2px; }
@@ -19,7 +28,7 @@ export const mobileNoteStyles = `
   .notes-editor ::selection { color: var(--text); background: color-mix(in srgb, var(--accent) 30%, transparent); }
   .notes-editor ul[data-type=taskList] { list-style: none; padding-left: 0; }
   .notes-editor li[data-type=taskItem] { display: flex; align-items: flex-start; gap: 10px; padding-left: 0; }
-  .notes-editor li[data-type=taskItem] > label { display: flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; margin: -5px -11px 0; }
+  .notes-editor li[data-type=taskItem] > label { display: flex; flex-shrink: 0; align-items: center; justify-content: center; min-width: 32px; min-height: 32px; margin: 0 -5px 0; cursor: pointer; }
   .notes-editor li[data-type=taskItem] > div { flex: 1; min-width: 0; }
   .notes-editor input[type=checkbox] { appearance: none; width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--muted); margin: 0; background: var(--surface); cursor: pointer; }
   .notes-editor input[type=checkbox]:checked { background: color-mix(in srgb,var(--accent) 78%,black); border-color: var(--accent); }
