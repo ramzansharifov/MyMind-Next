@@ -103,4 +103,46 @@ test('notes: checklist shortcut inserts editable checkboxes and persists checked
   await expect(restored).toContainText('Тестовый пункт')
   await expect(restored).toContainText('Второй пункт')
   await expect(restored.locator('input[type="checkbox"]').first()).toBeChecked()
+
+  await page.getByRole('button', { name: 'Чтение', exact: true }).click()
+  await expect(page.locator('.notes-editor')).toHaveAttribute('contenteditable', 'false')
+  await restored.locator('input[type="checkbox"]').first().click()
+  await expect(restored.locator('input[type="checkbox"]').first()).not.toBeChecked()
+  await page.getByRole('button', { name: 'Редактирование', exact: true }).click()
+  await expect(restored.locator('input[type="checkbox"]').first()).not.toBeChecked()
+})
+
+test('notes: bullet and numbered lists keep two editable rows close together', async ({
+  page
+}) => {
+  await page.setViewportSize({ width: 320, height: 568 })
+  for (const [label, selector] of [
+    ['Маркированный список', 'ul:not([data-type="taskList"])'],
+    ['Нумерованный список', 'ol']
+  ] as const) {
+    await open(page, 'notes')
+    await createNote(page, `Проверка: ${label}`)
+    await page.getByRole('button', { name: 'Форматирование текста', exact: true }).click()
+    await page.getByRole('button', { name: label, exact: true }).click()
+    await page.getByRole('button', { name: 'Закрыть', exact: true }).last().click()
+
+    const list = page.locator('.notes-editor').locator(selector).first()
+    await expect(list).toBeVisible()
+    await list.locator('li p').first().click()
+    await page.keyboard.type('Первый пункт')
+    await page.keyboard.press('Enter')
+    await page.keyboard.type('Второй пункт')
+    await expect(list.locator('li')).toHaveCount(2)
+    await expect(list).toContainText('Первый пункт')
+    await expect(list).toContainText('Второй пункт')
+
+    const rows = await list.locator('li').evaluateAll((items) =>
+      items.map((item) => {
+        const rect = item.getBoundingClientRect()
+        return { top: rect.top, bottom: rect.bottom, height: rect.height }
+      })
+    )
+    expect(rows[0].height).toBeLessThan(60)
+    expect(rows[1].top - rows[0].bottom).toBeLessThan(16)
+  }
 })
