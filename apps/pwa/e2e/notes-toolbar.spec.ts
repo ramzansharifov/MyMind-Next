@@ -61,6 +61,11 @@ test('notes: checklist shortcut inserts editable checkboxes and persists checked
 
   const taskList = editor.locator('ul[data-type="taskList"]')
   await expect(taskList).toBeVisible()
+  console.log('CHECKLIST_DOM', await taskList.evaluate((element) => element.outerHTML))
+  console.log('EDITOR_ACTIVE', await page.evaluate(() => ({
+    active: document.activeElement?.outerHTML.slice(0, 260),
+    selection: String(window.getSelection()?.anchorNode?.parentElement?.outerHTML.slice(0, 260))
+  })))
   await taskList.locator('li[data-type="taskItem"] p').first().click()
   await page.keyboard.type('Тестовый пункт')
 
