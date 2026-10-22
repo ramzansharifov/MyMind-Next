@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises'
 import { test, expect, open, navigate, createNote, localData } from './helpers'
 import { navigationRoutes, routeTitles } from '../src/components/navigation'
 
@@ -60,6 +61,25 @@ test('rich note survives reload and a real backup download/restore roundtrip', a
   const backup = await downloading
   const backupPath = await backup.path()
   expect(backupPath).toBeTruthy()
+
+  // Verify the downloaded file, not just its header. The check must not
+  // replace the live database; invalid files must also leave it unchanged.
+  const checked = page.waitForEvent('filechooser')
+  await page.getByRole('button', { name: 'Проверить резервную копию', exact: true }).click()
+  await (await checked).setFiles(backupPath!)
+  await expect(page.getByText(/Резервная копия проверена:/)).toBeVisible()
+
+  const bytes = Buffer.from(await readFile(backupPath!))
+  bytes[bytes.length - 1] ^= 1
+  const invalid = page.waitForEvent('filechooser')
+  await page.getByRole('button', { name: 'Проверить резервную копию', exact: true }).click()
+  await (await invalid).setFiles({
+    name: 'bad.mymindbackup',
+    mimeType: 'application/octet-stream',
+    buffer: bytes
+  })
+  await expect(page.getByText(/Резервная копия повреждена:/)).toBeVisible()
+
   await navigate(page, 'notes')
   await page.getByText('PWA browser persistence', { exact: true }).first().click()
   await page.locator('.notes-editor').fill('Changed after backup')
