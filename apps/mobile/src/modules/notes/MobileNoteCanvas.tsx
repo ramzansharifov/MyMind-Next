@@ -16,6 +16,7 @@ import {
   File,
   Image,
   Link2,
+  ListTodo,
   Mic,
   Minus,
   Music,
@@ -56,10 +57,14 @@ export type MobileNoteMode = 'edit' | 'read' | 'view'
 function CanvasTool({
   label,
   icon: Icon,
+  compact = false,
+  selected = false,
   onPress
 }: {
   label: string
   icon: LucideIcon
+  compact?: boolean
+  selected?: boolean
   onPress(): void
 }): React.JSX.Element {
   const theme = useTheme()
@@ -67,17 +72,22 @@ function CanvasTool({
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
+      accessibilityState={{ selected }}
       onPress={onPress}
       style={({ pressed }) => ({
-        width: 44,
+        width: compact ? 40 : 44,
         height: 44,
         alignItems: 'center',
         justifyContent: 'center',
         borderRadius: 10,
-        backgroundColor: pressed ? theme.raised : theme.surface
+        backgroundColor: selected
+          ? theme.accent + '20'
+          : pressed
+            ? theme.raised
+            : theme.surface
       })}
     >
-      <Icon size={20} color={theme.accent} />
+      <Icon size={compact ? 18 : 20} color={theme.accent} />
     </Pressable>
   )
 }
@@ -102,6 +112,8 @@ export function MobileNoteCanvas({
   onError(reason: unknown): void
 }): React.JSX.Element {
   const theme = useTheme()
+  // Only the browser PWA uses the compact toolbar and reduced insertion menu.
+  const isPwa = Platform.OS === 'web'
   const insets = useSafeAreaInsets()
   const { documentAssets } = useServices()
   const [initial] = useState(() => document)
@@ -423,35 +435,55 @@ export function MobileNoteCanvas({
           }}
         >
           <View
-            style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, gap: 4 }}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              paddingHorizontal: isPwa ? 6 : 8,
+              gap: isPwa ? 2 : 4
+            }}
           >
             <CanvasTool
-              label="Добавить вложение или разделитель"
+              compact={isPwa}
+              label={isPwa ? 'Добавить вложение' : 'Добавить вложение или разделитель'}
               icon={Plus}
               onPress={() => openPanel('insert')}
             />
             <CanvasTool
+              compact={isPwa}
               label="Форматирование текста"
               icon={Type}
               onPress={() => openPanel('text')}
             />
+            {isPwa ? (
+              <CanvasTool
+                compact
+                label="Создать чек-лист"
+                icon={ListTodo}
+                selected={Boolean(formatting.taskList)}
+                onPress={() => editor.command('taskList')}
+              />
+            ) : null}
             <View style={{ flex: 1, minWidth: 4 }} />
             <CanvasTool
+              compact={isPwa}
               label="Вставить изображение"
               icon={Image}
               onPress={() => void addAttachment('image')}
             />
             <CanvasTool
+              compact={isPwa}
               label="Вставить разделитель"
               icon={Minus}
               onPress={() => openPanel('divider')}
             />
             <CanvasTool
+              compact={isPwa}
               label="Добавить ссылку"
               icon={Link2}
               onPress={() => openPanel('link')}
             />
             <CanvasTool
+              compact={isPwa}
               label="Добавить голосовую запись"
               icon={Mic}
               onPress={() => void addAttachment('voice')}
@@ -510,7 +542,9 @@ export function MobileNoteCanvas({
                 { kind: 'voice', label: 'Голосовое', icon: Mic },
                 { kind: 'file', label: 'Файл', icon: File }
               ] as const
-            ).map((item) => (
+            )
+              .filter((item) => !isPwa || (item.kind !== 'image' && item.kind !== 'voice'))
+              .map((item) => (
               <Pressable
                 key={item.kind}
                 accessibilityRole="button"
@@ -533,7 +567,7 @@ export function MobileNoteCanvas({
               </Pressable>
             ))}
           </View>
-          {renderDividerControls()}
+          {!isPwa ? renderDividerControls() : null}
         </ScrollView>
       </AppDialog>
 
