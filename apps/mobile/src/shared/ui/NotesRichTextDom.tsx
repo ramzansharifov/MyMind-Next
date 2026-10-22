@@ -2,6 +2,7 @@
 
 import { Editor, Mark, Node, mergeAttributes, type Extensions } from '@tiptap/core'
 import Highlight from '@tiptap/extension-highlight'
+import { TaskItem, TaskList } from '@tiptap/extension-list'
 import TextAlign from '@tiptap/extension-text-align'
 import { TextStyleKit } from '@tiptap/extension-text-style'
 import { Placeholder } from '@tiptap/extensions'
@@ -254,6 +255,9 @@ function createExtensions(readOnly: boolean): Extensions {
         }
       }
     }),
+    // Keep checklist nodes readable on both platforms; only PWA exposes a shortcut.
+    TaskList,
+    TaskItem.configure({ nested: true }),
     StudyInternalLinkNode,
     TextAlign.configure({
       types: ['paragraph'],
