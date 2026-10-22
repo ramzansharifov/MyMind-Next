@@ -36,3 +36,4 @@ jobs:
             .data/pwa-browser-results
             .data/pwa-notes-*.png
           if-no-files-found: ignore
+          include-hidden-files: true
