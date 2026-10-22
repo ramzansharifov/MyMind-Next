@@ -8,7 +8,7 @@ import { Button, ErrorState, Label } from '../../../mobile/src/shared/ui/primiti
 import { useConfirmation } from '../../../mobile/src/shared/ui/confirmation-context'
 import { notifyDataChanged } from '../../../mobile/src/app/changes'
 import type { PwaDatabase } from '../storage/database'
-import { exportBackup, restoreBackup } from '../storage/backup'
+import { exportBackup, restoreBackup, verifyBackup } from '../storage/backup'
 import { backupSummary } from '../storage/backup-summary'
 import { download, pickFile, pickDirectory } from '../platform/files'
 import { importDesktopLibrary } from '../storage/desktop-import'
@@ -77,7 +77,7 @@ export function PwaSettings({
         setBusy(true)
         try {
           const blob = await exportBackup(db)
-          const summary = await backupSummary(blob)
+          const summary = await verifyBackup(db, blob)
           download(blob, `MyMind-${new Date().toISOString().slice(0, 10)}.mymindbackup`)
           return summary
         } finally {
@@ -139,6 +139,23 @@ export function PwaSettings({
       dataExtras={
         <>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            <Button
+              label="Проверить резервную копию"
+              disabled={busy}
+              onPress={() =>
+                void run(async () => {
+                  const file = await pickFile('.mymindbackup')
+                  if (!file) return
+                  const summary = await verifyBackup(db, file)
+                  setMessage(
+                    `Резервная копия проверена: ${summary.files} вложений, ${(
+                      summary.bytes /
+                      (1024 * 1024)
+                    ).toFixed(1)} МБ. Данные приложения не изменены.`
+                  )
+                })
+              }
+            />
             <Button
               label="Перенести desktop-библиотеку"
               icon="folder"
