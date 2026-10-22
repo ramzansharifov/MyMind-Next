@@ -7,9 +7,11 @@ export const NoteTaskItem = TaskItem.extend({
 
     return (props) => {
       const nodeView = createNodeView(props)
-      const checkbox = (nodeView.dom as HTMLElement).querySelector<HTMLInputElement>(
-        'input[type="checkbox"]'
-      )
+      // Tiptap's task-item node view does not inherit renderHTML attributes.
+      // The explicit marker is required by our checkbox/text layout rules.
+      const listItem = nodeView.dom as HTMLElement
+      listItem.setAttribute('data-type', 'taskItem')
+      const checkbox = listItem.querySelector<HTMLInputElement>('input[type="checkbox"]')
 
       function handleReadOnlyChange(event: Event): void {
         if (props.editor.isEditable || !checkbox) return

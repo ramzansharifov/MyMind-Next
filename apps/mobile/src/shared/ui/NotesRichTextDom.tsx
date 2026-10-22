@@ -713,7 +713,8 @@ export default function NotesRichTextDom({
         const editor = editorRef.current
         if (!editor || editor.isDestroyed) return
         const selection = safeSelection(editor, savedSelectionRef.current)
-        editor.commands.setTextSelection(selection)
+        editor.chain().setTextSelection(selection).focus().run()
+        rememberSelection(editor)
       }
     }),
     [canvasMode, commandChain, rememberSelection]

@@ -1,0 +1,43 @@
+name: PWA Notes Runtime
+
+on:
+  push:
+    branches:
+      - fix/pwa-notes-list-runtime-20261022
+  pull_request:
+    paths:
+      - 'apps/mobile/src/modules/notes/**'
+      - 'apps/mobile/src/shared/ui/NotesRichTextDom.tsx'
+      - 'apps/pwa/e2e/notes-toolbar.spec.ts'
+      - '.github/workflows/pwa-notes-runtime.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pwa-notes-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  notes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build:pwa
+      - run: npx playwright install --with-deps chrome
+      - run: npx playwright test --config apps/pwa/playwright.config.mts apps/pwa/e2e/notes-toolbar.spec.ts --project=phone --project=desktop
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pwa-notes-playwright
+          path: |
+            .data/pwa-browser-results
+            .data/pwa-notes-*.png
+          if-no-files-found: ignore
+          include-hidden-files: true
