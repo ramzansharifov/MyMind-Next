@@ -10,6 +10,11 @@ export const mobileNoteStyles = `
      empty space per bullet / numbered / task entry (and breaking pagination). */
   [data-note-canvas] .notes-editor li p { margin: 0; min-height: 0; }
   [data-note-canvas] .notes-editor li { min-width: 0; }
+  /* Lists are editable block flow, not independent CSS grid tracks.
+     This matches the Desktop editor and avoids browser caret/row layout anomalies. */
+  [data-note-canvas] .notes-editor ul,
+  [data-note-canvas] .notes-editor ol { display: block; }
+  [data-note-canvas] .notes-editor li + li { margin-top: 0.25rem; }
   [data-note-canvas] .notes-editor li[data-type=taskItem] > div > ul,
   [data-note-canvas] .notes-editor li[data-type=taskItem] > div > ol { margin-block: 0.25rem; }
   .mobile-note-pages, .mobile-note-gutters { position: absolute; inset: 0; pointer-events: none; }
