@@ -12,6 +12,7 @@ import type { ResolveStudyInternalLinkTargetInput } from '@mymind/contracts/stud
 import { DomViewportMeta } from './DomViewportMeta'
 import type { NoteDocument, NoteAppearance } from '@mymind/contracts/notes'
 import { DEFAULT_NOTE_APPEARANCE } from '@mymind/contracts/notes'
+import type { Mark as ProseMirrorMark } from '@tiptap/pm/model'
 import { NodeSelection } from '@tiptap/pm/state'
 import {
   attachmentDeleteKey,
@@ -557,7 +558,7 @@ export default function NotesRichTextDom({
         const applyBlockFormatting = (
           transform: (chain: ReturnType<Editor['chain']>) => ReturnType<Editor['chain']>
         ): void => {
-          let marks: readonly Mark[] | null = null
+          let marks: readonly ProseMirrorMark[] | null = null
           chain.command(({ tr }) => {
             if (tr.selection.empty) marks = tr.storedMarks ?? tr.selection.$from.marks()
             return true
