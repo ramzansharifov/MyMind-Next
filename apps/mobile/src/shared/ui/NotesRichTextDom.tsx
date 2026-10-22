@@ -2,7 +2,6 @@
 
 import { Editor, Mark, Node, mergeAttributes, type Extensions } from '@tiptap/core'
 import Highlight from '@tiptap/extension-highlight'
-import { TaskItem, TaskList } from '@tiptap/extension-list'
 import TextAlign from '@tiptap/extension-text-align'
 import { TextStyleKit } from '@tiptap/extension-text-style'
 import { Placeholder } from '@tiptap/extensions'
@@ -30,6 +29,8 @@ import {
 import { getReadableNoteTextColor } from '../../modules/notes/lib/note-color-contrast'
 import { changeSelectedTextCase } from '../../modules/notes/lib/text-case'
 import { mobileNoteStyles } from '../../modules/notes/mobile-note-styles'
+import { NoteTaskItem } from '../../modules/notes/MobileNoteTaskItem'
+import { NoteTaskList } from '../../modules/notes/MobileNoteTaskList'
 
 export type NotesRichTextAlignment = 'left' | 'center' | 'right' | 'justify'
 
@@ -255,9 +256,15 @@ function createExtensions(readOnly: boolean): Extensions {
         }
       }
     }),
-    // Keep checklist nodes readable on both platforms; only PWA exposes a shortcut.
-    TaskList,
-    TaskItem.configure({ nested: true }),
+    // Match the Desktop note editor's checklist schema, conversion and read-only toggles.
+    NoteTaskList,
+    NoteTaskItem.configure({
+      nested: true,
+      HTMLAttributes: { 'data-type': 'taskItem' },
+      a11y: {
+        checkboxLabel: (node) => `Отметить пункт: ${node.textContent || 'Новый пункт'}`
+      }
+    }),
     StudyInternalLinkNode,
     TextAlign.configure({
       types: ['paragraph'],
@@ -444,7 +451,9 @@ export default function NotesRichTextDom({
 
   const commandChain = useCallback((editor: Editor) => {
     const selection = safeSelection(editor, savedSelectionRef.current)
-    const chain = editor.chain()
+    // Like Desktop RichTextSettings, restore actual editor focus after toolbar actions.
+    // Otherwise tapping the checklist button leaves the caret outside contenteditable.
+    const chain = editor.chain().focus()
     const current = editor.state.selection
     return current.from === selection.from && current.to === selection.to
       ? chain
@@ -543,6 +552,24 @@ export default function NotesRichTextDom({
         if (!editor || editor.isDestroyed || typeof command !== 'string') return
 
         const chain = commandChain(editor)
+        // List/blockquote conversions must retain active marks for subsequent typing.
+        // Desktop applies the same save/restore around structural commands.
+        const applyBlockFormatting = (
+          transform: (chain: ReturnType<Editor['chain']>) => ReturnType<Editor['chain']>
+        ): void => {
+          let marks: readonly Mark[] | null = null
+          chain.command(({ tr }) => {
+            if (tr.selection.empty) marks = tr.storedMarks ?? tr.selection.$from.marks()
+            return true
+          })
+          transform(chain)
+            .command(({ tr }) => {
+              if (marks && tr.selection.empty && tr.selection.$from.parent.isTextblock)
+                tr.ensureMarks(tr.selection.$from.parent.type.allowedMarks(marks))
+              return true
+            })
+            .run()
+        }
         switch (command) {
           case 'bold':
             chain.toggleBold().run()
@@ -560,16 +587,16 @@ export default function NotesRichTextDom({
             chain.toggleCode().run()
             break
           case 'blockquote':
-            chain.toggleBlockquote().run()
+            applyBlockFormatting((candidate) => candidate.toggleBlockquote())
             break
           case 'bulletList':
-            chain.toggleBulletList().run()
+            applyBlockFormatting((candidate) => candidate.toggleBulletList())
             break
           case 'orderedList':
-            chain.toggleOrderedList().run()
+            applyBlockFormatting((candidate) => candidate.toggleOrderedList())
             break
           case 'taskList':
-            chain.toggleTaskList().run()
+            applyBlockFormatting((candidate) => candidate.toggleTaskList())
             break
           case 'lowercase':
           case 'uppercase':
@@ -589,16 +616,16 @@ export default function NotesRichTextDom({
             chain.liftListItem(editor.isActive('taskList') ? 'taskItem' : 'listItem').run()
             break
           case 'alignLeft':
-            chain.setTextAlign('left').run()
+            applyBlockFormatting((candidate) => candidate.setTextAlign('left'))
             break
           case 'alignCenter':
-            chain.setTextAlign('center').run()
+            applyBlockFormatting((candidate) => candidate.setTextAlign('center'))
             break
           case 'alignRight':
-            chain.setTextAlign('right').run()
+            applyBlockFormatting((candidate) => candidate.setTextAlign('right'))
             break
           case 'alignJustify':
-            chain.setTextAlign('justify').run()
+            applyBlockFormatting((candidate) => candidate.setTextAlign('justify'))
             break
           case 'undo':
             editor.chain().undo().run()
