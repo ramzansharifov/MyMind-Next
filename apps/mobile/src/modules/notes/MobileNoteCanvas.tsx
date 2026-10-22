@@ -18,11 +18,10 @@ import {
   Link2,
   Mic,
   Minus,
-  Type,
-  Plus,
-  Settings2,
-  Video,
   Music,
+  Plus,
+  Type,
+  Video,
   type LucideIcon
 } from 'lucide-react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -316,55 +315,55 @@ export function MobileNoteCanvas({
 
   const renderDividerControls = (): React.JSX.Element => (
     <View style={{ gap: 14 }}>
-          <Label muted>Разделитель</Label>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-            {[
-              ['solid', '━━━━'],
-              ['tapered', '━◆━'],
-              ['dashed', '┅┅┅'],
-              ['dotted', '••••']
-            ].map(([variant, label]) => (
-              <Button
-                key={variant}
-                accessibilityLabel={`Разделитель: ${variant}`}
-                label={label}
-                selected={dividerStyle === variant}
-                onPress={() => setDividerStyle(variant)}
-              />
-            ))}
-          </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
-            <Button
-              label="−"
-              accessibilityLabel="Уменьшить толщину разделителя"
-              disabled={dividerSize === 1}
-              onPress={() => setDividerSize((size) => size - 1)}
-            />
-            <Label>{dividerSize} px</Label>
-            <Button
-              label="+"
-              accessibilityLabel="Увеличить толщину разделителя"
-              disabled={dividerSize === 12}
-              onPress={() => setDividerSize((size) => size + 1)}
-            />
-          </View>
+      <Label muted>Разделитель</Label>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+        {[
+          ['solid', '━━━━'],
+          ['tapered', '━◆━'],
+          ['dashed', '┅┅┅'],
+          ['dotted', '••••']
+        ].map(([variant, label]) => (
           <Button
-            label={formatting.divider ? 'Применить к разделителю' : 'Добавить разделитель'}
-            primary
-            onPress={() => {
-              editor.insertDivider(dividerStyle, dividerSize)
-              setPanel(null)
-            }}
+            key={variant}
+            accessibilityLabel={`Разделитель: ${variant}`}
+            label={label}
+            selected={dividerStyle === variant}
+            onPress={() => setDividerStyle(variant)}
           />
-          {formatting.divider ? (
-            <Button
-              label="Добавить новый разделитель"
-              onPress={() => {
-                editor.insertDivider(dividerStyle, dividerSize, true)
-                setPanel(null)
-              }}
-            />
-          ) : null}
+        ))}
+      </View>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+        <Button
+          label="−"
+          accessibilityLabel="Уменьшить толщину разделителя"
+          disabled={dividerSize === 1}
+          onPress={() => setDividerSize((size) => size - 1)}
+        />
+        <Label>{dividerSize} px</Label>
+        <Button
+          label="+"
+          accessibilityLabel="Увеличить толщину разделителя"
+          disabled={dividerSize === 12}
+          onPress={() => setDividerSize((size) => size + 1)}
+        />
+      </View>
+      <Button
+        label={formatting.divider ? 'Применить к разделителю' : 'Добавить разделитель'}
+        primary
+        onPress={() => {
+          editor.insertDivider(dividerStyle, dividerSize)
+          setPanel(null)
+        }}
+      />
+      {formatting.divider ? (
+        <Button
+          label="Добавить новый разделитель"
+          onPress={() => {
+            editor.insertDivider(dividerStyle, dividerSize, true)
+            setPanel(null)
+          }}
+        />
+      ) : null}
     </View>
   )
 
