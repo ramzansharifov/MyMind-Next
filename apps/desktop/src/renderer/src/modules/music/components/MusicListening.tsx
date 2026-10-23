@@ -1,19 +1,22 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
-  Check, Disc3, ExternalLink, Heart, ListMusic, LoaderCircle,
-  Music2, Pause, Play, Radio, Search, Shuffle, SkipBack, SkipForward, Repeat, Repeat1,
-  Volume2, VolumeX, X
+  BookmarkPlus, Check, Disc3, Download, ExternalLink, Heart, ListMusic, ListPlus, LoaderCircle,
+  Music2, Pause, Play, Plus, Radio, Search, Shuffle, SkipBack, SkipForward, Repeat, Repeat1,
+  Trash2, Volume2, VolumeX, X
 } from 'lucide-react'
 import {
   discoverMusic, providerLabel, type DiscoveredTrack, type MusicSource
 } from '@mymind/core/music-discovery'
+import {
+  type MusicStreamingCollection, type MusicCollectionAction
+} from '@mymind/core/music-collection'
 import './music-listening.css'
 
 interface MusicListeningProps {
-  onSaveTrack?: (track: DiscoveredTrack) => Promise<void> | void
+  collection: MusicStreamingCollection
+  onCollectionAction: (action: MusicCollectionAction) => void
   /** PWA uses a same-origin metadata route to avoid provider browser CORS restrictions. */
   searchProxy?: boolean
-  savedTracks?: DiscoveredTrack[]
   onEngineSearch?: (input: { provider: 'youtube' | 'soundcloud'; query: string }) => Promise<DiscoveredTrack[]>
   onEngineResolve?: (input: { provider: 'youtube' | 'soundcloud'; id: string }) => Promise<string>
   onRadio?: (input: { videoId: string }) => Promise<DiscoveredTrack[]>
@@ -38,10 +41,16 @@ function Artwork({ track, size = 'medium' }: { track: DiscoveredTrack; size?: 'm
   )
 }
 
-export function MusicListening({ onSaveTrack, searchProxy = false, savedTracks = [], onEngineSearch, onEngineResolve, onRadio }: MusicListeningProps): React.JSX.Element {
+export function MusicListening({
+  collection, onCollectionAction, searchProxy = false, onEngineSearch, onEngineResolve, onRadio
+}: MusicListeningProps): React.JSX.Element {
   const audio = useRef<HTMLAudioElement>(null)
   const [provider, setProvider] = useState<MusicSource>('youtube')
   const [onlySaved, setOnlySaved] = useState(false)
+  const [savedFilter, setSavedFilter] = useState('all')
+  const [newPlaylistName, setNewPlaylistName] = useState('')
+  const [showNewPlaylist, setShowNewPlaylist] = useState(false)
+  const [trackMenu, setTrackMenu] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [clientId, setClientId] = useState('')
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -51,8 +60,6 @@ export function MusicListening({ onSaveTrack, searchProxy = false, savedTracks =
   const [loadError, setLoadError] = useState('')
   const [searchAttempt, setSearchAttempt] = useState(0)
   const [playbackError, setPlaybackError] = useState('')
-  const [saving, setSaving] = useState<string | null>(null)
-  const [saved, setSaved] = useState<Set<string>>(() => new Set())
   const [queue, setQueue] = useState<DiscoveredTrack[]>([])
   const [currentIndex, setCurrentIndex] = useState(-1)
   const [playing, setPlaying] = useState(false)
@@ -65,7 +72,16 @@ export function MusicListening({ onSaveTrack, searchProxy = false, savedTracks =
   const [buffering, setBuffering] = useState(false)
   const [radioLoading, setRadioLoading] = useState(false)
   const current = queue[currentIndex] ?? null
-  const visibleTracks = onlySaved ? savedTracks.filter((t) => (t.title + ' ' + t.artist).toLocaleLowerCase('ru').includes(query.trim().toLocaleLowerCase('ru'))) : tracks
+  const savedTracks = Object.values(collection.tracks)
+  const savedKeys = new Set(savedTracks.map((track) => track.key))
+  const likedKeys = new Set(collection.likedKeys)
+  const chosenPlaylist = collection.playlists.find((item) => item.id === savedFilter)
+  const visibleTracks = onlySaved
+    ? savedTracks.filter((track) =>
+        (savedFilter === 'all' || (savedFilter === 'liked'
+          ? likedKeys.has(track.key) : chosenPlaylist?.trackKeys.includes(track.key))) &&
+        (track.title + ' ' + track.artist).toLocaleLowerCase('ru').includes(query.trim().toLocaleLowerCase('ru')))
+    : tracks
 
   useEffect(() => {
     try { setClientId(localStorage.getItem('mymind.music.jamendo-client-id') ?? '') } catch { /* private mode */ }
@@ -324,19 +340,24 @@ export function MusicListening({ onSaveTrack, searchProxy = false, savedTracks =
     }
   }
 
-  const save = async (track: DiscoveredTrack): Promise<void> => {
-    if (!onSaveTrack || saving) return
-    setSaving(track.key)
-    setPlaybackError('')
-    try {
-      await onSaveTrack(track)
-      setSaved((previous) => new Set([...previous, track.key]))
-    } catch (reason) {
-      setPlaybackError(reason instanceof Error ? reason.message : 'Не удалось сохранить трек.')
-    } finally {
-      setSaving(null)
-    }
+  const save = (track: DiscoveredTrack): void =>
+    onCollectionAction({ type: 'save', track })
+
+  const toggleLike = (track: DiscoveredTrack): void =>
+    onCollectionAction({ type: 'like', track })
+
+  const createPlaylist = (): void => {
+    const name = newPlaylistName.trim()
+    if (!name) return
+    const id = typeof crypto !== 'undefined' && 'randomUUID' in crypto
+      ? crypto.randomUUID() : String(Date.now()) + '_' + String(Math.floor(Math.random() * 10000))
+    onCollectionAction({ type: 'playlist-create', id, name, now: Date.now() })
+    setSavedFilter(id)
+    setOnlySaved(true)
+    setNewPlaylistName('')
+    setShowNewPlaylist(false)
   }
+
   const onChangeClientId = (id: string): void => {
     const trimmed = id.trim()
     setClientId(trimmed)
@@ -370,13 +391,14 @@ export function MusicListening({ onSaveTrack, searchProxy = false, savedTracks =
       <div className="mymusic-discovery-toolbar">
         <div className="mymusic-providers" role="group" aria-label="Источник музыки">
           {(['youtube', 'soundcloud', 'audius', 'jamendo'] as const).map((value) => (
-            <button key={value} type="button" aria-pressed={provider === value}
+            <button key={value} type="button" aria-pressed={provider === value && !onlySaved}
               className={provider === value && !onlySaved ? 'active' : ''}
               onClick={() => { setOnlySaved(false); setProvider(value); setQuery('') }}>
               {providerLabel(value)}
             </button>
           ))}
-          <button type="button" aria-pressed={onlySaved} className={onlySaved ? 'active' : ''} onClick={() => { setOnlySaved(true); setQuery('') }}>Мои треки</button>
+          <button type="button" aria-pressed={onlySaved && savedFilter === 'all'} className={onlySaved && savedFilter === 'all' ? 'active' : ''} onClick={() => { setOnlySaved(true); setSavedFilter('all'); setQuery('') }}>Сохранённое ({savedTracks.length})</button>
+          <button type="button" aria-pressed={onlySaved && savedFilter === 'liked'} className={onlySaved && savedFilter === 'liked' ? 'active' : ''} onClick={() => { setOnlySaved(true); setSavedFilter('liked'); setQuery('') }}>Избранное ({likedKeys.size})</button>
         </div>
         <label className="mymusic-search">
           <Search size={18} />
@@ -397,10 +419,52 @@ export function MusicListening({ onSaveTrack, searchProxy = false, savedTracks =
         </div>
       ) : null}
 
+      <div className="mymusic-library-controls">
+        <div className="mymusic-library-playlists">
+          {collection.playlists.map((playlist) => (
+            <button key={playlist.id} type="button"
+              aria-pressed={onlySaved && savedFilter === playlist.id}
+              className={onlySaved && savedFilter === playlist.id ? 'active' : ''}
+              onClick={() => { setOnlySaved(true); setSavedFilter(playlist.id); setQuery('') }}>
+              <ListMusic size={14} /> {playlist.name}
+              <span>{playlist.trackKeys.length}</span>
+            </button>
+          ))}
+          <button type="button" onClick={() => setShowNewPlaylist((v) => !v)} aria-label="Новый плейлист">
+            <Plus size={15} /> Плейлист
+          </button>
+        </div>
+        {showNewPlaylist ? (
+          <form className="mymusic-playlist-create" onSubmit={(event) => { event.preventDefault(); createPlaylist() }}>
+            <input aria-label="Название плейлиста" maxLength={100} autoFocus
+              value={newPlaylistName} onChange={(event) => setNewPlaylistName(event.target.value)}
+              placeholder="Название плейлиста" />
+            <button type="submit" disabled={!newPlaylistName.trim()}>Создать</button>
+          </form>
+        ) : null}
+        {chosenPlaylist && onlySaved ? (
+          <div className="mymusic-playlist-actions">
+            <button type="button" onClick={() => {
+              const name = window.prompt('Новое название плейлиста', chosenPlaylist.name)
+              if (name?.trim()) onCollectionAction({ type: 'playlist-rename', id: chosenPlaylist.id, name })
+            }}>Переименовать</button>
+            <button type="button" onClick={() => {
+              if (window.confirm('Удалить плейлист? Сохранённые треки останутся.')) {
+                onCollectionAction({ type: 'playlist-delete', id: chosenPlaylist.id })
+                setSavedFilter('all')
+              }
+            }}>Удалить плейлист</button>
+            <button type="button" onClick={() => choose(collection.tracks[chosenPlaylist.trackKeys[0]], chosenPlaylist.trackKeys.map(key => collection.tracks[key]).filter((t): t is DiscoveredTrack => Boolean(t)))}
+              disabled={!chosenPlaylist.trackKeys.length}>Слушать плейлист</button>
+          </div>
+        ) : null}
+      </div>
       <div className="mymusic-section-head">
         <div>
-          <span className="mymusic-eyebrow">{onlySaved ? 'Коллекция' : providerLabel(provider)}</span>
-          <h3>{onlySaved ? 'Сохранённая музыка' : query.trim() ? 'Результаты поиска' : 'Сейчас в тренде'}</h3>
+          <span className="mymusic-eyebrow">{onlySaved ? 'МОЯ МУЗЫКА' : providerLabel(provider)}</span>
+          <h3>{onlySaved ? savedFilter === 'all' ? 'Сохранённые треки'
+  : savedFilter === 'liked' ? 'Избранное' : chosenPlaylist?.name ?? 'Плейлист'
+  : query.trim() ? 'Результаты поиска' : 'Сейчас в тренде'}</h3>
         </div>
         <span className="mymusic-result-count">{loading ? 'Поиск…' : String(visibleTracks.length) + ' треков'}</span>
       </div>
@@ -416,7 +480,7 @@ export function MusicListening({ onSaveTrack, searchProxy = false, savedTracks =
       ) : !onlySaved && loading && !visibleTracks.length ? (
         <div className="mymusic-message"><LoaderCircle className="mymusic-spin" size={20}/> {searchHint || 'Загружаем музыку…'}</div>
       ) : !visibleTracks.length ? (
-        <div className="mymusic-message">{onlySaved ? 'Пока нет сохранённых потоков. Найди трек и нажми сердечко, чтобы добавить его в библиотеку.' : 'Ничего не найдено. Попробуй другой запрос.'}</div>
+        <div className="mymusic-message">{onlySaved ? 'Здесь пока нет треков. Найди музыку, сохрани её или добавь в плейлист.' : 'Ничего не найдено. Попробуй другой запрос.'}</div>
       ) : (
         <div className="mymusic-track-list">
           {visibleTracks.map((track, index) => (
@@ -432,9 +496,34 @@ export function MusicListening({ onSaveTrack, searchProxy = false, savedTracks =
               </div>
               <span className="mymusic-track-duration">{duration(track.durationSeconds)}</span>
               {track.provider === 'youtube' ? <button className="mymusic-track-action" type="button" title="Моя волна — похожая музыка" aria-label={'Моя волна по треку ' + track.title} disabled={radioLoading} onClick={() => void startRadio(track)}><Radio size={17}/></button> : null}
-              {onSaveTrack ? <button className="mymusic-track-action" type="button" disabled={saving !== null || saved.has(track.key) || savedTracks.some((item) => item.key === track.key)} title="Сохранить в библиотеку" aria-label={'Сохранить ' + track.title + ' в библиотеку'} onClick={() => void save(track)}>
-                {saved.has(track.key) || savedTracks.some((item) => item.key === track.key) ? <Check size={17}/> : saving === track.key ? <LoaderCircle className="mymusic-spin" size={17}/> : <Heart size={17}/>}
-              </button> : null}
+              <button className="mymusic-track-action" type="button"
+                title={savedKeys.has(track.key) ? 'Удалить из сохранённых' : 'Сохранить трек'}
+                aria-label={(savedKeys.has(track.key) ? 'Удалить ' : 'Сохранить ') + track.title + (savedKeys.has(track.key) ? ' из сохранённых' : ' в библиотеку')}
+                onClick={() => savedKeys.has(track.key)
+                  ? onCollectionAction({ type: 'remove', key: track.key })
+                  : save(track)}>
+                {savedKeys.has(track.key) ? <Check size={17}/> : <BookmarkPlus size={17}/>}
+              </button>
+              <button className={'mymusic-track-action' + (likedKeys.has(track.key) ? ' active' : '')}
+                type="button" aria-pressed={likedKeys.has(track.key)}
+                title="Избранное" aria-label={'Избранное: ' + track.title}
+                onClick={() => toggleLike(track)}><Heart size={17} fill={likedKeys.has(track.key) ? 'currentColor' : 'none'} /></button>
+              <div className="mymusic-track-menu-anchor">
+                <button type="button" className="mymusic-track-action" aria-label={'Добавить ' + track.title + ' в плейлист'}
+                  aria-expanded={trackMenu === track.key} onClick={() => setTrackMenu(trackMenu === track.key ? null : track.key)}>
+                  <ListPlus size={17}/>
+                </button>
+                {trackMenu === track.key ? <div className="mymusic-track-menu">
+                  {collection.playlists.length === 0 ? <span>Создай плейлист выше</span> : collection.playlists.map(p =>
+                    <button type="button" key={p.id} onClick={() => {
+                      onCollectionAction({ type: 'playlist-toggle', id: p.id, track })
+                      setTrackMenu(null)
+                    }}>{p.trackKeys.includes(track.key) ? '✓ ' : '+ '}{p.name}</button>)}
+                </div> : null}
+              </div>
+              {track.downloadUrl ? <a className="mymusic-track-action" href={track.downloadUrl}
+                title="Скачать — разрешено источником" aria-label={'Скачать ' + track.title}
+                target="_blank" rel="noopener noreferrer"><Download size={17}/></a> : null}
               {track.permalink ? <a className="mymusic-track-action" href={track.permalink} target="_blank" rel="noopener noreferrer" aria-label={'Открыть ' + track.title + ' у источника'}><ExternalLink size={16}/></a> : null}
             </article>
           ))}
@@ -477,7 +566,7 @@ export function MusicListening({ onSaveTrack, searchProxy = false, savedTracks =
           {playbackError ? <div className="mymusic-player-error" role="alert">{playbackError}</div> : null}
         </div>
       ) : null}
-      <div className="mymusic-attribution">YouTube · SoundCloud · Audius · Jamendo. Для YouTube и SoundCloud используется локальный yt-dlp или личный музыкальный мост. Соблюдай права правообладателей при воспроизведении и кэшировании.</div>
+      <div className="mymusic-attribution">YouTube · SoundCloud · Audius · Jamendo. Скачивание доступно для треков, у которых источник разрешил загрузку. Данные о плейлистах и избранном хранятся локально; звук предоставляют сами источники.</div>
     </section>
   )
 }
