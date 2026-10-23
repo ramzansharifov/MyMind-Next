@@ -1,9 +1,10 @@
-import { dialog, ipcMain, net, shell } from 'electron'
+import { ipcMain, net, shell } from 'electron'
 
-import { MUSIC_IPC_CHANNELS, type MusicEngineSearchInput, type MusicEnginePlaybackInput, type MusicRadioInput, type MusicEngineDownloadInput, type SetMusicSourceLinkInput } from '../../shared/contracts/music'
+import { MUSIC_IPC_CHANNELS, type MusicEngineSearchInput, type MusicEnginePlaybackInput, type MusicRadioInput, type MusicEngineDownloadInput, type MusicEngineOfflineInput, type SetMusicSourceLinkInput } from '../../shared/contracts/music'
 import { discoverYouTube, discoverYouTubeWithFallback } from '@mymind/core/music-youtube'
-import { downloadMusicTrack, searchSoundCloud, searchYouTubeViaYtDlp, youtubeRadio } from '../services/music-yt-dlp'
-import { localMusicStream } from '../services/music-audio-proxy'
+import { searchSoundCloud, searchYouTubeViaYtDlp, youtubeRadio } from '../services/music-yt-dlp'
+import { downloadOfflineMusic, listOfflineMusic, removeOfflineMusic } from '../services/music-offline'
+import { localMusicStream, localOfflineMusicStream } from '../services/music-audio-proxy'
 import { parseSavedMusicSources } from '@mymind/core/music-discovery'
 import { MUSIC_COLLECTION_KEY, parseMusicCollection } from '@mymind/core/music-collection'
 import { getSqlite } from '../database/client'
@@ -161,22 +162,18 @@ export function registerMusicIpcHandlers(): void {
   )
   ipcMain.handle(MUSIC_IPC_CHANNELS.engineDownload, (_event, rawInput: unknown) =>
     mainOperationTracker.run(async () => {
-      const data = rawInput as MusicEngineDownloadInput | null
-      if (!data || (data.provider !== 'youtube' && data.provider !== 'soundcloud') ||
-          typeof data.id !== 'string' || typeof data.suggestedName !== 'string' ||
-          data.id.length > 180 || data.suggestedName.length > 260)
-        throw new Error('Некорректная музыкальная запись')
-      const selected = await dialog.showOpenDialog({
-        title: 'Выбрать папку для аудиофайла',
-        properties: ['openDirectory', 'createDirectory']
-      })
-      if (selected.canceled || !selected.filePaths[0]) return null
-      const path = await downloadMusicTrack(
-        data.provider, data.id, data.suggestedName, selected.filePaths[0]
-      )
-      shell.showItemInFolder(path)
-      return path
+      const track = rawInput as MusicEngineDownloadInput
+      return downloadOfflineMusic(track)
     })
+  )
+  ipcMain.handle(MUSIC_IPC_CHANNELS.offlineList, () =>
+    mainOperationTracker.run(() => listOfflineMusic())
+  )
+  ipcMain.handle(MUSIC_IPC_CHANNELS.offlineResolve, (_event, rawInput: unknown) =>
+    mainOperationTracker.run(() => localOfflineMusicStream(rawInput as MusicEngineOfflineInput))
+  )
+  ipcMain.handle(MUSIC_IPC_CHANNELS.offlineRemove, (_event, rawInput: unknown) =>
+    mainOperationTracker.run(() => removeOfflineMusic(rawInput as MusicEngineOfflineInput))
   )
   ipcMain.handle(MUSIC_IPC_CHANNELS.engineRadio, (_event, rawInput: unknown) =>
     mainOperationTracker.run(async () => {

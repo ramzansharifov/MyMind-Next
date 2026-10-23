@@ -92,6 +92,9 @@ export function MusicPage({ resourceId, onResourceHandled }: MusicPageProps): Re
           onEngineResolve={musicClient.engineResolve}
           onRadio={musicClient.engineRadio}
           onEngineDownload={musicClient.engineDownload}
+          onOfflineList={musicClient.offlineList}
+          onOfflineResolve={musicClient.offlineResolve}
+          onOfflineRemove={musicClient.offlineRemove}
         />
       )}
     </StandardModulePage>
