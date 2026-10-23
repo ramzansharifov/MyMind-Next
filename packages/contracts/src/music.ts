@@ -30,6 +30,11 @@ export interface MusicSourceLink {
   permalink: string | null
 }
 
+export type ExtractedMusicProvider = 'youtube' | 'soundcloud'
+export interface MusicEngineSearchInput { provider: ExtractedMusicProvider; query: string }
+export interface MusicEnginePlaybackInput { provider: ExtractedMusicProvider; id: string }
+export interface MusicRadioInput { videoId: string }
+
 export interface SetMusicSourceLinkInput {
   itemId: string
   track: MusicSourceLink
@@ -165,7 +170,10 @@ export const MUSIC_IPC_CHANNELS = {
   setItemPlaylists: 'music:set-item-playlists',
   searchWeb: 'music:search-web',
   listSourceLinks: 'music:list-source-links',
-  setSourceLink: 'music:set-source-link'
+  setSourceLink: 'music:set-source-link',
+  engineSearch: 'music:engine-search',
+  engineResolve: 'music:engine-resolve',
+  engineRadio: 'music:engine-radio'
 } as const
 
 export interface MusicApi {
@@ -183,6 +191,9 @@ export interface MusicApi {
   searchWeb(input: MusicWebSearchInput): Promise<void>
   listSourceLinks(): Promise<Record<string, MusicSourceLink>>
   setSourceLink(input: SetMusicSourceLinkInput): Promise<void>
+  engineSearch(input: MusicEngineSearchInput): Promise<MusicSourceLink[]>
+  engineResolve(input: MusicEnginePlaybackInput): Promise<string>
+  engineRadio(input: MusicRadioInput): Promise<MusicSourceLink[]>
 }
 
 export function stringifyMusicJson(
