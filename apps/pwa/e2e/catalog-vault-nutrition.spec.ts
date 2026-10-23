@@ -20,40 +20,29 @@ test('movies: create, update, reopen and delete a locally stored movie', async (
   await expect(page.getByText('PWA edited movie', { exact: true })).toHaveCount(0)
 })
 
-test('music: create playlist and track, edit, restart and delete', async ({ page }) => {
-  await page.route('**/api/music/discover', (request) => request.fulfill({ json: { tracks: [] } }))
+test('music: playlists use provider track IDs and persist across restart', async ({ page }) => {
+  const result = {
+    key: 'audius:test-track-123', provider: 'audius', id: 'test-track-123',
+    title: 'Provider Song', artist: 'Provider Artist', durationSeconds: 150,
+    artworkUrl: null, streamUrl: 'https://api.audius.co/v1/tracks/test-track-123/stream',
+    permalink: null
+  }
+  await page.route('**/api/music/discover', route =>
+    route.fulfill({ json: { tracks: [result] } }))
   await open(page, 'music')
-  await page.getByRole('tab', { name: 'Моя библиотека' }).click()
-  await page.getByRole('button', { name: 'Добавить музыку', exact: true }).click()
-  await page.getByRole('button', { name: 'Создать плейлист', exact: true }).click()
-  await page.getByRole('textbox', { name: 'Название', exact: true }).fill('PWA playlist')
-  await save(page)
-  await page.getByRole('button', { name: 'Добавить музыку', exact: true }).click()
-  await page.getByRole('button', { name: 'Добавить трек', exact: true }).click()
-  await page.getByRole('textbox', { name: 'Название', exact: true }).fill('PWA track')
-  await page.getByRole('textbox', { name: 'Исполнитель', exact: true }).fill('Local artist')
-  await page.getByRole('textbox', { name: 'Длительность', exact: true }).fill('3:45')
-  await page.getByRole('checkbox', { name: 'Плейлист · PWA playlist', exact: true }).click()
-  await expect(
-    page.getByRole('checkbox', { name: 'Плейлист · PWA playlist', exact: true })
-  ).toBeChecked()
-  await save(page)
-  await page.getByRole('button', { name: 'Действия трека «PWA track»', exact: true }).click()
-  await page.getByRole('button', { name: 'Редактировать', exact: true }).click()
-  await page.getByRole('textbox', { name: 'Название', exact: true }).fill('PWA edited track')
-  await save(page)
-  await open(page, 'music')
-  await page.getByRole('tab', { name: 'Моя библиотека' }).click()
-  await page.getByRole('tab', { name: 'Плейлисты', exact: true }).click()
-  await page.getByRole('button', { name: 'Открыть плейлист «PWA playlist»', exact: true }).click()
-  await page.getByRole('button', { name: 'Действия трека «PWA edited track»', exact: true }).click()
-  await confirmRemoval(page)
-  await expect(page.getByRole('button', { name: 'PWA edited track', exact: true })).toHaveCount(0)
-  await confirmRemoval(page, 'Удалить плейлист «PWA playlist»')
-  await open(page, 'music')
-  await page.getByRole('tab', { name: 'Моя библиотека' }).click()
-  await page.getByRole('tab', { name: 'Плейлисты', exact: true }).click()
-  await expect(page.getByText('PWA playlist', { exact: true })).toHaveCount(0)
+  await page.getByRole('button', { name: 'Audius', exact: true }).click()
+  await page.getByRole('button', { name: 'Новый плейлист' }).click()
+  await page.getByRole('textbox', { name: 'Название плейлиста' }).fill('Мой микс')
+  await page.getByRole('button', { name: 'Создать', exact: true }).click()
+  await expect(page.getByText('Мой микс', { exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Добавить Provider Song в плейлист' }).click()
+  await page.getByRole('button', { name: '+ Мой микс' }).click()
+  await page.getByRole('button', { name: /Мой микс 1/ }).click()
+  await expect(page.getByRole('button', { name: 'Воспроизвести Provider Song' })).toBeVisible()
+  await page.reload()
+  await page.getByRole('button', { name: /Мой микс 1/ }).click()
+  await expect(page.getByRole('button', { name: 'Воспроизвести Provider Song' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Добавить музыку', exact: true })).toHaveCount(0)
 })
 
 test('nutrition: water and food entries persist, edit and delete through the browser', async ({
