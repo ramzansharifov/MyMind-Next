@@ -80,8 +80,10 @@ export async function removeOfflineMusic(input: MusicEngineOfflineInput): Promis
   const key = keyFor(input)
   const result = await stored(key)
   if (!result) return false
-  await rm(join(directory(), digest(key) + '.json'), { force: true })
+  // Delete the media first. If Windows still has it open, keep metadata so
+  // the user can retry rather than leaving an inaccessible orphaned file.
   await rm(result.path, { force: true })
+  await rm(join(directory(), digest(key) + '.json'), { force: true })
   return true
 }
 function downloadableUrl(track: NonNullable<ReturnType<typeof validStreamingTrack>>): string {
