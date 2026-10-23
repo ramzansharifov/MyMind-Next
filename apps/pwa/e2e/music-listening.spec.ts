@@ -103,7 +103,6 @@ test('music: YouTube default, stream bridge, SoundCloud search, and My Wave radi
   await page.getByRole('button', { name: 'Воспроизвести YouTube Song' }).click()
   await expect(page.getByRole('region', { name: 'Музыкальный проигрыватель' })).toBeVisible()
   await page.getByRole('button', { name: 'Моя волна по треку YouTube Song' }).click()
-  await page.getByRole('button', { name: 'Очередь' }).click()
   await expect(page.getByRole('button', { name: /YouTube Similar/ })).toBeVisible()
   await page.getByRole('button', { name: 'SoundCloud', exact: true }).click()
   await expect(page.getByRole('button', { name: 'Воспроизвести YouTube Song' })).toBeVisible()
