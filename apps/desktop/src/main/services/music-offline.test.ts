@@ -9,6 +9,7 @@ vi.mock('electron', () => ({
   app: { getPath: () => root }
 }))
 vi.mock('./music-yt-dlp', () => ({
+  resolveAudioUrl: async () => { throw new Error('Offline playback must not access the provider') },
   downloadMusicTrack: async (_provider: string, _id: string, name: string, directory: string) => {
     const { writeFile } = await import('node:fs/promises')
     const { join } = await import('node:path')
@@ -21,6 +22,7 @@ vi.mock('./music-yt-dlp', () => ({
 import {
   downloadOfflineMusic, findOfflineMusic, listOfflineMusic, removeOfflineMusic
 } from './music-offline'
+import { localOfflineMusicStream, stopLocalMusicStream } from './music-audio-proxy'
 
 const youtube: MusicEngineDownloadInput = {
   key: 'youtube:abcdefghijk', provider: 'youtube', id: 'abcdefghijk',
@@ -44,6 +46,20 @@ describe('MyMind internal music downloads', () => {
     expect(await removeOfflineMusic({ provider: 'youtube', id: youtube.id })).toBe(true)
     expect(await listOfflineMusic()).toEqual([])
     expect(await findOfflineMusic({ provider: 'youtube', id: youtube.id })).toBeNull()
+  })
+
+  it('plays offline audio through the local server with byte-range seeking', async () => {
+    await downloadOfflineMusic(youtube)
+    const url = await localOfflineMusicStream({ provider: 'youtube', id: youtube.id })
+    try {
+      const response = await fetch(url, { headers: { Range: 'bytes=0-6' } })
+      expect(response.status).toBe(206)
+      expect(response.headers.get('accept-ranges')).toBe('bytes')
+      expect(response.headers.get('content-type')).toBe('audio/mp4')
+      expect(await response.text()).toBe('testing')
+    } finally {
+      stopLocalMusicStream()
+    }
   })
 
   it('rejects arbitrary links and cannot read or remove paths from user input', async () => {
