@@ -42,4 +42,29 @@ describe('anonymous YouTube InnerTube music catalog', () => {
     expect(JSON.parse(String(config.body)).query).toBe('music')
     expect(JSON.parse(String(config.body)).context.client.clientName).toBe('WEB')
   })
+  it('times out a stalled YouTube response instead of leaving a pending request', async () => {
+    const fetcher = vi.fn((_url: RequestInfo | URL, init?: RequestInit) =>
+      new Promise<Response>((_resolve, reject) => {
+        init?.signal?.addEventListener('abort', () =>
+          reject(new DOMException('Aborted', 'AbortError')), { once: true })
+      }))
+    await expect(discoverYouTube('music', { fetcher, timeoutMs: 35 }))
+      .rejects.toThrow('YouTube не ответил вовремя')
+    expect(fetcher).toHaveBeenCalledOnce()
+  })
+
+  it('forwards a caller cancellation without misreporting it as a timeout', async () => {
+    const controller = new AbortController()
+    const fetcher = vi.fn((_url: RequestInfo | URL, init?: RequestInit) =>
+      new Promise<Response>((_resolve, reject) => {
+        init?.signal?.addEventListener('abort', () =>
+          reject(new DOMException('Aborted', 'AbortError')), { once: true })
+      }))
+    const operation = discoverYouTube('music', {
+      fetcher, signal: controller.signal, timeoutMs: 10_000
+    })
+    controller.abort()
+    await expect(operation).rejects.not.toThrow('YouTube не ответил вовремя')
+  })
+
 })
