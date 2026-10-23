@@ -95,3 +95,5 @@
 .mymusic-track-menu button:hover{background:color-mix(in srgb,var(--mm-accent) 16%,transparent)}
 .mymusic-track-menu span{padding:8px;color:var(--mm-muted);font-size:11px}
 @media(max-width:650px){.mymusic-hero{min-height:128px}.mymusic-providers{overflow-x:auto;justify-content:flex-start}.mymusic-providers button{flex:0 0 auto;padding:9px}.mymusic-track{gap:5px}.mymusic-track-action{width:25px;height:28px}.mymusic-track-menu-anchor{position:static}.mymusic-track-menu{right:6px;left:6px;top:auto;max-width:none}}
+
+.mymusic-search-warning{margin:4px 2px 0;color:var(--mm-muted);font-size:12px;line-height:1.5}
