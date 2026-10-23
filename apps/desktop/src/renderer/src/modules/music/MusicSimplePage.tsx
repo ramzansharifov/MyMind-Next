@@ -901,7 +901,7 @@ export function MusicPage({ resourceId, onResourceHandled }: MusicPageProps): Re
         </button>
       </div>
       <div style={{ display: musicTab === 'listen' ? 'block' : 'none' }}>
-        <MusicListening savedTracks={Object.entries(sourceLinks).filter(([id]) =>
+        <MusicListening onEngineSearch={musicClient.engineSearch} onEngineResolve={musicClient.engineResolve} onRadio={musicClient.engineRadio} savedTracks={Object.entries(sourceLinks).filter(([id]) =>
           currentOverview.items.some((item) => item.id === id)
         ).map(([, track]) => track)} onSaveTrack={async (track) => {
           const existing = currentOverview.items.find((item) =>
