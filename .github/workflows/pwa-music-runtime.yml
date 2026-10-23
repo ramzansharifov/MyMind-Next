@@ -5,6 +5,7 @@ on:
     branches:
       - feat/music-listening-desktop-pwa-20261023
       - feat/music-youtube-soundcloud-engine-20261023
+      - feat/music-provider-native-library-20261023
   pull_request:
     paths:
       - 'apps/pwa/src/app/api/music/**'
@@ -17,6 +18,7 @@ on:
       - 'apps/pwa/src/components/PwaMusicHub.tsx'
       - 'apps/desktop/src/renderer/src/modules/music/**'
       - 'packages/core/src/music-discovery*'
+      - 'packages/core/src/music-collection*'
       - 'apps/pwa/e2e/music-listening.spec.ts'
       - '.github/workflows/pwa-music-runtime.yml'
 
@@ -39,7 +41,7 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Validate music bridge and InnerTube parser
-        run: node --check apps/music-bridge/server.mjs && npx vitest run packages/core/src/music-youtube.test.ts
+        run: node --check apps/music-bridge/server.mjs && npx vitest run packages/core/src/music-youtube.test.ts packages/core/src/music-discovery.test.ts packages/core/src/music-collection.test.ts
       - name: Typecheck shared packages
         run: npm run typecheck:packages
       - name: Typecheck Desktop
