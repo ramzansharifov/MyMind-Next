@@ -5,7 +5,7 @@ import {
   Volume2, VolumeX, X
 } from 'lucide-react'
 import {
-  discoverMusic, providerLabel, type DiscoveredTrack, type MusicSource
+  discoverMusic, mergeMusicSearchResults, providerLabel, type DiscoveredTrack, type MusicSource
 } from '@mymind/core/music-discovery'
 import {
   type MusicStreamingCollection, type MusicCollectionAction
@@ -50,7 +50,6 @@ export function MusicListening({
   onEngineDownload, onOfflineList, onOfflineResolve, onOfflineRemove
 }: MusicListeningProps): React.JSX.Element {
   const audio = useRef<HTMLAudioElement>(null)
-  const [provider, setProvider] = useState<MusicSource>('youtube')
   const [onlySaved, setOnlySaved] = useState(false)
   const [savedFilter, setSavedFilter] = useState('all')
   const [newPlaylistName, setNewPlaylistName] = useState('')
@@ -63,6 +62,7 @@ export function MusicListening({
   const [loading, setLoading] = useState(false)
   const [searchHint, setSearchHint] = useState('')
   const [loadError, setLoadError] = useState('')
+  const [searchWarning, setSearchWarning] = useState('')
   const [searchAttempt, setSearchAttempt] = useState(0)
   const [playbackError, setPlaybackError] = useState('')
   const [queue, setQueue] = useState<DiscoveredTrack[]>([])
@@ -108,85 +108,127 @@ export function MusicListening({
     try { setClientId(localStorage.getItem('mymind.music.jamendo-client-id') ?? '') } catch { /* private mode */ }
   }, [])
 
+
   useEffect(() => {
     const controller = new AbortController()
     if (onlySaved) {
       setLoading(false)
       setLoadError('')
+      setSearchWarning('')
       return () => controller.abort()
     }
-    if (provider === 'jamendo' && !clientId.trim()) {
-      setTracks([])
-      setLoadError('')
-      setLoading(false)
-      return () => controller.abort()
-    }
-
-    // Even an Electron IPC promise can stay pending if an upstream service
-    // stops responding. Always finish loading and leave a usable Retry action.
     setTracks([])
     setLoading(true)
     setLoadError('')
+    setSearchWarning('')
     setSearchHint('')
-    let deadline: number | undefined
-    let searchHintTimer: number | undefined
+    let timeoutId: number | undefined
+    let hintId: number | undefined
     const debounce = window.setTimeout(() => {
-      // The first desktop YouTube search may initialize verified yt-dlp for
-      // the fallback. Explain the delay, but never leave a spinner forever.
-      const desktopYouTube = !searchProxy && provider === 'youtube'
-      const limitMs = desktopYouTube ? 90_000 : 15_000
-      if (desktopYouTube) {
-        searchHintTimer = window.setTimeout(() => {
+      const searchable = query.trim()
+      const timeLimit = searchProxy ? 23_000 : 100_000
+      timeoutId = window.setTimeout(() => {
+        controller.abort()
+        setLoading(false)
+        setSearchHint('')
+        setLoadError('Поиск занял слишком много времени. Повтори попытку.')
+      }, timeLimit)
+      if (!searchProxy) {
+        hintId = window.setTimeout(() => {
           if (!controller.signal.aborted)
-            setSearchHint('Проверяем резервный поиск YouTube (yt-dlp)…')
+            setSearchHint('Проверяем дополнительные музыкальные источники…')
         }, 10_000)
       }
-      deadline = window.setTimeout(() => {
-        controller.abort()
-        setSearchHint('')
-        setLoadError('Источник музыки не ответил за ' + (limitMs / 1000) + ' секунд. Проверь интернет и повтори поиск.')
-        setLoading(false)
-      }, limitMs)
 
-      const search = searchProxy
-        ? fetch('/api/music/discover', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ provider, query, jamendoClientId: clientId }),
-            signal: controller.signal
-          }).then(async (response) => {
-            const data = await response.json() as { tracks?: DiscoveredTrack[]; error?: string }
-            if (!response.ok || data.error) throw new Error(data.error || 'Не удалось загрузить музыку.')
-            return data.tracks ?? []
-          })
-        : provider === 'youtube' || provider === 'soundcloud'
-          ? onEngineSearch
-            ? onEngineSearch({ provider, query })
-            : Promise.reject(new Error('Музыкальный движок недоступен'))
-          : discoverMusic({ provider, query, jamendoClientId: clientId, signal: controller.signal })
-
-      void search
-        .then((results) => {
-          if (!controller.signal.aborted) setTracks(results)
-        })
-        .catch((reason: unknown) => {
+      const run = async (): Promise<void> => {
+        try {
+          if (searchProxy) {
+            // One same-origin request delegates to all configured sources on the server.
+            const response = await fetch('/api/music/discover', {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ provider: 'all', query: searchable, jamendoClientId: clientId }),
+              signal: controller.signal
+            })
+            const data = await response.json() as {
+              tracks?: DiscoveredTrack[]; error?: string; partial?: boolean
+            }
+            if (!response.ok || data.error) throw new Error(data.error || 'Поиск недоступен.')
+            if (!controller.signal.aborted) {
+              setTracks(data.tracks ?? [])
+              if (data.partial) setSearchWarning('Часть музыкальных источников временно недоступна. Показаны найденные треки.')
+            }
+            return
+          }
+          // Desktop: parallel, independent requests. Publish each successful batch
+          // immediately, while slower services continue searching in the background.
+          const sources: Array<[MusicSource, () => Promise<DiscoveredTrack[]>, number]> = [
+            ['youtube', () => onEngineSearch
+              ? onEngineSearch({ provider: 'youtube', query: searchable })
+              : Promise.reject(new Error('Не подключён музыкальный движок YouTube')), 95_000],
+            ['audius', () => discoverMusic({
+              provider: 'audius', query: searchable, signal: controller.signal
+            }), 15_000]
+          ]
+          if (searchable) sources.push([
+            'soundcloud', () => onEngineSearch
+              ? onEngineSearch({ provider: 'soundcloud', query: searchable })
+              : Promise.reject(new Error('Не подключён музыкальный движок SoundCloud')), 95_000
+          ])
+          if (clientId.trim()) sources.push([
+            'jamendo', () => discoverMusic({
+              provider: 'jamendo', query: searchable, jamendoClientId: clientId,
+              signal: controller.signal
+            }), 15_000
+          ])
+          const buckets: Partial<Record<MusicSource, DiscoveredTrack[]>> = {}
+          let successful = 0
+          let failed = 0
+          await Promise.all(sources.map(async ([source, load, limit]) => {
+            try {
+              // An upstream Electron promise may hang: enforce a deadline per source.
+              const results = await new Promise<DiscoveredTrack[]>((resolve, reject) => {
+                const timer = window.setTimeout(() => reject(new Error('Источник превысил время ожидания')), limit)
+                Promise.resolve().then(load).then(
+                  (value) => { window.clearTimeout(timer); resolve(value) },
+                  (error: unknown) => { window.clearTimeout(timer); reject(error) }
+                )
+              })
+              if (controller.signal.aborted) return
+              buckets[source] = results
+              successful++
+              setTracks(mergeMusicSearchResults(buckets))
+            } catch {
+              failed++
+            }
+          }))
+          if (controller.signal.aborted) return
+          if (successful === 0) {
+            setLoadError('Музыкальные источники сейчас недоступны. Проверь соединение и повтори поиск.')
+          } else if (failed) {
+            setSearchWarning('Часть музыкальных источников временно недоступна. Показаны найденные треки.')
+          }
+        } catch (error) {
           if (!controller.signal.aborted)
-            setLoadError(reason instanceof Error ? reason.message : 'Не удалось загрузить музыку.')
-        })
-        .finally(() => {
-          if (deadline !== undefined) window.clearTimeout(deadline)
-          if (searchHintTimer !== undefined) window.clearTimeout(searchHintTimer)
-          if (!controller.signal.aborted) { setSearchHint(''); setLoading(false) }
-        })
-    }, query ? 320 : 0)
+            setLoadError(error instanceof Error ? error.message : 'Не удалось выполнить поиск.')
+        } finally {
+          if (timeoutId !== undefined) window.clearTimeout(timeoutId)
+          if (hintId !== undefined) window.clearTimeout(hintId)
+          if (!controller.signal.aborted) {
+            setLoading(false)
+            setSearchHint('')
+          }
+        }
+      }
+      void run()
+    }, query.trim() ? 320 : 0)
 
     return () => {
       controller.abort()
       window.clearTimeout(debounce)
-      if (deadline !== undefined) window.clearTimeout(deadline)
-      if (searchHintTimer !== undefined) window.clearTimeout(searchHintTimer)
+      if (timeoutId !== undefined) window.clearTimeout(timeoutId)
+      if (hintId !== undefined) window.clearTimeout(hintId)
     }
-  }, [provider, query, clientId, searchProxy, onlySaved, onEngineSearch, searchAttempt])
+  }, [query, clientId, searchProxy, onlySaved, onEngineSearch, searchAttempt])
 
   useEffect(() => {
     if (audio.current) audio.current.volume = volume
@@ -449,14 +491,9 @@ export function MusicListening({
       </div>
 
       <div className="mymusic-discovery-toolbar">
-        <div className="mymusic-providers" role="group" aria-label="Источник музыки">
-          {(['youtube', 'soundcloud', 'audius', 'jamendo'] as const).map((value) => (
-            <button key={value} type="button" aria-pressed={provider === value && !onlySaved}
-              className={provider === value && !onlySaved ? 'active' : ''}
-              onClick={() => { setOnlySaved(false); setProvider(value); setQuery('') }}>
-              {providerLabel(value)}
-            </button>
-          ))}
+        <div className="mymusic-providers" role="group" aria-label="Музыкальная библиотека">
+          <button type="button" aria-pressed={!onlySaved} className={!onlySaved ? 'active' : ''}
+            onClick={() => { setOnlySaved(false); setQuery('') }}>Поиск</button>
           <button type="button" aria-pressed={onlySaved && savedFilter === 'all'} className={onlySaved && savedFilter === 'all' ? 'active' : ''} onClick={() => { setOnlySaved(true); setSavedFilter('all'); setQuery('') }}>Сохранённое ({savedTracks.length})</button>
           <button type="button" aria-pressed={onlySaved && savedFilter === 'liked'} className={onlySaved && savedFilter === 'liked' ? 'active' : ''} onClick={() => { setOnlySaved(true); setSavedFilter('liked'); setQuery('') }}>Избранное ({likedKeys.size})</button>
           {onOfflineList ? <button type="button" aria-pressed={onlySaved && savedFilter === 'offline'} className={onlySaved && savedFilter === 'offline' ? 'active' : ''} onClick={() => { setOnlySaved(true); setSavedFilter('offline'); setQuery('') }}>Загрузки ({offlineKeys.length})</button> : null}
@@ -467,7 +504,7 @@ export function MusicListening({
           {query ? <button type="button" aria-label="Очистить поиск" onClick={() => setQuery('')}><X size={16}/></button> : null}
         </label>
         <button type="button" className="mymusic-settings-button" onClick={() => setSettingsOpen((v) => !v)} aria-expanded={settingsOpen}>
-          Источники
+          Настройки поиска
         </button>
       </div>
 
@@ -476,7 +513,7 @@ export function MusicListening({
           <label htmlFor="mymusic-jamendo-key">Jamendo client_id</label>
           <input id="mymusic-jamendo-key" value={clientId} onChange={(event) => onChangeClientId(event.target.value)}
             placeholder="Бесплатный client_id из developer.jamendo.com" autoComplete="off" />
-          <p>Jamendo требует бесплатный client_id. YouTube использует InnerTube; аудио и SoundCloud работают через локальный yt-dlp (Desktop) или твой музыкальный мост (PWA).</p>
+          <p>Для включения результатов Jamendo нужен бесплатный client_id. Все доступные музыкальные источники ищутся автоматически — выбирать их не требуется.</p>
         </div>
       ) : null}
 
@@ -522,16 +559,17 @@ export function MusicListening({
       </div>
       <div className="mymusic-section-head">
         <div>
-          <span className="mymusic-eyebrow">{onlySaved ? 'МОЯ МУЗЫКА' : providerLabel(provider)}</span>
+          <span className="mymusic-eyebrow">{onlySaved ? 'МОЯ МУЗЫКА' : 'ОБЩИЙ ПОИСК'}</span>
           <h3>{onlySaved ? savedFilter === 'all' ? 'Сохранённые треки'
   : savedFilter === 'liked' ? 'Избранное' : savedFilter === 'offline' ? 'Загрузки MyMind' : chosenPlaylist?.name ?? 'Плейлист'
   : query.trim() ? 'Результаты поиска' : 'Сейчас в тренде'}</h3>
         </div>
-        <span className="mymusic-result-count">{loading ? 'Поиск…' : String(visibleTracks.length) + ' треков'}</span>
+        <span className="mymusic-result-count">{String(visibleTracks.length)} треков{loading ? ' · поиск продолжается…' : ''}</span>
       </div>
-      {!onlySaved && provider === 'jamendo' && !clientId ? (
-        <div className="mymusic-message">Для Jamendo нужен бесплатный client_id. Нажми «Источники», чтобы добавить его.</div>
-      ) : !onlySaved && loadError ? (
+      {!onlySaved && searchWarning && visibleTracks.length > 0 ? (
+        <p className="mymusic-search-warning" role="status">{searchWarning}</p>
+      ) : null}
+      {!onlySaved && loadError && !visibleTracks.length ? (
         <div className="mymusic-message" role="alert">
           <span>{loadError}</span>
           <button type="button" onClick={() => setSearchAttempt((attempt) => attempt + 1)}>
@@ -599,11 +637,6 @@ export function MusicListening({
           ))}
         </div>
       )}
-
-      <div className="mymusic-external">
-        <a href={'https://www.youtube.com/results?search_query=' + encodeURIComponent(query || 'music')} target="_blank" rel="noopener noreferrer">Найти на YouTube <ExternalLink size={14}/></a>
-        <a href={'https://soundcloud.com/search?q=' + encodeURIComponent(query || 'music')} target="_blank" rel="noopener noreferrer">Найти на SoundCloud <ExternalLink size={14}/></a>
-      </div>
 
       {current ? (
         <div className="mymusic-player" role="region" aria-label="Музыкальный проигрыватель">
