@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   Check, Disc3, ExternalLink, Heart, ListMusic, LoaderCircle,
-  Music2, Pause, Play, Search, Shuffle, SkipBack, SkipForward, Repeat, Repeat1,
+  Music2, Pause, Play, Radio, Search, Shuffle, SkipBack, SkipForward, Repeat, Repeat1,
   Volume2, VolumeX, X
 } from 'lucide-react'
 import {
@@ -14,6 +14,9 @@ interface MusicListeningProps {
   /** PWA uses a same-origin metadata route to avoid provider browser CORS restrictions. */
   searchProxy?: boolean
   savedTracks?: DiscoveredTrack[]
+  onEngineSearch?: (input: { provider: 'youtube' | 'soundcloud'; query: string }) => Promise<DiscoveredTrack[]>
+  onEngineResolve?: (input: { provider: 'youtube' | 'soundcloud'; id: string }) => Promise<string>
+  onRadio?: (input: { videoId: string }) => Promise<DiscoveredTrack[]>
 }
 
 function duration(seconds: number | null | undefined): string {
@@ -35,9 +38,9 @@ function Artwork({ track, size = 'medium' }: { track: DiscoveredTrack; size?: 'm
   )
 }
 
-export function MusicListening({ onSaveTrack, searchProxy = false, savedTracks = [] }: MusicListeningProps): React.JSX.Element {
+export function MusicListening({ onSaveTrack, searchProxy = false, savedTracks = [], onEngineSearch, onEngineResolve, onRadio }: MusicListeningProps): React.JSX.Element {
   const audio = useRef<HTMLAudioElement>(null)
-  const [provider, setProvider] = useState<MusicSource>('audius')
+  const [provider, setProvider] = useState<MusicSource>('youtube')
   const [onlySaved, setOnlySaved] = useState(false)
   const [query, setQuery] = useState('')
   const [clientId, setClientId] = useState('')
@@ -57,6 +60,8 @@ export function MusicListening({ onSaveTrack, searchProxy = false, savedTracks =
   const [random, setRandom] = useState(false)
   const [repeat, setRepeat] = useState<'none' | 'all' | 'one'>('none')
   const [queueOpen, setQueueOpen] = useState(false)
+  const [buffering, setBuffering] = useState(false)
+  const [radioLoading, setRadioLoading] = useState(false)
   const current = queue[currentIndex] ?? null
   const visibleTracks = onlySaved ? savedTracks.filter((t) => (t.title + ' ' + t.artist).toLocaleLowerCase('ru').includes(query.trim().toLocaleLowerCase('ru'))) : tracks
 
@@ -87,7 +92,11 @@ export function MusicListening({ onSaveTrack, searchProxy = false, savedTracks =
             if (!response.ok) throw new Error(data.error || 'Не удалось загрузить музыку.')
             return data.tracks ?? []
           })
-        : discoverMusic({ provider, query, jamendoClientId: clientId, signal: controller.signal })
+        : provider === 'youtube' || provider === 'soundcloud'
+          ? onEngineSearch
+            ? onEngineSearch({ provider, query })
+            : Promise.reject(new Error('Музыкальный движок недоступен'))
+          : discoverMusic({ provider, query, jamendoClientId: clientId, signal: controller.signal })
       void search.then(setTracks)
         .catch((reason: unknown) => {
           if (!controller.signal.aborted)
@@ -96,7 +105,7 @@ export function MusicListening({ onSaveTrack, searchProxy = false, savedTracks =
         .finally(() => { if (!controller.signal.aborted) setLoading(false) })
     }, query ? 320 : 0)
     return () => { controller.abort(); clearTimeout(timeout) }
-  }, [provider, query, clientId, searchProxy, onlySaved])
+  }, [provider, query, clientId, searchProxy, onlySaved, onEngineSearch])
 
   useEffect(() => {
     if (audio.current) audio.current.volume = volume
@@ -110,9 +119,10 @@ export function MusicListening({ onSaveTrack, searchProxy = false, savedTracks =
     setPosition(0)
     setLength(track.durationSeconds ?? 0)
     setPlaybackError('')
-    // iOS Safari requires play() in the actual user interaction, not in a deferred effect.
+    // Direct provider streams start synchronously (Safari user activation).
+    // YouTube/SoundCloud require asynchronous yt-dlp resolution instead.
     const player = audio.current
-    if (player) {
+    if (player && track.provider !== 'youtube' && track.provider !== 'soundcloud') {
       player.src = track.streamUrl
       player.load()
       void player.play().then(() => setPlaying(true)).catch(() => {
@@ -122,11 +132,46 @@ export function MusicListening({ onSaveTrack, searchProxy = false, savedTracks =
     }
   }, [])
 
-  // The official provider stream redirects to its own CDN. Never cache or rehost it.
   useEffect(() => {
     const player = audio.current
     if (!player || !current) return
-    if (player.src !== current.streamUrl) {
+    let cancelled = false
+    if (current.provider === 'youtube' || current.provider === 'soundcloud') {
+      // Never put the YouTube video page into the HTML audio src. Ask yt-dlp
+      // running in Desktop/companion for a short-lived stream session.
+      player.pause()
+      player.removeAttribute('src')
+      player.load()
+      setPlaying(false)
+      setBuffering(true)
+      setPlaybackError('')
+      const resolve = searchProxy
+        ? fetch('/api/music/resolve', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ provider: current.provider, id: current.id })
+          }).then(async response => {
+            const result = await response.json() as { streamUrl?: string; error?: string }
+            if (!response.ok || !result.streamUrl) throw new Error(result.error || 'Аудиопоток недоступен.')
+            return result.streamUrl
+          })
+        : onEngineResolve
+          ? onEngineResolve({ provider: current.provider, id: current.id })
+          : Promise.reject(new Error('Музыкальный движок не подключён.'))
+      void resolve.then(stream => {
+        if (cancelled) return
+        player.src = stream
+        player.load()
+        setBuffering(false)
+        void player.play().then(() => setPlaying(true)).catch(() => {
+          if (!cancelled) setPlaybackError('Поток подготовлен. Нажми Play для воспроизведения.')
+        })
+      }).catch((error: unknown) => {
+        if (!cancelled) {
+          setBuffering(false)
+          setPlaybackError(error instanceof Error ? error.message : 'Ошибка музыкального движка')
+        }
+      })
+    } else if (player.src !== current.streamUrl) {
       player.src = current.streamUrl
       player.load()
       setPlaying(false)
@@ -135,20 +180,18 @@ export function MusicListening({ onSaveTrack, searchProxy = false, savedTracks =
       setPlaybackError('')
       void player.play()
         .then(() => setPlaying(true))
-        .catch((reason: unknown) => {
-          setPlaying(false)
-          setPlaybackError(reason instanceof Error ? reason.message : 'Нельзя начать воспроизведение.')
+        .catch(() => {
+          if (!cancelled) setPlaybackError('Не удалось начать воспроизведение.')
         })
     }
     if ('mediaSession' in navigator && typeof MediaMetadata !== 'undefined') {
       navigator.mediaSession.metadata = new MediaMetadata({
-        title: current.title,
-        artist: current.artist,
-        album: providerLabel(current.provider),
+        title: current.title, artist: current.artist, album: providerLabel(current.provider),
         artwork: current.artworkUrl ? [{ src: current.artworkUrl, sizes: '480x480' }] : []
       })
     }
-  }, [current?.key, current?.streamUrl])
+    return () => { cancelled = true }
+  }, [current?.key, current?.streamUrl, searchProxy, onEngineResolve])
 
   const changeIndex = useCallback((direction: 1 | -1): void => {
     if (!queue.length) return
@@ -166,7 +209,7 @@ export function MusicListening({ onSaveTrack, searchProxy = false, savedTracks =
 
   const toggle = useCallback((): void => {
     const player = audio.current
-    if (!player || !current) return
+    if (!player || !current || buffering) return
     if (player.paused) {
       setPlaybackError('')
       void player.play()
@@ -176,7 +219,7 @@ export function MusicListening({ onSaveTrack, searchProxy = false, savedTracks =
       player.pause()
       setPlaying(false)
     }
-  }, [current])
+  }, [current, buffering])
 
   const ended = useCallback((): void => {
     if (repeat === 'one' && audio.current) {
@@ -208,6 +251,34 @@ export function MusicListening({ onSaveTrack, searchProxy = false, savedTracks =
       }
     }
   }, [changeIndex])
+
+  const startRadio = async (track: DiscoveredTrack): Promise<void> => {
+    if (track.provider !== 'youtube' || radioLoading) return
+    setRadioLoading(true)
+    setPlaybackError('')
+    try {
+      const results = searchProxy
+        ? await fetch('/api/music/radio', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ videoId: track.id })
+          }).then(async response => {
+            const data = await response.json() as { tracks?: DiscoveredTrack[]; error?: string }
+            if (!response.ok) throw new Error(data.error || 'Радио недоступно')
+            return data.tracks ?? []
+          })
+        : onRadio
+          ? await onRadio({ videoId: track.id })
+          : []
+      if (!results.length) throw new Error('YouTube не вернул похожих треков.')
+      const next = [track, ...results.filter(item => item.key !== track.key)]
+      choose(track, next)
+      setQueueOpen(true)
+    } catch (error) {
+      setPlaybackError(error instanceof Error ? error.message : 'Моя волна недоступна')
+    } finally {
+      setRadioLoading(false)
+    }
+  }
 
   const save = async (track: DiscoveredTrack): Promise<void> => {
     if (!onSaveTrack || saving) return
@@ -254,7 +325,7 @@ export function MusicListening({ onSaveTrack, searchProxy = false, savedTracks =
 
       <div className="mymusic-discovery-toolbar">
         <div className="mymusic-providers" role="group" aria-label="Источник музыки">
-          {(['audius', 'jamendo'] as const).map((value) => (
+          {(['youtube', 'soundcloud', 'audius', 'jamendo'] as const).map((value) => (
             <button key={value} type="button" aria-pressed={provider === value}
               className={provider === value && !onlySaved ? 'active' : ''}
               onClick={() => { setOnlySaved(false); setProvider(value); setQuery('') }}>
@@ -278,7 +349,7 @@ export function MusicListening({ onSaveTrack, searchProxy = false, savedTracks =
           <label htmlFor="mymusic-jamendo-key">Jamendo client_id</label>
           <input id="mymusic-jamendo-key" value={clientId} onChange={(event) => onChangeClientId(event.target.value)}
             placeholder="Бесплатный client_id из developer.jamendo.com" autoComplete="off" />
-          <p>Ключ хранится только на этом устройстве. Audius работает без ключа. YouTube и SoundCloud откроются во внешнем сервисе; обходить ограничения на потоки MyMind не будет.</p>
+          <p>Jamendo требует бесплатный client_id. YouTube использует InnerTube; аудио и SoundCloud работают через локальный yt-dlp (Desktop) или твой музыкальный мост (PWA).</p>
         </div>
       ) : null}
 
@@ -292,7 +363,7 @@ export function MusicListening({ onSaveTrack, searchProxy = false, savedTracks =
       {!onlySaved && provider === 'jamendo' && !clientId ? (
         <div className="mymusic-message">Для Jamendo нужен бесплатный client_id. Нажми «Источники», чтобы добавить его.</div>
       ) : !onlySaved && loadError ? (
-        <div className="mymusic-message" role="alert">{loadError} <button type="button" onClick={() => window.open('https://audius.co', '_blank', 'noopener,noreferrer')}>Открыть Audius</button></div>
+        <div className="mymusic-message" role="alert">{loadError}</div>
       ) : !onlySaved && loading && !visibleTracks.length ? (
         <div className="mymusic-message"><LoaderCircle className="mymusic-spin" size={20}/> Загружаем музыку…</div>
       ) : !visibleTracks.length ? (
@@ -311,6 +382,7 @@ export function MusicListening({ onSaveTrack, searchProxy = false, savedTracks =
                 <span>{track.artist}</span>
               </div>
               <span className="mymusic-track-duration">{duration(track.durationSeconds)}</span>
+              {track.provider === 'youtube' ? <button className="mymusic-track-action" type="button" title="Моя волна — похожая музыка" aria-label={'Моя волна по треку ' + track.title} disabled={radioLoading} onClick={() => void startRadio(track)}><Radio size={17}/></button> : null}
               {onSaveTrack ? <button className="mymusic-track-action" type="button" disabled={saving !== null || saved.has(track.key) || savedTracks.some((item) => item.key === track.key)} title="Сохранить в библиотеку" aria-label={'Сохранить ' + track.title + ' в библиотеку'} onClick={() => void save(track)}>
                 {saved.has(track.key) || savedTracks.some((item) => item.key === track.key) ? <Check size={17}/> : saving === track.key ? <LoaderCircle className="mymusic-spin" size={17}/> : <Heart size={17}/>}
               </button> : null}
@@ -335,7 +407,7 @@ export function MusicListening({ onSaveTrack, searchProxy = false, savedTracks =
             <div className="mymusic-player-actions">
               <button type="button" aria-label="Случайный порядок" aria-pressed={random} onClick={() => setRandom((v) => !v)} className={random ? 'active' : ''}><Shuffle size={17}/></button>
               <button type="button" aria-label="Предыдущий трек" onClick={() => changeIndex(-1)}><SkipBack size={19}/></button>
-              <button type="button" className="mymusic-primary-control" aria-label={playing ? 'Пауза' : 'Воспроизвести'} onClick={toggle}>{playing ? <Pause size={19}/> : <Play size={19}/>}</button>
+              <button type="button" className="mymusic-primary-control" aria-label={playing ? 'Пауза' : 'Воспроизвести'} onClick={toggle} disabled={buffering}>{buffering ? <LoaderCircle className="mymusic-spin" size={19}/> : playing ? <Pause size={19}/> : <Play size={19}/>}</button>
               <button type="button" aria-label="Следующий трек" onClick={() => changeIndex(1)}><SkipForward size={19}/></button>
               <button type="button" aria-label="Повтор" aria-pressed={repeat !== 'none'} className={repeat !== 'none' ? 'active' : ''} onClick={() => setRepeat((r) => r === 'none' ? 'all' : r === 'all' ? 'one' : 'none')}>{repeat === 'one' ? <Repeat1 size={17}/> : <Repeat size={17}/>}</button>
             </div>
@@ -356,7 +428,7 @@ export function MusicListening({ onSaveTrack, searchProxy = false, savedTracks =
           {playbackError ? <div className="mymusic-player-error" role="alert">{playbackError}</div> : null}
         </div>
       ) : null}
-      <div className="mymusic-attribution">Каталог и аудиопотоки предоставляют Audius и Jamendo. MyMind не скачивает и не хранит аудио без разрешения источника.</div>
+      <div className="mymusic-attribution">YouTube · SoundCloud · Audius · Jamendo. Для YouTube и SoundCloud используется локальный yt-dlp или личный музыкальный мост. Соблюдай права правообладателей при воспроизведении и кэшировании.</div>
     </section>
   )
 }
