@@ -1,8 +1,8 @@
-import { ipcMain, net, shell } from 'electron'
+import { dialog, ipcMain, net, shell } from 'electron'
 
-import { MUSIC_IPC_CHANNELS, type MusicEngineSearchInput, type MusicEnginePlaybackInput, type MusicRadioInput, type SetMusicSourceLinkInput } from '../../shared/contracts/music'
+import { MUSIC_IPC_CHANNELS, type MusicEngineSearchInput, type MusicEnginePlaybackInput, type MusicRadioInput, type MusicEngineDownloadInput, type SetMusicSourceLinkInput } from '../../shared/contracts/music'
 import { discoverYouTube, discoverYouTubeWithFallback } from '@mymind/core/music-youtube'
-import { searchSoundCloud, searchYouTubeViaYtDlp, youtubeRadio } from '../services/music-yt-dlp'
+import { downloadMusicTrack, searchSoundCloud, searchYouTubeViaYtDlp, youtubeRadio } from '../services/music-yt-dlp'
 import { localMusicStream } from '../services/music-audio-proxy'
 import { parseSavedMusicSources } from '@mymind/core/music-discovery'
 import { MUSIC_COLLECTION_KEY, parseMusicCollection } from '@mymind/core/music-collection'
@@ -157,6 +157,25 @@ export function registerMusicIpcHandlers(): void {
           typeof data.id !== 'string' || data.id.length > 180)
         throw new Error('Некорректные параметры воспроизведения')
       return localMusicStream(data.provider, data.id)
+    })
+  )
+  ipcMain.handle(MUSIC_IPC_CHANNELS.engineDownload, (_event, rawInput: unknown) =>
+    mainOperationTracker.run(async () => {
+      const data = rawInput as MusicEngineDownloadInput | null
+      if (!data || (data.provider !== 'youtube' && data.provider !== 'soundcloud') ||
+          typeof data.id !== 'string' || typeof data.suggestedName !== 'string' ||
+          data.id.length > 180 || data.suggestedName.length > 260)
+        throw new Error('Некорректная музыкальная запись')
+      const selected = await dialog.showOpenDialog({
+        title: 'Выбрать папку для аудиофайла',
+        properties: ['openDirectory', 'createDirectory']
+      })
+      if (selected.canceled || !selected.filePaths[0]) return null
+      const path = await downloadMusicTrack(
+        data.provider, data.id, data.suggestedName, selected.filePaths[0]
+      )
+      shell.showItemInFolder(path)
+      return path
     })
   )
   ipcMain.handle(MUSIC_IPC_CHANNELS.engineRadio, (_event, rawInput: unknown) =>
