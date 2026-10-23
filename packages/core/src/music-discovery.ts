@@ -134,9 +134,10 @@ export function parseSavedMusicSources(value: string | null | undefined): SavedM
   if (!value || value.length > 4_000_000) return {}
   try {
     const raw = obj(JSON.parse(value))
-    const mapped: SavedMusicSourceMap = {}
+    const mapped: SavedMusicSourceMap = Object.create(null) as SavedMusicSourceMap
     for (const [itemId, candidate] of Object.entries(raw)) {
-      if (!/^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/.test(itemId)) continue
+      if (!/^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/.test(itemId) ||
+          ['__proto__', 'prototype', 'constructor'].includes(itemId)) continue
       const track = obj(candidate)
       const provider = track.provider
       const id = str(track.id)
