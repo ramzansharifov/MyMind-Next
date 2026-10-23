@@ -80,7 +80,7 @@ test('music: one search finds YouTube and SoundCloud together, streams and start
     const data = route.request().postDataJSON() as { provider?: string }
     expect(data.provider).toBe('all')
     await route.fulfill({ json: { tracks: [...youtube, {
-      ...youtube[0], key: 'soundcloud:artist/song', provider: 'soundcloud',
+      ...youtube[0], title: 'SoundCloud Song', key: 'soundcloud:artist/song', provider: 'soundcloud',
       id: 'artist/song', streamUrl: 'https://soundcloud.com/artist/song',
       permalink: 'https://soundcloud.com/artist/song'
     }] } })
@@ -105,7 +105,7 @@ test('music: one search finds YouTube and SoundCloud together, streams and start
   await expect(page.getByRole('button', { name: '2. YouTube Similar / Other', exact: true })).toBeVisible()
   await expect(page.getByText('ОБЩИЙ ПОИСК')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Воспроизвести YouTube Song' })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Воспроизвести YouTube Song' })).toHaveCount(2)
+  await expect(page.getByRole('button', { name: 'Воспроизвести SoundCloud Song' })).toBeVisible()
 })
 
 test('music: a failed discovery shows an actionable error and retry loads tracks', async ({ page }) => {
