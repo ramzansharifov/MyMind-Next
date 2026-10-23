@@ -24,6 +24,7 @@ import {
   MusicItemRecord,
   MusicOverview,
   MusicPlaylistRecord,
+  type MusicSourceLink,
   UpdateMusicItemInput,
   type UpsertMusicLibraryInput
 } from '../../../../shared/contracts/music'
@@ -579,6 +580,7 @@ function PlaylistDialog({
 export function MusicPage({ resourceId, onResourceHandled }: MusicPageProps): React.JSX.Element {
   const [overview, setOverview] = useState<MusicOverview>({ items: [], playlists: [] })
   const [musicTab, setMusicTab] = useState<'listen' | 'library'>('listen')
+  const [sourceLinks, setSourceLinks] = useState<Record<string, MusicSourceLink>>({})
   const [scope, setScope] = useState<MusicLibraryScope>({ kind: 'all' })
   const [query, setQuery] = useState('')
   const [filters, setFilters] = useState<MusicLibraryFilters>({ artist: 'all', year: 'all' })
@@ -601,6 +603,10 @@ export function MusicPage({ resourceId, onResourceHandled }: MusicPageProps): Re
   } | null>(null)
 
   const currentOverview = normalizeMusicOverview(overview)
+
+  useEffect(() => {
+    void musicClient.listSourceLinks().then(setSourceLinks).catch(() => undefined)
+  }, [])
 
   const refreshOverview = useCallback(async (): Promise<MusicOverview> => {
     const next = await musicClient.listOverview()
@@ -895,15 +901,16 @@ export function MusicPage({ resourceId, onResourceHandled }: MusicPageProps): Re
         </button>
       </div>
       <div style={{ display: musicTab === 'listen' ? 'block' : 'none' }}>
-        <MusicListening onSaveTrack={async (track) => {
-          const exists = currentOverview.items.some((item) =>
+        <MusicListening savedTracks={Object.values(sourceLinks)} onSaveTrack={async (track) => {
+          const existing = currentOverview.items.find((item) =>
             item.title.toLocaleLowerCase('ru') === track.title.toLocaleLowerCase('ru') &&
             item.artist.toLocaleLowerCase('ru') === track.artist.toLocaleLowerCase('ru'))
-          if (exists) return
-          await musicClient.createItem({
+          const saved = existing ?? await musicClient.createItem({
             title: track.title, artist: track.artist,
             durationSeconds: track.durationSeconds, year: null, favorite: false
           })
+          await musicClient.setSourceLink({ itemId: saved.id, track })
+          setSourceLinks((previous) => ({ ...previous, [saved.id]: track }))
           await refreshOverview()
         }} />
       </div>
