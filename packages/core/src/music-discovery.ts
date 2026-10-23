@@ -1,4 +1,4 @@
-export type MusicSource = 'audius' | 'jamendo'
+export type MusicSource = 'youtube' | 'soundcloud' | 'audius' | 'jamendo'
 
 export interface DiscoveredTrack {
   key: string
@@ -78,6 +78,8 @@ export function jamendoTrack(raw: unknown): DiscoveredTrack | null {
 
 export function providerSearchUrl(options: Pick<MusicSearchOptions, 'provider' | 'query' | 'jamendoClientId'>): string {
   const query = options.query?.trim().slice(0, 200) ?? ''
+  if (options.provider === 'youtube' || options.provider === 'soundcloud')
+    throw new Error('Этот источник использует отдельный музыкальный движок.')
   if (options.provider === 'audius') {
     const url = new URL(AUDIUS_API + '/tracks/' + (query ? 'search' : 'trending'))
     if (query) url.searchParams.set('query', query)
@@ -98,6 +100,8 @@ export function providerSearchUrl(options: Pick<MusicSearchOptions, 'provider' |
 }
 
 export async function discoverMusic(options: MusicSearchOptions): Promise<DiscoveredTrack[]> {
+  if (options.provider === 'youtube' || options.provider === 'soundcloud')
+    throw new Error('Требуется музыкальный движок для этого источника.')
   const fetcher = options.fetcher ?? fetch
   const response = await fetcher(providerSearchUrl(options), {
     signal: options.signal, headers: { Accept: 'application/json' }
@@ -122,7 +126,7 @@ export async function discoverMusic(options: MusicSearchOptions): Promise<Discov
 }
 
 export const providerLabel = (provider: MusicSource): string =>
-  provider === 'audius' ? 'Audius' : 'Jamendo'
+  ({ youtube: 'YouTube', soundcloud: 'SoundCloud', audius: 'Audius', jamendo: 'Jamendo' })[provider]
 
 /**
  * Device-local link between existing library item IDs and provider tracks.
@@ -144,8 +148,13 @@ export function parseSavedMusicSources(value: string | null | undefined): SavedM
       const url = secureUrl(track.streamUrl)
       const artist = str(track.artist)
       const title = str(track.title)
-      if ((provider !== 'audius' && provider !== 'jamendo') || !id || !url || !title || !artist) continue
-      if (provider === 'audius' && new URL(url).hostname !== 'api.audius.co') continue
+      if ((provider !== 'youtube' && provider !== 'soundcloud' && provider !== 'audius' && provider !== 'jamendo') ||
+        !id || !url || !title || !artist) continue
+      const host = new URL(url).hostname
+      if (provider === 'youtube' && (!/^[A-Za-z0-9_-]{11}$/.test(id) ||
+          host !== 'www.youtube.com' || new URL(url).searchParams.get('v') !== id)) continue
+      if (provider === 'soundcloud' && host !== 'soundcloud.com') continue
+      if (provider === 'audius' && host !== 'api.audius.co') continue
       mapped[itemId] = {
         key: provider + ':' + id, provider, id, title, artist,
         durationSeconds: positive(track.durationSeconds),
