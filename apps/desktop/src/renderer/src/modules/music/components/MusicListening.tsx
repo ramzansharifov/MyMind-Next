@@ -48,6 +48,7 @@ export function MusicListening({ onSaveTrack, searchProxy = false, savedTracks =
   const [tracks, setTracks] = useState<DiscoveredTrack[]>([])
   const [loading, setLoading] = useState(false)
   const [loadError, setLoadError] = useState('')
+  const [searchAttempt, setSearchAttempt] = useState(0)
   const [playbackError, setPlaybackError] = useState('')
   const [saving, setSaving] = useState<string | null>(null)
   const [saved, setSaved] = useState<Set<string>>(() => new Set())
@@ -71,16 +72,31 @@ export function MusicListening({ onSaveTrack, searchProxy = false, savedTracks =
 
   useEffect(() => {
     const controller = new AbortController()
-    if (onlySaved) { setLoading(false); setLoadError(''); return () => controller.abort() }
+    if (onlySaved) {
+      setLoading(false)
+      setLoadError('')
+      return () => controller.abort()
+    }
     if (provider === 'jamendo' && !clientId.trim()) {
       setTracks([])
       setLoadError('')
       setLoading(false)
       return () => controller.abort()
     }
+
+    // Even an Electron IPC promise can stay pending if an upstream service
+    // stops responding. Always finish loading and leave a usable Retry action.
+    setTracks([])
     setLoading(true)
     setLoadError('')
-    const timeout = window.setTimeout(() => {
+    let deadline: number | undefined
+    const debounce = window.setTimeout(() => {
+      deadline = window.setTimeout(() => {
+        controller.abort()
+        setLoadError('Источник музыки не ответил за 15 секунд. Проверь интернет и повтори поиск.')
+        setLoading(false)
+      }, 15_000)
+
       const search = searchProxy
         ? fetch('/api/music/discover', {
             method: 'POST',
@@ -89,7 +105,7 @@ export function MusicListening({ onSaveTrack, searchProxy = false, savedTracks =
             signal: controller.signal
           }).then(async (response) => {
             const data = await response.json() as { tracks?: DiscoveredTrack[]; error?: string }
-            if (!response.ok) throw new Error(data.error || 'Не удалось загрузить музыку.')
+            if (!response.ok || data.error) throw new Error(data.error || 'Не удалось загрузить музыку.')
             return data.tracks ?? []
           })
         : provider === 'youtube' || provider === 'soundcloud'
@@ -97,15 +113,27 @@ export function MusicListening({ onSaveTrack, searchProxy = false, savedTracks =
             ? onEngineSearch({ provider, query })
             : Promise.reject(new Error('Музыкальный движок недоступен'))
           : discoverMusic({ provider, query, jamendoClientId: clientId, signal: controller.signal })
-      void search.then(setTracks)
+
+      void search
+        .then((results) => {
+          if (!controller.signal.aborted) setTracks(results)
+        })
         .catch((reason: unknown) => {
           if (!controller.signal.aborted)
             setLoadError(reason instanceof Error ? reason.message : 'Не удалось загрузить музыку.')
         })
-        .finally(() => { if (!controller.signal.aborted) setLoading(false) })
+        .finally(() => {
+          if (deadline !== undefined) window.clearTimeout(deadline)
+          if (!controller.signal.aborted) setLoading(false)
+        })
     }, query ? 320 : 0)
-    return () => { controller.abort(); clearTimeout(timeout) }
-  }, [provider, query, clientId, searchProxy, onlySaved, onEngineSearch])
+
+    return () => {
+      controller.abort()
+      window.clearTimeout(debounce)
+      if (deadline !== undefined) window.clearTimeout(deadline)
+    }
+  }, [provider, query, clientId, searchProxy, onlySaved, onEngineSearch, searchAttempt])
 
   useEffect(() => {
     if (audio.current) audio.current.volume = volume
@@ -363,7 +391,12 @@ export function MusicListening({ onSaveTrack, searchProxy = false, savedTracks =
       {!onlySaved && provider === 'jamendo' && !clientId ? (
         <div className="mymusic-message">Для Jamendo нужен бесплатный client_id. Нажми «Источники», чтобы добавить его.</div>
       ) : !onlySaved && loadError ? (
-        <div className="mymusic-message" role="alert">{loadError}</div>
+        <div className="mymusic-message" role="alert">
+          <span>{loadError}</span>
+          <button type="button" onClick={() => setSearchAttempt((attempt) => attempt + 1)}>
+            Повторить поиск
+          </button>
+        </div>
       ) : !onlySaved && loading && !visibleTracks.length ? (
         <div className="mymusic-message"><LoaderCircle className="mymusic-spin" size={20}/> Загружаем музыку…</div>
       ) : !visibleTracks.length ? (
