@@ -356,7 +356,8 @@ export function MusicListening({
       ? crypto.randomUUID() : String(Date.now()) + '_' + String(Math.floor(Math.random() * 10000))
     onCollectionAction({ type: 'playlist-create', id, name, now: Date.now() })
     setSavedFilter(id)
-    setOnlySaved(true)
+    // Keep search results visible: the next action is usually adding songs.
+    // When already browsing the saved collection, show the new playlist.
     setNewPlaylistName('')
     setShowNewPlaylist(false)
   }
