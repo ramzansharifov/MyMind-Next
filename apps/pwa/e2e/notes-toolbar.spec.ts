@@ -137,23 +137,19 @@ test('notes: bullet and numbered lists keep two editable rows close together', a
     await page.getByRole('button', { name: 'Форматирование текста', exact: true }).click()
     await page.getByRole('button', { name: label, exact: true }).click()
     await page.getByRole('button', { name: 'Закрыть', exact: true }).last().click()
+    // RN Modal can restore focus to the toolbar trigger during its dismiss animation.
+    await expect(page.getByText('Списки', { exact: true })).toBeHidden()
 
     const list = page.locator('.notes-editor').locator(selector).first()
     await expect(list).toBeVisible()
     await list.locator('li p').first().click()
+    await expect.poll(() =>
+      page.evaluate(() => document.activeElement?.classList.contains('notes-editor') === true)
+    ).toBe(true)
     await page.keyboard.type('Первый пункт')
     await expect(list).toContainText('Первый пункт')
     await page.keyboard.press('End')
     await page.keyboard.press('Enter')
-    const diagnostic = await page.evaluate(() => {
-      const editor = document.querySelector('.notes-editor')
-      return {
-        html: editor?.innerHTML.slice(0, 1400) ?? '',
-        active: document.activeElement?.outerHTML.slice(0, 260) ?? '',
-        selection: window.getSelection()?.anchorNode?.parentElement?.outerHTML.slice(0, 300) ?? ''
-      }
-    })
-    console.log('LIST_AFTER_ENTER', label, JSON.stringify(diagnostic))
     await expect(list.locator('li')).toHaveCount(2)
     await page.keyboard.type('Второй пункт')
     await expect(list).toContainText('Первый пункт')
