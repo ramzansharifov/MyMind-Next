@@ -34,15 +34,28 @@ export function validStreamingTrack(value: unknown): DiscoveredTrack | null {
   const provider = t.provider as MusicSource
   const id = str(t.id).trim()
   const title = str(t.title).trim().slice(0, 300)
-  const artist = str(t.artist).trim().slice(0, 300)
-  const streamUrl = safeHttps(t.streamUrl)
-  if (!providers.has(provider) || !id || id.length > 250 || !title || !artist || !streamUrl) return null
-  const host = new URL(streamUrl).hostname
-  if (provider === 'youtube' && (!/^[\w-]{11}$/.test(id) ||
-    host !== 'www.youtube.com' || new URL(streamUrl).searchParams.get('v') !== id)) return null
-  if (provider === 'soundcloud' && host !== 'soundcloud.com') return null
+  const rawArtist = str(t.artist).trim().slice(0, 300)
+  let streamUrl = safeHttps(t.streamUrl)
+  if (!providers.has(provider) || !id || id.length > 250 || !title || !streamUrl) return null
+  const stream = new URL(streamUrl)
+  const host = stream.hostname
+  if (provider === 'youtube') {
+    if (!/^[\w-]{11}$/.test(id) ||
+        !['www.youtube.com', 'music.youtube.com', 'm.youtube.com'].includes(host) ||
+        stream.pathname !== '/watch' || stream.searchParams.get('v') !== id) return null
+    // All supported YouTube entrypoints refer to the same canonical video ID.
+    streamUrl = 'https://www.youtube.com/watch?v=' + id
+  }
+  if (provider === 'soundcloud' &&
+      (host !== 'soundcloud.com' || stream.pathname !== '/' + id ||
+       !/^[A-Za-z0-9_-]+(?:\/[A-Za-z0-9_-]+){1,3}$/.test(id))) return null
   if (provider === 'audius' && host !== 'api.audius.co') return null
   if (provider === 'jamendo' && !/^\d+$/.test(id)) return null
+  // Some provider searches omit the uploader. That should not make a playable
+  // result disappear from "Downloads" after the user explicitly saves it.
+  const artist = rawArtist || (provider === 'youtube' ? 'YouTube' :
+    provider === 'soundcloud' ? 'SoundCloud' : '')
+  if (!artist) return null
   const sec = typeof t.durationSeconds === 'number' && Number.isFinite(t.durationSeconds) &&
     t.durationSeconds >= 0 ? Math.round(t.durationSeconds) : null
   // Download URLs come only from provider-confirmed, opt-in metadata, never
