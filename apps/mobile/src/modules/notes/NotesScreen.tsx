@@ -11,7 +11,7 @@ import {
   type LucideIcon
 } from 'lucide-react-native'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { AppState, BackHandler, FlatList, Keyboard, Pressable, Text, View } from 'react-native'
+import { AppState, BackHandler, FlatList, Keyboard, Platform, Pressable, Text, View } from 'react-native'
 import type { NoteDocument, NoteGroup, NoteRecord, NoteSummary } from '@mymind/contracts/notes'
 import { AutosaveQueue } from '@mymind/core/autosave'
 import * as notesValidation from '@mymind/core/validation/notes'
@@ -346,6 +346,7 @@ export function NotesScreen({
 }): React.JSX.Element {
   const { notes: api } = useServices()
   const theme = useTheme()
+  const isPwa = Platform.OS === 'web'
   const confirm = useConfirmation()
   const toast = useToast()
   const overview = useCollection(useCallback(() => api.listNotesOverview(), [api]))
@@ -744,57 +745,89 @@ export function NotesScreen({
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Переименовать заметку"
+            accessibilityHint={`Статус сохранения: ${noteSaveLabel(saveState)}`}
             onPress={() => renameListedNote(record)}
-            style={{ flex: 1, minWidth: 0, minHeight: 48, justifyContent: 'center', gap: 3 }}
+            style={{ flex: 1, minWidth: 0, minHeight: 48, justifyContent: 'center' }}
           >
-            <Text numberOfLines={1} style={{ color: theme.text, fontSize: 17, fontWeight: '700' }}>
-              {record.title}
-            </Text>
-            <Text
-              style={{
-                color:
-                  saveState === 'error'
-                    ? theme.error
-                    : saveState === 'saved'
-                      ? theme.accent
-                      : theme.muted,
-                fontSize: 10
-              }}
-            >
-              {noteSaveLabel(saveState)}
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Text
+                numberOfLines={1}
+                style={{ color: theme.text, fontSize: 17, fontWeight: '700', flexShrink: 1 }}
+              >
+                {record.title}
+              </Text>
+              {isPwa ? (
+                <View
+                  testID="note-save-indicator"
+                  accessibilityLabel={`Статус сохранения: ${noteSaveLabel(saveState)}`}
+                  style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: 4,
+                    backgroundColor:
+                      saveState === 'error'
+                        ? theme.error
+                        : saveState === 'saved'
+                          ? '#16B58B'
+                          : '#F3BF43'
+                  }}
+                />
+              ) : null}
+            </View>
+            {!isPwa ? (
+              <Text
+                style={{
+                  color:
+                    saveState === 'error'
+                      ? theme.error
+                      : saveState === 'saved'
+                        ? theme.accent
+                        : theme.muted,
+                  fontSize: 10,
+                  marginTop: 3
+                }}
+              >
+                {noteSaveLabel(saveState)}
+              </Text>
+            ) : null}
           </Pressable>
-          {(
-            [
-              { mode: 'read', label: 'Чтение', icon: BookOpen },
-              { mode: 'edit', label: 'Редактирование', icon: Pencil }
-            ] as const
-          ).map(({ mode, label, icon: ModeIcon }) => (
-            <Pressable
-              key={mode}
-              accessibilityRole="button"
-              accessibilityLabel={label}
-              accessibilityState={{
-                selected: editorMode === mode,
-                disabled: closing || modeChanging
-              }}
-              disabled={closing || modeChanging}
-              hitSlop={4}
-              onPress={() => changeEditorMode(mode)}
-              style={({ pressed }) => ({
-                width: 40,
-                height: 40,
-                borderRadius: 12,
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor:
-                  editorMode === mode ? theme.accent + '20' : pressed ? theme.raised : 'transparent',
-                opacity: closing || modeChanging ? 0.45 : 1
-              })}
-            >
-              <ModeIcon size={19} color={editorMode === mode ? theme.accent : theme.muted} />
-            </Pressable>
-          ))}
+          {!isPwa
+            ? (
+                [
+                  { mode: 'read', label: 'Чтение', icon: BookOpen },
+                  { mode: 'edit', label: 'Редактирование', icon: Pencil }
+                ] as const
+              ).map(({ mode, label, icon: ModeIcon }) => (
+                <Pressable
+                  key={mode}
+                  accessibilityRole="button"
+                  accessibilityLabel={label}
+                  accessibilityState={{
+                    selected: editorMode === mode,
+                    disabled: closing || modeChanging
+                  }}
+                  disabled={closing || modeChanging}
+                  hitSlop={4}
+                  onPress={() => changeEditorMode(mode)}
+                  style={({ pressed }) => ({
+                    width: 40,
+                    height: 40,
+                    borderRadius: 12,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor:
+                      editorMode === mode
+                        ? theme.accent + '20'
+                        : pressed
+                          ? theme.raised
+                          : 'transparent',
+                    opacity: closing || modeChanging ? 0.45 : 1
+                  })}
+                >
+                  <ModeIcon size={19} color={editorMode === mode ? theme.accent : theme.muted} />
+                </Pressable>
+              ))
+            : null}
           <ActionMenu
             disabled={closing || modeChanging}
             title="Заметка"

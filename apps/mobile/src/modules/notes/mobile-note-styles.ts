@@ -32,9 +32,10 @@ export const mobileNoteStyles = `
   .notes-editor .note-highlight-contrast { color: var(--note-highlight-foreground); }
   .notes-editor ::selection { color: var(--text); background: color-mix(in srgb, var(--accent) 30%, transparent); }
   .notes-editor ul[data-type=taskList] { list-style: none; padding-left: 0; }
-  .notes-editor li[data-type=taskItem] { display: flex; align-items: flex-start; gap: 10px; padding-left: 0; }
+  .notes-editor li[data-type=taskItem] { display: flex; align-items: center; gap: 10px; padding-left: 0; }
   .notes-editor li[data-type=taskItem] > label { display: flex; flex-shrink: 0; align-items: center; justify-content: center; min-width: 32px; min-height: 32px; margin: 0 -5px 0; cursor: pointer; }
   .notes-editor li[data-type=taskItem] > div { flex: 1; min-width: 0; }
+  .notes-editor li[data-type=taskItem][data-checked=true] > div > p { text-decoration: line-through; color: var(--muted); }
   .notes-editor input[type=checkbox] { appearance: none; width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--muted); margin: 0; background: var(--surface); cursor: pointer; }
   .notes-editor input[type=checkbox]:checked { background: color-mix(in srgb,var(--accent) 78%,black); border-color: var(--accent); }
   .notes-editor input[type=checkbox]:checked::after { content: '✓'; display: block; font-size: 15px; color: white; text-align: center; line-height: 19px; }
