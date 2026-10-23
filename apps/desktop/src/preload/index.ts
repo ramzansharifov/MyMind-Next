@@ -471,7 +471,9 @@ const api: MyMindApi = {
     deletePlaylist: (input) =>
       invokeWithSuccess(MUSIC_IPC_CHANNELS.deletePlaylist, 'Плейлист удалён', input),
     setItemPlaylists: (input) => invoke(MUSIC_IPC_CHANNELS.setItemPlaylists, input),
-    searchWeb: (input) => invoke(MUSIC_IPC_CHANNELS.searchWeb, input)
+    searchWeb: (input) => invoke(MUSIC_IPC_CHANNELS.searchWeb, input),
+    listSourceLinks: () => invoke(MUSIC_IPC_CHANNELS.listSourceLinks),
+    setSourceLink: (input) => invoke(MUSIC_IPC_CHANNELS.setSourceLink, input)
   },
 
   tasks: {

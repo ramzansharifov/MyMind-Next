@@ -1,6 +1,8 @@
 import { ipcMain, shell } from 'electron'
 
-import { MUSIC_IPC_CHANNELS } from '../../shared/contracts/music'
+import { MUSIC_IPC_CHANNELS, type SetMusicSourceLinkInput } from '../../shared/contracts/music'
+import { parseSavedMusicSources } from '@mymind/core/music-discovery'
+import { getSqlite } from '../database/client'
 import {
   createMusicItemInputSchema,
   createMusicItemsInputSchema,
@@ -28,6 +30,19 @@ import {
   updateMusicPlaylist
 } from '../repositories/music.repository'
 import { mainOperationTracker } from '../services/main-operation-tracker'
+
+const MUSIC_SOURCE_KEY = 'music.sources.v1'
+
+function readSourceLinks(): ReturnType<typeof parseSavedMusicSources> {
+  const row = getSqlite().prepare('SELECT value FROM app_meta WHERE key = ?').get(MUSIC_SOURCE_KEY) as { value: string } | undefined
+  return parseSavedMusicSources(row?.value)
+}
+
+function writeSourceLinks(links: ReturnType<typeof parseSavedMusicSources>): void {
+  getSqlite().prepare(
+    'INSERT INTO app_meta(key,value,updated_at) VALUES(?,?,?) ON CONFLICT(key) DO UPDATE SET value = excluded.value,updated_at = excluded.updated_at'
+  ).run(MUSIC_SOURCE_KEY, JSON.stringify(links), Date.now())
+}
 
 export function registerMusicIpcHandlers(): void {
   Object.values(MUSIC_IPC_CHANNELS).forEach((channel) => ipcMain.removeHandler(channel))
@@ -74,6 +89,23 @@ export function registerMusicIpcHandlers(): void {
     mainOperationTracker.run(() =>
       setMusicItemPlaylists(setMusicItemPlaylistsInputSchema.parse(rawInput))
     )
+  )
+  ipcMain.handle(MUSIC_IPC_CHANNELS.listSourceLinks, () =>
+    mainOperationTracker.run(() => readSourceLinks())
+  )
+  ipcMain.handle(MUSIC_IPC_CHANNELS.setSourceLink, (_event, rawInput: unknown) =>
+    mainOperationTracker.run(() => {
+      const raw = rawInput as SetMusicSourceLinkInput | null
+      if (!raw || typeof raw.itemId !== 'string' || !raw.track)
+        throw new Error('Некорректная привязка музыкального источника')
+      const candidate = parseSavedMusicSources(JSON.stringify({ [raw.itemId]: raw.track }))
+      const track = candidate[raw.itemId]
+      if (!track) throw new Error('Источник музыки не поддерживается')
+      if (!getMusicItem({ id: raw.itemId })) throw new Error('Трек не найден в библиотеке')
+      const links = readSourceLinks()
+      links[raw.itemId] = track
+      writeSourceLinks(links)
+    })
   )
   ipcMain.handle(MUSIC_IPC_CHANNELS.searchWeb, (_event, rawInput: unknown) =>
     mainOperationTracker.run(async () => {

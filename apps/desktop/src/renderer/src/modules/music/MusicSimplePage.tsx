@@ -24,6 +24,7 @@ import {
   MusicItemRecord,
   MusicOverview,
   MusicPlaylistRecord,
+  type MusicSourceLink,
   UpdateMusicItemInput,
   type UpsertMusicLibraryInput
 } from '../../../../shared/contracts/music'
@@ -44,6 +45,7 @@ import {
   type MusicLibraryScope
 } from './components/MusicLibraryView'
 import './components/music-interactions.css'
+import { MusicListening } from './components/MusicListening'
 
 interface MusicPageProps {
   resourceId?: string | null
@@ -577,6 +579,8 @@ function PlaylistDialog({
 
 export function MusicPage({ resourceId, onResourceHandled }: MusicPageProps): React.JSX.Element {
   const [overview, setOverview] = useState<MusicOverview>({ items: [], playlists: [] })
+  const [musicTab, setMusicTab] = useState<'listen' | 'library'>('listen')
+  const [sourceLinks, setSourceLinks] = useState<Record<string, MusicSourceLink>>({})
   const [scope, setScope] = useState<MusicLibraryScope>({ kind: 'all' })
   const [query, setQuery] = useState('')
   const [filters, setFilters] = useState<MusicLibraryFilters>({ artist: 'all', year: 'all' })
@@ -599,6 +603,10 @@ export function MusicPage({ resourceId, onResourceHandled }: MusicPageProps): Re
   } | null>(null)
 
   const currentOverview = normalizeMusicOverview(overview)
+
+  useEffect(() => {
+    void musicClient.listSourceLinks().then(setSourceLinks).catch(() => undefined)
+  }, [])
 
   const refreshOverview = useCallback(async (): Promise<MusicOverview> => {
     const next = await musicClient.listOverview()
@@ -854,15 +862,17 @@ export function MusicPage({ resourceId, onResourceHandled }: MusicPageProps): Re
           </>
         }
       >
-        <MusicLibraryNavigation
-          items={currentOverview.items}
-          scope={scope}
-          query={query}
-          filters={filters}
-          onQueryChange={setQuery}
-          onScopeChange={setScope}
-          onFiltersChange={setFilters}
-        />
+        {musicTab === 'library' ? (
+          <MusicLibraryNavigation
+            items={currentOverview.items}
+            scope={scope}
+            query={query}
+            filters={filters}
+            onQueryChange={setQuery}
+            onScopeChange={setScope}
+            onFiltersChange={setFilters}
+          />
+        ) : null}
       </ModuleHeader>
 
       {error && (
@@ -874,7 +884,39 @@ export function MusicPage({ resourceId, onResourceHandled }: MusicPageProps): Re
         </div>
       )}
 
-      <MusicLibraryContent
+      <div role="tablist" aria-label="Разделы музыки" className="mb-5 flex flex-wrap items-center gap-2">
+        <button type="button" role="tab" aria-selected={musicTab === 'listen'}
+          onClick={() => setMusicTab('listen')}
+          className={'rounded-xl border px-5 py-2.5 text-sm font-semibold transition-colors ' + (musicTab === 'listen'
+            ? 'border-[var(--app-accent-500)] bg-[var(--app-accent-500)] text-white'
+            : 'border-[var(--app-border)] text-[var(--app-muted)] hover:text-[var(--app-text)]')}>
+          Слушать
+        </button>
+        <button type="button" role="tab" aria-selected={musicTab === 'library'}
+          onClick={() => setMusicTab('library')}
+          className={'rounded-xl border px-5 py-2.5 text-sm font-semibold transition-colors ' + (musicTab === 'library'
+            ? 'border-[var(--app-accent-500)] bg-[var(--app-accent-500)] text-white'
+            : 'border-[var(--app-border)] text-[var(--app-muted)] hover:text-[var(--app-text)]')}>
+          Моя библиотека
+        </button>
+      </div>
+      <div style={{ display: musicTab === 'listen' ? 'block' : 'none' }}>
+        <MusicListening savedTracks={Object.entries(sourceLinks).filter(([id]) =>
+          currentOverview.items.some((item) => item.id === id)
+        ).map(([, track]) => track)} onSaveTrack={async (track) => {
+          const existing = currentOverview.items.find((item) =>
+            item.title.toLocaleLowerCase('ru') === track.title.toLocaleLowerCase('ru') &&
+            item.artist.toLocaleLowerCase('ru') === track.artist.toLocaleLowerCase('ru'))
+          const saved = existing ?? await musicClient.createItem({
+            title: track.title, artist: track.artist,
+            durationSeconds: track.durationSeconds, year: null, favorite: false
+          })
+          await musicClient.setSourceLink({ itemId: saved.id, track })
+          setSourceLinks((previous) => ({ ...previous, [saved.id]: track }))
+          await refreshOverview()
+        }} />
+      </div>
+      {musicTab === 'library' ? <MusicLibraryContent
         overview={currentOverview}
         scope={scope}
         query={query}
@@ -890,7 +932,7 @@ export function MusicPage({ resourceId, onResourceHandled }: MusicPageProps): Re
         onDeletePlaylist={setPlaylistDeleteTarget}
         onCreatePlaylist={openNewPlaylist}
         onAddTrack={openNewTrack}
-      />
+      /> : null}
 
       <MusicJsonImportDialog
         open={jsonImportOpen}

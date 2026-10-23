@@ -1,0 +1,49 @@
+name: Music Desktop + PWA
+
+on:
+  push:
+    branches:
+      - feat/music-listening-desktop-pwa-20261023
+  pull_request:
+    paths:
+      - 'apps/pwa/src/app/api/music/**'
+      - 'apps/pwa/src/components/PwaMusicHub.tsx'
+      - 'apps/desktop/src/renderer/src/modules/music/**'
+      - 'packages/core/src/music-discovery*'
+      - 'apps/pwa/e2e/music-listening.spec.ts'
+      - '.github/workflows/pwa-music-runtime.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: music-browser-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  music:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Typecheck shared packages
+        run: npm run typecheck:packages
+      - name: Typecheck Desktop
+        run: npm run typecheck:desktop
+      - name: Build PWA
+        run: npm run build:pwa
+      - run: npx playwright install --with-deps chrome
+      - name: Browser playback and library regression tests
+        run: npx playwright test --config apps/pwa/playwright.config.mts apps/pwa/e2e/music-listening.spec.ts apps/pwa/e2e/catalog-json-goals.spec.ts apps/pwa/e2e/catalog-vault-nutrition.spec.ts --project=phone --project=desktop
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: music-browser-results
+          path: .data/pwa-browser-results
+          if-no-files-found: ignore
+          include-hidden-files: true

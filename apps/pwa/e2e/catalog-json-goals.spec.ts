@@ -8,7 +8,10 @@ for (const [route, add, input, output, jsonButton] of [
   test(`${route}: JSON validation, import, export, search and restart use the Android dialogs`, async ({
     page
   }) => {
+    if (route === 'music')
+      await page.route('**/api/music/discover', (request) => request.fulfill({ json: { tracks: [] } }))
     await open(page, route)
+    if (route === 'music') await page.getByRole('tab', { name: 'Моя библиотека' }).click()
     await page.getByRole('button', { name: add, exact: true }).click()
     await page.getByRole('button', { name: 'Из JSON', exact: true }).click()
     const editor = page.getByRole('textbox', { name: input, exact: true })
@@ -33,7 +36,10 @@ for (const [route, add, input, output, jsonButton] of [
     )
     await page.getByRole('button', { name: 'Применить JSON', exact: true }).click()
     await expect(editor).toHaveCount(0)
+    if (route === 'music')
+      await page.route('**/api/music/discover', (request) => request.fulfill({ json: { tracks: [] } }))
     await open(page, route)
+    if (route === 'music') await page.getByRole('tab', { name: 'Моя библиотека' }).click()
     await expect(page.getByText(item.title, { exact: true })).toBeVisible()
     await page.getByRole('button', { name: jsonButton, exact: true }).click()
     const exported = page.getByLabel(output, { exact: true })

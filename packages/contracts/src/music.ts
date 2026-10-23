@@ -18,6 +18,23 @@ export interface MusicPlaylistRecord {
   updatedAt: number
 }
 
+export interface MusicSourceLink {
+  key: string
+  provider: 'audius' | 'jamendo'
+  id: string
+  title: string
+  artist: string
+  durationSeconds: number | null
+  artworkUrl: string | null
+  streamUrl: string
+  permalink: string | null
+}
+
+export interface SetMusicSourceLinkInput {
+  itemId: string
+  track: MusicSourceLink
+}
+
 export interface MusicOverview {
   items: MusicItemRecord[]
   playlists: MusicPlaylistRecord[]
@@ -146,7 +163,9 @@ export const MUSIC_IPC_CHANNELS = {
   updatePlaylist: 'music:update-playlist',
   deletePlaylist: 'music:delete-playlist',
   setItemPlaylists: 'music:set-item-playlists',
-  searchWeb: 'music:search-web'
+  searchWeb: 'music:search-web',
+  listSourceLinks: 'music:list-source-links',
+  setSourceLink: 'music:set-source-link'
 } as const
 
 export interface MusicApi {
@@ -162,6 +181,8 @@ export interface MusicApi {
   deletePlaylist(input: DeleteMusicPlaylistInput): Promise<boolean>
   setItemPlaylists(input: SetMusicItemPlaylistsInput): Promise<MusicPlaylistRecord[]>
   searchWeb(input: MusicWebSearchInput): Promise<void>
+  listSourceLinks(): Promise<Record<string, MusicSourceLink>>
+  setSourceLink(input: SetMusicSourceLinkInput): Promise<void>
 }
 
 export function stringifyMusicJson(
