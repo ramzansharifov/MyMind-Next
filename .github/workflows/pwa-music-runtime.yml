@@ -48,7 +48,13 @@ jobs:
         run: npm run typecheck:desktop
       - name: Build PWA
         run: npm run build:pwa
-      - run: npx playwright install --with-deps chrome
+      - name: Ensure Chrome is available for Playwright
+        run: |
+          if command -v google-chrome >/dev/null 2>&1; then
+            google-chrome --version
+          else
+            npx playwright install --with-deps chrome
+          fi
       - name: Browser playback and library regression tests
         run: npx playwright test --config apps/pwa/playwright.config.mts apps/pwa/e2e/music-listening.spec.ts apps/pwa/e2e/catalog-json-goals.spec.ts apps/pwa/e2e/catalog-vault-nutrition.spec.ts --project=phone --project=desktop
       - if: always()
