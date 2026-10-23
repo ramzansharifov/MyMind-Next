@@ -185,3 +185,32 @@ export async function resolveAudioUrl(provider: 'youtube' | 'soundcloud', id: st
   if (!url) throw new Error('yt-dlp не смог получить аудиопоток.')
   return url
 }
+
+/** Save an authorized track as its original audio format in the selected folder. */
+export async function downloadMusicTrack(
+  provider: 'youtube' | 'soundcloud', id: string, suggestedName: string, folder: string
+): Promise<string> {
+  let link: string
+  if (provider === 'youtube') {
+    if (!/^[a-zA-Z0-9_-]{11}$/.test(id)) throw new Error('Неверный идентификатор YouTube')
+    link = 'https://www.youtube.com/watch?v=' + id
+  } else {
+    if (!/^[a-zA-Z0-9_-]+(?:\/[a-zA-Z0-9_-]+){1,3}$/.test(id))
+      throw new Error('Неверный идентификатор SoundCloud')
+    link = 'https://soundcloud.com/' + id
+  }
+  const base = suggestedName
+    .replace(/[<>:"/\\|?*\x00-\x1f]/g, '_')
+    .replace(/[.\s]+$/g, '')
+    .trim()
+    .slice(0, 110) || 'MyMind Audio'
+  const output = await runMusicTool([
+    '--no-playlist', '--no-overwrites', '--paths', folder,
+    '--output', base + '.%(ext)s', '--format', 'bestaudio',
+    '--print', 'after_move:filepath', link
+  ], 240_000)
+  const final = output.split(/\r?\n/).map(line => line.trim())
+    .find(line => line && (line.includes('/') || line.includes('\\')))
+  if (!final) throw new Error('Аудиофайл не был сохранён. Проверь разрешения и наличие файла.')
+  return final
+}
