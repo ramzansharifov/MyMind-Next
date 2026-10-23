@@ -21,6 +21,7 @@ test('movies: create, update, reopen and delete a locally stored movie', async (
 })
 
 test('music: create playlist and track, edit, restart and delete', async ({ page }) => {
+  await page.route('**/api/music/discover', (request) => request.fulfill({ json: { tracks: [] } }))
   await open(page, 'music')
   await page.getByRole('tab', { name: 'Моя библиотека' }).click()
   await page.getByRole('button', { name: 'Добавить музыку', exact: true }).click()
