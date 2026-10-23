@@ -34,7 +34,7 @@ describe('music discovery providers', () => {
   })
 
   it('fetches and de-duplicates results without sending credentials', async () => {
-    const fetcher = vi.fn(async () => new Response(JSON.stringify({ data: [
+    const fetcher = vi.fn(async (_url: RequestInfo | URL, _init?: RequestInit) => new Response(JSON.stringify({ data: [
       { id: '1', title: 'A', user: { name: 'B' } },
       { id: '1', title: 'A', user: { name: 'B' } }
     ] }), { status: 200 }))
