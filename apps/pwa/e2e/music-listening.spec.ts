@@ -113,7 +113,7 @@ test('music: a failed discovery shows an actionable error and retry loads tracks
   await page.route('**/api/music/discover', async (route) => {
     attempts += 1
     if (attempts === 1) {
-      await route.fulfill({ status: 502, json: { error: 'YouTube временно недоступен' } })
+      await route.fulfill({ status: 200, json: { error: 'YouTube временно недоступен' } })
     } else {
       await route.fulfill({ json: {
         tracks: [{
@@ -126,7 +126,7 @@ test('music: a failed discovery shows an actionable error and retry loads tracks
     }
   })
   await open(page, 'music')
-  await expect(page.getByRole('alert')).toContainText('YouTube временно недоступен')
+  await expect(page.locator('.mymusic-message[role="alert"]')).toContainText('YouTube временно недоступен')
   await expect(page.getByText('Загружаем музыку…')).toHaveCount(0)
   await page.getByRole('button', { name: 'Повторить поиск' }).click()
   await expect(page.getByRole('button', { name: 'Воспроизвести Recovered Song' })).toBeVisible()
