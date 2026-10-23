@@ -22,6 +22,7 @@ test('movies: create, update, reopen and delete a locally stored movie', async (
 
 test('music: create playlist and track, edit, restart and delete', async ({ page }) => {
   await open(page, 'music')
+  await page.getByRole('tab', { name: 'Моя библиотека' }).click()
   await page.getByRole('button', { name: 'Добавить музыку', exact: true }).click()
   await page.getByRole('button', { name: 'Создать плейлист', exact: true }).click()
   await page.getByRole('textbox', { name: 'Название', exact: true }).fill('PWA playlist')
@@ -41,6 +42,7 @@ test('music: create playlist and track, edit, restart and delete', async ({ page
   await page.getByRole('textbox', { name: 'Название', exact: true }).fill('PWA edited track')
   await save(page)
   await open(page, 'music')
+  await page.getByRole('tab', { name: 'Моя библиотека' }).click()
   await page.getByRole('tab', { name: 'Плейлисты', exact: true }).click()
   await page.getByRole('button', { name: 'Открыть плейлист «PWA playlist»', exact: true }).click()
   await page.getByRole('button', { name: 'Действия трека «PWA edited track»', exact: true }).click()
@@ -48,6 +50,7 @@ test('music: create playlist and track, edit, restart and delete', async ({ page
   await expect(page.getByRole('button', { name: 'PWA edited track', exact: true })).toHaveCount(0)
   await confirmRemoval(page, 'Удалить плейлист «PWA playlist»')
   await open(page, 'music')
+  await page.getByRole('tab', { name: 'Моя библиотека' }).click()
   await page.getByRole('tab', { name: 'Плейлисты', exact: true }).click()
   await expect(page.getByText('PWA playlist', { exact: true })).toHaveCount(0)
 })
