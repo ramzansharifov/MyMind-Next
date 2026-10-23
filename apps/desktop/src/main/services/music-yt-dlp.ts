@@ -140,6 +140,21 @@ function metaTrack(raw: unknown, provider: 'youtube' | 'soundcloud'): Discovered
     streamUrl: link, permalink: link
   }
 }
+/**
+ * Fallback for the YouTube WEB InnerTube endpoint, using yt-dlp's maintained
+ * ytsearch extractor rather than duplicating its changing client configuration.
+ * Fetch metadata only; --flat-playlist avoids resolving each audio stream.
+ */
+export async function searchYouTubeViaYtDlp(query: string): Promise<DiscoveredTrack[]> {
+  const safe = query.trim().slice(0, 150) || 'music'
+  const raw = JSON.parse(await runMusicTool([
+    '--dump-single-json', '--flat-playlist', 'ytsearch20:' + safe
+  ], 45_000)) as unknown
+  const entries = Array.isArray(record(raw).entries) ? record(raw).entries as unknown[] : []
+  return entries.map((row) => metaTrack(row, 'youtube'))
+    .filter((track): track is DiscoveredTrack => track !== null)
+}
+
 export async function searchSoundCloud(query: string): Promise<DiscoveredTrack[]> {
   const safe = query.trim().slice(0, 150)
   if (!safe) return []
