@@ -24,10 +24,16 @@ test('music: discovery search and saving a result into existing music library', 
   await expect(page.getByRole('button', { name: 'Воспроизвести Night Sky' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Воспроизвести Quiet Sea' })).toHaveCount(0)
   await page.getByRole('button', { name: 'Сохранить Night Sky в библиотеку' }).click()
+  await page.getByRole('button', { name: 'Мои треки' }).click()
+  await expect(page.getByRole('button', { name: 'Воспроизвести Night Sky' })).toBeVisible()
   await page.getByRole('tab', { name: 'Моя библиотека' }).click()
   await expect(page.getByRole('button', { name: 'Night Sky', exact: true })).toBeVisible()
   await page.getByRole('tab', { name: 'Слушать' }).click()
-  await expect(page.getByRole('textbox', { name: 'Поиск музыки' })).toHaveValue('Night')
+  await expect(page.getByRole('button', { name: 'Воспроизвести Night Sky' })).toBeVisible()
+  await page.reload()
+  await expect(page.getByRole('button', { name: 'Мои треки' })).toBeVisible()
+  await page.getByRole('button', { name: 'Мои треки' }).click()
+  await expect(page.getByRole('button', { name: 'Воспроизвести Night Sky' })).toBeVisible()
 })
 
 test('music: queue, transport, and Jamendo settings render without paid credentials', async ({ page }) => {
