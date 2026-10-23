@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { audiusTrack, jamendoTrack, discoverMusic, providerSearchUrl } from './music-discovery'
+import { audiusTrack, jamendoTrack, discoverMusic, mergeMusicSearchResults, providerSearchUrl } from './music-discovery'
 
 describe('music discovery providers', () => {
   it('normalizes Audius track metadata and official stream URL', () => {
@@ -41,5 +41,22 @@ describe('music discovery providers', () => {
     const tracks = await discoverMusic({ provider: 'audius', query: 'ambient', fetcher })
     expect(tracks).toHaveLength(1)
     expect(String(fetcher.mock.calls[0]?.[0])).toContain('query=ambient')
+  })
+
+  it('interleaves results from every source without losing their provider-specific IDs', () => {
+    const youtube = { provider: 'youtube' as const, id: 'abcdefghijk', key: 'youtube:abcdefghijk',
+      title: 'Example', artist: 'Artist', durationSeconds: 100, artworkUrl: null,
+      streamUrl: 'https://www.youtube.com/watch?v=abcdefghijk', permalink: null }
+    const audius = { ...youtube, provider: 'audius' as const, id: '1', key: 'audius:1',
+      streamUrl: 'https://api.audius.co/v1/tracks/1/stream' }
+    const soundcloud = { ...youtube, provider: 'soundcloud' as const, id: 'artist/song',
+      key: 'soundcloud:artist/song', streamUrl: 'https://soundcloud.com/artist/song' }
+    const merged = mergeMusicSearchResults({
+      youtube: [youtube, youtube], audius: [audius], soundcloud: [soundcloud]
+    })
+    expect(merged.map(track => track.key)).toEqual([
+      'youtube:abcdefghijk', 'soundcloud:artist/song', 'audius:1'
+    ])
+    expect(mergeMusicSearchResults({ audius: [audius] })).toEqual([audius])
   })
 })
