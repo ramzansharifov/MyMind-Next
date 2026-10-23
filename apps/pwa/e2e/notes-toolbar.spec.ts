@@ -145,6 +145,15 @@ test('notes: bullet and numbered lists keep two editable rows close together', a
     await expect(list).toContainText('Первый пункт')
     await page.keyboard.press('End')
     await page.keyboard.press('Enter')
+    const diagnostic = await page.evaluate(() => {
+      const editor = document.querySelector('.notes-editor')
+      return {
+        html: editor?.innerHTML.slice(0, 1400) ?? '',
+        active: document.activeElement?.outerHTML.slice(0, 260) ?? '',
+        selection: window.getSelection()?.anchorNode?.parentElement?.outerHTML.slice(0, 300) ?? ''
+      }
+    })
+    console.log('LIST_AFTER_ENTER', label, JSON.stringify(diagnostic))
     await expect(list.locator('li')).toHaveCount(2)
     await page.keyboard.type('Второй пункт')
     await expect(list).toContainText('Первый пункт')
