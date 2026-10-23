@@ -5,6 +5,7 @@ import { discoverYouTube, discoverYouTubeWithFallback } from '@mymind/core/music
 import { searchSoundCloud, searchYouTubeViaYtDlp, youtubeRadio } from '../services/music-yt-dlp'
 import { localMusicStream } from '../services/music-audio-proxy'
 import { parseSavedMusicSources } from '@mymind/core/music-discovery'
+import { MUSIC_COLLECTION_KEY, parseMusicCollection } from '@mymind/core/music-collection'
 import { getSqlite } from '../database/client'
 import {
   createMusicItemInputSchema,
@@ -108,6 +109,25 @@ export function registerMusicIpcHandlers(): void {
       const links = readSourceLinks()
       links[raw.itemId] = track
       writeSourceLinks(links)
+    })
+  )
+  ipcMain.handle(MUSIC_IPC_CHANNELS.streamingCollection, () =>
+    mainOperationTracker.run(() => {
+      const stored = getSqlite().prepare('SELECT value FROM app_meta WHERE key = ?')
+        .get(MUSIC_COLLECTION_KEY) as { value: string } | undefined
+      return stored?.value ?? null
+    })
+  )
+  ipcMain.handle(MUSIC_IPC_CHANNELS.saveStreamingCollection, (_event, value: unknown) =>
+    mainOperationTracker.run(() => {
+      if (typeof value !== 'string' || value.length > 6_000_000)
+        throw new Error('Размер музыкальной коллекции превышен')
+      // Reject malformed or forged input; only provider-linked music persists.
+      const parsed = parseMusicCollection(value)
+      const canonical = JSON.stringify(parsed)
+      getSqlite().prepare(
+        'INSERT INTO app_meta(key,value,updated_at) VALUES(?,?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value,updated_at=excluded.updated_at'
+      ).run(MUSIC_COLLECTION_KEY, canonical, Date.now())
     })
   )
   ipcMain.handle(MUSIC_IPC_CHANNELS.engineSearch, (_event, rawInput: unknown) =>
