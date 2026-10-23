@@ -105,7 +105,7 @@ export function MusicListening({ onSaveTrack, searchProxy = false, savedTracks =
             signal: controller.signal
           }).then(async (response) => {
             const data = await response.json() as { tracks?: DiscoveredTrack[]; error?: string }
-            if (!response.ok) throw new Error(data.error || 'Не удалось загрузить музыку.')
+            if (!response.ok || data.error) throw new Error(data.error || 'Не удалось загрузить музыку.')
             return data.tracks ?? []
           })
         : provider === 'youtube' || provider === 'soundcloud'
