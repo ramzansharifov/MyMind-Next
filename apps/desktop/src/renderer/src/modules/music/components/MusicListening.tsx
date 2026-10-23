@@ -104,26 +104,39 @@ export function MusicListening({ onSaveTrack, searchProxy = false, savedTracks =
     setQueue(entries)
     setCurrentIndex(Math.max(index, 0))
     setPosition(0)
+    setLength(track.durationSeconds ?? 0)
     setPlaybackError('')
+    // iOS Safari requires play() in the actual user interaction, not in a deferred effect.
+    const player = audio.current
+    if (player) {
+      player.src = track.streamUrl
+      player.load()
+      void player.play().then(() => setPlaying(true)).catch(() => {
+        setPlaying(false)
+        setPlaybackError('Не удалось начать воспроизведение. Нажми Play ещё раз.')
+      })
+    }
   }, [])
 
   // The official provider stream redirects to its own CDN. Never cache or rehost it.
   useEffect(() => {
     const player = audio.current
     if (!player || !current) return
-    player.src = current.streamUrl
-    player.load()
-    setPlaying(false)
-    setPosition(0)
-    setLength(current.durationSeconds ?? 0)
-    setPlaybackError('')
-    void player.play()
-      .then(() => setPlaying(true))
-      .catch((reason: unknown) => {
-        setPlaying(false)
-        setPlaybackError(reason instanceof Error ? reason.message : 'Нельзя начать воспроизведение.')
-      })
-    if ('mediaSession' in navigator) {
+    if (player.src !== current.streamUrl) {
+      player.src = current.streamUrl
+      player.load()
+      setPlaying(false)
+      setPosition(0)
+      setLength(current.durationSeconds ?? 0)
+      setPlaybackError('')
+      void player.play()
+        .then(() => setPlaying(true))
+        .catch((reason: unknown) => {
+          setPlaying(false)
+          setPlaybackError(reason instanceof Error ? reason.message : 'Нельзя начать воспроизведение.')
+        })
+    }
+    if ('mediaSession' in navigator && typeof MediaMetadata !== 'undefined') {
       navigator.mediaSession.metadata = new MediaMetadata({
         title: current.title,
         artist: current.artist,
@@ -176,13 +189,19 @@ export function MusicListening({ onSaveTrack, searchProxy = false, savedTracks =
 
   useEffect(() => {
     if (!('mediaSession' in navigator)) return
-    navigator.mediaSession.setActionHandler('play', () => { void audio.current?.play().then(() => setPlaying(true)) })
-    navigator.mediaSession.setActionHandler('pause', () => { audio.current?.pause(); setPlaying(false) })
-    navigator.mediaSession.setActionHandler('nexttrack', () => changeIndex(1))
-    navigator.mediaSession.setActionHandler('previoustrack', () => changeIndex(-1))
+    const actions = {
+      play: () => { void audio.current?.play().then(() => setPlaying(true)).catch(() => setPlaying(false)) },
+      pause: () => { audio.current?.pause(); setPlaying(false) },
+      nexttrack: () => changeIndex(1),
+      previoustrack: () => changeIndex(-1)
+    }
+    for (const action of Object.keys(actions) as Array<keyof typeof actions>) {
+      try { navigator.mediaSession.setActionHandler(action, actions[action]) } catch { /* unsupported */ }
+    }
     return () => {
-      for (const action of ['play', 'pause', 'nexttrack', 'previoustrack'] as const)
-        navigator.mediaSession.setActionHandler(action, null)
+      for (const action of Object.keys(actions) as Array<keyof typeof actions>) {
+        try { navigator.mediaSession.setActionHandler(action, null) } catch { /* unsupported */ }
+      }
     }
   }, [changeIndex])
 
