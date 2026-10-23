@@ -10,7 +10,8 @@ describe('createContentSecurityPolicy', () => {
     const policy = createContentSecurityPolicy(false)
 
     expect(policy).not.toContain('localhost')
-    expect(policy).not.toContain('127.0.0.1')
+    expect(policy).toContain("media-src 'self' data: blob: https: mymind-asset: http://127.0.0.1:*")
+    expect(policy).not.toContain('ws://127.0.0.1')
     expect(policy).not.toContain('ws:')
     expect(policy).toContain("connect-src 'self' data:")
     expect(policy).toContain('https://api.audius.co')
