@@ -20,7 +20,7 @@ export interface MusicPlaylistRecord {
 
 export interface MusicSourceLink {
   key: string
-  provider: 'audius' | 'jamendo'
+  provider: 'youtube' | 'soundcloud' | 'audius' | 'jamendo'
   id: string
   title: string
   artist: string
