@@ -52,6 +52,36 @@ describe('provider-based streaming library', () => {
     expect(result.likedKeys).toEqual([track.key])
   })
 
+  it('keeps downloaded YouTube Music tracks visible after save and restart', () => {
+    const alternate = {
+      ...track,
+      artist: '',
+      streamUrl: 'https://music.youtube.com/watch?v=abcdefghijk'
+    }
+    const state = reduceMusicCollection(emptyMusicCollection(), { type: 'save', track: alternate })
+    expect(state.tracks[track.key]).toMatchObject({
+      key: track.key, artist: 'YouTube', streamUrl: track.streamUrl
+    })
+    expect(parseMusicCollection(JSON.stringify(state)).tracks[track.key]).toEqual(state.tracks[track.key])
+  })
+
+  it('accepts provider-linked SoundCloud tracks with no uploader while rejecting forged URLs', () => {
+    const missingArtist = {
+      ...track,
+      provider: 'soundcloud' as const, id: 'artist/song', key: 'soundcloud:artist/song',
+      artist: '', streamUrl: 'https://soundcloud.com/artist/song'
+    }
+    const state = reduceMusicCollection(emptyMusicCollection(), { type: 'save', track: missingArtist })
+    expect(state.tracks[missingArtist.key].artist).toBe('SoundCloud')
+    const injected = parseMusicCollection(JSON.stringify({
+      version: 2,
+      tracks: { unsafe: {
+        ...track, streamUrl: 'https://localhost/watch?v=abcdefghijk'
+      }}
+    }))
+    expect(Object.keys(injected.tracks)).toEqual([])
+  })
+
   it('exposes downloads only when source explicitly permits them', () => {
     const denied = jamendoTrack({
       id: '16', name: 'Allowed Song', artist_name: 'Artist', audio: 'https://audio.example/stream.mp3',
