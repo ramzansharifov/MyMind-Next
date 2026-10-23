@@ -901,7 +901,9 @@ export function MusicPage({ resourceId, onResourceHandled }: MusicPageProps): Re
         </button>
       </div>
       <div style={{ display: musicTab === 'listen' ? 'block' : 'none' }}>
-        <MusicListening savedTracks={Object.values(sourceLinks)} onSaveTrack={async (track) => {
+        <MusicListening savedTracks={Object.entries(sourceLinks).filter(([id]) =>
+          currentOverview.items.some((item) => item.id === id)
+        ).map(([, track]) => track)} onSaveTrack={async (track) => {
           const existing = currentOverview.items.find((item) =>
             item.title.toLocaleLowerCase('ru') === track.title.toLocaleLowerCase('ru') &&
             item.artist.toLocaleLowerCase('ru') === track.artist.toLocaleLowerCase('ru'))
