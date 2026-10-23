@@ -1,8 +1,8 @@
-import { ipcMain, shell } from 'electron'
+import { ipcMain, net, shell } from 'electron'
 
 import { MUSIC_IPC_CHANNELS, type MusicEngineSearchInput, type MusicEnginePlaybackInput, type MusicRadioInput, type SetMusicSourceLinkInput } from '../../shared/contracts/music'
-import { discoverYouTube } from '@mymind/core/music-youtube'
-import { searchSoundCloud, youtubeRadio } from '../services/music-yt-dlp'
+import { discoverYouTube, discoverYouTubeWithFallback } from '@mymind/core/music-youtube'
+import { searchSoundCloud, searchYouTubeViaYtDlp, youtubeRadio } from '../services/music-yt-dlp'
 import { localMusicStream } from '../services/music-audio-proxy'
 import { parseSavedMusicSources } from '@mymind/core/music-discovery'
 import { getSqlite } from '../database/client'
@@ -117,7 +117,16 @@ export function registerMusicIpcHandlers(): void {
           typeof data.query !== 'string' || data.query.length > 180)
         throw new Error('Некорректные параметры поиска')
       return data.provider === 'youtube'
-        ? discoverYouTube(data.query)
+        ? discoverYouTubeWithFallback(
+            data.query,
+            (query) => discoverYouTube(query, {
+              // Chromium networking respects system proxy/PAC settings. Node's
+              // global fetch does not automatically use the Electron session.
+              fetcher: (url, init) => net.fetch(String(url), init),
+              timeoutMs: 9_000
+            }),
+            searchYouTubeViaYtDlp
+          )
         : searchSoundCloud(data.query)
     })
   )
