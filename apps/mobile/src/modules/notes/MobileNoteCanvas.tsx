@@ -13,7 +13,6 @@ import {
   View
 } from 'react-native'
 import {
-  BookOpen,
   File,
   Image,
   Link2,
@@ -21,7 +20,6 @@ import {
   Mic,
   Minus,
   Music,
-  Pencil,
   Plus,
   Type,
   Video,
@@ -430,7 +428,7 @@ export function MobileNoteCanvas({
           }
         }}
       />
-      {mode !== 'view' && (isPwa || (mode === 'edit' && ready && !disabled)) ? (
+      {mode === 'edit' && ready && !disabled ? (
         <View
           style={{
             paddingBottom: Math.max(6, insets.bottom),
@@ -448,116 +446,75 @@ export function MobileNoteCanvas({
               gap: isPwa ? 8 : 4
             }}
           >
-            {mode === 'edit' && ready && !disabled ? (
-              <ScrollView
-                horizontal
-                scrollEnabled={isPwa}
-                showsHorizontalScrollIndicator={false}
-                style={{ flex: 1, minWidth: 0 }}
-                contentContainerStyle={{
-                  alignItems: 'center',
-                  gap: isPwa ? 2 : 4,
-                  paddingRight: isPwa ? 4 : 0
-                }}
-              >
+            <ScrollView
+              horizontal
+              scrollEnabled={isPwa}
+              showsHorizontalScrollIndicator={false}
+              style={{ flex: 1, minWidth: 0 }}
+              contentContainerStyle={{
+                alignItems: 'center',
+                gap: isPwa ? 2 : 4,
+                paddingRight: isPwa ? 4 : 0
+              }}
+            >
+              <CanvasTool
+                compact={isPwa}
+                subtle={isPwa}
+                label={isPwa ? 'Добавить вложение' : 'Добавить вложение или разделитель'}
+                icon={Plus}
+                onPress={() => openPanel('insert')}
+              />
+              <CanvasTool
+                compact={isPwa}
+                subtle={isPwa}
+                label="Форматирование текста"
+                icon={Type}
+                onPress={() => openPanel('text')}
+              />
+              {isPwa ? (
                 <CanvasTool
-                  compact={isPwa}
-                  subtle={isPwa}
-                  label={isPwa ? 'Добавить вложение' : 'Добавить вложение или разделитель'}
-                  icon={Plus}
-                  onPress={() => openPanel('insert')}
+                  compact
+                  subtle
+                  label="Создать чек-лист"
+                  icon={ListTodo}
+                  selected={Boolean(formatting.taskList)}
+                  onPress={() => {
+                    void (async () => {
+                      await editor.command('taskList')
+                      await editor.focusEditor()
+                    })().catch(onError)
+                  }}
                 />
-                <CanvasTool
-                  compact={isPwa}
-                  subtle={isPwa}
-                  label="Форматирование текста"
-                  icon={Type}
-                  onPress={() => openPanel('text')}
-                />
-                {isPwa ? (
-                  <CanvasTool
-                    compact
-                    subtle
-                    label="Создать чек-лист"
-                    icon={ListTodo}
-                    selected={Boolean(formatting.taskList)}
-                    onPress={() => {
-                      void (async () => {
-                        await editor.command('taskList')
-                        await editor.focusEditor()
-                      })().catch(onError)
-                    }}
-                  />
-                ) : null}
-                <CanvasTool
-                  compact={isPwa}
-                  subtle={isPwa}
-                  label="Вставить изображение"
-                  icon={Image}
-                  onPress={() => void addAttachment('image')}
-                />
-                <CanvasTool
-                  compact={isPwa}
-                  subtle={isPwa}
-                  label="Вставить разделитель"
-                  icon={Minus}
-                  onPress={() => openPanel('divider')}
-                />
-                <CanvasTool
-                  compact={isPwa}
-                  subtle={isPwa}
-                  label="Добавить ссылку"
-                  icon={Link2}
-                  onPress={() => openPanel('link')}
-                />
-                <CanvasTool
-                  compact={isPwa}
-                  subtle={isPwa}
-                  label="Добавить голосовую запись"
-                  icon={Mic}
-                  onPress={() => void addAttachment('voice')}
-                />
-              </ScrollView>
-            ) : (
-              <View style={{ flex: 1 }} />
-            )}
-            {isPwa ? (
-              <>
-                <View
-                  testID="note-mode-divider"
-                  style={{ width: 1, height: 26, backgroundColor: theme.border }}
-                />
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={
-                    mode === 'read'
-                      ? 'Перейти в режим редактирования'
-                      : 'Перейти в режим чтения'
-                  }
-                  accessibilityState={{ disabled }}
-                  disabled={disabled}
-                  onPress={() => onModeChange(mode === 'read' ? 'edit' : 'read')}
-                  style={({ pressed }) => ({
-                    width: 42,
-                    height: 42,
-                    flexShrink: 0,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    borderRadius: 11,
-                    borderWidth: 1,
-                    borderColor: '#16B58B',
-                    backgroundColor: pressed ? '#16B58B30' : '#16B58B14',
-                    opacity: disabled ? 0.5 : 1
-                  })}
-                >
-                  {mode === 'read' ? (
-                    <Pencil size={19} color="#16B58B" />
-                  ) : (
-                    <BookOpen size={19} color="#16B58B" />
-                  )}
-                </Pressable>
-              </>
-            ) : null}
+              ) : null}
+              <CanvasTool
+                compact={isPwa}
+                subtle={isPwa}
+                label="Вставить изображение"
+                icon={Image}
+                onPress={() => void addAttachment('image')}
+              />
+              <CanvasTool
+                compact={isPwa}
+                subtle={isPwa}
+                label="Вставить разделитель"
+                icon={Minus}
+                onPress={() => openPanel('divider')}
+              />
+              <CanvasTool
+                compact={isPwa}
+                subtle={isPwa}
+                label="Добавить ссылку"
+                icon={Link2}
+                onPress={() => openPanel('link')}
+              />
+              <CanvasTool
+                compact={isPwa}
+                subtle={isPwa}
+                label="Добавить голосовую запись"
+                icon={Mic}
+                onPress={() => void addAttachment('voice')}
+              />
+            </ScrollView>
           </View>
           {legacy.length ? (
             <View style={{ paddingHorizontal: 8, paddingTop: 6 }}>
