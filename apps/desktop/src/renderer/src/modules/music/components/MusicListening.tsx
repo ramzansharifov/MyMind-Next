@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
-  ArrowDownToLine, Check, Disc3, ExternalLink, Heart, ListMusic, LoaderCircle,
+  Check, Disc3, ExternalLink, Heart, ListMusic, LoaderCircle,
   Music2, Pause, Play, Search, Shuffle, SkipBack, SkipForward, Repeat, Repeat1,
   Volume2, VolumeX, X
 } from 'lucide-react'
@@ -11,6 +11,8 @@ import './music-listening.css'
 
 interface MusicListeningProps {
   onSaveTrack?: (track: DiscoveredTrack) => Promise<void> | void
+  /** PWA uses a same-origin metadata route to avoid provider browser CORS restrictions. */
+  searchProxy?: boolean
 }
 
 function duration(seconds: number | null | undefined): string {
@@ -28,7 +30,7 @@ function Artwork({ track, size = 'medium' }: { track: DiscoveredTrack; size?: 'm
   )
 }
 
-export function MusicListening({ onSaveTrack }: MusicListeningProps): React.JSX.Element {
+export function MusicListening({ onSaveTrack, searchProxy = false }: MusicListeningProps): React.JSX.Element {
   const audio = useRef<HTMLAudioElement>(null)
   const [provider, setProvider] = useState<MusicSource>('audius')
   const [query, setQuery] = useState('')
@@ -66,8 +68,19 @@ export function MusicListening({ onSaveTrack }: MusicListeningProps): React.JSX.
     setLoading(true)
     setLoadError('')
     const timeout = window.setTimeout(() => {
-      void discoverMusic({ provider, query, jamendoClientId: clientId, signal: controller.signal })
-        .then(setTracks)
+      const search = searchProxy
+        ? fetch('/api/music/discover', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ provider, query, jamendoClientId: clientId }),
+            signal: controller.signal
+          }).then(async (response) => {
+            const data = await response.json() as { tracks?: DiscoveredTrack[]; error?: string }
+            if (!response.ok) throw new Error(data.error || 'Не удалось загрузить музыку.')
+            return data.tracks ?? []
+          })
+        : discoverMusic({ provider, query, jamendoClientId: clientId, signal: controller.signal })
+      void search.then(setTracks)
         .catch((reason: unknown) => {
           if (!controller.signal.aborted)
             setLoadError(reason instanceof Error ? reason.message : 'Не удалось загрузить музыку.')
@@ -75,7 +88,7 @@ export function MusicListening({ onSaveTrack }: MusicListeningProps): React.JSX.
         .finally(() => { if (!controller.signal.aborted) setLoading(false) })
     }, query ? 320 : 0)
     return () => { controller.abort(); clearTimeout(timeout) }
-  }, [provider, query, clientId])
+  }, [provider, query, clientId, searchProxy])
 
   useEffect(() => {
     if (audio.current) audio.current.volume = volume
