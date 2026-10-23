@@ -9,7 +9,7 @@ const sample = [
     streamUrl: 'https://api.audius.co/v1/tracks/beta/stream', permalink: null }
 ]
 
-test('music: provider search, saving, favorites and persistence without legacy library', async ({ page }) => {
+test('music: universal search, saving, favorites and persistence without legacy library', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 740 })
   await page.route('**/api/music/discover', async (route) => {
     const payload = route.request().postDataJSON() as { query?: string }
@@ -20,7 +20,9 @@ test('music: provider search, saving, favorites and persistence without legacy l
   await open(page, 'music')
   await expect(page.getByRole('button', { name: 'Добавить музыку', exact: true })).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Из JSON', exact: true })).toHaveCount(0)
-  await page.getByRole('button', { name: 'Audius', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Поиск', exact: true })).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.getByRole('button', { name: 'Audius', exact: true })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'SoundCloud', exact: true })).toHaveCount(0)
   await page.getByRole('textbox', { name: 'Поиск музыки' }).fill('Night')
   await expect(page.getByRole('button', { name: 'Воспроизвести Night Sky' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Воспроизвести Quiet Sea' })).toHaveCount(0)
@@ -35,21 +37,21 @@ test('music: provider search, saving, favorites and persistence without legacy l
   await expect(page.getByRole('button', { name: 'Воспроизвести Night Sky' })).toHaveCount(0)
 })
 
-test('music: queue, transport, and Jamendo settings render without paid credentials', async ({ page }) => {
+test('music: universal search retains playback controls and optional Jamendo configuration', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 568 })
   await page.route('**/api/music/discover', async (route) => {
-    const payload = route.request().postDataJSON() as { provider: string }
-    const tracks = payload.provider === 'audius' ? sample : [{
+    const payload = route.request().postDataJSON() as { provider?: string; jamendoClientId?: string }
+    expect(payload.provider).toBe('all')
+    const extras = payload.jamendoClientId ? [{
       key: 'jamendo:7', provider: 'jamendo', id: '7', title: 'Free Wave', artist: 'Studio',
       durationSeconds: 160, artworkUrl: null, streamUrl: 'https://example.com/music.mp3', permalink: null
-    }]
-    await route.fulfill({ json: { tracks } })
+    }] : []
+    await route.fulfill({ json: { tracks: [...sample, ...extras] } })
   })
   await page.route('https://api.audius.co/v1/tracks/**', async (route) => {
     await route.fulfill({ status: 200, contentType: 'audio/mpeg', body: Buffer.from([]) })
   })
   await open(page, 'music')
-  await page.getByRole('button', { name: 'Audius', exact: true }).click()
   await page.getByRole('button', { name: 'Воспроизвести Night Sky' }).click()
   await expect(page.getByRole('region', { name: 'Музыкальный проигрыватель' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Следующий трек' })).toBeVisible()
@@ -57,15 +59,12 @@ test('music: queue, transport, and Jamendo settings render without paid credenti
   await expect(page.getByRole('button', { name: '2. Quiet Sea / Nova' })).toBeVisible()
   await page.getByRole('button', { name: 'Случайный порядок' }).click()
   await expect(page.getByRole('button', { name: 'Случайный порядок' })).toHaveAttribute('aria-pressed', 'true')
-
-  await page.getByRole('button', { name: 'Jamendo', exact: true }).click()
-  await expect(page.getByText('Для Jamendo нужен бесплатный client_id')).toBeVisible()
-  await page.getByRole('button', { name: 'Источники' }).click()
+  await page.getByRole('button', { name: 'Настройки поиска' }).click()
   await page.getByRole('textbox', { name: 'Jamendo client_id' }).fill('demo123')
   await expect(page.getByRole('button', { name: 'Воспроизвести Free Wave' })).toBeVisible()
 })
 
-test('music: YouTube default, stream bridge, SoundCloud search, and My Wave radio', async ({ page }) => {
+test('music: one search finds YouTube and SoundCloud together, streams and starts My Wave', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 700 })
   const youtube = [
     { key: 'youtube:abcdefghijk', provider: 'youtube', id: 'abcdefghijk',
@@ -79,11 +78,12 @@ test('music: YouTube default, stream bridge, SoundCloud search, and My Wave radi
   ]
   await page.route('**/api/music/discover', async route => {
     const data = route.request().postDataJSON() as { provider?: string }
-    await route.fulfill({ json: { tracks: data.provider === 'soundcloud'
-      ? [{ ...youtube[0], key: 'soundcloud:artist/song', provider: 'soundcloud',
-          id: 'artist/song', streamUrl: 'https://soundcloud.com/artist/song',
-          permalink: 'https://soundcloud.com/artist/song' }]
-      : youtube } })
+    expect(data.provider).toBe('all')
+    await route.fulfill({ json: { tracks: [...youtube, {
+      ...youtube[0], key: 'soundcloud:artist/song', provider: 'soundcloud',
+      id: 'artist/song', streamUrl: 'https://soundcloud.com/artist/song',
+      permalink: 'https://soundcloud.com/artist/song'
+    }] } })
   })
   await page.route('**/api/music/resolve', async route => {
     await route.fulfill({ json: { streamUrl: 'https://example.com/stream.mp3' } })
@@ -95,14 +95,17 @@ test('music: YouTube default, stream bridge, SoundCloud search, and My Wave radi
     route.fulfill({ status: 200, contentType: 'audio/mpeg', body: Buffer.from([]) })
   )
   await open(page, 'music')
-  await expect(page.getByRole('button', { name: 'YouTube', exact: true })).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.getByRole('button', { name: 'Поиск', exact: true })).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.getByRole('button', { name: 'YouTube', exact: true })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'SoundCloud', exact: true })).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Воспроизвести YouTube Song' })).toBeVisible()
   await page.getByRole('button', { name: 'Воспроизвести YouTube Song' }).click()
   await expect(page.getByRole('region', { name: 'Музыкальный проигрыватель' })).toBeVisible()
   await page.getByRole('button', { name: 'Моя волна по треку YouTube Song' }).click()
   await expect(page.getByRole('button', { name: '2. YouTube Similar / Other', exact: true })).toBeVisible()
-  await page.getByRole('button', { name: 'SoundCloud', exact: true }).click()
+  await expect(page.getByText('ОБЩИЙ ПОИСК')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Воспроизвести YouTube Song' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Воспроизвести YouTube Song' })).toHaveCount(2)
 })
 
 test('music: a failed discovery shows an actionable error and retry loads tracks', async ({ page }) => {
@@ -129,4 +132,14 @@ test('music: a failed discovery shows an actionable error and retry loads tracks
   await expect(page.getByRole('button', { name: 'Воспроизвести Recovered Song' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Повторить поиск' })).toHaveCount(0)
   expect(attempts).toBe(2)
+})
+
+
+test('music: partial source outage keeps the successful results visible', async ({ page }) => {
+  await page.route('**/api/music/discover', async route => {
+    await route.fulfill({ json: { tracks: sample, partial: true } })
+  })
+  await open(page, 'music')
+  await expect(page.getByRole('button', { name: 'Воспроизвести Night Sky' })).toBeVisible()
+  await expect(page.getByText('Часть музыкальных источников временно недоступна. Показаны найденные треки.')).toBeVisible()
 })
