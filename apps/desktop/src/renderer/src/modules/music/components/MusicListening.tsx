@@ -13,6 +13,7 @@ interface MusicListeningProps {
   onSaveTrack?: (track: DiscoveredTrack) => Promise<void> | void
   /** PWA uses a same-origin metadata route to avoid provider browser CORS restrictions. */
   searchProxy?: boolean
+  savedTracks?: DiscoveredTrack[]
 }
 
 function duration(seconds: number | null | undefined): string {
@@ -30,9 +31,10 @@ function Artwork({ track, size = 'medium' }: { track: DiscoveredTrack; size?: 'm
   )
 }
 
-export function MusicListening({ onSaveTrack, searchProxy = false }: MusicListeningProps): React.JSX.Element {
+export function MusicListening({ onSaveTrack, searchProxy = false, savedTracks = [] }: MusicListeningProps): React.JSX.Element {
   const audio = useRef<HTMLAudioElement>(null)
   const [provider, setProvider] = useState<MusicSource>('audius')
+  const [onlySaved, setOnlySaved] = useState(false)
   const [query, setQuery] = useState('')
   const [clientId, setClientId] = useState('')
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -52,6 +54,7 @@ export function MusicListening({ onSaveTrack, searchProxy = false }: MusicListen
   const [repeat, setRepeat] = useState<'none' | 'all' | 'one'>('none')
   const [queueOpen, setQueueOpen] = useState(false)
   const current = queue[currentIndex] ?? null
+  const visibleTracks = onlySaved ? savedTracks.filter((t) => (t.title + ' ' + t.artist).toLocaleLowerCase('ru').includes(query.trim().toLocaleLowerCase('ru'))) : tracks
 
   useEffect(() => {
     try { setClientId(localStorage.getItem('mymind.music.jamendo-client-id') ?? '') } catch { /* private mode */ }
@@ -59,6 +62,7 @@ export function MusicListening({ onSaveTrack, searchProxy = false }: MusicListen
 
   useEffect(() => {
     const controller = new AbortController()
+    if (onlySaved) { setLoading(false); setLoadError(''); return () => controller.abort() }
     if (provider === 'jamendo' && !clientId.trim()) {
       setTracks([])
       setLoadError('')
@@ -88,7 +92,7 @@ export function MusicListening({ onSaveTrack, searchProxy = false }: MusicListen
         .finally(() => { if (!controller.signal.aborted) setLoading(false) })
     }, query ? 320 : 0)
     return () => { controller.abort(); clearTimeout(timeout) }
-  }, [provider, query, clientId, searchProxy])
+  }, [provider, query, clientId, searchProxy, onlySaved])
 
   useEffect(() => {
     if (audio.current) audio.current.volume = volume
@@ -229,11 +233,12 @@ export function MusicListening({ onSaveTrack, searchProxy = false }: MusicListen
         <div className="mymusic-providers" role="group" aria-label="Источник музыки">
           {(['audius', 'jamendo'] as const).map((value) => (
             <button key={value} type="button" aria-pressed={provider === value}
-              className={provider === value ? 'active' : ''}
-              onClick={() => { setProvider(value); setQuery('') }}>
+              className={provider === value && !onlySaved ? 'active' : ''}
+              onClick={() => { setOnlySaved(false); setProvider(value); setQuery('') }}>
               {providerLabel(value)}
             </button>
           ))}
+          <button type="button" aria-pressed={onlySaved} className={onlySaved ? 'active' : ''} onClick={() => { setOnlySaved(true); setQuery('') }}>Мои треки</button>
         </div>
         <label className="mymusic-search">
           <Search size={18} />
@@ -256,35 +261,35 @@ export function MusicListening({ onSaveTrack, searchProxy = false }: MusicListen
 
       <div className="mymusic-section-head">
         <div>
-          <span className="mymusic-eyebrow">{providerLabel(provider)}</span>
-          <h3>{query.trim() ? 'Результаты поиска' : 'Сейчас в тренде'}</h3>
+          <span className="mymusic-eyebrow">{onlySaved ? 'Коллекция' : providerLabel(provider)}</span>
+          <h3>{onlySaved ? 'Сохранённая музыка' : query.trim() ? 'Результаты поиска' : 'Сейчас в тренде'}</h3>
         </div>
-        <span className="mymusic-result-count">{loading ? 'Поиск…' : String(tracks.length) + ' треков'}</span>
+        <span className="mymusic-result-count">{loading ? 'Поиск…' : String(visibleTracks.length) + ' треков'}</span>
       </div>
-      {provider === 'jamendo' && !clientId ? (
+      {!onlySaved && provider === 'jamendo' && !clientId ? (
         <div className="mymusic-message">Для Jamendo нужен бесплатный client_id. Нажми «Источники», чтобы добавить его.</div>
-      ) : loadError ? (
+      ) : !onlySaved && loadError ? (
         <div className="mymusic-message" role="alert">{loadError} <button type="button" onClick={() => window.open('https://audius.co', '_blank', 'noopener,noreferrer')}>Открыть Audius</button></div>
-      ) : loading && !tracks.length ? (
+      ) : !onlySaved && loading && !visibleTracks.length ? (
         <div className="mymusic-message"><LoaderCircle className="mymusic-spin" size={20}/> Загружаем музыку…</div>
-      ) : !tracks.length ? (
-        <div className="mymusic-message">Ничего не найдено. Попробуй другой запрос.</div>
+      ) : !visibleTracks.length ? (
+        <div className="mymusic-message">{onlySaved ? 'Пока нет сохранённых потоков. Найди трек и нажми сердечко, чтобы добавить его в библиотеку.' : 'Ничего не найдено. Попробуй другой запрос.'}</div>
       ) : (
         <div className="mymusic-track-list">
-          {tracks.map((track, index) => (
+          {visibleTracks.map((track, index) => (
             <article key={track.key} className={'mymusic-track' + (current?.key === track.key ? ' is-current' : '')}>
               <span className="mymusic-track-number">{index + 1}</span>
-              <button className="mymusic-track-play" type="button" aria-label={'Воспроизвести ' + track.title} onClick={() => current?.key === track.key ? toggle() : choose(track, tracks)}>
+              <button className="mymusic-track-play" type="button" aria-label={'Воспроизвести ' + track.title} onClick={() => current?.key === track.key ? toggle() : choose(track, visibleTracks)}>
                 <Artwork track={track}/>
                 <span className="mymusic-track-hover">{playing && current?.key === track.key ? <Pause size={19}/> : <Play size={19}/>}</span>
               </button>
               <div className="mymusic-track-info">
-                <button type="button" onClick={() => current?.key === track.key ? toggle() : choose(track, tracks)}>{track.title}</button>
+                <button type="button" onClick={() => current?.key === track.key ? toggle() : choose(track, visibleTracks)}>{track.title}</button>
                 <span>{track.artist}</span>
               </div>
               <span className="mymusic-track-duration">{duration(track.durationSeconds)}</span>
-              {onSaveTrack ? <button className="mymusic-track-action" type="button" disabled={saving !== null || saved.has(track.key)} title="Сохранить в библиотеку" aria-label={'Сохранить ' + track.title + ' в библиотеку'} onClick={() => void save(track)}>
-                {saved.has(track.key) ? <Check size={17}/> : saving === track.key ? <LoaderCircle className="mymusic-spin" size={17}/> : <Heart size={17}/>}
+              {onSaveTrack ? <button className="mymusic-track-action" type="button" disabled={saving !== null || saved.has(track.key) || savedTracks.some((item) => item.key === track.key)} title="Сохранить в библиотеку" aria-label={'Сохранить ' + track.title + ' в библиотеку'} onClick={() => void save(track)}>
+                {saved.has(track.key) || savedTracks.some((item) => item.key === track.key) ? <Check size={17}/> : saving === track.key ? <LoaderCircle className="mymusic-spin" size={17}/> : <Heart size={17}/>}
               </button> : null}
               {track.permalink ? <a className="mymusic-track-action" href={track.permalink} target="_blank" rel="noopener noreferrer" aria-label={'Открыть ' + track.title + ' у источника'}><ExternalLink size={16}/></a> : null}
             </article>
