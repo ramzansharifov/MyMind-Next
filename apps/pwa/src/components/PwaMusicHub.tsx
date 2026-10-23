@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { parseSavedMusicSources } from '@mymind/core/music-discovery'
 import { MusicListening } from '../../../desktop/src/renderer/src/modules/music/components/MusicListening'
 import { CatalogScreen } from '../../../mobile/src/modules/catalog/CatalogScreen'
 import { useServices } from '../../../mobile/src/app/context'
@@ -8,6 +9,9 @@ export function PwaMusicHub(): React.JSX.Element {
   const services = useServices()
   const [view, setView] = useState<'listen' | 'library'>('listen')
   const [savedCount, setSavedCount] = useState(0)
+  const [sourceLinks, setSourceLinks] = useState(() =>
+    parseSavedMusicSources(services.settings.get('music.sources.v1'))
+  )
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, width: '100%' }}>
       <div role="tablist" aria-label="Разделы музыки" style={{
@@ -35,17 +39,18 @@ export function PwaMusicHub(): React.JSX.Element {
         overflowY: 'auto', overflowX: 'hidden', padding: '12px',
         overscrollBehavior: 'contain'
       }}>
-        <MusicListening searchProxy onSaveTrack={(track) => {
-          const existing = services.music.listMusicOverview().items.some((item) =>
+        <MusicListening searchProxy savedTracks={Object.values(sourceLinks)} onSaveTrack={(track) => {
+          const existing = services.music.listMusicOverview().items.find((item) =>
             item.title.toLocaleLowerCase('ru') === track.title.toLocaleLowerCase('ru') &&
             item.artist.toLocaleLowerCase('ru') === track.artist.toLocaleLowerCase('ru'))
-          if (!existing) {
-            services.music.createMusicItem({
-              title: track.title, artist: track.artist, year: null,
-              durationSeconds: track.durationSeconds, favorite: false
-            })
-            setSavedCount((count) => count + 1)
-          }
+          const saved = existing ?? services.music.createMusicItem({
+            title: track.title, artist: track.artist, year: null,
+            durationSeconds: track.durationSeconds, favorite: false
+          })
+          const next = { ...sourceLinks, [saved.id]: track }
+          services.settings.set('music.sources.v1', JSON.stringify(next))
+          setSourceLinks(next)
+          setSavedCount((count) => count + 1)
         }} />
       </div>
       {view === 'library' ? (
