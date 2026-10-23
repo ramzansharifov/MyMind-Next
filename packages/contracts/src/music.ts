@@ -34,7 +34,9 @@ export type ExtractedMusicProvider = 'youtube' | 'soundcloud'
 export interface MusicEngineSearchInput { provider: ExtractedMusicProvider; query: string }
 export interface MusicEnginePlaybackInput { provider: ExtractedMusicProvider; id: string }
 export interface MusicRadioInput { videoId: string }
-export interface MusicEngineDownloadInput { provider: ExtractedMusicProvider; id: string; suggestedName: string }
+/** Stream metadata for a provider track the user explicitly downloads into MyMind. */
+export type MusicEngineDownloadInput = MusicSourceLink & { downloadUrl?: string | null }
+export interface MusicEngineOfflineInput { provider: MusicSourceLink['provider']; id: string }
 
 export interface SetMusicSourceLinkInput {
   itemId: string
@@ -176,6 +178,9 @@ export const MUSIC_IPC_CHANNELS = {
   engineResolve: 'music:engine-resolve',
   engineRadio: 'music:engine-radio',
   engineDownload: 'music:engine-download',
+  offlineList: 'music:offline-list',
+  offlineResolve: 'music:offline-resolve',
+  offlineRemove: 'music:offline-remove',
   streamingCollection: 'music:streaming-collection',
   saveStreamingCollection: 'music:save-streaming-collection'
 } as const
@@ -198,7 +203,10 @@ export interface MusicApi {
   engineSearch(input: MusicEngineSearchInput): Promise<MusicSourceLink[]>
   engineResolve(input: MusicEnginePlaybackInput): Promise<string>
   engineRadio(input: MusicRadioInput): Promise<MusicSourceLink[]>
-  engineDownload(input: MusicEngineDownloadInput): Promise<string | null>
+  engineDownload(input: MusicEngineDownloadInput): Promise<string>
+  offlineList(): Promise<string[]>
+  offlineResolve(input: MusicEngineOfflineInput): Promise<string>
+  offlineRemove(input: MusicEngineOfflineInput): Promise<boolean>
   streamingCollection(): Promise<string | null>
   saveStreamingCollection(value: string): Promise<void>
 }
