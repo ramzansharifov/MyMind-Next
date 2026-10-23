@@ -24,9 +24,13 @@ function duration(seconds: number | null | undefined): string {
 }
 
 function Artwork({ track, size = 'medium' }: { track: DiscoveredTrack; size?: 'medium' | 'large' }): React.JSX.Element {
+  const [failed, setFailed] = useState(false)
+  useEffect(() => setFailed(false), [track.artworkUrl])
   return (
     <div className={'mymusic-art mymusic-art-' + size}>
-      {track.artworkUrl ? <img loading="lazy" alt="" src={track.artworkUrl} /> : <Disc3 aria-hidden="true" />}
+      {track.artworkUrl && !failed
+        ? <img loading="lazy" alt="" src={track.artworkUrl} onError={() => setFailed(true)} />
+        : <Disc3 aria-hidden="true" />}
     </div>
   )
 }
