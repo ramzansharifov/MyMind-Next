@@ -173,7 +173,9 @@ export const MUSIC_IPC_CHANNELS = {
   setSourceLink: 'music:set-source-link',
   engineSearch: 'music:engine-search',
   engineResolve: 'music:engine-resolve',
-  engineRadio: 'music:engine-radio'
+  engineRadio: 'music:engine-radio',
+  streamingCollection: 'music:streaming-collection',
+  saveStreamingCollection: 'music:save-streaming-collection'
 } as const
 
 export interface MusicApi {
@@ -194,6 +196,8 @@ export interface MusicApi {
   engineSearch(input: MusicEngineSearchInput): Promise<MusicSourceLink[]>
   engineResolve(input: MusicEnginePlaybackInput): Promise<string>
   engineRadio(input: MusicRadioInput): Promise<MusicSourceLink[]>
+  streamingCollection(): Promise<string | null>
+  saveStreamingCollection(value: string): Promise<void>
 }
 
 export function stringifyMusicJson(
