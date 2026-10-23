@@ -478,6 +478,9 @@ const api: MyMindApi = {
     engineResolve: (input) => invoke(MUSIC_IPC_CHANNELS.engineResolve, input),
     engineRadio: (input) => invoke(MUSIC_IPC_CHANNELS.engineRadio, input),
     engineDownload: (input) => invoke(MUSIC_IPC_CHANNELS.engineDownload, input),
+    offlineList: () => invoke(MUSIC_IPC_CHANNELS.offlineList),
+    offlineResolve: (input) => invoke(MUSIC_IPC_CHANNELS.offlineResolve, input),
+    offlineRemove: (input) => invoke(MUSIC_IPC_CHANNELS.offlineRemove, input),
     streamingCollection: () => invoke(MUSIC_IPC_CHANNELS.streamingCollection),
     saveStreamingCollection: (value) => invoke(MUSIC_IPC_CHANNELS.saveStreamingCollection, value)
   },
