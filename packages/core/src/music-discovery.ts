@@ -123,3 +123,38 @@ export async function discoverMusic(options: MusicSearchOptions): Promise<Discov
 
 export const providerLabel = (provider: MusicSource): string =>
   provider === 'audius' ? 'Audius' : 'Jamendo'
+
+/**
+ * Device-local link between existing library item IDs and provider tracks.
+ * Stored in Desktop app_meta / PWA mobile_preferences, without a DB migration.
+ */
+export type SavedMusicSourceMap = Record<string, DiscoveredTrack>
+
+export function parseSavedMusicSources(value: string | null | undefined): SavedMusicSourceMap {
+  if (!value || value.length > 4_000_000) return {}
+  try {
+    const raw = obj(JSON.parse(value))
+    const mapped: SavedMusicSourceMap = {}
+    for (const [itemId, candidate] of Object.entries(raw)) {
+      if (!/^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/.test(itemId)) continue
+      const track = obj(candidate)
+      const provider = track.provider
+      const id = str(track.id)
+      const url = secureUrl(track.streamUrl)
+      const artist = str(track.artist)
+      const title = str(track.title)
+      if ((provider !== 'audius' && provider !== 'jamendo') || !id || !url || !title || !artist) continue
+      if (provider === 'audius' && new URL(url).hostname !== 'api.audius.co') continue
+      mapped[itemId] = {
+        key: provider + ':' + id, provider, id, title, artist,
+        durationSeconds: positive(track.durationSeconds),
+        artworkUrl: secureUrl(track.artworkUrl),
+        streamUrl: url,
+        permalink: secureUrl(track.permalink)
+      }
+    }
+    return mapped
+  } catch {
+    return {}
+  }
+}
