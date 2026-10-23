@@ -85,14 +85,26 @@ export const musicClient = {
   engineDownload(input: MusicEngineDownloadInput): Promise<string> {
     return window.api.music.engineDownload(input)
   },
-  offlineList(): Promise<string[]> {
-    return window.api.music.offlineList()
+  async offlineList(): Promise<string[]> {
+    const handler = window.api.music.offlineList
+    if (typeof handler !== 'function') {
+      throw new Error('Музыкальные загрузки обновились. Полностью закрой MyMind и запусти Electron заново.')
+    }
+    return handler()
   },
-  offlineResolve(input: MusicEngineOfflineInput): Promise<string> {
-    return window.api.music.offlineResolve(input)
+  async offlineResolve(input: MusicEngineOfflineInput): Promise<string> {
+    const handler = window.api.music.offlineResolve
+    if (typeof handler !== 'function') {
+      throw new Error('Для офлайн-воспроизведения требуется перезапуск MyMind.')
+    }
+    return handler(input)
   },
-  offlineRemove(input: MusicEngineOfflineInput): Promise<boolean> {
-    return window.api.music.offlineRemove(input)
+  async offlineRemove(input: MusicEngineOfflineInput): Promise<boolean> {
+    const handler = window.api.music.offlineRemove
+    if (typeof handler !== 'function') {
+      throw new Error('Для удаления загрузки требуется перезапуск MyMind.')
+    }
+    return handler(input)
   },
   streamingCollection(): Promise<string | null> {
     return window.api.music.streamingCollection()
