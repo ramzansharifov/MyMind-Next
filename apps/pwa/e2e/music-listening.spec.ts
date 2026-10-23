@@ -9,33 +9,30 @@ const sample = [
     streamUrl: 'https://api.audius.co/v1/tracks/beta/stream', permalink: null }
 ]
 
-test('music: discovery search and saving a result into existing music library', async ({ page }) => {
+test('music: provider search, saving, favorites and persistence without legacy library', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 740 })
   await page.route('**/api/music/discover', async (route) => {
     const payload = route.request().postDataJSON() as { query?: string }
     await route.fulfill({ json: {
-      tracks: payload.query ? sample.filter((item) => item.title.toLowerCase().includes(payload.query!.toLowerCase())) : sample
+      tracks: payload.query ? sample.filter(item => item.title.toLowerCase().includes(payload.query!.toLowerCase())) : sample
     } })
   })
   await open(page, 'music')
-  await expect(page.getByRole('button', { name: 'YouTube', exact: true })).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.getByRole('button', { name: 'Добавить музыку', exact: true })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Из JSON', exact: true })).toHaveCount(0)
   await page.getByRole('button', { name: 'Audius', exact: true }).click()
-  await expect(page.getByRole('tab', { name: 'Слушать' })).toHaveAttribute('aria-selected', 'true')
-  await expect(page.getByRole('button', { name: 'Воспроизвести Night Sky' })).toBeVisible()
   await page.getByRole('textbox', { name: 'Поиск музыки' }).fill('Night')
   await expect(page.getByRole('button', { name: 'Воспроизвести Night Sky' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Воспроизвести Quiet Sea' })).toHaveCount(0)
   await page.getByRole('button', { name: 'Сохранить Night Sky в библиотеку' }).click()
-  await page.getByRole('button', { name: 'Мои треки' }).click()
-  await expect(page.getByRole('button', { name: 'Воспроизвести Night Sky' })).toBeVisible()
-  await page.getByRole('tab', { name: 'Моя библиотека' }).click()
-  await expect(page.getByRole('button', { name: 'Night Sky', exact: true })).toBeVisible()
-  await page.getByRole('tab', { name: 'Слушать' }).click()
+  await page.getByRole('button', { name: 'Избранное: Night Sky' }).click()
+  await page.getByRole('button', { name: 'Избранное (1)' }).click()
   await expect(page.getByRole('button', { name: 'Воспроизвести Night Sky' })).toBeVisible()
   await page.reload()
-  await expect(page.getByRole('button', { name: 'Мои треки' })).toBeVisible()
-  await page.getByRole('button', { name: 'Мои треки' }).click()
+  await page.getByRole('button', { name: 'Избранное (1)' }).click()
   await expect(page.getByRole('button', { name: 'Воспроизвести Night Sky' })).toBeVisible()
+  await page.getByRole('button', { name: 'Удалить Night Sky из сохранённых' }).click()
+  await expect(page.getByRole('button', { name: 'Воспроизвести Night Sky' })).toHaveCount(0)
 })
 
 test('music: queue, transport, and Jamendo settings render without paid credentials', async ({ page }) => {
