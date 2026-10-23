@@ -571,7 +571,18 @@ export function MobileNoteCanvas({
 
       <NotesRichTextSettingsSheet
         open={panel === 'text'}
-        close={() => setPanel(null)}
+        close={() => {
+          setPanel(null)
+          if (isPwa && mode === 'edit' && !disabled) {
+            // The modal restores focus to its toolbar trigger when it closes.
+            // Restore the saved Tiptap caret only after the modal has unmounted.
+            requestAnimationFrame(() => {
+              requestAnimationFrame(() => {
+                if (editorRef.current) void editor.focusEditor()
+              })
+            })
+          }
+        }}
         editor={editor}
         state={formatting}
       />
