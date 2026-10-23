@@ -146,9 +146,23 @@ const active = new Map<string, Promise<string>>()
 
 /** Save a private copy under Electron userData; never expose a file path to the renderer. */
 export async function downloadOfflineMusic(input: MusicEngineDownloadInput): Promise<string> {
-  const track = validStreamingTrack(input)
-  if (!track) throw new Error('Некорректная запись музыкального источника')
-  const key = keyFor(track)
+  if (!input || typeof input !== 'object' || Array.isArray(input))
+    throw new Error('Некорректные параметры скачивания музыки')
+
+  // YouTube and SoundCloud downloads use only a validated provider + ID.
+  // The search card can come from InnerTube, yt-dlp or older saved data:
+  // a missing artist, URL variation or stale metadata must not prevent download.
+  // The downloader itself reconstructs and validates the canonical source URL.
+  const extracted = input.provider === 'youtube' || input.provider === 'soundcloud'
+  const track = extracted ? null : validStreamingTrack(input)
+  if (!extracted && !track) throw new Error('Некорректная запись музыкального источника')
+  const key = keyFor(input)
+  if (input.provider === 'youtube' && !/^[A-Za-z0-9_-]{11}$/.test(input.id))
+    throw new Error('Некорректный идентификатор YouTube')
+  if (input.provider === 'soundcloud' &&
+      !/^[A-Za-z0-9_-]+(?:\/[A-Za-z0-9_-]+){1,3}$/.test(input.id))
+    throw new Error('Некорректный идентификатор SoundCloud')
+
   const pending = active.get(key)
   if (pending) return pending
   const task = (async (): Promise<string> => {
@@ -161,11 +175,12 @@ export async function downloadOfflineMusic(input: MusicEngineDownloadInput): Pro
       const hash = digest(key)
       let source: string
       let extension: string
-      if (track.provider === 'youtube' || track.provider === 'soundcloud') {
+      if (input.provider === 'youtube' || input.provider === 'soundcloud') {
         // The existing downloader is used only for an explicitly requested copy.
-        source = await downloadMusicTrack(track.provider, track.id, hash, temporary)
+        source = await downloadMusicTrack(input.provider, input.id, hash, temporary)
         extension = extname(source).toLowerCase()
       } else {
+        if (!track) throw new Error('Нет подтверждённого источника загрузки')
         const url = downloadableUrl(track)
         source = join(temporary, hash + '.audio')
         const contentType = await fetchAudio(url, source)
