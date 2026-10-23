@@ -14,6 +14,7 @@ import {
   type MusicEngineSearchInput,
   type MusicEnginePlaybackInput,
   type MusicRadioInput,
+  type MusicEngineDownloadInput,
   type MusicSourceLink,
   type SetMusicSourceLinkInput,
   SetMusicItemPlaylistsInput,
@@ -79,5 +80,14 @@ export const musicClient = {
   },
   engineRadio(input: MusicRadioInput): Promise<MusicSourceLink[]> {
     return window.api.music.engineRadio(input)
+  },
+  engineDownload(input: MusicEngineDownloadInput): Promise<string | null> {
+    return window.api.music.engineDownload(input)
+  },
+  streamingCollection(): Promise<string | null> {
+    return window.api.music.streamingCollection()
+  },
+  saveStreamingCollection(value: string): Promise<void> {
+    return window.api.music.saveStreamingCollection(value)
   }
 }

@@ -1,10 +1,12 @@
 import { test, expect, open, save, navigate } from './helpers'
 import { MOBILE_CREATE_ACTION_STEP } from '../../mobile/src/shared/ui/mobile-create-action-gesture'
 
-for (const [route, add, input, output, jsonButton] of [
-  ['movies', 'Добавить фильм', 'JSON фильмов', 'JSON данных фильмов', 'JSON библиотеки'],
-  ['music', 'Добавить музыку', 'JSON музыки', 'JSON данных музыки', 'JSON музыкальной библиотеки']
-] as const) {
+const legacyCatalogScenarios: ReadonlyArray<readonly [
+  'movies' | 'music', string, string, string, string
+]> = [
+  ['movies', 'Добавить фильм', 'JSON фильмов', 'JSON данных фильмов', 'JSON библиотеки']
+]
+for (const [route, add, input, output, jsonButton] of legacyCatalogScenarios) {
   test(`${route}: JSON validation, import, export, search and restart use the Android dialogs`, async ({
     page
   }) => {

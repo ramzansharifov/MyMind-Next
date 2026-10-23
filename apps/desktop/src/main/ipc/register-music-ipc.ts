@@ -1,10 +1,11 @@
-import { ipcMain, net, shell } from 'electron'
+import { dialog, ipcMain, net, shell } from 'electron'
 
-import { MUSIC_IPC_CHANNELS, type MusicEngineSearchInput, type MusicEnginePlaybackInput, type MusicRadioInput, type SetMusicSourceLinkInput } from '../../shared/contracts/music'
+import { MUSIC_IPC_CHANNELS, type MusicEngineSearchInput, type MusicEnginePlaybackInput, type MusicRadioInput, type MusicEngineDownloadInput, type SetMusicSourceLinkInput } from '../../shared/contracts/music'
 import { discoverYouTube, discoverYouTubeWithFallback } from '@mymind/core/music-youtube'
-import { searchSoundCloud, searchYouTubeViaYtDlp, youtubeRadio } from '../services/music-yt-dlp'
+import { downloadMusicTrack, searchSoundCloud, searchYouTubeViaYtDlp, youtubeRadio } from '../services/music-yt-dlp'
 import { localMusicStream } from '../services/music-audio-proxy'
 import { parseSavedMusicSources } from '@mymind/core/music-discovery'
+import { MUSIC_COLLECTION_KEY, parseMusicCollection } from '@mymind/core/music-collection'
 import { getSqlite } from '../database/client'
 import {
   createMusicItemInputSchema,
@@ -110,6 +111,25 @@ export function registerMusicIpcHandlers(): void {
       writeSourceLinks(links)
     })
   )
+  ipcMain.handle(MUSIC_IPC_CHANNELS.streamingCollection, () =>
+    mainOperationTracker.run(() => {
+      const stored = getSqlite().prepare('SELECT value FROM app_meta WHERE key = ?')
+        .get(MUSIC_COLLECTION_KEY) as { value: string } | undefined
+      return stored?.value ?? null
+    })
+  )
+  ipcMain.handle(MUSIC_IPC_CHANNELS.saveStreamingCollection, (_event, value: unknown) =>
+    mainOperationTracker.run(() => {
+      if (typeof value !== 'string' || value.length > 6_000_000)
+        throw new Error('Размер музыкальной коллекции превышен')
+      // Reject malformed or forged input; only provider-linked music persists.
+      const parsed = parseMusicCollection(value)
+      const canonical = JSON.stringify(parsed)
+      getSqlite().prepare(
+        'INSERT INTO app_meta(key,value,updated_at) VALUES(?,?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value,updated_at=excluded.updated_at'
+      ).run(MUSIC_COLLECTION_KEY, canonical, Date.now())
+    })
+  )
   ipcMain.handle(MUSIC_IPC_CHANNELS.engineSearch, (_event, rawInput: unknown) =>
     mainOperationTracker.run(async () => {
       const data = rawInput as MusicEngineSearchInput
@@ -137,6 +157,25 @@ export function registerMusicIpcHandlers(): void {
           typeof data.id !== 'string' || data.id.length > 180)
         throw new Error('Некорректные параметры воспроизведения')
       return localMusicStream(data.provider, data.id)
+    })
+  )
+  ipcMain.handle(MUSIC_IPC_CHANNELS.engineDownload, (_event, rawInput: unknown) =>
+    mainOperationTracker.run(async () => {
+      const data = rawInput as MusicEngineDownloadInput | null
+      if (!data || (data.provider !== 'youtube' && data.provider !== 'soundcloud') ||
+          typeof data.id !== 'string' || typeof data.suggestedName !== 'string' ||
+          data.id.length > 180 || data.suggestedName.length > 260)
+        throw new Error('Некорректная музыкальная запись')
+      const selected = await dialog.showOpenDialog({
+        title: 'Выбрать папку для аудиофайла',
+        properties: ['openDirectory', 'createDirectory']
+      })
+      if (selected.canceled || !selected.filePaths[0]) return null
+      const path = await downloadMusicTrack(
+        data.provider, data.id, data.suggestedName, selected.filePaths[0]
+      )
+      shell.showItemInFolder(path)
+      return path
     })
   )
   ipcMain.handle(MUSIC_IPC_CHANNELS.engineRadio, (_event, rawInput: unknown) =>
