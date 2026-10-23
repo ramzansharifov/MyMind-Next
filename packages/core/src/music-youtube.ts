@@ -93,3 +93,39 @@ export async function discoverYouTube(query: string, options: {
     throw error
   }
 }
+
+/**
+ * Preferred Chromium/InnerTube search with a maintained yt-dlp fallback.
+ * Empty valid searches remain empty if yt-dlp is unavailable. If both fail,
+ * report both causes so the user can distinguish connectivity and tooling.
+ */
+export async function discoverYouTubeWithFallback(
+  query: string,
+  primary: (query: string) => Promise<DiscoveredTrack[]>,
+  secondary: (query: string) => Promise<DiscoveredTrack[]>
+): Promise<DiscoveredTrack[]> {
+  let firstError: unknown = null
+  let primaryCompleted = false
+  try {
+    const found = await primary(query)
+    primaryCompleted = true
+    if (found.length) return found
+  } catch (error) {
+    firstError = error
+  }
+
+  try {
+    return await secondary(query)
+  } catch (error) {
+    if (primaryCompleted) return []
+    const firstMessage = firstError instanceof Error ? firstError.message : String(firstError)
+    const secondMessage = error instanceof Error ? error.message : String(error)
+    // Do not print raw URLs containing CDN tokens or external request parameters.
+    const summarize = (message: string) => message.replace(/https?:\/\/\S+/g, '[URL]').slice(0, 190)
+    throw new Error(
+      'Поиск YouTube недоступен через Chromium (' + summarize(firstMessage) +
+      ') и резервный yt-dlp (' + summarize(secondMessage) + '). ' +
+      'Проверь доступ к youtube.com в браузере и повтори поиск.'
+    )
+  }
+}

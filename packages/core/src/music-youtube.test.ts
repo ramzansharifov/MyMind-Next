@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { discoverYouTube, parseYouTubeSearch } from './music-youtube'
+import { discoverYouTube, discoverYouTubeWithFallback, parseYouTubeSearch } from './music-youtube'
 
 const video = (id: string, title = 'Music Song') => ({
   videoRenderer: {
@@ -65,6 +65,38 @@ describe('anonymous YouTube InnerTube music catalog', () => {
     })
     controller.abort()
     await expect(operation).rejects.not.toThrow('YouTube не ответил вовремя')
+  })
+
+  it('uses Chromium results without invoking yt-dlp', async () => {
+    const track = parseYouTubeSearch({ contents: [video('abcdefghijk')] })
+    const primary = vi.fn(async () => track)
+    const fallback = vi.fn(async () => track)
+    await expect(discoverYouTubeWithFallback('music', primary, fallback)).resolves.toEqual(track)
+    expect(primary).toHaveBeenCalledOnce()
+    expect(fallback).not.toHaveBeenCalled()
+  })
+
+  it('uses yt-dlp when the Chromium network request times out', async () => {
+    const track = parseYouTubeSearch({ contents: [video('abcdefghijk')] })
+    const primary = vi.fn(async (_query: string): Promise<typeof track> => {
+      throw new Error('YouTube не ответил вовремя')
+    })
+    const fallback = vi.fn(async (_query: string) => track)
+    await expect(discoverYouTubeWithFallback('song name', primary, fallback)).resolves.toEqual(track)
+    expect(fallback).toHaveBeenCalledWith('song name')
+  })
+
+  it('falls back when InnerTube returns no video items, preserving empty valid results', async () => {
+    const primary = vi.fn(async (_query: string) => [])
+    const fallback = vi.fn(async (_query: string) => [])
+    await expect(discoverYouTubeWithFallback('unusual song', primary, fallback)).resolves.toEqual([])
+  })
+
+  it('surfaces both network and fallback errors to help diagnose blocked YouTube', async () => {
+    const primary = vi.fn(async (_query: string): Promise<never> => { throw new Error('Network timeout') })
+    const fallback = vi.fn(async (_query: string): Promise<never> => { throw new Error('yt-dlp unavailable') })
+    await expect(discoverYouTubeWithFallback('song', primary, fallback))
+      .rejects.toThrow(/Chromium.*Network timeout.*yt-dlp unavailable/)
   })
 
 })
