@@ -30,7 +30,7 @@ test('music: playlists use provider track IDs and persist across restart', async
   await page.route('**/api/music/discover', route =>
     route.fulfill({ json: { tracks: [result] } }))
   await open(page, 'music')
-  await page.getByRole('button', { name: 'Audius', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Поиск', exact: true })).toHaveAttribute('aria-pressed', 'true')
   await page.getByRole('button', { name: 'Новый плейлист' }).click()
   await page.getByRole('textbox', { name: 'Название плейлиста' }).fill('Мой микс')
   await page.getByRole('button', { name: 'Создать', exact: true }).click()
