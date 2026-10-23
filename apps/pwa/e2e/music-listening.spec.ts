@@ -107,3 +107,29 @@ test('music: YouTube default, stream bridge, SoundCloud search, and My Wave radi
   await page.getByRole('button', { name: 'SoundCloud', exact: true }).click()
   await expect(page.getByRole('button', { name: 'Воспроизвести YouTube Song' })).toBeVisible()
 })
+
+test('music: a failed discovery shows an actionable error and retry loads tracks', async ({ page }) => {
+  let attempts = 0
+  await page.route('**/api/music/discover', async (route) => {
+    attempts += 1
+    if (attempts === 1) {
+      await route.fulfill({ status: 502, json: { error: 'YouTube временно недоступен' } })
+    } else {
+      await route.fulfill({ json: {
+        tracks: [{
+          key: 'youtube:abcdefghijk', provider: 'youtube', id: 'abcdefghijk',
+          title: 'Recovered Song', artist: 'Band', durationSeconds: 180,
+          artworkUrl: null, streamUrl: 'https://www.youtube.com/watch?v=abcdefghijk',
+          permalink: 'https://www.youtube.com/watch?v=abcdefghijk'
+        }]
+      } })
+    }
+  })
+  await open(page, 'music')
+  await expect(page.getByRole('alert')).toContainText('YouTube временно недоступен')
+  await expect(page.getByText('Загружаем музыку…')).toHaveCount(0)
+  await page.getByRole('button', { name: 'Повторить поиск' }).click()
+  await expect(page.getByRole('button', { name: 'Воспроизвести Recovered Song' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Повторить поиск' })).toHaveCount(0)
+  expect(attempts).toBe(2)
+})
