@@ -59,6 +59,9 @@ const Catalog = lazy(() =>
     default: module.CatalogScreen
   }))
 )
+const MusicHub = lazy(() =>
+  import('./PwaMusicHub').then((module) => ({ default: module.PwaMusicHub }))
+)
 const Calendar = lazy(() =>
   import('../../../mobile/src/modules/calendar/CalendarScreen').then((module) => ({
     default: module.CalendarScreen
@@ -375,8 +378,10 @@ function Workspace({
                               <Tasks />
                             ) : route === 'habits' ? (
                               <Habits />
-                            ) : route === 'movies' || route === 'music' ? (
-                              <Catalog mode={route} />
+                            ) : route === 'movies' ? (
+                              <Catalog mode="movies" />
+                            ) : route === 'music' ? (
+                              <MusicHub />
                             ) : route === 'calendar' ? (
                               <Calendar />
                             ) : route === 'diary' ? (
