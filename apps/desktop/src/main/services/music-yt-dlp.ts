@@ -205,8 +205,8 @@ export async function downloadMusicTrack(
     .trim()
     .slice(0, 110) || 'MyMind Audio'
   const output = await runMusicTool([
-    '--no-playlist', '--no-overwrites', '--paths', folder,
-    '--output', base + '.%(ext)s', '--format', 'bestaudio',
+    '--no-playlist', '--no-overwrites', '--max-filesize', '160M', '--paths', folder,
+    '--output', base + '.%(ext)s', '--format', 'bestaudio[ext=m4a]/bestaudio',
     '--print', 'after_move:filepath', link
   ], 240_000)
   const final = output.split(/\r?\n/).map(line => line.trim())
