@@ -1,5 +1,25 @@
 export type MusicSource = 'youtube' | 'soundcloud' | 'audius' | 'jamendo'
 
+export const MUSIC_SOURCES: readonly MusicSource[] = ['youtube', 'soundcloud', 'audius', 'jamendo']
+
+/** Interleave ranked results from all providers; preserve provider identity for playback/downloads. */
+export function mergeMusicSearchResults(
+  results: Partial<Record<MusicSource, readonly DiscoveredTrack[]>>
+): DiscoveredTrack[] {
+  const merged: DiscoveredTrack[] = []
+  const seen = new Set<string>()
+  const max = Math.max(0, ...MUSIC_SOURCES.map((source) => results[source]?.length ?? 0))
+  for (let i = 0; i < max; i++) {
+    for (const source of MUSIC_SOURCES) {
+      const track = results[source]?.[i]
+      if (!track || track.provider !== source || seen.has(track.key)) continue
+      seen.add(track.key)
+      merged.push(track)
+    }
+  }
+  return merged
+}
+
 export interface DiscoveredTrack {
   key: string
   provider: MusicSource
