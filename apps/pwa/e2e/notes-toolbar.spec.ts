@@ -21,7 +21,6 @@ test('notes: compact mode actions and grouped editing shortcuts remain usable on
   await expect(page.getByText('Чтение', { exact: true })).toHaveCount(0)
   await expect(page.getByText('Редактирование', { exact: true })).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Перейти в режим чтения' })).toBeInViewport()
-  await expect(page.getByTestId('note-mode-divider')).toBeVisible()
   await expect(page.getByTestId('note-save-indicator')).toHaveCSS('background-color', 'rgb(22, 181, 139)')
 
   await page.getByRole('button', { name: 'Добавить вложение', exact: true }).click()
@@ -166,16 +165,21 @@ test('notes: bullet and numbered lists keep two editable rows close together', a
   }
 })
 
-test('notes: mode switch stays pinned at 320px while actions can scroll', async ({ page }) => {
+test('notes: a single mode toggle stays in the header at 320px', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 568 })
   await open(page, 'notes')
-  await createNote(page, 'Narrow bottom toolbar')
-  const mode = page.getByRole('button', { name: 'Перейти в режим чтения' })
-  await expect(mode).toBeInViewport()
-  await expect(page.getByTestId('note-mode-divider')).toBeInViewport()
+  await createNote(page, 'Narrow note header')
+  const headerMode = page.getByRole('button', { name: 'Перейти в режим чтения' })
+  await expect(headerMode).toBeInViewport()
+  await expect(page.getByTestId('note-mode-divider')).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Добавить вложение' })).toBeInViewport()
   await page.getByRole('button', { name: 'Вставить изображение' }).scrollIntoViewIfNeeded()
-  await expect(mode).toBeInViewport()
-  await mode.click()
+  await expect(headerMode).toBeInViewport()
+  await headerMode.click()
+  await expect(page.locator('.notes-editor')).toHaveAttribute('contenteditable', 'false')
   await expect(page.getByRole('button', { name: 'Перейти в режим редактирования' })).toBeInViewport()
+  await expect(page.getByRole('button', { name: 'Добавить вложение' })).toHaveCount(0)
+  await page.getByRole('button', { name: 'Перейти в режим редактирования' }).click()
+  await expect(page.locator('.notes-editor')).toHaveAttribute('contenteditable', 'true')
+  await expect(page.getByRole('button', { name: 'Добавить вложение' })).toBeVisible()
 })

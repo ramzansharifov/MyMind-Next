@@ -827,7 +827,39 @@ export function NotesScreen({
                   <ModeIcon size={19} color={editorMode === mode ? theme.accent : theme.muted} />
                 </Pressable>
               ))
-            : null}
+            : (
+                editorMode !== 'view' ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={
+                      editorMode === 'read'
+                        ? 'Перейти в режим редактирования'
+                        : 'Перейти в режим чтения'
+                    }
+                    accessibilityState={{ disabled: closing || modeChanging }}
+                    disabled={closing || modeChanging}
+                    onPress={() => changeEditorMode(editorMode === 'read' ? 'edit' : 'read')}
+                    style={({ pressed }) => ({
+                      width: 42,
+                      height: 42,
+                      flexShrink: 0,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      borderRadius: 11,
+                      borderWidth: 1,
+                      borderColor: '#16B58B',
+                      backgroundColor: pressed ? '#16B58B30' : '#16B58B14',
+                      opacity: closing || modeChanging ? 0.5 : 1
+                    })}
+                  >
+                    {editorMode === 'read' ? (
+                      <Pencil size={19} color="#16B58B" />
+                    ) : (
+                      <BookOpen size={19} color="#16B58B" />
+                    )}
+                  </Pressable>
+                ) : null
+              )}
           <ActionMenu
             disabled={closing || modeChanging}
             title="Заметка"
