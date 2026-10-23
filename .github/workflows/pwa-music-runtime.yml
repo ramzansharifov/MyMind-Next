@@ -39,7 +39,7 @@ jobs:
         run: npm run build:pwa
       - run: npx playwright install --with-deps chrome
       - name: Browser playback and library regression tests
-        run: npx playwright test --config apps/pwa/playwright.config.mts apps/pwa/e2e/music-listening.spec.ts --project=phone --project=desktop
+        run: npx playwright test --config apps/pwa/playwright.config.mts apps/pwa/e2e/music-listening.spec.ts apps/pwa/e2e/catalog-json-goals.spec.ts apps/pwa/e2e/catalog-vault-nutrition.spec.ts --project=phone --project=desktop
       - if: always()
         uses: actions/upload-artifact@v4
         with:
