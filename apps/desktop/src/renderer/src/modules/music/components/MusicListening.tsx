@@ -20,7 +20,10 @@ interface MusicListeningProps {
   onEngineSearch?: (input: { provider: 'youtube' | 'soundcloud'; query: string }) => Promise<DiscoveredTrack[]>
   onEngineResolve?: (input: { provider: 'youtube' | 'soundcloud'; id: string }) => Promise<string>
   onRadio?: (input: { videoId: string }) => Promise<DiscoveredTrack[]>
-  onEngineDownload?: (input: { provider: 'youtube' | 'soundcloud'; id: string; suggestedName: string }) => Promise<string | null>
+  onEngineDownload?: (track: DiscoveredTrack) => Promise<string>
+  onOfflineList?: () => Promise<string[]>
+  onOfflineResolve?: (input: { provider: MusicSource; id: string }) => Promise<string>
+  onOfflineRemove?: (input: { provider: MusicSource; id: string }) => Promise<boolean>
 }
 
 function duration(seconds: number | null | undefined): string {
@@ -43,7 +46,8 @@ function Artwork({ track, size = 'medium' }: { track: DiscoveredTrack; size?: 'm
 }
 
 export function MusicListening({
-  collection, onCollectionAction, searchProxy = false, onEngineSearch, onEngineResolve, onRadio, onEngineDownload
+  collection, onCollectionAction, searchProxy = false, onEngineSearch, onEngineResolve, onRadio,
+  onEngineDownload, onOfflineList, onOfflineResolve, onOfflineRemove
 }: MusicListeningProps): React.JSX.Element {
   const audio = useRef<HTMLAudioElement>(null)
   const [provider, setProvider] = useState<MusicSource>('youtube')
@@ -74,6 +78,19 @@ export function MusicListening({
   const [radioLoading, setRadioLoading] = useState(false)
   const [downloadKey, setDownloadKey] = useState<string | null>(null)
   const [downloadNotice, setDownloadNotice] = useState('')
+  const [offlineKeys, setOfflineKeys] = useState<string[]>([])
+  const offlineSet = new Set(offlineKeys)
+  const offlineForCurrent = currentIndex >= 0 && offlineSet.has(queue[currentIndex]?.key ?? '')
+  useEffect(() => {
+    if (!onOfflineList) return
+    let active = true
+    void onOfflineList()
+      .then((keys) => { if (active) setOfflineKeys(keys) })
+      .catch((error: unknown) => {
+        if (active) setDownloadNotice(error instanceof Error ? error.message : 'Не удалось прочитать загрузки MyMind.')
+      })
+    return () => { active = false }
+  }, [onOfflineList])
   const current = queue[currentIndex] ?? null
   const savedTracks = Object.values(collection.tracks)
   const savedKeys = new Set(savedTracks.map((track) => track.key))
@@ -82,7 +99,8 @@ export function MusicListening({
   const visibleTracks = onlySaved
     ? savedTracks.filter((track) =>
         (savedFilter === 'all' || (savedFilter === 'liked'
-          ? likedKeys.has(track.key) : chosenPlaylist?.trackKeys.includes(track.key))) &&
+          ? likedKeys.has(track.key) : savedFilter === 'offline'
+            ? offlineSet.has(track.key) : chosenPlaylist?.trackKeys.includes(track.key))) &&
         (track.title + ' ' + track.artist).toLocaleLowerCase('ru').includes(query.trim().toLocaleLowerCase('ru')))
     : tracks
 
@@ -185,7 +203,8 @@ export function MusicListening({
     // Direct provider streams start synchronously (Safari user activation).
     // YouTube/SoundCloud require asynchronous yt-dlp resolution instead.
     const player = audio.current
-    if (player && track.provider !== 'youtube' && track.provider !== 'soundcloud') {
+    if (player && track.provider !== 'youtube' && track.provider !== 'soundcloud' &&
+        !offlineSet.has(track.key)) {
       player.src = track.streamUrl
       player.load()
       void player.play().then(() => setPlaying(true)).catch(() => {
@@ -193,14 +212,14 @@ export function MusicListening({
         setPlaybackError('Не удалось начать воспроизведение. Нажми Play ещё раз.')
       })
     }
-  }, [])
+  }, [offlineKeys])
 
   useEffect(() => {
     const player = audio.current
     if (!player || !current) return
     let cancelled = false
-    if (current.provider === 'youtube' || current.provider === 'soundcloud') {
-      // Never put the YouTube video page into the HTML audio src. Ask yt-dlp
+    if (offlineForCurrent || current.provider === 'youtube' || current.provider === 'soundcloud') {
+      // Prefer an internal downloaded file whenever one exists. Otherwise ask yt-dlp
       // running in Desktop/companion for a short-lived stream session.
       player.pause()
       player.removeAttribute('src')
@@ -208,7 +227,9 @@ export function MusicListening({
       setPlaying(false)
       setBuffering(true)
       setPlaybackError('')
-      const resolve = searchProxy
+      const resolve = offlineForCurrent && onOfflineResolve
+        ? onOfflineResolve({ provider: current.provider, id: current.id })
+        : searchProxy
         ? fetch('/api/music/resolve', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ provider: current.provider, id: current.id })
@@ -254,7 +275,7 @@ export function MusicListening({
       })
     }
     return () => { cancelled = true }
-  }, [current?.key, current?.streamUrl, searchProxy, onEngineResolve])
+  }, [current?.key, current?.streamUrl, searchProxy, onEngineResolve, onOfflineResolve, offlineForCurrent])
 
   const changeIndex = useCallback((direction: 1 | -1): void => {
     if (!queue.length) return
@@ -363,20 +384,36 @@ export function MusicListening({
   }
 
   const downloadTrack = async (track: DiscoveredTrack): Promise<void> => {
-    if ((track.provider !== 'youtube' && track.provider !== 'soundcloud') ||
-        !onEngineDownload || downloadKey) return
-    if (!window.confirm('Скачивать можно только музыку, на которую у тебя есть права или разрешение автора. Продолжить?'))
+    if (!onEngineDownload || downloadKey || (track.provider !== 'youtube' &&
+        track.provider !== 'soundcloud' && !track.downloadUrl)) return
+    if ((track.provider === 'youtube' || track.provider === 'soundcloud') &&
+        !window.confirm('Скачивай только музыку, которую тебе разрешено сохранять. Продолжить?'))
       return
     setDownloadKey(track.key)
     setDownloadNotice('')
     try {
-      const path = await onEngineDownload({
-        provider: track.provider, id: track.id,
-        suggestedName: track.artist + ' - ' + track.title
-      })
-      if (path) setDownloadNotice('Файл сохранён. Папка с ним открыта.')
+      const key = await onEngineDownload(track)
+      setOfflineKeys((prev) => prev.includes(key) ? prev : [...prev, key])
+      save(track)
+      setDownloadNotice('Трек скачан в MyMind и доступен без интернета.')
     } catch (error) {
-      setDownloadNotice(error instanceof Error ? error.message : 'Не удалось скачать аудиофайл.')
+      setDownloadNotice(error instanceof Error ? error.message : 'Не удалось скачать трек.')
+    } finally {
+      setDownloadKey(null)
+    }
+  }
+
+  const removeDownload = async (track: DiscoveredTrack): Promise<void> => {
+    if (!onOfflineRemove || downloadKey ||
+        !window.confirm('Удалить скачанный аудиофайл из MyMind? Трек останется в сохранённом.')) return
+    setDownloadKey(track.key)
+    setDownloadNotice('')
+    try {
+      const removed = await onOfflineRemove({ provider: track.provider, id: track.id })
+      if (removed) setOfflineKeys((prev) => prev.filter((key) => key !== track.key))
+      setDownloadNotice(removed ? 'Скачанный файл удалён из MyMind.' : 'Файл уже отсутствует.')
+    } catch (error) {
+      setDownloadNotice(error instanceof Error ? error.message : 'Не удалось удалить скачанный файл.')
     } finally {
       setDownloadKey(null)
     }
@@ -422,6 +459,7 @@ export function MusicListening({
           ))}
           <button type="button" aria-pressed={onlySaved && savedFilter === 'all'} className={onlySaved && savedFilter === 'all' ? 'active' : ''} onClick={() => { setOnlySaved(true); setSavedFilter('all'); setQuery('') }}>Сохранённое ({savedTracks.length})</button>
           <button type="button" aria-pressed={onlySaved && savedFilter === 'liked'} className={onlySaved && savedFilter === 'liked' ? 'active' : ''} onClick={() => { setOnlySaved(true); setSavedFilter('liked'); setQuery('') }}>Избранное ({likedKeys.size})</button>
+          {onOfflineList ? <button type="button" aria-pressed={onlySaved && savedFilter === 'offline'} className={onlySaved && savedFilter === 'offline' ? 'active' : ''} onClick={() => { setOnlySaved(true); setSavedFilter('offline'); setQuery('') }}>Загрузки ({offlineKeys.length})</button> : null}
         </div>
         <label className="mymusic-search">
           <Search size={18} />
@@ -486,7 +524,7 @@ export function MusicListening({
         <div>
           <span className="mymusic-eyebrow">{onlySaved ? 'МОЯ МУЗЫКА' : providerLabel(provider)}</span>
           <h3>{onlySaved ? savedFilter === 'all' ? 'Сохранённые треки'
-  : savedFilter === 'liked' ? 'Избранное' : chosenPlaylist?.name ?? 'Плейлист'
+  : savedFilter === 'liked' ? 'Избранное' : savedFilter === 'offline' ? 'Загрузки MyMind' : chosenPlaylist?.name ?? 'Плейлист'
   : query.trim() ? 'Результаты поиска' : 'Сейчас в тренде'}</h3>
         </div>
         <span className="mymusic-result-count">{loading ? 'Поиск…' : String(visibleTracks.length) + ' треков'}</span>
@@ -544,16 +582,18 @@ export function MusicListening({
                     }}>{p.trackKeys.includes(track.key) ? '✓ ' : '+ '}{p.name}</button>)}
                 </div> : null}
               </div>
-              {track.downloadUrl ? <a className="mymusic-track-action" href={track.downloadUrl}
-                title="Скачать — разрешено источником" aria-label={'Скачать ' + track.title}
-                target="_blank" rel="noopener noreferrer"><Download size={17}/></a>
-                : onEngineDownload && (track.provider === 'youtube' || track.provider === 'soundcloud')
-                ? <button type="button" className="mymusic-track-action" disabled={downloadKey !== null}
-                    title="Скачать на компьютер — только с разрешения правообладателя"
-                    aria-label={'Скачать ' + track.title}
-                    onClick={() => void downloadTrack(track)}>
-                    {downloadKey === track.key ? <LoaderCircle className="mymusic-spin" size={17}/> : <Download size={17}/>}
-                  </button> : null}
+              {onEngineDownload && (track.downloadUrl || track.provider === 'youtube' || track.provider === 'soundcloud') ?
+                <button type="button" className={'mymusic-track-action' + (offlineSet.has(track.key) ? ' active' : '')}
+                  disabled={downloadKey !== null}
+                  title={offlineSet.has(track.key) ? 'Удалить скачанный файл из MyMind' : 'Скачать внутрь MyMind для прослушивания офлайн'}
+                  aria-label={(offlineSet.has(track.key) ? 'Удалить скачанный файл ' : 'Скачать в MyMind ') + track.title}
+                  onClick={() => void (offlineSet.has(track.key) ? removeDownload(track) : downloadTrack(track))}>
+                  {downloadKey === track.key ? <LoaderCircle className="mymusic-spin" size={17}/> :
+                    offlineSet.has(track.key) ? <Check size={17}/> : <Download size={17}/>}
+                </button>
+                : track.downloadUrl ? <a className="mymusic-track-action" href={track.downloadUrl}
+                    title="Скачать — разрешено источником" aria-label={'Скачать ' + track.title}
+                    target="_blank" rel="noopener noreferrer"><Download size={17}/></a> : null}
               {track.permalink ? <a className="mymusic-track-action" href={track.permalink} target="_blank" rel="noopener noreferrer" aria-label={'Открыть ' + track.title + ' у источника'}><ExternalLink size={16}/></a> : null}
             </article>
           ))}
@@ -597,7 +637,7 @@ export function MusicListening({
         </div>
       ) : null}
       {downloadNotice ? <div className="mymusic-message" role="status">{downloadNotice}</div> : null}
-      <div className="mymusic-attribution">YouTube · SoundCloud · Audius · Jamendo. На Desktop доступен экспорт аудио при наличии разрешения на копирование, на PWA — загрузка только с официального разрешения источника. Плейлисты и избранное сохраняются локально.</div>
+      <div className="mymusic-attribution">YouTube · SoundCloud · Audius · Jamendo. Desktop сохраняет скачанные аудиофайлы во внутреннем хранилище MyMind для прослушивания без интернета (при наличии разрешения на копирование). На PWA доступна загрузка только с официального разрешения источника. Плейлисты и избранное сохраняются локально.</div>
     </section>
   )
 }
