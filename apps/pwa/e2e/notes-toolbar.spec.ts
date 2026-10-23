@@ -142,9 +142,11 @@ test('notes: bullet and numbered lists keep two editable rows close together', a
     await expect(list).toBeVisible()
     await list.locator('li p').first().click()
     await page.keyboard.type('Первый пункт')
+    await expect(list).toContainText('Первый пункт')
+    await page.keyboard.press('End')
     await page.keyboard.press('Enter')
-    await page.keyboard.type('Второй пункт')
     await expect(list.locator('li')).toHaveCount(2)
+    await page.keyboard.type('Второй пункт')
     await expect(list).toContainText('Первый пункт')
     await expect(list).toContainText('Второй пункт')
 
@@ -157,4 +159,18 @@ test('notes: bullet and numbered lists keep two editable rows close together', a
     expect(rows[0].height).toBeLessThan(60)
     expect(rows[1].top - rows[0].bottom).toBeLessThan(16)
   }
+})
+
+test('notes: mode switch stays pinned at 320px while actions can scroll', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 568 })
+  await open(page, 'notes')
+  await createNote(page, 'Narrow bottom toolbar')
+  const mode = page.getByRole('button', { name: 'Перейти в режим чтения' })
+  await expect(mode).toBeInViewport()
+  await expect(page.getByTestId('note-mode-divider')).toBeInViewport()
+  await expect(page.getByRole('button', { name: 'Добавить вложение' })).toBeInViewport()
+  await page.getByRole('button', { name: 'Вставить изображение' }).scrollIntoViewIfNeeded()
+  await expect(mode).toBeInViewport()
+  await mode.click()
+  await expect(page.getByRole('button', { name: 'Перейти в режим редактирования' })).toBeInViewport()
 })
