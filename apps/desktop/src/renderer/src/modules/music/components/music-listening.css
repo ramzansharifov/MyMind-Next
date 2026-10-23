@@ -75,3 +75,23 @@
   }
 }
 @media(prefers-reduced-motion:reduce){.mymusic-track,.mymusic-track-hover{transition:none}.mymusic-spin{animation:none}}
+
+/* Provider-native saved collections: playlists and per-track actions. */
+.mymusic-library-controls{display:flex;flex-direction:column;gap:9px;margin-top:14px}
+.mymusic-library-playlists{display:flex;flex-wrap:wrap;gap:7px}
+.mymusic-library-playlists button{display:inline-flex;align-items:center;gap:7px;padding:9px 13px;border:1px solid var(--mm-border);border-radius:11px;background:transparent;color:var(--mm-muted);font-size:12px;max-width:230px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mymusic-library-playlists button:hover{color:var(--mm-text)}
+.mymusic-library-playlists button.active{background:color-mix(in srgb,var(--mm-accent) 15%,transparent);border-color:var(--mm-accent);color:var(--mm-text)}
+.mymusic-library-playlists span{font-variant-numeric:tabular-nums;opacity:.7}
+.mymusic-playlist-create{display:flex;gap:8px;max-width:450px}
+.mymusic-playlist-create input{flex:1;min-width:0;border-radius:10px;border:1px solid var(--mm-border);background:var(--mm-bg);padding:10px;color:var(--mm-text);outline:none;font-size:12px}
+.mymusic-playlist-create button{border:0;border-radius:10px;padding:10px 16px;background:var(--mm-accent);color:#fff;font-size:12px;font-weight:700}
+.mymusic-playlist-actions{display:flex;gap:8px;flex-wrap:wrap}
+.mymusic-playlist-actions button{padding:7px 10px;border:1px solid var(--mm-border);border-radius:9px;background:transparent;color:var(--mm-muted);font-size:11px}
+.mymusic-track-action.active{color:var(--mm-accent)}
+.mymusic-track-menu-anchor{position:relative;flex-shrink:0}
+.mymusic-track-menu{position:absolute;right:0;top:calc(100% + 3px);z-index:12;min-width:174px;max-width:240px;padding:5px;border-radius:11px;border:1px solid var(--mm-border);background:var(--mm-bg);box-shadow:0 14px 25px #0007;display:flex;flex-direction:column}
+.mymusic-track-menu button{width:100%;border:0;text-align:left;border-radius:7px;padding:9px 10px;background:transparent;color:var(--mm-text);font-size:12px;cursor:pointer}
+.mymusic-track-menu button:hover{background:color-mix(in srgb,var(--mm-accent) 16%,transparent)}
+.mymusic-track-menu span{padding:8px;color:var(--mm-muted);font-size:11px}
+@media(max-width:650px){.mymusic-hero{min-height:128px}.mymusic-providers{overflow-x:auto;justify-content:flex-start}.mymusic-providers button{flex:0 0 auto;padding:9px}.mymusic-track{gap:5px}.mymusic-track-action{width:25px;height:28px}.mymusic-track-menu-anchor{position:static}.mymusic-track-menu{right:6px;left:6px;top:auto;max-width:none}}
