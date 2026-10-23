@@ -20,6 +20,7 @@ interface MusicListeningProps {
   onEngineSearch?: (input: { provider: 'youtube' | 'soundcloud'; query: string }) => Promise<DiscoveredTrack[]>
   onEngineResolve?: (input: { provider: 'youtube' | 'soundcloud'; id: string }) => Promise<string>
   onRadio?: (input: { videoId: string }) => Promise<DiscoveredTrack[]>
+  onEngineDownload?: (input: { provider: 'youtube' | 'soundcloud'; id: string; suggestedName: string }) => Promise<string | null>
 }
 
 function duration(seconds: number | null | undefined): string {
@@ -42,7 +43,7 @@ function Artwork({ track, size = 'medium' }: { track: DiscoveredTrack; size?: 'm
 }
 
 export function MusicListening({
-  collection, onCollectionAction, searchProxy = false, onEngineSearch, onEngineResolve, onRadio
+  collection, onCollectionAction, searchProxy = false, onEngineSearch, onEngineResolve, onRadio, onEngineDownload
 }: MusicListeningProps): React.JSX.Element {
   const audio = useRef<HTMLAudioElement>(null)
   const [provider, setProvider] = useState<MusicSource>('youtube')
@@ -71,6 +72,8 @@ export function MusicListening({
   const [queueOpen, setQueueOpen] = useState(false)
   const [buffering, setBuffering] = useState(false)
   const [radioLoading, setRadioLoading] = useState(false)
+  const [downloadKey, setDownloadKey] = useState<string | null>(null)
+  const [downloadNotice, setDownloadNotice] = useState('')
   const current = queue[currentIndex] ?? null
   const savedTracks = Object.values(collection.tracks)
   const savedKeys = new Set(savedTracks.map((track) => track.key))
@@ -358,6 +361,25 @@ export function MusicListening({
     setShowNewPlaylist(false)
   }
 
+  const downloadTrack = async (track: DiscoveredTrack): Promise<void> => {
+    if ((track.provider !== 'youtube' && track.provider !== 'soundcloud') ||
+        !onEngineDownload || downloadKey) return
+    if (!window.confirm('Скачивать можно только музыку, на которую у тебя есть права или разрешение автора. Продолжить?'))
+      return
+    setDownloadKey(track.key)
+    setDownloadNotice('')
+    try {
+      const path = await onEngineDownload({
+        provider: track.provider, id: track.id,
+        suggestedName: track.artist + ' - ' + track.title
+      })
+      if (path) setDownloadNotice('Файл сохранён. Папка с ним открыта.')
+    } catch (error) {
+      setDownloadNotice(error instanceof Error ? error.message : 'Не удалось скачать аудиофайл.')
+    } finally {
+      setDownloadKey(null)
+    }
+  }
   const onChangeClientId = (id: string): void => {
     const trimmed = id.trim()
     setClientId(trimmed)
@@ -523,7 +545,14 @@ export function MusicListening({
               </div>
               {track.downloadUrl ? <a className="mymusic-track-action" href={track.downloadUrl}
                 title="Скачать — разрешено источником" aria-label={'Скачать ' + track.title}
-                target="_blank" rel="noopener noreferrer"><Download size={17}/></a> : null}
+                target="_blank" rel="noopener noreferrer"><Download size={17}/></a>
+                : onEngineDownload && (track.provider === 'youtube' || track.provider === 'soundcloud')
+                ? <button type="button" className="mymusic-track-action" disabled={downloadKey !== null}
+                    title="Скачать на компьютер — только с разрешения правообладателя"
+                    aria-label={'Скачать ' + track.title}
+                    onClick={() => void downloadTrack(track)}>
+                    {downloadKey === track.key ? <LoaderCircle className="mymusic-spin" size={17}/> : <Download size={17}/>}
+                  </button> : null}
               {track.permalink ? <a className="mymusic-track-action" href={track.permalink} target="_blank" rel="noopener noreferrer" aria-label={'Открыть ' + track.title + ' у источника'}><ExternalLink size={16}/></a> : null}
             </article>
           ))}
@@ -566,7 +595,8 @@ export function MusicListening({
           {playbackError ? <div className="mymusic-player-error" role="alert">{playbackError}</div> : null}
         </div>
       ) : null}
-      <div className="mymusic-attribution">YouTube · SoundCloud · Audius · Jamendo. Скачивание доступно для треков, у которых источник разрешил загрузку. Данные о плейлистах и избранном хранятся локально; звук предоставляют сами источники.</div>
+      {downloadNotice ? <div className="mymusic-message" role="status">{downloadNotice}</div> : null}
+      <div className="mymusic-attribution">YouTube · SoundCloud · Audius · Jamendo. На Desktop доступен экспорт аудио при наличии разрешения на копирование, на PWA — загрузка только с официального разрешения источника. Плейлисты и избранное сохраняются локально.</div>
     </section>
   )
 }
