@@ -39,7 +39,9 @@ export function PwaMusicHub(): React.JSX.Element {
         overflowY: 'auto', overflowX: 'hidden', padding: '12px',
         overscrollBehavior: 'contain'
       }}>
-        <MusicListening searchProxy savedTracks={Object.values(sourceLinks)} onSaveTrack={(track) => {
+        <MusicListening searchProxy savedTracks={Object.entries(sourceLinks).filter(([id]) =>
+          services.music.listMusicOverview().items.some((item) => item.id === id)
+        ).map(([, track]) => track)} onSaveTrack={(track) => {
           const existing = services.music.listMusicOverview().items.find((item) =>
             item.title.toLocaleLowerCase('ru') === track.title.toLocaleLowerCase('ru') &&
             item.artist.toLocaleLowerCase('ru') === track.artist.toLocaleLowerCase('ru'))
