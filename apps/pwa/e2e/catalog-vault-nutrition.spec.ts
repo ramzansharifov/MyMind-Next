@@ -34,7 +34,7 @@ test('music: playlists use provider track IDs and persist across restart', async
   await page.getByRole('button', { name: 'Новый плейлист' }).click()
   await page.getByRole('textbox', { name: 'Название плейлиста' }).fill('Мой микс')
   await page.getByRole('button', { name: 'Создать', exact: true }).click()
-  await expect(page.getByText('Мой микс', { exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: /Мой микс 0/ })).toBeVisible()
   await page.getByRole('button', { name: 'Добавить Provider Song в плейлист' }).click()
   await page.getByRole('button', { name: '+ Мой микс' }).click()
   await page.getByRole('button', { name: /Мой микс 1/ }).click()
