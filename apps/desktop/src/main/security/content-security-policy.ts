@@ -14,7 +14,7 @@ const directives = [
   "default-src 'self'",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https: mymind-asset:",
-  "media-src 'self' data: blob: https: mymind-asset:",
+  "media-src 'self' data: blob: https: mymind-asset: http://127.0.0.1:*",
   'frame-src https://www.youtube-nocookie.com',
   "font-src 'self' data:",
   "object-src 'none'",

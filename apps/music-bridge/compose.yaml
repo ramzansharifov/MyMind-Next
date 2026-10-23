@@ -1,0 +1,15 @@
+services:
+  music-bridge:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      # Bind locally; terminate public HTTPS with your reverse proxy.
+      - "127.0.0.1:8787:8787"
+    volumes:
+      - music-cache:/app/.music-cache
+    read_only: true
+    tmpfs:
+      - /tmp:rw,size=128m
+volumes:
+  music-cache:

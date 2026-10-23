@@ -1,6 +1,9 @@
 import { ipcMain, shell } from 'electron'
 
-import { MUSIC_IPC_CHANNELS, type SetMusicSourceLinkInput } from '../../shared/contracts/music'
+import { MUSIC_IPC_CHANNELS, type MusicEngineSearchInput, type MusicEnginePlaybackInput, type MusicRadioInput, type SetMusicSourceLinkInput } from '../../shared/contracts/music'
+import { discoverYouTube } from '@mymind/core/music-youtube'
+import { searchSoundCloud, youtubeRadio } from '../services/music-yt-dlp'
+import { localMusicStream } from '../services/music-audio-proxy'
 import { parseSavedMusicSources } from '@mymind/core/music-discovery'
 import { getSqlite } from '../database/client'
 import {
@@ -105,6 +108,34 @@ export function registerMusicIpcHandlers(): void {
       const links = readSourceLinks()
       links[raw.itemId] = track
       writeSourceLinks(links)
+    })
+  )
+  ipcMain.handle(MUSIC_IPC_CHANNELS.engineSearch, (_event, rawInput: unknown) =>
+    mainOperationTracker.run(async () => {
+      const data = rawInput as MusicEngineSearchInput
+      if (!data || (data.provider !== 'youtube' && data.provider !== 'soundcloud') ||
+          typeof data.query !== 'string' || data.query.length > 180)
+        throw new Error('Некорректные параметры поиска')
+      return data.provider === 'youtube'
+        ? discoverYouTube(data.query)
+        : searchSoundCloud(data.query)
+    })
+  )
+  ipcMain.handle(MUSIC_IPC_CHANNELS.engineResolve, (_event, rawInput: unknown) =>
+    mainOperationTracker.run(async () => {
+      const data = rawInput as MusicEnginePlaybackInput
+      if (!data || (data.provider !== 'youtube' && data.provider !== 'soundcloud') ||
+          typeof data.id !== 'string' || data.id.length > 180)
+        throw new Error('Некорректные параметры воспроизведения')
+      return localMusicStream(data.provider, data.id)
+    })
+  )
+  ipcMain.handle(MUSIC_IPC_CHANNELS.engineRadio, (_event, rawInput: unknown) =>
+    mainOperationTracker.run(async () => {
+      const data = rawInput as MusicRadioInput
+      if (!data || typeof data.videoId !== 'string' || !/^[A-Za-z0-9_-]{11}$/.test(data.videoId))
+        throw new Error('Некорректный ID радио')
+      return youtubeRadio(data.videoId)
     })
   )
   ipcMain.handle(MUSIC_IPC_CHANNELS.searchWeb, (_event, rawInput: unknown) =>

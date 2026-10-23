@@ -11,6 +11,9 @@ import {
   MusicOverview,
   MusicPlaylistRecord,
   MusicWebSearchInput,
+  type MusicEngineSearchInput,
+  type MusicEnginePlaybackInput,
+  type MusicRadioInput,
   type MusicSourceLink,
   type SetMusicSourceLinkInput,
   SetMusicItemPlaylistsInput,
@@ -67,5 +70,14 @@ export const musicClient = {
   },
   setSourceLink(input: SetMusicSourceLinkInput): Promise<void> {
     return window.api.music.setSourceLink(input)
+  },
+  engineSearch(input: MusicEngineSearchInput): Promise<MusicSourceLink[]> {
+    return window.api.music.engineSearch(input)
+  },
+  engineResolve(input: MusicEnginePlaybackInput): Promise<string> {
+    return window.api.music.engineResolve(input)
+  },
+  engineRadio(input: MusicRadioInput): Promise<MusicSourceLink[]> {
+    return window.api.music.engineRadio(input)
   }
 }

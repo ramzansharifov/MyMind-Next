@@ -473,7 +473,10 @@ const api: MyMindApi = {
     setItemPlaylists: (input) => invoke(MUSIC_IPC_CHANNELS.setItemPlaylists, input),
     searchWeb: (input) => invoke(MUSIC_IPC_CHANNELS.searchWeb, input),
     listSourceLinks: () => invoke(MUSIC_IPC_CHANNELS.listSourceLinks),
-    setSourceLink: (input) => invoke(MUSIC_IPC_CHANNELS.setSourceLink, input)
+    setSourceLink: (input) => invoke(MUSIC_IPC_CHANNELS.setSourceLink, input),
+    engineSearch: (input) => invoke(MUSIC_IPC_CHANNELS.engineSearch, input),
+    engineResolve: (input) => invoke(MUSIC_IPC_CHANNELS.engineResolve, input),
+    engineRadio: (input) => invoke(MUSIC_IPC_CHANNELS.engineRadio, input)
   },
 
   tasks: {
