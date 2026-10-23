@@ -58,13 +58,18 @@ export async function discoverYouTube(query: string, options: {
   fetcher?: typeof fetch
   signal?: AbortSignal
   clientVersion?: string
+  /** Bound the entire request, including response body parsing (Desktop and PWA). */
+  timeoutMs?: number
 } = {}): Promise<DiscoveredTrack[]> {
   const q = query.trim().slice(0, 180) || 'music'
   const version = options.clientVersion || FALLBACK_VERSION
   const fetcher = options.fetcher ?? fetch
-  const response = await fetcher(ENDPOINT, {
+  const deadline = AbortSignal.timeout(options.timeoutMs ?? 12_000)
+  const signal = options.signal ? AbortSignal.any([options.signal, deadline]) : deadline
+  try {
+    const response = await fetcher(ENDPOINT, {
     method: 'POST',
-    signal: options.signal,
+    signal,
     headers: {
       'Content-Type': 'application/json',
       'X-YouTube-Client-Name': '1',
@@ -79,6 +84,12 @@ export async function discoverYouTube(query: string, options: {
       params: 'EgIQAQ==' // videos, excluding channels and playlists
     })
   })
-  if (!response.ok) throw new Error('Поиск YouTube временно недоступен (' + response.status + ')')
-  return parseYouTubeSearch(await response.json())
+    if (!response.ok) throw new Error('Поиск YouTube временно недоступен (HTTP ' + response.status + ').')
+    const results = parseYouTubeSearch(await response.json())
+    return results
+  } catch (error) {
+    if (deadline.aborted && !options.signal?.aborted)
+      throw new Error('YouTube не ответил вовремя. Проверь подключение и повтори поиск.')
+    throw error
+  }
 }
