@@ -10,6 +10,8 @@ export interface DiscoveredTrack {
   artworkUrl: string | null
   streamUrl: string
   permalink: string | null
+  /** Present only when the provider explicitly authorizes a downloadable copy. */
+  downloadUrl?: string | null
 }
 
 export interface MusicSearchOptions {
@@ -56,7 +58,10 @@ export function audiusTrack(raw: unknown): DiscoveredTrack | null {
     durationSeconds: positive(track.duration),
     artworkUrl: secureUrl(artwork['480x480'] ?? artwork['1000x1000'] ?? artwork['150x150']),
     streamUrl: path.href,
-    permalink: secureUrl(track.permalink)
+    permalink: secureUrl(track.permalink),
+    ...(track.is_downloadable === true ? {
+      downloadUrl: AUDIUS_API + '/tracks/' + encodeURIComponent(id) + '/download?app_name=MyMind'
+    } : {})
   }
 }
 
@@ -72,7 +77,10 @@ export function jamendoTrack(raw: unknown): DiscoveredTrack | null {
     durationSeconds: positive(track.duration),
     artworkUrl: secureUrl(track.image ?? track.album_image),
     streamUrl,
-    permalink: secureUrl(track.shareurl)
+    permalink: secureUrl(track.shareurl),
+    ...(track.audiodownload_allowed === true && secureUrl(track.audiodownload)
+      ? { downloadUrl: secureUrl(track.audiodownload) }
+      : {})
   }
 }
 
@@ -95,6 +103,7 @@ export function providerSearchUrl(options: Pick<MusicSearchOptions, 'provider' |
   url.searchParams.set('limit', '30')
   url.searchParams.set('order', query ? 'relevance' : 'popularity_week')
   url.searchParams.set('audioformat', 'mp32')
+  url.searchParams.set('audiodlformat', 'mp32')
   if (query) url.searchParams.set('search', query)
   return url.href
 }
