@@ -112,7 +112,7 @@ async function handleAudio(req: IncomingMessage, res: ServerResponse): Promise<v
     const stream = Readable.fromWeb(upstream.body as never)
     // Cache complete bounded responses only. Range requests are proxied without
     // storing partial files so seek behavior remains correct.
-    const range = /^bytes (\\d+)-(\\d+)\\/(\\d+)$/.exec(upstream.headers.get('content-range') || '')
+    const range = /^bytes (\d+)-(\d+)\/(\d+)$/.exec(upstream.headers.get('content-range') || '')
     const complete = upstream.status === 200 ||
       (upstream.status === 206 && range && Number(range[1]) === 0 &&
        Number(range[2]) + 1 === Number(range[3]) && length === Number(range[3]))
