@@ -27,9 +27,13 @@ export function createContentSecurityPolicy(development: boolean): string {
   // Vite injects the React Refresh preamble as an inline module in development.
   // Packaged builds keep the stricter self-only script policy.
   const scriptSources = development ? "script-src 'self' 'unsafe-inline'" : "script-src 'self'"
+  // Provider metadata is fetched only from these official endpoints. Audio
+  // streaming is governed separately by media-src and never requires opening
+  // unrestricted network access in the Electron renderer.
+  const musicSources = 'https://api.audius.co https://api.jamendo.com'
   const connectSources = development
-    ? "connect-src 'self' data: http://localhost:* ws://localhost:* http://127.0.0.1:* ws://127.0.0.1:*"
-    : "connect-src 'self' data:"
+    ? "connect-src 'self' data: " + musicSources + ' http://localhost:* ws://localhost:* http://127.0.0.1:* ws://127.0.0.1:*'
+    : "connect-src 'self' data: " + musicSources
 
   return [...directives, scriptSources, connectSources].join('; ')
 }
