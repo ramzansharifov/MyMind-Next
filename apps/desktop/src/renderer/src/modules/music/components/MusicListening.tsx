@@ -47,6 +47,7 @@ export function MusicListening({ onSaveTrack, searchProxy = false, savedTracks =
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [tracks, setTracks] = useState<DiscoveredTrack[]>([])
   const [loading, setLoading] = useState(false)
+  const [searchHint, setSearchHint] = useState('')
   const [loadError, setLoadError] = useState('')
   const [searchAttempt, setSearchAttempt] = useState(0)
   const [playbackError, setPlaybackError] = useState('')
@@ -89,13 +90,26 @@ export function MusicListening({ onSaveTrack, searchProxy = false, savedTracks =
     setTracks([])
     setLoading(true)
     setLoadError('')
+    setSearchHint('')
     let deadline: number | undefined
+    let searchHintTimer: number | undefined
     const debounce = window.setTimeout(() => {
+      // The first desktop YouTube search may initialize verified yt-dlp for
+      // the fallback. Explain the delay, but never leave a spinner forever.
+      const desktopYouTube = !searchProxy && provider === 'youtube'
+      const limitMs = desktopYouTube ? 90_000 : 15_000
+      if (desktopYouTube) {
+        searchHintTimer = window.setTimeout(() => {
+          if (!controller.signal.aborted)
+            setSearchHint('Проверяем резервный поиск YouTube (yt-dlp)…')
+        }, 10_000)
+      }
       deadline = window.setTimeout(() => {
         controller.abort()
-        setLoadError('Источник музыки не ответил за 15 секунд. Проверь интернет и повтори поиск.')
+        setSearchHint('')
+        setLoadError('Источник музыки не ответил за ' + (limitMs / 1000) + ' секунд. Проверь интернет и повтори поиск.')
         setLoading(false)
-      }, 15_000)
+      }, limitMs)
 
       const search = searchProxy
         ? fetch('/api/music/discover', {
@@ -124,7 +138,8 @@ export function MusicListening({ onSaveTrack, searchProxy = false, savedTracks =
         })
         .finally(() => {
           if (deadline !== undefined) window.clearTimeout(deadline)
-          if (!controller.signal.aborted) setLoading(false)
+          if (searchHintTimer !== undefined) window.clearTimeout(searchHintTimer)
+          if (!controller.signal.aborted) { setSearchHint(''); setLoading(false) }
         })
     }, query ? 320 : 0)
 
@@ -132,6 +147,7 @@ export function MusicListening({ onSaveTrack, searchProxy = false, savedTracks =
       controller.abort()
       window.clearTimeout(debounce)
       if (deadline !== undefined) window.clearTimeout(deadline)
+      if (searchHintTimer !== undefined) window.clearTimeout(searchHintTimer)
     }
   }, [provider, query, clientId, searchProxy, onlySaved, onEngineSearch, searchAttempt])
 
@@ -398,7 +414,7 @@ export function MusicListening({ onSaveTrack, searchProxy = false, savedTracks =
           </button>
         </div>
       ) : !onlySaved && loading && !visibleTracks.length ? (
-        <div className="mymusic-message"><LoaderCircle className="mymusic-spin" size={20}/> Загружаем музыку…</div>
+        <div className="mymusic-message"><LoaderCircle className="mymusic-spin" size={20}/> {searchHint || 'Загружаем музыку…'}</div>
       ) : !visibleTracks.length ? (
         <div className="mymusic-message">{onlySaved ? 'Пока нет сохранённых потоков. Найди трек и нажми сердечко, чтобы добавить его в библиотеку.' : 'Ничего не найдено. Попробуй другой запрос.'}</div>
       ) : (
