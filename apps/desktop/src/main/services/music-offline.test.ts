@@ -49,6 +49,43 @@ describe('MyMind internal music downloads', () => {
     expect(await findOfflineMusic({ provider: 'youtube', id: youtube.id })).toBeNull()
   })
 
+  it('downloads a YouTube result when provider metadata differs from the library schema', async () => {
+    // Matches the production failure: search results can be playable without
+    // passing the stricter saved-library parser (e.g. a YouTube Music URL).
+    const result = {
+      ...youtube,
+      artist: '',
+      streamUrl: 'https://music.youtube.com/watch?v=abcdefghijk'
+    }
+    expect(await downloadOfflineMusic(result)).toBe('youtube:abcdefghijk')
+    expect(await listOfflineMusic()).toEqual(['youtube:abcdefghijk'])
+    const audio = await findOfflineMusic({ provider: 'youtube', id: result.id })
+    expect(audio).not.toBeNull()
+  })
+
+  it('downloads a SoundCloud result by its canonical ID even if display metadata is incomplete', async () => {
+    const result: MusicEngineDownloadInput = {
+      ...youtube, key: 'soundcloud:artist/song', provider: 'soundcloud',
+      id: 'artist/song', title: '', artist: '',
+      streamUrl: 'https://soundcloud.com/artist/song?utm_source=search',
+      permalink: null
+    }
+    expect(await downloadOfflineMusic(result)).toBe('soundcloud:artist/song')
+    expect(await listOfflineMusic()).toEqual(['soundcloud:artist/song'])
+  })
+
+  it('rejects unsupported or malformed media IDs without downloading anything', async () => {
+    await expect(downloadOfflineMusic({
+      ...youtube, id: 'bad', key: 'youtube:bad',
+      streamUrl: 'https://music.youtube.com/watch?v=bad'
+    })).rejects.toThrow('идентификатор YouTube')
+    await expect(downloadOfflineMusic({
+      ...youtube, provider: 'soundcloud', id: '../invalid',
+      key: 'soundcloud:../invalid'
+    })).rejects.toThrow('идентификатор')
+    expect(await listOfflineMusic()).toEqual([])
+  })
+
   it('plays offline audio through the local server with byte-range seeking', async () => {
     await downloadOfflineMusic(youtube)
     const url = await localOfflineMusicStream({ provider: 'youtube', id: youtube.id })
