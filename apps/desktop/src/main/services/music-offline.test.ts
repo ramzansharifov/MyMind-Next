@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { join } from 'node:path'
+import { tmpdir } from 'node:os'
 import { rm, stat } from 'node:fs/promises'
 import type { MusicEngineDownloadInput } from '../../shared/contracts/music'
 
-const root = '/tmp/mymind-offline-music-test-' + process.pid
+const root = join(tmpdir(), 'mymind-offline-music-test-' + process.pid)
 
 vi.mock('electron', () => ({
   app: { getPath: () => root }
