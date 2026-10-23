@@ -11,6 +11,8 @@ import {
   MusicOverview,
   MusicPlaylistRecord,
   MusicWebSearchInput,
+  type MusicSourceLink,
+  type SetMusicSourceLinkInput,
   SetMusicItemPlaylistsInput,
   UpdateMusicItemInput,
   UpdateMusicPlaylistInput,
@@ -59,5 +61,11 @@ export const musicClient = {
   },
   searchWeb(input: MusicWebSearchInput): Promise<void> {
     return window.api.music.searchWeb(input)
+  },
+  listSourceLinks(): Promise<Record<string, MusicSourceLink>> {
+    return window.api.music.listSourceLinks()
+  },
+  setSourceLink(input: SetMusicSourceLinkInput): Promise<void> {
+    return window.api.music.setSourceLink(input)
   }
 }
