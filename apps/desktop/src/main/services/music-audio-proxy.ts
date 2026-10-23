@@ -7,11 +7,14 @@ import { createHash, randomBytes } from 'node:crypto'
 import { spawn } from 'node:child_process'
 import { Readable } from 'node:stream'
 import { resolveAudioUrl } from './music-yt-dlp'
+import { findOfflineMusic, type OfflineAudio } from './music-offline'
+import type { MusicEngineOfflineInput } from '../../shared/contracts/music'
 
 interface Session {
-  original: string
-  cacheKey: string
-  provider: 'youtube' | 'soundcloud'
+  original?: string
+  cacheKey?: string
+  provider?: 'youtube' | 'soundcloud'
+  local?: OfflineAudio
   createdAt: number
 }
 const sessions = new Map<string, Session>()
@@ -19,6 +22,7 @@ const TTL = 75 * 60_000
 const CACHE_LIMIT = 45 * 1024 * 1024
 let server: Server | null = null
 let port = 0
+let starting: Promise<void> | null = null
 
 function allowedMediaUrl(url: string): boolean {
   try {
@@ -37,7 +41,7 @@ function allowedMediaUrl(url: string): boolean {
 function audioCachePath(key: string): string {
   return join(app.getPath('userData'), 'music-cache', key + '.audio')
 }
-async function cached(req: IncomingMessage, res: ServerResponse, path: string, provider: 'youtube' | 'soundcloud'): Promise<boolean> {
+async function cached(req: IncomingMessage, res: ServerResponse, path: string, fallbackMime: string): Promise<boolean> {
   const info = await stat(path).catch(() => null)
   if (!info?.isFile() || info.size <= 0) return false
   const match = /^bytes=(\d*)-(\d*)$/.exec(req.headers.range || '')
@@ -52,7 +56,7 @@ async function cached(req: IncomingMessage, res: ServerResponse, path: string, p
     }
     end = Math.min(end, info.size - 1)
   }
-  const savedMime = await readFile(path + '.mime', 'utf8').catch(() => provider === 'youtube' ? 'audio/mp4' : 'audio/mpeg')
+  const savedMime = await readFile(path + '.mime', 'utf8').catch(() => fallbackMime)
   res.writeHead(match ? 206 : 200, {
     'Content-Type': savedMime, 'Accept-Ranges': 'bytes', 'Content-Length': end - start + 1,
     ...(match ? { 'Content-Range': 'bytes ' + start + '-' + end + '/' + info.size } : {}),
@@ -69,8 +73,13 @@ async function handleAudio(req: IncomingMessage, res: ServerResponse): Promise<v
   if (!session || Date.now() - session.createdAt > TTL || (req.method !== 'GET' && req.method !== 'HEAD')) {
     res.writeHead(404).end(); return
   }
+  if (session.local) {
+    if (!await cached(req, res, session.local.path, session.local.mime)) res.writeHead(404).end()
+    return
+  }
+  if (!session.original || !session.cacheKey || !session.provider) { res.writeHead(404).end(); return }
   const path = audioCachePath(session.cacheKey)
-  if (await cached(req, res, path, session.provider)) return
+  if (await cached(req, res, path, session.provider === 'youtube' ? 'audio/mp4' : 'audio/mpeg')) return
   // yt-dlp may resolve SoundCloud to HLS. Let ffmpeg turn it into a stream
   // that the browser's audio element can play when FFmpeg is installed.
   if (/\.m3u8(?:\?|$)/i.test(session.original)) {
@@ -141,26 +150,50 @@ async function handleAudio(req: IncomingMessage, res: ServerResponse): Promise<v
     else res.destroy()
   }
 }
-export async function localMusicStream(provider: 'youtube' | 'soundcloud', id: string): Promise<string> {
-  const source = await resolveAudioUrl(provider, id)
-  if (!allowedMediaUrl(source)) throw new Error('Неподдерживаемый адрес аудиопотока')
-  if (!server) {
-    server = createServer((req, res) => { void handleAudio(req, res) })
-    await new Promise<void>((resolve, reject) => {
-      server!.once('error', reject)
-      server!.listen(0, '127.0.0.1', () => resolve())
-    })
-    const address = server.address()
-    if (!address || typeof address === 'string') throw new Error('Music server unavailable')
-    port = address.port
+async function startMusicServer(): Promise<void> {
+  if (server?.listening) return
+  if (!starting) {
+    starting = (async () => {
+      const instance = createServer((req, res) => { void handleAudio(req, res) })
+      try {
+        await new Promise<void>((resolve, reject) => {
+          instance.once('error', reject)
+          instance.listen(0, '127.0.0.1', resolve)
+        })
+        const address = instance.address()
+        if (!address || typeof address === 'string') throw new Error('Music server unavailable')
+        server = instance
+        port = address.port
+      } catch (reason) {
+        instance.close()
+        throw reason
+      }
+    })().finally(() => { starting = null })
   }
+  await starting
+}
+async function createSession(session: Omit<Session, 'createdAt'>): Promise<string> {
+  await startMusicServer()
   for (const [token, entry] of sessions) {
     if (Date.now() - entry.createdAt > TTL) sessions.delete(token)
   }
   const token = randomBytes(32).toString('hex')
-  const cacheKey = createHash('sha256').update(provider + ':' + id).digest('hex')
-  sessions.set(token, { original: source, cacheKey, provider, createdAt: Date.now() })
+  sessions.set(token, { ...session, createdAt: Date.now() })
   return 'http://127.0.0.1:' + port + '/audio/' + token
+}
+/** Serves downloaded files with range support; no raw OS path reaches the renderer. */
+export async function localOfflineMusicStream(input: MusicEngineOfflineInput): Promise<string> {
+  const local = await findOfflineMusic(input)
+  if (!local) throw new Error('Этот трек ещё не скачан в MyMind')
+  return createSession({ local })
+}
+export async function localMusicStream(provider: 'youtube' | 'soundcloud', id: string): Promise<string> {
+  const local = await findOfflineMusic({ provider, id })
+  if (local) return createSession({ local })
+  const source = await resolveAudioUrl(provider, id)
+  if (!allowedMediaUrl(source)) throw new Error('Неподдерживаемый адрес аудиопотока')
+  const cacheKey = createHash('sha256').update(provider + ':' + id).digest('hex')
+  return createSession({ original: source, cacheKey, provider })
 }
 export function stopLocalMusicStream(): void {
   server?.close()
