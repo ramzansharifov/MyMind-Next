@@ -13,6 +13,10 @@ describe('createContentSecurityPolicy', () => {
     expect(policy).not.toContain('127.0.0.1')
     expect(policy).not.toContain('ws:')
     expect(policy).toContain("connect-src 'self' data:")
+    expect(policy).toContain('https://api.audius.co')
+    expect(policy).toContain('https://api.jamendo.com')
+    expect(policy).not.toContain('https://*')
+    expect(policy).not.toContain('http://api.audius.co')
   })
 
   it('allows Vite endpoints only in development', () => {
