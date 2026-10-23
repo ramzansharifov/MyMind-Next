@@ -1,7 +1,7 @@
 import { app } from 'electron'
 import { createServer, type IncomingMessage, type ServerResponse, type Server } from 'node:http'
 import { createReadStream, createWriteStream } from 'node:fs'
-import { mkdir, rename, rm, stat } from 'node:fs/promises'
+import { mkdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { createHash, randomBytes } from 'node:crypto'
 import { spawn } from 'node:child_process'
@@ -11,6 +11,7 @@ import { resolveAudioUrl } from './music-yt-dlp'
 interface Session {
   original: string
   cacheKey: string
+  provider: 'youtube' | 'soundcloud'
   createdAt: number
 }
 const sessions = new Map<string, Session>()
@@ -36,7 +37,7 @@ function allowedMediaUrl(url: string): boolean {
 function audioCachePath(key: string): string {
   return join(app.getPath('userData'), 'music-cache', key + '.audio')
 }
-async function cached(req: IncomingMessage, res: ServerResponse, path: string): Promise<boolean> {
+async function cached(req: IncomingMessage, res: ServerResponse, path: string, provider: 'youtube' | 'soundcloud'): Promise<boolean> {
   const info = await stat(path).catch(() => null)
   if (!info?.isFile() || info.size <= 0) return false
   const match = /^bytes=(\d*)-(\d*)$/.exec(req.headers.range || '')
@@ -51,8 +52,9 @@ async function cached(req: IncomingMessage, res: ServerResponse, path: string): 
     }
     end = Math.min(end, info.size - 1)
   }
+  const savedMime = await readFile(path + '.mime', 'utf8').catch(() => provider === 'youtube' ? 'audio/mp4' : 'audio/mpeg')
   res.writeHead(match ? 206 : 200, {
-    'Content-Type': 'audio/mpeg', 'Accept-Ranges': 'bytes', 'Content-Length': end - start + 1,
+    'Content-Type': savedMime, 'Accept-Ranges': 'bytes', 'Content-Length': end - start + 1,
     ...(match ? { 'Content-Range': 'bytes ' + start + '-' + end + '/' + info.size } : {}),
     'Cache-Control': 'private, max-age=600', 'X-Content-Type-Options': 'nosniff'
   })
@@ -68,7 +70,7 @@ async function handleAudio(req: IncomingMessage, res: ServerResponse): Promise<v
     res.writeHead(404).end(); return
   }
   const path = audioCachePath(session.cacheKey)
-  if (await cached(req, res, path)) return
+  if (await cached(req, res, path, session.provider)) return
   // yt-dlp may resolve SoundCloud to HLS. Let ffmpeg turn it into a stream
   // that the browser's audio element can play when FFmpeg is installed.
   if (/\.m3u8(?:\?|$)/i.test(session.original)) {
@@ -110,7 +112,11 @@ async function handleAudio(req: IncomingMessage, res: ServerResponse): Promise<v
     const stream = Readable.fromWeb(upstream.body as never)
     // Cache complete bounded responses only. Range requests are proxied without
     // storing partial files so seek behavior remains correct.
-    if (upstream.status === 200 && length > 0 && length <= CACHE_LIMIT) {
+    const range = /^bytes (\\d+)-(\\d+)\\/(\\d+)$/.exec(upstream.headers.get('content-range') || '')
+    const complete = upstream.status === 200 ||
+      (upstream.status === 206 && range && Number(range[1]) === 0 &&
+       Number(range[2]) + 1 === Number(range[3]) && length === Number(range[3]))
+    if (complete && length > 0 && length <= CACHE_LIMIT) {
       await mkdir(join(app.getPath('userData'), 'music-cache'), { recursive: true })
       const temp = path + '.' + randomBytes(5).toString('hex') + '.part'
       const file = createWriteStream(temp, { flags: 'wx' })
@@ -118,7 +124,12 @@ async function handleAudio(req: IncomingMessage, res: ServerResponse): Promise<v
       stream.on('data', (part: Buffer) => { received += part.length })
       stream.pipe(file)
       file.on('finish', () => {
-        void (received === length ? rename(temp, path) : rm(temp, { force: true })).catch(() => undefined)
+        void (async () => {
+          if (received === length) {
+            await rename(temp, path)
+            await writeFile(path + '.mime', upstream.headers.get('content-type') ?? (session.provider === 'youtube' ? 'audio/mp4' : 'audio/mpeg'))
+          } else await rm(temp, { force: true })
+        })().catch(() => undefined)
       })
       file.on('error', () => { void rm(temp, { force: true }) })
       res.on('close', () => { if (!res.writableFinished) file.destroy() })
@@ -148,7 +159,7 @@ export async function localMusicStream(provider: 'youtube' | 'soundcloud', id: s
   }
   const token = randomBytes(32).toString('hex')
   const cacheKey = createHash('sha256').update(provider + ':' + id).digest('hex')
-  sessions.set(token, { original: source, cacheKey, createdAt: Date.now() })
+  sessions.set(token, { original: source, cacheKey, provider, createdAt: Date.now() })
   return 'http://127.0.0.1:' + port + '/audio/' + token
 }
 export function stopLocalMusicStream(): void {
