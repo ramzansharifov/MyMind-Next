@@ -238,7 +238,7 @@ export function MusicListening({
             if (!response.ok || !result.streamUrl) throw new Error(result.error || 'Аудиопоток недоступен.')
             return result.streamUrl
           })
-        : onEngineResolve
+        : onEngineResolve && (current.provider === 'youtube' || current.provider === 'soundcloud')
           ? onEngineResolve({ provider: current.provider, id: current.id })
           : Promise.reject(new Error('Музыкальный движок не подключён.'))
       void resolve.then(stream => {
