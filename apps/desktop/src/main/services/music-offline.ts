@@ -11,7 +11,6 @@ import { downloadMusicTrack } from './music-yt-dlp'
 
 const MAX_AUDIO_BYTES = 160 * 1024 * 1024
 const EXTENSIONS = new Set(['.mp3', '.m4a', '.mp4', '.webm', '.ogg', '.opus', '.aac', '.flac', '.wav'])
-type Provider = MusicEngineOfflineInput['provider']
 
 interface OfflineEntry {
   key: string
