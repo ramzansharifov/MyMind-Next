@@ -535,7 +535,7 @@ export function MusicListening({
           </nav>
           <span className="mymusic-rail-footer" aria-hidden="true">MYMIND</span>
         </aside>
-        <main className="mymusic-content">
+        <div className="mymusic-content">
       <header className="mymusic-topbar">
         <div className="mymusic-brand">
           <div className="mymusic-brand-mark"><Music2 size={23} aria-hidden="true" /></div>
@@ -784,7 +784,7 @@ export function MusicListening({
         </div>
       )}
 
-        </main>
+        </div>
       </div>
       <div className="mymusic-player" role="region" aria-label="Музыкальный проигрыватель">
           <div className="mymusic-player-track">
