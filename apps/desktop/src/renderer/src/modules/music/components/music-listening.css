@@ -574,3 +574,6 @@
   .mymusic-rail-links>button,.mymusic-rail-links>button>span,
   .mymusic-playlist-card{transition:none;transform:none}
 }
+
+/* The older PWA padding rules must not stack with the new content footer. */
+.pwa .mymusic{padding:0}
