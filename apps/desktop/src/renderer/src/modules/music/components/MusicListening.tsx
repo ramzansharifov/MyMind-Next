@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   BookmarkPlus, Check, Disc3, Download, ExternalLink, Heart, ListMusic, ListPlus, LoaderCircle,
   Music2, Pause, Play, Plus, Radio, Search, Shuffle, SkipBack, SkipForward, Repeat, Repeat1,
-  Volume2, VolumeX, X
+  Volume2, VolumeX, X, Waves, Headphones, Clock3, SlidersHorizontal
 } from 'lucide-react'
 import {
   discoverMusic, mergeMusicSearchResults, providerLabel, type DiscoveredTrack, type MusicSource
@@ -25,6 +25,16 @@ interface MusicListeningProps {
   onOfflineResolve?: (input: { provider: MusicSource; id: string }) => Promise<string>
   onOfflineRemove?: (input: { provider: MusicSource; id: string }) => Promise<boolean>
 }
+
+const MUSIC_MOODS = [
+  { label: 'Рок', query: 'rock music' },
+  { label: 'Relax', query: 'relax music' },
+  { label: 'Workout', query: 'workout music' },
+  { label: 'Electronic', query: 'electronic music' },
+  { label: 'Synthwave', query: 'synthwave' },
+  { label: 'Lo-Fi', query: 'lofi beats' },
+  { label: 'Русский рэп', query: 'русский рэп' }
+] as const
 
 function duration(seconds: number | null | undefined): string {
   if (!seconds || !Number.isFinite(seconds)) return '0:00'
@@ -103,6 +113,14 @@ export function MusicListening({
             ? offlineSet.has(track.key) : chosenPlaylist?.trackKeys.includes(track.key))) &&
         (track.title + ' ' + track.artist).toLocaleLowerCase('ru').includes(query.trim().toLocaleLowerCase('ru')))
     : tracks
+
+  const isHome = !onlySaved && !query.trim()
+  const continueTracks = [current, ...savedTracks]
+    .filter((track): track is DiscoveredTrack => Boolean(track))
+    .filter((track, index, all) => all.findIndex(item => item.key === track.key) === index)
+    .slice(0, 6)
+  const radioSeed = [current, ...savedTracks, ...tracks]
+    .find(track => track?.provider === 'youtube') ?? null
 
   useEffect(() => {
     try { setClientId(localStorage.getItem('mymind.music.jamendo-client-id') ?? '') } catch { /* private mode */ }
@@ -481,32 +499,41 @@ export function MusicListening({
         onEnded={ended}
         onError={() => { setPlaying(false); setPlaybackError('Аудиопоток недоступен. Попробуйте другой трек или откройте его у источника.') }}
       />
-      <div className="mymusic-hero">
-        <div className="mymusic-hero-symbol"><Music2 size={32} /></div>
-        <div className="mymusic-hero-copy">
-          <span className="mymusic-eyebrow">MYMIND · MUSIC</span>
-          <h2>Твоя музыка. Твой ритм.</h2>
-          <p>Ищи новые треки, слушай и собирай собственную коллекцию.</p>
+      <header className="mymusic-topbar">
+        <div className="mymusic-brand">
+          <div className="mymusic-brand-mark"><Music2 size={23} aria-hidden="true" /></div>
+          <div><span className="mymusic-eyebrow">MYMIND MUSIC</span><h1>Музыка</h1></div>
         </div>
-      </div>
+        <span className="mymusic-topbar-note"><Headphones size={15} aria-hidden="true" /> Твой звук, твои правила</span>
+      </header>
 
       <div className="mymusic-discovery-toolbar">
-        <div className="mymusic-providers" role="group" aria-label="Музыкальная библиотека">
-          <button type="button" aria-pressed={!onlySaved} className={!onlySaved ? 'active' : ''}
-            onClick={() => { setOnlySaved(false); setQuery('') }}>Поиск</button>
-          <button type="button" aria-pressed={onlySaved && savedFilter === 'all'} className={onlySaved && savedFilter === 'all' ? 'active' : ''} onClick={() => { setOnlySaved(true); setSavedFilter('all'); setQuery('') }}>Сохранённое ({savedTracks.length})</button>
-          <button type="button" aria-pressed={onlySaved && savedFilter === 'liked'} className={onlySaved && savedFilter === 'liked' ? 'active' : ''} onClick={() => { setOnlySaved(true); setSavedFilter('liked'); setQuery('') }}>Избранное ({likedKeys.size})</button>
-          {onOfflineList ? <button type="button" aria-pressed={onlySaved && savedFilter === 'offline'} className={onlySaved && savedFilter === 'offline' ? 'active' : ''} onClick={() => { setOnlySaved(true); setSavedFilter('offline'); setQuery('') }}>Загрузки ({offlineKeys.length})</button> : null}
-        </div>
         <label className="mymusic-search">
-          <Search size={18} />
-          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Трек, исполнитель, настроение…" maxLength={200} aria-label="Поиск музыки" />
-          {query ? <button type="button" aria-label="Очистить поиск" onClick={() => setQuery('')}><X size={16}/></button> : null}
+          <Search size={21} aria-hidden="true" />
+          <input value={query} onChange={(event) => setQuery(event.target.value)}
+            placeholder="Треки, исполнители, настроение…" maxLength={200} aria-label="Поиск музыки" />
+          {query ? <button type="button" aria-label="Очистить поиск" onClick={() => setQuery('')}><X size={17}/></button> : null}
         </label>
-        <button type="button" className="mymusic-settings-button" onClick={() => setSettingsOpen((v) => !v)} aria-expanded={settingsOpen}>
-          Настройки поиска
-        </button>
+        <button type="button" className="mymusic-settings-button" onClick={() => setSettingsOpen((v) => !v)}
+          aria-label="Настройки поиска" aria-expanded={settingsOpen}><SlidersHorizontal size={17} aria-hidden="true" /><span>Настройки поиска</span></button>
       </div>
+
+      <nav className="mymusic-providers" aria-label="Музыкальная библиотека">
+        <button type="button" aria-pressed={!onlySaved} className={!onlySaved ? 'active' : ''}
+          onClick={() => { setOnlySaved(false); setQuery('') }}>Поиск</button>
+        <button type="button" aria-pressed={onlySaved && savedFilter === 'all'} className={onlySaved && savedFilter === 'all' ? 'active' : ''} onClick={() => { setOnlySaved(true); setSavedFilter('all'); setQuery('') }}>Сохранённое ({savedTracks.length})</button>
+        <button type="button" aria-pressed={onlySaved && savedFilter === 'liked'} className={onlySaved && savedFilter === 'liked' ? 'active' : ''} onClick={() => { setOnlySaved(true); setSavedFilter('liked'); setQuery('') }}>Избранное ({likedKeys.size})</button>
+        {onOfflineList ? <button type="button" aria-pressed={onlySaved && savedFilter === 'offline'} className={onlySaved && savedFilter === 'offline' ? 'active' : ''} onClick={() => { setOnlySaved(true); setSavedFilter('offline'); setQuery('') }}>Загрузки ({offlineKeys.length})</button> : null}
+      </nav>
+
+      {!onlySaved ? <div className="mymusic-mood-pills" role="group" aria-label="Быстрый поиск по настроению">
+        <button type="button" className={!query.trim() ? 'active' : ''} aria-pressed={!query.trim()}
+          onClick={() => setQuery('')}>Всё</button>
+        {MUSIC_MOODS.map(mood => <button key={mood.label} type="button"
+          className={query.trim() === mood.query ? 'active' : ''}
+          aria-pressed={query.trim() === mood.query}
+          onClick={() => setQuery(mood.query)}>{mood.label}</button>)}
+      </div> : null}
 
       {settingsOpen ? (
         <div className="mymusic-provider-settings">
@@ -515,6 +542,69 @@ export function MusicListening({
             placeholder="Бесплатный client_id из developer.jamendo.com" autoComplete="off" />
           <p>Для включения результатов Jamendo нужен бесплатный client_id. Все доступные музыкальные источники ищутся автоматически — выбирать их не требуется.</p>
         </div>
+      ) : null}
+
+      {isHome ? (
+        <div className="mymusic-home">
+          <section className="mymusic-welcome" aria-label="Продолжить прослушивание">
+            <div className="mymusic-welcome-title">
+              <Clock3 size={18} aria-hidden="true" />
+              <h2>Продолжить</h2>
+            </div>
+            {continueTracks.length ? (
+              <div className="mymusic-continue-list">
+                {continueTracks.map(track => <button type="button" key={track.key}
+                  className="mymusic-continue-card" aria-label={'Продолжить: ' + track.title}
+                  onClick={() => choose(track, continueTracks)}>
+                  <Artwork track={track} /><span><strong>{track.title}</strong><small>{track.artist}</small></span>
+                  <Play size={17} className="mymusic-continue-play" aria-hidden="true" />
+                </button>)}
+              </div>
+            ) : <p className="mymusic-home-hint">Начни слушать музыку — здесь появятся твои сохранённые треки.</p>}
+          </section>
+
+          <section className="mymusic-wave-card" aria-label="Моя волна">
+            <div className="mymusic-wave-orb"><Waves size={29} aria-hidden="true" /></div>
+            <div className="mymusic-wave-copy">
+              <span className="mymusic-eyebrow">ПЕРСОНАЛЬНОЕ РАДИО</span>
+              <h2>Моя волна</h2>
+              <p>{radioSeed ? 'Продолжай открывать музыку на основе понравившегося трека.' :
+                'Найди трек на YouTube, чтобы запустить подборку похожей музыки.'}</p>
+            </div>
+            <button type="button" className="mymusic-wave-play" disabled={!radioSeed || radioLoading}
+              onClick={() => { if (radioSeed) void startRadio(radioSeed) }}>
+              {radioLoading ? <LoaderCircle size={17} className="mymusic-spin" /> : <Play size={17} fill="currentColor" />}
+              Слушать волну
+            </button>
+          </section>
+
+          {visibleTracks.length > 0 ? <section className="mymusic-home-shelf" aria-label="Подборка для тебя">
+            <div className="mymusic-shelf-heading"><div><span className="mymusic-eyebrow">ДЛЯ ТЕБЯ</span><h2>Открывай новое</h2></div><span>Из всех доступных источников</span></div>
+            <div className="mymusic-shelf-grid">
+              {visibleTracks.slice(0, 8).map(track => (
+                <button key={track.key} type="button" className="mymusic-shelf-track"
+                  aria-label={'Слушать ' + track.title}
+                  onClick={() => choose(track, visibleTracks)}>
+                  <Artwork track={track} size="large" />
+                  <strong>{track.title}</strong><span>{track.artist}</span>
+                  <span className="mymusic-shelf-play" aria-hidden="true"><Play fill="currentColor" size={18}/></span>
+                </button>
+              ))}
+            </div>
+          </section> : null}
+        </div>
+      ) : null}
+
+      {!onlySaved && query.trim() && visibleTracks.length > 0 ? (
+        <section className="mymusic-search-feature" aria-label="Лучший результат">
+          <span className="mymusic-eyebrow">ЛУЧШИЙ РЕЗУЛЬТАТ</span>
+          <button type="button" className="mymusic-feature-track" aria-label={'Слушать лучший результат: ' + visibleTracks[0].title}
+            onClick={() => choose(visibleTracks[0], visibleTracks)}>
+            <Artwork track={visibleTracks[0]} size="large" />
+            <span className="mymusic-feature-copy"><strong>{visibleTracks[0].title}</strong><small>{visibleTracks[0].artist}</small></span>
+            <span className="mymusic-feature-play"><Play fill="currentColor" size={21}/></span>
+          </button>
+        </section>
       ) : null}
 
       <div className="mymusic-library-controls">
@@ -638,37 +728,35 @@ export function MusicListening({
         </div>
       )}
 
-      {current ? (
-        <div className="mymusic-player" role="region" aria-label="Музыкальный проигрыватель">
+      <div className="mymusic-player" role="region" aria-label="Музыкальный проигрыватель">
           <div className="mymusic-player-track">
-            <Artwork track={current}/>
-            <div><strong>{current.title}</strong><span>{current.artist}</span></div>
+            {current ? <Artwork track={current}/> : <div className="mymusic-idle-art"><Music2 size={22} aria-hidden="true" /></div>}
+            <div><strong>{current?.title ?? 'Ничего не играет'}</strong><span>{current?.artist ?? 'Выбери трек'}</span></div>
           </div>
           <div className="mymusic-player-center">
             <div className="mymusic-player-actions">
-              <button type="button" aria-label="Случайный порядок" aria-pressed={random} onClick={() => setRandom((v) => !v)} className={random ? 'active' : ''}><Shuffle size={17}/></button>
-              <button type="button" aria-label="Предыдущий трек" onClick={() => changeIndex(-1)}><SkipBack size={19}/></button>
-              <button type="button" className="mymusic-primary-control" aria-label={playing ? 'Пауза' : 'Воспроизвести'} onClick={toggle} disabled={buffering}>{buffering ? <LoaderCircle className="mymusic-spin" size={19}/> : playing ? <Pause size={19}/> : <Play size={19}/>}</button>
-              <button type="button" aria-label="Следующий трек" onClick={() => changeIndex(1)}><SkipForward size={19}/></button>
-              <button type="button" aria-label="Повтор" aria-pressed={repeat !== 'none'} className={repeat !== 'none' ? 'active' : ''} onClick={() => setRepeat((r) => r === 'none' ? 'all' : r === 'all' ? 'one' : 'none')}>{repeat === 'one' ? <Repeat1 size={17}/> : <Repeat size={17}/>}</button>
+              <button type="button" disabled={!current} aria-label="Случайный порядок" aria-pressed={random} onClick={() => setRandom((v) => !v)} className={random ? 'active' : ''}><Shuffle size={17}/></button>
+              <button type="button" disabled={!current} aria-label="Предыдущий трек" onClick={() => changeIndex(-1)}><SkipBack size={19}/></button>
+              <button type="button" className="mymusic-primary-control" aria-label={playing ? 'Пауза' : 'Воспроизвести'} onClick={toggle} disabled={!current || buffering}>{buffering ? <LoaderCircle className="mymusic-spin" size={19}/> : playing ? <Pause size={19}/> : <Play size={19}/>}</button>
+              <button type="button" disabled={!current} aria-label="Следующий трек" onClick={() => changeIndex(1)}><SkipForward size={19}/></button>
+              <button type="button" disabled={!current} aria-label="Повтор" aria-pressed={repeat !== 'none'} className={repeat !== 'none' ? 'active' : ''} onClick={() => setRepeat((r) => r === 'none' ? 'all' : r === 'all' ? 'one' : 'none')}>{repeat === 'one' ? <Repeat1 size={17}/> : <Repeat size={17}/>}</button>
             </div>
             <div className="mymusic-timeline">
               <span>{duration(position)}</span>
               <input type="range" min={0} max={Math.max(length, 1)} step={1} value={Math.min(position, Math.max(length, 1))}
                 aria-label="Перемотка" disabled={!length}
                 onChange={(event) => { if (audio.current) audio.current.currentTime = Number(event.target.value); setPosition(Number(event.target.value)) }} />
-              <span>{duration(length || current.durationSeconds)}</span>
+              <span>{duration(length || current?.durationSeconds)}</span>
             </div>
           </div>
           <div className="mymusic-player-extra">
-            <button type="button" className={queueOpen ? 'active' : ''} aria-label="Очередь" aria-expanded={queueOpen} onClick={() => setQueueOpen((v) => !v)}><ListMusic size={19}/></button>
+            <button type="button" className={queueOpen ? 'active' : ''} aria-label="Очередь" disabled={!queue.length} aria-expanded={queueOpen} onClick={() => setQueueOpen((v) => !v)}><ListMusic size={19}/></button>
             <button type="button" aria-label={volume ? 'Выключить звук' : 'Включить звук'} onClick={() => setVolume((v) => v ? 0 : 0.8)}>{volume ? <Volume2 size={19}/> : <VolumeX size={19}/>}</button>
             <input type="range" min={0} max={1} step={0.05} value={volume} onChange={(e) => setVolume(Number(e.target.value))} aria-label="Громкость"/>
           </div>
           {queueOpen ? <div className="mymusic-queue"><h4>Очередь</h4>{queue.map((item, index) => <button key={item.key} type="button" className={index === currentIndex ? 'active' : ''} onClick={() => { setCurrentIndex(index); setQueueOpen(false) }}>{index + 1}. {item.title} / {item.artist}</button>)}</div> : null}
           {playbackError ? <div className="mymusic-player-error" role="alert">{playbackError}</div> : null}
         </div>
-      ) : null}
       {downloadNotice ? <div className="mymusic-message" role="status">{downloadNotice}</div> : null}
       <div className="mymusic-attribution">YouTube · SoundCloud · Audius · Jamendo. Desktop сохраняет скачанные аудиофайлы во внутреннем хранилище MyMind для прослушивания без интернета (при наличии разрешения на копирование). На PWA доступна загрузка только с официального разрешения источника. Плейлисты и избранное сохраняются локально.</div>
     </section>
