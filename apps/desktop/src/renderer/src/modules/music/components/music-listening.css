@@ -357,3 +357,220 @@
   .mymusic .mymusic-player-track{padding-right:85px}
   .mymusic .mymusic-player-extra button{width:31px;height:31px}
 }
+
+
+/* Dedicated music navigation, kept separate from the application's sidebar.
+   Remove the generic standard-module max-width so the music canvas always
+   fills the whole workspace, including on ultrawide desktop windows. */
+[data-workspace-layout='standard'] .mymusic-page-shell [data-standard-module-container].mymusic-page-container {
+  width:100%!important;
+  max-width:none!important;
+  margin-inline:0!important;
+}
+.mymusic-page-shell{width:100%;max-width:none!important}
+.mymusic-page-container{width:100%;max-width:none!important}
+.mymusic{
+  min-width:0;
+  width:100%;
+  padding:0;
+  background:#090b0e;
+  display:flex;
+  flex-direction:column;
+}
+.mymusic-layout{
+  display:grid;
+  grid-template-columns:76px minmax(0,1fr);
+  width:100%;
+  min-width:0;
+  align-items:stretch;
+  flex:1;
+}
+.mymusic-content{
+  min-width:0;
+  width:100%;
+  padding:29px clamp(20px,3vw,50px) 32px;
+  background:
+    radial-gradient(ellipse 78% 370px at 68% 0%,rgba(37,136,111,.16),transparent 88%),
+    linear-gradient(180deg,#0d1115,#090c10 370px,#090b0e);
+}
+.mymusic-content-footer{
+  width:calc(100% - 76px);
+  margin-left:76px;
+  padding:0 clamp(20px,3vw,50px) 168px;
+  background:#090b0e;
+}
+.mymusic-rail{
+  position:sticky;
+  top:0;
+  align-self:start;
+  display:flex;
+  align-items:center;
+  flex-direction:column;
+  gap:24px;
+  padding:20px 10px 18px;
+  height:calc(100dvh - 33px);
+  max-height:100dvh;
+  min-height:410px;
+  border-right:1px solid rgba(255,255,255,.075);
+  background:#121518;
+  z-index:2;
+}
+.mymusic-rail-mark{
+  display:grid;
+  place-items:center;
+  flex-shrink:0;
+  width:48px;
+  height:48px;
+  border-radius:16px;
+  color:#91f0c2;
+  background:linear-gradient(145deg,#244039,#1a302b);
+  border:1px solid rgba(71,210,151,.13);
+}
+.mymusic-rail-links{
+  display:flex;
+  align-items:center;
+  flex-direction:column;
+  gap:9px;
+  width:100%;
+}
+.mymusic-rail-links>button{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  position:relative;
+  width:52px;
+  height:50px;
+  flex-shrink:0;
+  padding:0;
+  border:0;
+  border-radius:14px;
+  color:#9ba6ab;
+  background:transparent;
+  transition:background .16s ease,color .16s ease;
+}
+.mymusic-rail-links>button:hover{background:#282f30;color:#e9f5f1}
+.mymusic-rail-links>button.active{
+  background:#303b39;
+  color:#cbf8e4;
+  box-shadow:inset 0 0 0 1px rgba(109,229,170,.075);
+}
+.mymusic-rail-links>button.active:before{
+  content:"";
+  position:absolute;
+  left:-10px;
+  top:15px;
+  bottom:15px;
+  width:3px;
+  border-radius:0 3px 3px 0;
+  background:#45dda6;
+}
+.mymusic-rail-links>button>span{
+  position:absolute;
+  left:calc(100% + 13px);
+  top:50%;
+  transform:translateY(-50%) translateX(-4px);
+  padding:8px 11px;
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:9px;
+  background:#252e2d;
+  color:#f0f4f3;
+  font-size:12px;
+  font-weight:650;
+  box-shadow:0 8px 22px #0006;
+  white-space:nowrap;
+  pointer-events:none;
+  opacity:0;
+  visibility:hidden;
+  transition:opacity .16s,transform .16s,visibility .16s;
+  z-index:6;
+}
+.mymusic-rail-links>button:hover>span,
+.mymusic-rail-links>button:focus-visible>span{
+  opacity:1;
+  visibility:visible;
+  transform:translateY(-50%) translateX(0);
+}
+.mymusic-rail-separator{
+  height:1px;
+  width:31px;
+  margin:8px 0 4px;
+  background:rgba(255,255,255,.11);
+}
+.mymusic-rail-footer{
+  margin-top:auto;
+  color:#667574;
+  letter-spacing:.22em;
+  font-size:8px;
+  font-weight:800;
+  writing-mode:vertical-rl;
+}
+.mymusic-providers{display:none}
+.mymusic-library-controls.is-overview .mymusic-library-playlists>button:not(:last-child){display:none}
+.mymusic-playlist-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(155px,1fr));
+  gap:15px;
+  padding:5px 0 20px;
+}
+.mymusic-playlist-card{
+  min-width:0;
+  text-align:left;
+  display:flex;
+  flex-direction:column;
+  gap:7px;
+  padding:13px;
+  border:1px solid rgba(255,255,255,.06);
+  background:#191e22;
+  border-radius:15px;
+  color:var(--mm-text);
+  transition:background .16s ease,transform .16s ease;
+}
+.mymusic-playlist-card:hover{background:#252d2e;transform:translateY(-2px)}
+.mymusic-playlist-card>.mymusic-art-large,
+.mymusic-playlist-placeholder{
+  display:grid;
+  place-items:center;
+  width:100%;
+  height:auto;
+  aspect-ratio:1;
+  border-radius:11px;
+  background:linear-gradient(135deg,#30463f,#182d30);
+  color:#aae8c7;
+}
+.mymusic-playlist-card strong{
+  font-size:13px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.mymusic-playlist-card small{font-size:11px;color:var(--mm-muted)}
+.mymusic-playlist-empty{font-size:13px;color:var(--mm-muted)}
+.mymusic .mymusic-shelf-grid{
+  grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+}
+@media(max-width:900px){
+  .mymusic-layout{grid-template-columns:66px minmax(0,1fr)}
+  .mymusic-content{padding:22px 23px 28px}
+  .mymusic-rail{padding-inline:7px}
+  .mymusic-rail-links>button{width:48px}
+  .mymusic-content-footer{width:calc(100% - 66px);margin-left:66px}
+}
+@media(max-width:700px){
+  /* PWA/mobile: preserve horizontal, touch-friendly navigation instead of
+     squeezing two vertical navigation rails into a small phone viewport. */
+  .mymusic-layout{display:block}
+  .mymusic-rail{display:none}
+  .mymusic-content{padding:18px 14px 24px}
+  .mymusic-providers{display:flex}
+  .mymusic-content-footer{width:100%;margin-left:0;padding:0 14px 232px}
+  .mymusic .mymusic-shelf-grid{display:flex}
+}
+@media(min-width:701px){
+  /* Shared PWA: a music rail must not alter the application's own navigation. */
+  .pwa .mymusic-layout{grid-template-columns:76px minmax(0,1fr)}
+  .pwa .mymusic-content-footer{width:calc(100% - 76px);margin-left:76px}
+}
+@media(prefers-reduced-motion:reduce){
+  .mymusic-rail-links>button,.mymusic-rail-links>button>span,
+  .mymusic-playlist-card{transition:none;transform:none}
+}
