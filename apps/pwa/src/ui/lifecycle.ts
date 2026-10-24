@@ -1,10 +1,13 @@
 'use client'
 import { useSyncExternalStore } from 'react'
-const backHandlers = new Set<() => boolean>()
-export function subscribeBack(handler: () => boolean): {
+const backHandlers = new Map<() => boolean, number>()
+export function subscribeBack(
+  handler: () => boolean,
+  priority = 0
+): {
   remove(): void
 } {
-  backHandlers.add(handler)
+  backHandlers.set(handler, priority)
   return {
     remove: () => {
       backHandlers.delete(handler)
@@ -12,7 +15,8 @@ export function subscribeBack(handler: () => boolean): {
   }
 }
 export function dispatchBack(): boolean {
-  for (const handler of [...backHandlers].reverse()) if (handler()) return true
+  const handlers = [...backHandlers].reverse().sort((left, right) => right[1] - left[1])
+  for (const [handler] of handlers) if (handler()) return true
   return false
 }
 export function blurActiveElement(): void {

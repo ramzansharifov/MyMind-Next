@@ -30,4 +30,21 @@ describe('browser Back stack', () => {
     dialog.remove()
     screen.remove()
   })
+  it('keeps an open modal ahead of a background screen that resubscribes after saving', () => {
+    const calls: string[] = []
+    const modal = subscribeBack(() => {
+      calls.push('modal')
+      return true
+    }, 1)
+    const screen = subscribeBack(() => {
+      calls.push('screen')
+      return true
+    })
+    expect(dispatchBack()).toBe(true)
+    expect(calls).toEqual(['modal'])
+    modal.remove()
+    expect(dispatchBack()).toBe(true)
+    expect(calls).toEqual(['modal', 'screen'])
+    screen.remove()
+  })
 })

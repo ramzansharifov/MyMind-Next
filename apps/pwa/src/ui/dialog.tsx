@@ -114,7 +114,7 @@ export function DialogLayer({
       if (!top()) return false
       close.current()
       return true
-    })
+    }, 1)
     document.addEventListener('keydown', key, true)
     document.addEventListener('focusin', contain)
     return () => {
