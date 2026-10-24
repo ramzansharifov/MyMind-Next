@@ -10,7 +10,7 @@ import {
 import { MusicListening } from '../../../desktop/src/renderer/src/modules/music/components/MusicListening'
 import { useServices } from '../client/app/context'
 
-/** PWA-only provider music experience. Native Android UI remains unchanged. */
+/** Browser music collection with the player shared by PWA and Desktop. */
 export function PwaMusicHub(): React.JSX.Element {
   const services = useServices()
   const [collection, setCollection] = useState<MusicStreamingCollection>(() => {
