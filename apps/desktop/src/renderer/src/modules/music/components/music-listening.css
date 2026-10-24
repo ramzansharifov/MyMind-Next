@@ -788,7 +788,8 @@
   .mymusic .mymusic-shelf-track{scroll-snap-align:start}
   /* The PWA has no Electron global rail, only the local 76px music rail. */
   .pwa .mymusic .mymusic-player{
-    left:calc(76px + 15px + env(safe-area-inset-left));
+    /* PwaMusicHub has 12px padding and its app workspace has an outer inset. */
+    left:calc(76px + 40px + env(safe-area-inset-left));
     right:calc(15px + env(safe-area-inset-right));
   }
 }
@@ -800,7 +801,7 @@
     left:calc(256px + 66px + 12px);
   }
   .pwa .mymusic .mymusic-player{
-    left:calc(66px + 15px + env(safe-area-inset-left));
+    left:calc(66px + 40px + env(safe-area-inset-left));
   }
   .mymusic .mymusic-player{
     grid-template-columns:minmax(105px,1fr) minmax(180px,1.4fr);
