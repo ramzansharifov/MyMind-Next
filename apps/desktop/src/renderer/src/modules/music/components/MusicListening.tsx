@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   BookmarkPlus, Check, Disc3, Download, ExternalLink, Heart, ListMusic, ListPlus, LoaderCircle,
   Music2, Pause, Play, Plus, Radio, Search, Shuffle, SkipBack, SkipForward, Repeat, Repeat1,
-  Volume2, VolumeX, X, Waves, Headphones, Clock3, SlidersHorizontal, Compass, LibraryBig
+  Volume2, VolumeX, X, Waves, Clock3, SlidersHorizontal, Compass, LibraryBig
 } from 'lucide-react'
 import {
   discoverMusic, mergeMusicSearchResults, providerLabel, type DiscoveredTrack, type MusicSource
@@ -538,10 +538,8 @@ export function MusicListening({
         <div className="mymusic-content">
       <header className="mymusic-topbar">
         <div className="mymusic-brand">
-          <div className="mymusic-brand-mark"><Music2 size={23} aria-hidden="true" /></div>
           <div><span className="mymusic-eyebrow">MYMIND MUSIC</span><h1>Музыка</h1></div>
         </div>
-        <span className="mymusic-topbar-note"><Headphones size={15} aria-hidden="true" /> Твой звук, твои правила</span>
       </header>
 
       <div className="mymusic-discovery-toolbar">

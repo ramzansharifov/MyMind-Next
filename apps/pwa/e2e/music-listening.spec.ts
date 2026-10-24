@@ -190,6 +190,26 @@ test('music: dedicated desktop sidebar uses all available width and opens real l
   expect(content!.x).toBeGreaterThan(layout!.x)
   expect(content!.width).toBeGreaterThan(900)
   expect(Math.abs(content!.x + content!.width - layout!.x - layout!.width)).toBeLessThan(3)
+  // The genre presets must sit BELOW the search field; they previously
+  // overlapped its lower border when the navigation tabs became a side rail.
+  const searchBox = await page.locator('.mymusic-search').boundingBox()
+  const moodsBox = await page.locator('.mymusic-mood-pills').boundingBox()
+  expect(searchBox).not.toBeNull()
+  expect(moodsBox).not.toBeNull()
+  expect(moodsBox!.y - (searchBox!.y + searchBox!.height)).toBeGreaterThanOrEqual(10)
+  await expect(page.locator('.mymusic-brand-mark')).toHaveCount(0)
+  await expect(page.locator('.mymusic-topbar-note')).toHaveCount(0)
+
+  // The fixed player may overlap the scrolling content, but never the music
+  // navigation rail; titles and covers remain legible on wider canvases.
+  const dock = await page.getByRole('region', { name: 'Музыкальный проигрыватель' }).boundingBox()
+  const railBox = await rail.boundingBox()
+  const shelfCard = await page.locator('.mymusic-shelf-track').first().boundingBox()
+  expect(dock).not.toBeNull()
+  expect(railBox).not.toBeNull()
+  expect(shelfCard).not.toBeNull()
+  expect(dock!.x - (railBox!.x + railBox!.width)).toBeGreaterThanOrEqual(10)
+  expect(shelfCard!.width).toBeGreaterThanOrEqual(160)
 
   await page.getByRole('button', { name: 'Сохранить Night Sky в библиотеку' }).click()
   await rail.getByRole('button', { name: 'Сохранённое (1)' }).click()
@@ -216,6 +236,15 @@ test('music: compact viewport uses touch tabs instead of an extra vertical music
   await expect(page.getByRole('complementary', { name: 'Навигация музыки' })).toBeHidden()
   const tabs = page.getByRole('navigation', { name: 'Музыкальная библиотека' })
   await expect(tabs).toBeVisible()
+  const search = await page.locator('.mymusic-search').boundingBox()
+  const moods = await page.locator('.mymusic-mood-pills').boundingBox()
+  const player = await page.getByRole('region', { name: 'Музыкальный проигрыватель' }).boundingBox()
+  expect(search).not.toBeNull()
+  expect(moods).not.toBeNull()
+  expect(player).not.toBeNull()
+  expect(moods!.y - (search!.y + search!.height)).toBeGreaterThanOrEqual(8)
+  expect(player!.x).toBeGreaterThanOrEqual(0)
+  expect(player!.x + player!.width).toBeLessThanOrEqual(375)
   await tabs.getByRole('button', { name: 'Плейлисты' }).click()
   await expect(page.getByRole('heading', { name: 'Плейлисты' })).toBeVisible()
   await expect(page.getByRole('region', { name: 'Музыкальный проигрыватель' })).toBeVisible()
