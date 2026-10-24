@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   BookmarkPlus, Check, Disc3, Download, ExternalLink, Heart, ListMusic, ListPlus, LoaderCircle,
   Music2, Pause, Play, Plus, Radio, Search, Shuffle, SkipBack, SkipForward, Repeat, Repeat1,
-  Volume2, VolumeX, X, Waves, Headphones, Clock3, SlidersHorizontal, ArrowRight
+  Volume2, VolumeX, X, Waves, Headphones, Clock3, SlidersHorizontal
 } from 'lucide-react'
 import {
   discoverMusic, mergeMusicSearchResults, providerLabel, type DiscoveredTrack, type MusicSource
