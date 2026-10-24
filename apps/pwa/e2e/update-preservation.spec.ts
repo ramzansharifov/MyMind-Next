@@ -73,10 +73,13 @@ test('a real service-worker replacement waits for windows to close and preserves
       .poll(() =>
         replacement.evaluate(() => {
           const scope = self as unknown as { registration: ServiceWorkerRegistration }
-          return scope.registration.active?.state
+          return {
+            state: scope.registration.active?.state,
+            url: scope.registration.active?.scriptURL
+          }
         })
       )
-      .toBe('activated')
+      .toEqual({ state: 'activated', url: replacement.url() })
   }
   const reopened = await context.newPage()
   const errors: string[] = []
