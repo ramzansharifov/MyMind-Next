@@ -143,3 +143,32 @@ test('music: partial source outage keeps the successful results visible', async 
   await expect(page.getByRole('button', { name: 'Воспроизвести Night Sky' })).toBeVisible()
   await expect(page.getByText('Часть музыкальных источников временно недоступна. Показаны найденные треки.')).toBeVisible()
 })
+
+test('music: immersive discovery home, interactive moods and persistent bottom player', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 740 })
+  const queries: string[] = []
+  await page.route('**/api/music/discover', async route => {
+    const payload = route.request().postDataJSON() as { provider?: string; query?: string }
+    expect(payload.provider).toBe('all')
+    queries.push(payload.query ?? '')
+    await route.fulfill({ json: { tracks: sample } })
+  })
+  await open(page, 'music')
+  await expect(page.getByRole('heading', { name: 'Продолжить' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Моя волна' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Открывай новое' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Слушать Night Sky', exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Слушать волну' })).toBeDisabled()
+  const player = page.getByRole('region', { name: 'Музыкальный проигрыватель' })
+  await expect(player).toBeVisible()
+  await expect(player).toHaveCSS('position', 'fixed')
+  await expect(player.getByText('Ничего не играет')).toBeVisible()
+  await page.getByRole('button', { name: 'Relax', exact: true }).click()
+  await expect(page.getByRole('textbox', { name: 'Поиск музыки' })).toHaveValue('relax music')
+  await expect(page.getByRole('heading', { name: 'Результаты поиска' })).toBeVisible()
+  await expect.poll(() => queries.includes('relax music')).toBe(true)
+  await page.getByRole('button', { name: 'Всё', exact: true }).click()
+  await expect(page.getByRole('heading', { name: 'Открывай новое' })).toBeVisible()
+  await page.getByRole('button', { name: 'Слушать Night Sky', exact: true }).click()
+  await expect(player.getByText('Night Sky')).toBeVisible()
+})
