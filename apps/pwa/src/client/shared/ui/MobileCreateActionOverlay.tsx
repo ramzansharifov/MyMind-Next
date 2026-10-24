@@ -1,16 +1,7 @@
+import type { PointerEvent } from 'react'
+import { motionValue, motion, mapValue } from 'framer-motion'
+import { stopMotion, playMotion, motionStep, parallelMotion, Action } from '../../../ui/browser'
 import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react'
-import {
-  Animated,
-  Easing,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-  type GestureResponderEvent
-} from 'react-native'
-import { BlurTargetView, BlurView } from '../../../platform/blur'
-
 import { AppIcon } from './icons'
 import {
   MOBILE_CREATE_ACTION_STEP,
@@ -24,22 +15,18 @@ import {
 } from './MobileCreateActionOverlayContext'
 import { useTheme } from './theme'
 import { useFrameGesture } from './useFrameGesture'
-
 interface MobileCreateActionOverlayState {
   items: readonly MobileCreateActionOverlayItem[]
   index: number
 }
-
 interface MobileCreateActionConfirmation {
   label: string
   onConfirm(key: string): void
 }
-
 const CAROUSEL_HEIGHT = 382
 const CARD_HEIGHT = 108
 const CARD_CENTER_TOP = (CAROUSEL_HEIGHT - CARD_HEIGHT) / 2
 const HALF_STEP = MOBILE_CREATE_ACTION_STEP / 2
-
 function slotScaleRange(slot: number): [number, number, number] {
   if (slot === 0) return [0.95, 1, 0.95]
   if (slot === -1) return [0.82, 0.9, 0.95]
@@ -47,7 +34,6 @@ function slotScaleRange(slot: number): [number, number, number] {
   if (slot < -1) return [0.74, 0.8, 0.82]
   return [0.82, 0.8, 0.74]
 }
-
 function slotOpacityRange(slot: number): [number, number, number] {
   if (slot === 0) return [0.86, 1, 0.86]
   if (slot === -1) return [0.22, 0.58, 0.86]
@@ -55,64 +41,59 @@ function slotOpacityRange(slot: number): [number, number, number] {
   if (slot < -1) return [0.02, 0.1, 0.22]
   return [0.22, 0.1, 0.02]
 }
-
 export function MobileCreateActionOverlayProvider({
   children
 }: {
   children: ReactNode
 }): React.JSX.Element {
   const theme = useTheme()
-  const blurTarget = useRef<View | null>(null)
   const [overlay, setOverlay] = useState<MobileCreateActionOverlayState | null>(null)
   const [confirmation, setConfirmation] = useState<MobileCreateActionConfirmation | null>(null)
-  const [opacity] = useState(() => new Animated.Value(0))
-  const [offsetY] = useState(() => new Animated.Value(0))
-  const [contentOpacity] = useState(() => new Animated.Value(1))
-  const [contentTranslateY] = useState(() => new Animated.Value(0))
+  const [opacity] = useState(() => motionValue(0))
+  const [offsetY] = useState(() => motionValue(0))
+  const [contentOpacity] = useState(() => motionValue(1))
+  const [contentTranslateY] = useState(() => motionValue(0))
   const generationRef = useRef(0)
   const gestureStartYRef = useRef(0)
   const gestureBaseIndexRef = useRef(0)
   const confirmationMotion = useFrameGesture((selection: { index: number; offsetY: number }) => {
-    offsetY.setValue(selection.offsetY)
+    offsetY.set(selection.offsetY)
     setOverlay((state) =>
       state && state.index !== selection.index ? { ...state, index: selection.index } : state
     )
   })
-
   const show = useCallback(
     (items: readonly MobileCreateActionOverlayItem[], index: number): void => {
       if (!items.length) return
-
       generationRef.current += 1
       confirmationMotion.cancel()
       setConfirmation(null)
-      opacity.stopAnimation()
-      offsetY.stopAnimation()
-      contentOpacity.stopAnimation()
-      contentTranslateY.stopAnimation()
-      offsetY.setValue(0)
-      contentOpacity.setValue(1)
-      contentTranslateY.setValue(0)
+      stopMotion(opacity)
+      stopMotion(offsetY)
+      stopMotion(contentOpacity)
+      stopMotion(contentTranslateY)
+      offsetY.set(0)
+      contentOpacity.set(1)
+      contentTranslateY.set(0)
       setOverlay({
         items,
         index: wrapCarouselIndex(index, items.length)
       })
-
       requestAnimationFrame(() => {
-        Animated.timing(opacity, {
-          toValue: 1,
-          duration: 170,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: true
-        }).start()
+        playMotion(
+          motionStep(opacity, 1, {
+            duration: 170 / 1000,
+            ease: 'easeOut',
+            type: 'tween'
+          })
+        )
       })
     },
     [confirmationMotion, contentOpacity, contentTranslateY, offsetY, opacity]
   )
-
   const update = useCallback(
     (index: number, nextOffsetY: number): void => {
-      offsetY.setValue(nextOffsetY)
+      offsetY.set(nextOffsetY)
       setOverlay((current) => {
         if (!current || current.index === index) return current
         return {
@@ -123,69 +104,65 @@ export function MobileCreateActionOverlayProvider({
     },
     [offsetY]
   )
-
   const awaitConfirmation = useCallback(
     (label: string, onConfirm: (key: string) => void): void => {
       confirmationMotion.flush()
-      offsetY.stopAnimation()
-      Animated.spring(offsetY, {
-        toValue: 0,
-        damping: 25,
-        stiffness: 250,
-        mass: 0.75,
-        overshootClamping: true,
-        useNativeDriver: true
-      }).start()
+      stopMotion(offsetY)
+      playMotion(
+        motionStep(offsetY, 0, {
+          damping: 25,
+          stiffness: 250,
+          mass: 0.75,
+          type: 'spring'
+        })
+      )
       setConfirmation({ label, onConfirm })
     },
     [confirmationMotion, offsetY]
   )
-
   const handoff = useCallback((): void => {
     setConfirmation(null)
-    contentOpacity.stopAnimation()
-    contentTranslateY.stopAnimation()
-    Animated.parallel([
-      Animated.timing(contentOpacity, {
-        toValue: 0,
-        duration: 180,
-        easing: Easing.in(Easing.cubic),
-        useNativeDriver: true
-      }),
-      Animated.timing(contentTranslateY, {
-        toValue: 126,
-        duration: 210,
-        easing: Easing.in(Easing.cubic),
-        useNativeDriver: true
-      })
-    ]).start()
+    stopMotion(contentOpacity)
+    stopMotion(contentTranslateY)
+    playMotion(
+      parallelMotion([
+        motionStep(contentOpacity, 0, {
+          duration: 180 / 1000,
+          ease: 'easeIn',
+          type: 'tween'
+        }),
+        motionStep(contentTranslateY, 126, {
+          duration: 210 / 1000,
+          ease: 'easeIn',
+          type: 'tween'
+        })
+      ])
+    )
   }, [contentOpacity, contentTranslateY])
-
   const hide = useCallback((): void => {
     const generation = generationRef.current
     confirmationMotion.cancel()
     setConfirmation(null)
-    offsetY.stopAnimation()
-    Animated.parallel([
-      Animated.timing(opacity, {
-        toValue: 0,
-        duration: 135,
-        easing: Easing.in(Easing.cubic),
-        useNativeDriver: true
-      }),
-      Animated.spring(offsetY, {
-        toValue: 0,
-        damping: 26,
-        stiffness: 240,
-        mass: 0.8,
-        overshootClamping: true,
-        useNativeDriver: true
-      })
-    ]).start(({ finished }) => {
-      if (finished && generation === generationRef.current) setOverlay(null)
-    })
+    stopMotion(offsetY)
+    playMotion(
+      parallelMotion([
+        motionStep(opacity, 0, {
+          duration: 135 / 1000,
+          ease: 'easeIn',
+          type: 'tween'
+        }),
+        motionStep(offsetY, 0, {
+          damping: 26,
+          stiffness: 240,
+          mass: 0.8,
+          type: 'spring'
+        })
+      ]),
+      ({ finished }) => {
+        if (finished && generation === generationRef.current) setOverlay(null)
+      }
+    )
   }, [confirmationMotion, offsetY, opacity])
-
   const controller = useMemo(
     () => ({
       show,
@@ -196,175 +173,192 @@ export function MobileCreateActionOverlayProvider({
     }),
     [awaitConfirmation, handoff, hide, show, update]
   )
-
   const current = overlay?.items[overlay.index] ?? null
   const darkTheme = theme.background.toLowerCase() === '#0a0b0d'
-
   const settleInteractiveCarousel = (): void => {
     confirmationMotion.flush()
-    offsetY.stopAnimation()
-    Animated.spring(offsetY, {
-      toValue: 0,
-      damping: 25,
-      stiffness: 250,
-      mass: 0.75,
-      overshootClamping: true,
-      useNativeDriver: true
-    }).start()
+    stopMotion(offsetY)
+    playMotion(
+      motionStep(offsetY, 0, {
+        damping: 25,
+        stiffness: 250,
+        mass: 0.75,
+        type: 'spring'
+      })
+    )
   }
-
   return (
     <MobileCreateActionOverlayContext.Provider value={controller}>
-      <View style={{ flex: 1, minHeight: 0, backgroundColor: theme.background }}>
-        <BlurTargetView
-          ref={blurTarget}
+      <div
+        className="ui-stack"
+        style={{
+          flex: '1 1 0%',
+          minHeight: 0,
+          backgroundColor: theme.background
+        }}
+      >
+        <div
+          className="ui-stack"
           style={{ flex: 1, minHeight: 0, backgroundColor: theme.background }}
         >
           {children}
-        </BlurTargetView>
+        </div>
 
         {overlay && current ? (
-          <Animated.View
-            pointerEvents={confirmation ? 'box-none' : 'none'}
-            accessibilityElementsHidden={!confirmation}
-            importantForAccessibility={confirmation ? 'yes' : 'no-hide-descendants'}
-            style={[
-              StyleSheet.absoluteFill,
-              {
-                zIndex: 1000,
-                opacity,
-                backgroundColor: darkTheme ? '#050608' : '#E8EDF3'
-              }
-            ]}
+          <motion.div
+            className="ui-stack"
+            aria-hidden={!confirmation}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              zIndex: 1000,
+              opacity: opacity,
+              backgroundColor: darkTheme ? '#050608' : '#E8EDF3',
+              pointerEvents: confirmation ? 'auto' : 'none'
+            }}
           >
-            <BlurView
-              pointerEvents="none"
-              blurTarget={blurTarget}
-              blurMethod="dimezisBlurView"
-              intensity={darkTheme ? 12 : 18}
-              tint={darkTheme ? 'dark' : 'light'}
-              style={[
-                StyleSheet.absoluteFill,
-                {
-                  opacity: darkTheme ? 0.52 : 0.78
-                }
-              ]}
-            />
-            <View
-              pointerEvents="none"
-              style={[
-                StyleSheet.absoluteFill,
-                {
-                  backgroundColor: darkTheme ? '#000000ED' : '#0F172A70'
-                }
-              ]}
-            />
-
-            <Animated.View
-              pointerEvents={confirmation ? 'box-none' : 'none'}
+            <div
+              aria-hidden
               style={{
-                flex: 1,
+                backdropFilter: `blur(${darkTheme ? 2.4 : 3.6}px)`,
+                WebkitBackdropFilter: `blur(${darkTheme ? 2.4 : 3.6}px)`,
+                pointerEvents: 'none',
+                backgroundColor: darkTheme ? 'rgba(0,0,0,0.18)' : 'rgba(255,255,255,0.18)',
+                position: 'absolute',
+                inset: 0,
+                opacity: darkTheme ? 0.52 : 0.78
+              }}
+            />
+            <div
+              className="ui-stack"
+              style={{
+                position: 'absolute',
+                inset: 0,
+                backgroundColor: darkTheme ? '#000000ED' : '#0F172A70',
+                pointerEvents: 'none'
+              }}
+            ></div>
+
+            <motion.div
+              className="ui-stack"
+              style={{
+                flex: '1 1 0%',
                 alignItems: 'center',
                 justifyContent: 'center',
-                paddingHorizontal: 22,
+                paddingInline: 22,
                 opacity: contentOpacity,
-                transform: [{ translateY: contentTranslateY }]
+                y: contentTranslateY,
+                pointerEvents: confirmation ? 'auto' : 'none'
               }}
             >
-              <View
-                pointerEvents="none"
+              <div
+                className="ui-stack"
                 style={{
                   position: 'absolute',
                   top: 18,
                   minHeight: 38,
                   maxWidth: '92%',
-                  paddingHorizontal: 14,
-                  paddingVertical: 8,
+                  paddingInline: 14,
+                  paddingBlock: 8,
                   alignItems: 'center',
                   justifyContent: 'center',
                   borderRadius: 14,
                   borderWidth: 1,
                   borderColor: darkTheme ? '#FFFFFF12' : theme.border,
-                  backgroundColor: darkTheme ? '#0B0D11E8' : '#FFFFFFE6'
+                  backgroundColor: darkTheme ? '#0B0D11E8' : '#FFFFFFE6',
+                  pointerEvents: 'none'
                 }}
               >
-                <Text
+                <span
+                  className="ui-text"
                   style={{
                     color: darkTheme ? '#D8DCE4' : theme.text,
                     fontSize: 11.5,
-                    lineHeight: 17,
-                    fontWeight: '600',
+                    lineHeight: '17px',
+                    fontWeight: 600,
                     textAlign: 'center'
                   }}
                 >
                   {confirmation
                     ? 'Проведите вверх или вниз · затем нажмите «Дальше»'
                     : 'Проведите вверх или вниз · выберите действие'}
-                </Text>
-              </View>
+                </span>
+              </div>
 
-              <View
-                onStartShouldSetResponder={() => Boolean(confirmation)}
-                onMoveShouldSetResponder={() => Boolean(confirmation)}
-                onResponderGrant={(event: GestureResponderEvent) => {
-                  if (!confirmation || !overlay.items.length) return
-                  gestureStartYRef.current = event.nativeEvent.pageY
-                  gestureBaseIndexRef.current = overlay.index
-                  confirmationMotion.cancel()
-                  offsetY.stopAnimation()
-                  offsetY.setValue(0)
+              <div
+                className="ui-stack"
+                onPointerDown={(event) => {
+                  if (event.button !== 0 || !event.isPrimary) return
+                  event.currentTarget.setPointerCapture(event.pointerId)
+                  ;((event: PointerEvent<HTMLElement>) => {
+                    if (!confirmation || !overlay.items.length) return
+                    gestureStartYRef.current = event.pageY
+                    gestureBaseIndexRef.current = overlay.index
+                    confirmationMotion.cancel()
+                    stopMotion(offsetY)
+                    offsetY.set(0)
+                  })(event)
                 }}
-                onResponderMove={(event: GestureResponderEvent) => {
-                  if (!confirmation || !overlay.items.length) return
-                  const selection = mobileCreateActionSelection(
-                    event.nativeEvent.pageY - gestureStartYRef.current,
-                    overlay.items.length,
-                    gestureBaseIndexRef.current,
-                    MOBILE_CREATE_ACTION_STEP
-                  )
-                  confirmationMotion.schedule(selection)
+                onPointerMove={(event) => {
+                  if (event.currentTarget.hasPointerCapture(event.pointerId))
+                    ((event: PointerEvent<HTMLElement>) => {
+                      if (!confirmation || !overlay.items.length) return
+                      const selection = mobileCreateActionSelection(
+                        event.pageY - gestureStartYRef.current,
+                        overlay.items.length,
+                        gestureBaseIndexRef.current,
+                        MOBILE_CREATE_ACTION_STEP
+                      )
+                      confirmationMotion.schedule(selection)
+                    })(event)
                 }}
-                onResponderRelease={settleInteractiveCarousel}
-                onResponderTerminationRequest={() => false}
-                onResponderTerminate={settleInteractiveCarousel}
+                onPointerUp={(event) => {
+                  if (!event.currentTarget.hasPointerCapture(event.pointerId)) return
+                  settleInteractiveCarousel()
+                  event.currentTarget.releasePointerCapture(event.pointerId)
+                }}
+                onPointerCancel={settleInteractiveCarousel}
                 style={{
                   width: '100%',
                   maxWidth: 360,
                   height: CAROUSEL_HEIGHT,
-                  overflow: 'hidden'
+                  overflow: 'hidden',
+                  touchAction: 'none'
                 }}
               >
                 {visibleCarouselSlots(overlay.items.length, overlay.index).map(
                   ({ index: itemIndex, slot }) => {
                     const item = overlay.items[itemIndex]
-
                     const actionColor = item.color ?? theme.accent
                     const scaleRange = slotScaleRange(slot)
                     const opacityRange = slotOpacityRange(slot)
-                    const translateY = offsetY.interpolate({
-                      inputRange: [-HALF_STEP, HALF_STEP],
-                      outputRange: [
+                    const translateY = mapValue(
+                      offsetY,
+                      [-HALF_STEP, HALF_STEP],
+                      [
                         slot * MOBILE_CREATE_ACTION_STEP - HALF_STEP,
                         slot * MOBILE_CREATE_ACTION_STEP + HALF_STEP
                       ],
-                      extrapolate: 'clamp'
+                      {
+                        clamp: true
+                      }
+                    )
+                    const scale = mapValue(offsetY, [-HALF_STEP, 0, HALF_STEP], scaleRange, {
+                      clamp: true
                     })
-                    const scale = offsetY.interpolate({
-                      inputRange: [-HALF_STEP, 0, HALF_STEP],
-                      outputRange: scaleRange,
-                      extrapolate: 'clamp'
-                    })
-                    const cardOpacity = offsetY.interpolate({
-                      inputRange: [-HALF_STEP, 0, HALF_STEP],
-                      outputRange: opacityRange,
-                      extrapolate: 'clamp'
-                    })
+                    const cardOpacity = mapValue(
+                      offsetY,
+                      [-HALF_STEP, 0, HALF_STEP],
+                      opacityRange,
+                      {
+                        clamp: true
+                      }
+                    )
                     const active = slot === 0
-
                     return (
-                      <Animated.View
+                      <motion.div
+                        className="ui-stack"
                         key={overlay.items.length === 2 ? item.key + ':' + slot : item.key}
-                        pointerEvents="none"
                         style={{
                           position: 'absolute',
                           top: CARD_CENTER_TOP,
@@ -374,10 +368,13 @@ export function MobileCreateActionOverlayProvider({
                           alignItems: 'center',
                           justifyContent: 'center',
                           opacity: cardOpacity,
-                          transform: [{ translateY }, { scale }]
+                          y: translateY,
+                          scale: scale,
+                          pointerEvents: 'none'
                         }}
                       >
-                        <View
+                        <div
+                          className="ui-stack"
                           style={{
                             width: '88%',
                             maxWidth: 310,
@@ -385,8 +382,8 @@ export function MobileCreateActionOverlayProvider({
                             flexDirection: 'row',
                             alignItems: 'center',
                             gap: 14,
-                            paddingHorizontal: 16,
-                            paddingVertical: 14,
+                            paddingInline: 16,
+                            paddingBlock: 14,
                             borderWidth: 1,
                             borderColor: active
                               ? actionColor + '78'
@@ -399,14 +396,11 @@ export function MobileCreateActionOverlayProvider({
                               : active
                                 ? '#FFFFFFFA'
                                 : '#F8FAFCF2',
-                            elevation: 8,
-                            shadowColor: '#000000',
-                            shadowOpacity: 0.22,
-                            shadowRadius: 14,
-                            shadowOffset: { width: 0, height: 7 }
+                            boxShadow: `0px ${7}px ${14}px color-mix(in srgb, ${'#000000'} calc(${0.22} * 100%), transparent)`
                           }}
                         >
-                          <View
+                          <div
+                            className="ui-stack"
                             style={{
                               width: 48,
                               height: 48,
@@ -424,39 +418,58 @@ export function MobileCreateActionOverlayProvider({
                               strokeWidth={2.3}
                               color={actionColor}
                             />
-                          </View>
+                          </div>
 
-                          <View style={{ flex: 1, minWidth: 0 }}>
-                            <Text
-                              numberOfLines={1}
+                          <div
+                            className="ui-stack"
+                            style={{
+                              flex: '1 1 0%',
+                              minWidth: 0
+                            }}
+                          >
+                            <span
+                              className="ui-text"
+                              data-lines={1}
                               style={{
                                 color: theme.text,
                                 fontSize: active ? 20 : 17,
-                                lineHeight: active ? 25 : 22,
-                                fontWeight: '700',
-                                letterSpacing: active ? -0.3 : -0.15
+                                lineHeight: active ? '25px' : '22px',
+                                fontWeight: 700,
+                                letterSpacing: active ? -0.3 : -0.15,
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                display: '-webkit-box',
+                                WebkitBoxOrient: 'vertical',
+                                WebkitLineClamp: 1
                               }}
                             >
                               {item.label}
-                            </Text>
+                            </span>
                             {item.description ? (
-                              <Text
-                                numberOfLines={1}
+                              <span
+                                className="ui-text"
+                                data-lines={1}
                                 style={{
                                   marginTop: 5,
                                   color: theme.muted,
                                   fontSize: active ? 12 : 11.5,
-                                  lineHeight: 16,
-                                  fontWeight: '500'
+                                  lineHeight: '16px',
+                                  fontWeight: 500,
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  display: '-webkit-box',
+                                  WebkitBoxOrient: 'vertical',
+                                  WebkitLineClamp: 1
                                 }}
                               >
                                 {item.description}
-                              </Text>
+                              </span>
                             ) : null}
-                          </View>
+                          </div>
 
                           {active ? (
-                            <View
+                            <div
+                              className="ui-stack"
                               style={{
                                 width: 28,
                                 height: 28,
@@ -467,47 +480,49 @@ export function MobileCreateActionOverlayProvider({
                               }}
                             >
                               <AppIcon name="check" size={15} color={actionColor} />
-                            </View>
+                            </div>
                           ) : null}
-                        </View>
-                      </Animated.View>
+                        </div>
+                      </motion.div>
                     )
                   }
                 )}
-              </View>
-            </Animated.View>
+              </div>
+            </motion.div>
 
-            {Platform.OS === 'web' && overlay.items.length > 1 ? (
-              <View
-                pointerEvents="none"
+            {overlay.items.length > 1 ? (
+              <div
+                className="ui-stack"
                 style={{
                   position: 'absolute',
                   bottom: confirmation ? 87 : 44,
                   left: 0,
                   right: 0,
-                  alignItems: 'center'
+                  alignItems: 'center',
+                  pointerEvents: 'none'
                 }}
               >
-                <Text
+                <span
+                  className="ui-text"
                   style={{
                     color: darkTheme ? '#C5CAD3' : '#4B5563',
                     fontSize: 12,
-                    fontWeight: '700',
-                    fontVariant: ['tabular-nums']
+                    fontWeight: 700,
+                    fontVariant: 'tabular-nums'
                   }}
                 >
                   {overlay.index + 1} / {overlay.items.length}
-                </Text>
-              </View>
+                </span>
+              </div>
             ) : null}
 
             {confirmation ? (
               <>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Закрыть выбор действия"
-                  onPress={hide}
-                  style={({ pressed }) => ({
+                <Action
+                  role={'button'}
+                  aria-label={'Закрыть выбор действия'}
+                  onClick={hide}
+                  style={{
                     position: 'absolute',
                     top: 18,
                     right: 18,
@@ -517,55 +532,70 @@ export function MobileCreateActionOverlayProvider({
                     justifyContent: 'center',
                     borderRadius: 12,
                     backgroundColor: darkTheme ? '#111318E8' : '#FFFFFFE8',
-                    opacity: pressed ? 0.72 : 1
-                  })}
+                    opacity: 1
+                  }}
+                  pressedStyle={{
+                    opacity: 0.72
+                  }}
                 >
                   <AppIcon name="close" size={18} color={theme.muted} />
-                </Pressable>
+                </Action>
 
-                <View
-                  pointerEvents="box-none"
+                <div
+                  className="ui-stack"
+                  data-pass-through="true"
                   style={{
                     position: 'absolute',
                     right: 0,
                     bottom: 18,
                     left: 0,
-                    alignItems: 'center'
+                    alignItems: 'center',
+                    pointerEvents: 'none'
                   }}
                 >
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={confirmation.label}
-                    onPress={() => {
+                  <Action
+                    role={'button'}
+                    aria-label={confirmation.label}
+                    onClick={() => {
                       const selected = overlay.items[overlay.index]
                       if (!selected) return
                       const callback = confirmation.onConfirm
                       setConfirmation(null)
                       callback(selected.key)
                     }}
-                    style={({ pressed }) => ({
+                    style={{
                       minWidth: 170,
                       minHeight: 48,
                       alignItems: 'center',
                       justifyContent: 'center',
-                      paddingHorizontal: 24,
+                      paddingInline: 24,
                       borderRadius: 15,
                       borderWidth: 1,
                       borderColor: (current.color ?? theme.accent) + '55',
                       backgroundColor: current.color ?? theme.accent,
-                      opacity: pressed ? 0.8 : 1
-                    })}
+                      opacity: 1
+                    }}
+                    pressedStyle={{
+                      opacity: 0.8
+                    }}
                   >
-                    <Text style={{ color: '#ffffff', fontSize: 14, fontWeight: '700' }}>
+                    <span
+                      className="ui-text"
+                      style={{
+                        color: '#ffffff',
+                        fontSize: 14,
+                        fontWeight: 700
+                      }}
+                    >
                       {confirmation.label}
-                    </Text>
-                  </Pressable>
-                </View>
+                    </span>
+                  </Action>
+                </div>
               </>
             ) : null}
-          </Animated.View>
+          </motion.div>
         ) : null}
-      </View>
+      </div>
     </MobileCreateActionOverlayContext.Provider>
   )
 }

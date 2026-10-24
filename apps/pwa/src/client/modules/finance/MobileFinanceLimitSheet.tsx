@@ -1,6 +1,6 @@
+import { Action } from '../../../ui/browser'
 import { useMemo, useState } from 'react'
-import { Layers3 } from 'lucide-react-native'
-import { Pressable, ScrollView, Text, View } from 'react-native'
+import { Layers3 } from 'lucide-react'
 import type {
   FinanceAccountSummary,
   FinanceLimitPeriodType,
@@ -10,7 +10,6 @@ import type {
 import type { FinanceRepository } from '@mymind/persistence/finance'
 import { formatMinorPlain, parseMoneyToMinor } from '@mymind/core/finance-money'
 import * as validation from '@mymind/core/validation/finance'
-
 import { notifyDataChanged } from '../../app/changes'
 import { AppDialog } from '../../shared/ui/AppDialog'
 import { AppTextField } from '../../shared/ui/FormControls'
@@ -19,14 +18,15 @@ import { Button, ErrorState, Label } from '../../shared/ui/primitives'
 import { useTheme } from '../../shared/ui/theme'
 import { useToast } from '../../shared/ui/toast-context'
 import { MobileFinanceTagPicker } from './MobileFinanceSelectionPickers'
-
-const PERIODS: ReadonlyArray<{ value: FinanceLimitPeriodType; label: string }> = [
+const PERIODS: ReadonlyArray<{
+  value: FinanceLimitPeriodType
+  label: string
+}> = [
   { value: 'day', label: 'День' },
   { value: 'week', label: 'Неделя' },
   { value: 'month', label: 'Месяц' },
   { value: 'year', label: 'Год' }
 ]
-
 function LimitAccountPicker({
   accounts,
   accountIds,
@@ -48,10 +48,10 @@ function LimitAccountPicker({
       ? currencies[0]
       : null
     : (accounts.find((account) => account.id === accountIds[0])?.currencyCode ?? null)
-
   if (!accounts.length) {
     return (
-      <View
+      <div
+        className="ui-stack"
         style={{
           padding: 14,
           borderWidth: 1,
@@ -61,13 +61,19 @@ function LimitAccountPicker({
           backgroundColor: '#f59e0b0A'
         }}
       >
-        <Text style={{ color: '#fbbf24', fontSize: 12.5, textAlign: 'center' }}>
+        <span
+          className="ui-text"
+          style={{
+            color: '#fbbf24',
+            fontSize: 12.5,
+            textAlign: 'center'
+          }}
+        >
           Сначала создайте хотя бы один счёт.
-        </Text>
-      </View>
+        </span>
+      </div>
     )
   }
-
   const toggleAccount = (account: FinanceAccountSummary): void => {
     if (disabled) return
     if (allAccounts) {
@@ -87,43 +93,63 @@ function LimitAccountPicker({
     }
     onChange({ accountIds: [...accountIds, account.id], allAccounts: false })
   }
-
   return (
-    <View style={{ gap: 8 }}>
+    <div
+      className="ui-stack"
+      style={{
+        gap: 8
+      }}
+    >
       {!canSelectAll && currencies.length > 1 ? (
-        <Text style={{ color: theme.muted, fontSize: 10.5, lineHeight: 15 }}>
+        <span
+          className="ui-text"
+          style={{
+            color: theme.muted,
+            fontSize: 10.5,
+            lineHeight: '15px'
+          }}
+        >
           Можно выбрать несколько счетов одной валюты. Счёт другой валюты переключит выбранную
           группу.
-        </Text>
+        </span>
       ) : null}
 
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+      <div
+        className="ui-stack"
+        style={{
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          gap: 8
+        }}
+      >
         {canSelectAll ? (
-          <Pressable
-            accessibilityRole="checkbox"
-            accessibilityLabel={`Все счета, ${currencies[0]}`}
-            accessibilityState={{ checked: allAccounts, disabled }}
+          <Action
+            role={'checkbox'}
+            aria-label={`Все счета, ${currencies[0]}`}
+            aria-checked={allAccounts}
+            aria-disabled={disabled}
             disabled={disabled}
-            onPress={() => onChange({ accountIds: [], allAccounts: true })}
-            style={({ pressed }) => ({
+            onClick={() => onChange({ accountIds: [], allAccounts: true })}
+            style={{
               width: '48.5%',
               minHeight: 98,
               alignItems: 'center',
               justifyContent: 'center',
-              paddingHorizontal: 8,
-              paddingVertical: 10,
+              paddingInline: 8,
+              paddingBlock: 10,
               borderWidth: 1,
               borderColor: allAccounts ? theme.accent + '70' : theme.border,
               borderRadius: 14,
-              backgroundColor: allAccounts
-                ? theme.accent + '14'
-                : pressed
-                  ? theme.raised
-                  : theme.surface,
-              opacity: disabled ? 0.45 : pressed ? 0.76 : 1
-            })}
+              backgroundColor: allAccounts ? theme.accent + '14' : theme.surface,
+              opacity: disabled ? 0.45 : 1
+            }}
+            pressedStyle={{
+              backgroundColor: allAccounts ? theme.accent + '14' : theme.raised,
+              opacity: disabled ? 0.45 : 0.76
+            }}
           >
-            <View
+            <div
+              className="ui-stack"
               style={{
                 width: 36,
                 height: 36,
@@ -136,14 +162,30 @@ function LimitAccountPicker({
               }}
             >
               <Layers3 size={17} color={theme.accent} />
-            </View>
-            <Text style={{ marginTop: 7, color: theme.text, fontSize: 12, fontWeight: '700' }}>
+            </div>
+            <span
+              className="ui-text"
+              style={{
+                marginTop: 7,
+                color: theme.text,
+                fontSize: 12,
+                fontWeight: 700
+              }}
+            >
               Все счета
-            </Text>
-            <Text style={{ marginTop: 2, color: theme.muted, fontSize: 9.5, fontWeight: '600' }}>
+            </span>
+            <span
+              className="ui-text"
+              style={{
+                marginTop: 2,
+                color: theme.muted,
+                fontSize: 9.5,
+                fontWeight: 600
+              }}
+            >
               {currencies[0]}
-            </Text>
-          </Pressable>
+            </span>
+          </Action>
         ) : null}
 
         {accounts.map((account) => {
@@ -151,55 +193,69 @@ function LimitAccountPicker({
           const differentCurrency =
             !allAccounts && selectedCurrency !== null && selectedCurrency !== account.currencyCode
           return (
-            <Pressable
+            <Action
               key={account.id}
-              accessibilityRole="checkbox"
-              accessibilityLabel={`${account.name}, ${account.currencyCode}`}
-              accessibilityState={{ checked: selected, disabled }}
+              role={'checkbox'}
+              aria-label={`${account.name}, ${account.currencyCode}`}
+              aria-checked={selected}
+              aria-disabled={disabled}
               disabled={disabled}
-              onPress={() => toggleAccount(account)}
-              style={({ pressed }) => ({
+              onClick={() => toggleAccount(account)}
+              style={{
                 width: '48.5%',
                 minHeight: 98,
                 alignItems: 'center',
                 justifyContent: 'center',
-                paddingHorizontal: 8,
-                paddingVertical: 10,
+                paddingInline: 8,
+                paddingBlock: 10,
                 borderWidth: 1,
                 borderColor: selected ? theme.accent + '70' : theme.border,
                 borderRadius: 14,
-                backgroundColor: selected
-                  ? theme.accent + '14'
-                  : pressed
-                    ? theme.raised
-                    : theme.surface,
-                opacity: disabled ? 0.45 : differentCurrency ? 0.62 : pressed ? 0.76 : 1
-              })}
+                backgroundColor: selected ? theme.accent + '14' : theme.surface,
+                opacity: disabled ? 0.45 : differentCurrency ? 0.62 : 1
+              }}
+              pressedStyle={{
+                backgroundColor: selected ? theme.accent + '14' : theme.raised,
+                opacity: disabled ? 0.45 : differentCurrency ? 0.62 : 0.76
+              }}
             >
               <VisualIconBadge value={account.icon} size={36} />
-              <Text
-                numberOfLines={1}
+              <span
+                className="ui-text"
+                data-lines={1}
                 style={{
                   maxWidth: '100%',
                   marginTop: 7,
                   color: theme.text,
                   fontSize: 12,
-                  fontWeight: '700'
+                  fontWeight: 700,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  display: '-webkit-box',
+                  WebkitBoxOrient: 'vertical',
+                  WebkitLineClamp: 1
                 }}
               >
                 {account.name}
-              </Text>
-              <Text style={{ marginTop: 2, color: theme.muted, fontSize: 9.5, fontWeight: '600' }}>
+              </span>
+              <span
+                className="ui-text"
+                style={{
+                  marginTop: 2,
+                  color: theme.muted,
+                  fontSize: 9.5,
+                  fontWeight: 600
+                }}
+              >
                 {account.currencyCode}
-              </Text>
-            </Pressable>
+              </span>
+            </Action>
           )
         })}
-      </View>
-    </View>
+      </div>
+    </div>
   )
 }
-
 export function MobileFinanceLimitSheet({
   api,
   accounts,
@@ -236,7 +292,6 @@ export function MobileFinanceLimitSheet({
             .filter((account) => account.currencyCode === limit.currencyCode)
             .map((account) => account.id)
         : []
-
   const [tagId, setTagId] = useState(limit?.tagId ?? expenseTags[0]?.id ?? '')
   const [accountIds, setAccountIds] = useState<string[]>(defaultAccountIds)
   const [allAccounts, setAllAccounts] = useState(defaultAllAccounts)
@@ -247,40 +302,33 @@ export function MobileFinanceLimitSheet({
   const [warningPercent, setWarningPercent] = useState(String(limit?.warningPercent ?? 80))
   const [pending, setPending] = useState(false)
   const [error, setError] = useState('')
-
   const selectedAccounts = allAccounts
     ? accounts
     : accounts.filter((account) => accountIds.includes(account.id))
   const selectedCurrencies = [...new Set(selectedAccounts.map((account) => account.currencyCode))]
   const derivedCurrency = selectedCurrencies.length === 1 ? selectedCurrencies[0] : null
   const selectedTag = expenseTags.find((tag) => tag.id === tagId)
-
   const save = (): void => {
     if (pending) return
     setError('')
-
     try {
       const selected = allAccounts
         ? accounts
         : accounts.filter((account) => accountIds.includes(account.id))
       const currencies = [...new Set(selected.map((account) => account.currencyCode))]
       const tag = expenseTags.find((item) => item.id === tagId)
-
       if (!tag) throw new Error('Выберите тег расходов')
       if (!selected.length) throw new Error('Выберите хотя бы один счёт')
       if (currencies.length !== 1) {
         throw new Error('В одном лимите можно выбрать только счета с одинаковой валютой')
       }
-
       const currencyCode = currencies[0]
       const amountMinor = parseMoneyToMinor(amount, currencyCode)
       if (amountMinor <= 0) throw new Error('Сумма должна быть больше нуля')
-
       const warning = Number(warningPercent)
       if (!Number.isInteger(warning) || warning < 1 || warning > 100) {
         throw new Error('Предупреждение должно быть от 1 до 100%')
       }
-
       const common = {
         amountMinor,
         currencyCode,
@@ -289,7 +337,6 @@ export function MobileFinanceLimitSheet({
         periodType,
         warningPercent: warning
       }
-
       setPending(true)
       if (limit) {
         api.updateLimit(
@@ -302,7 +349,6 @@ export function MobileFinanceLimitSheet({
       } else {
         api.createLimit(validation.createFinanceLimitInputSchema.parse(common))
       }
-
       notifyDataChanged()
       onSaved()
       toast.success(limit ? 'Лимит обновлён' : 'Лимит создан')
@@ -313,7 +359,6 @@ export function MobileFinanceLimitSheet({
       setPending(false)
     }
   }
-
   return (
     <AppDialog
       open
@@ -327,159 +372,234 @@ export function MobileFinanceLimitSheet({
       busy={pending}
       footer={
         <>
-          <Button label="Отмена" disabled={pending} onPress={onClose} />
+          <Button label="Отмена" disabled={pending} onClick={onClose} />
           <Button
             label={pending ? 'Сохранение…' : limit ? 'Сохранить' : 'Создать лимит'}
             icon="check"
             primary
             disabled={pending || !accounts.length || !expenseTags.length}
-            onPress={save}
+            onClick={save}
           />
         </>
       }
     >
-      <ScrollView
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ gap: 18, padding: 14, paddingBottom: 26 }}
-      >
-        {error ? <ErrorState message={error} /> : null}
+      <div className="ui-scroll">
+        <div
+          className="ui-stack ui-scroll-content"
+          style={{
+            gap: 18,
+            padding: 14,
+            paddingBottom: 26
+          }}
+        >
+          {error ? <ErrorState message={error} /> : null}
 
-        <View style={{ gap: 8 }}>
-          <Label>Тег расходов</Label>
-          <MobileFinanceTagPicker
-            tags={expenseTags}
-            value={tagId}
-            disabled={pending}
-            onChange={(value) => {
-              setTagId(value)
-              setError('')
+          <div
+            className="ui-stack"
+            style={{
+              gap: 8
             }}
-          />
-          {selectedTag ? (
-            <Text style={{ color: theme.muted, fontSize: 10.5, lineHeight: 15 }}>
-              Лимит будет отображаться как лимит тега «{selectedTag.name}».
-            </Text>
-          ) : null}
-        </View>
-
-        <View style={{ gap: 8 }}>
-          <Label>Счета</Label>
-          <LimitAccountPicker
-            accounts={accounts}
-            accountIds={accountIds}
-            allAccounts={allAccounts}
-            disabled={pending}
-            onChange={(selection) => {
-              setAccountIds(selection.accountIds)
-              setAllAccounts(selection.allAccounts)
-              setError('')
-            }}
-          />
-        </View>
-
-        <View style={{ flexDirection: 'row', gap: 8 }}>
-          <View style={{ minWidth: 0, flex: 1, gap: 8 }}>
-            <Label>Сумма</Label>
-            <AppTextField
-              accessibilityLabel="Сумма лимита"
-              keyboardType="decimal-pad"
-              value={amount}
-              placeholder="0.00"
+          >
+            <Label>Тег расходов</Label>
+            <MobileFinanceTagPicker
+              tags={expenseTags}
+              value={tagId}
               disabled={pending}
-              onChangeText={(value) => {
-                setAmount(value)
+              onChange={(value) => {
+                setTagId(value)
                 setError('')
               }}
             />
-          </View>
-          <View style={{ width: 92, gap: 8 }}>
-            <Label>Валюта</Label>
-            <View
-              accessibilityLabel="Валюта лимита"
+            {selectedTag ? (
+              <span
+                className="ui-text"
+                style={{
+                  color: theme.muted,
+                  fontSize: 10.5,
+                  lineHeight: '15px'
+                }}
+              >
+                Лимит будет отображаться как лимит тега «{selectedTag.name}».
+              </span>
+            ) : null}
+          </div>
+
+          <div
+            className="ui-stack"
+            style={{
+              gap: 8
+            }}
+          >
+            <Label>Счета</Label>
+            <LimitAccountPicker
+              accounts={accounts}
+              accountIds={accountIds}
+              allAccounts={allAccounts}
+              disabled={pending}
+              onChange={(selection) => {
+                setAccountIds(selection.accountIds)
+                setAllAccounts(selection.allAccounts)
+                setError('')
+              }}
+            />
+          </div>
+
+          <div
+            className="ui-stack"
+            style={{
+              flexDirection: 'row',
+              gap: 8
+            }}
+          >
+            <div
+              className="ui-stack"
               style={{
-                height: 48,
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderWidth: 1,
-                borderColor: theme.border,
-                borderRadius: 13,
-                backgroundColor: theme.surface
+                minWidth: 0,
+                flex: '1 1 0%',
+                gap: 8
               }}
             >
-              <Text style={{ color: theme.text, fontSize: 13, fontWeight: '700' }}>
-                {derivedCurrency ?? '—'}
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        <View style={{ gap: 8 }}>
-          <Label>Период</Label>
-          <View accessibilityRole="radiogroup" style={{ flexDirection: 'row', gap: 6 }}>
-            {PERIODS.map((period) => {
-              const selected = periodType === period.value
-              return (
-                <Pressable
-                  key={period.value}
-                  accessibilityRole="radio"
-                  accessibilityLabel={period.label}
-                  accessibilityState={{ checked: selected, disabled: pending }}
-                  disabled={pending}
-                  onPress={() => {
-                    setPeriodType(period.value)
-                    setError('')
+              <Label>Сумма</Label>
+              <AppTextField
+                aria-label="Сумма лимита"
+                inputMode={'decimal'}
+                value={amount}
+                placeholder="0.00"
+                disabled={pending}
+                onValueChange={(value) => {
+                  setAmount(value)
+                  setError('')
+                }}
+              />
+            </div>
+            <div
+              className="ui-stack"
+              style={{
+                width: 92,
+                gap: 8
+              }}
+            >
+              <Label>Валюта</Label>
+              <div
+                className="ui-stack"
+                aria-label={'Валюта лимита'}
+                style={{
+                  height: 48,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderWidth: 1,
+                  borderColor: theme.border,
+                  borderRadius: 13,
+                  backgroundColor: theme.surface
+                }}
+              >
+                <span
+                  className="ui-text"
+                  style={{
+                    color: theme.text,
+                    fontSize: 13,
+                    fontWeight: 700
                   }}
-                  style={({ pressed }) => ({
-                    minWidth: 0,
-                    flex: 1,
-                    height: 42,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    borderWidth: 1,
-                    borderColor: selected ? theme.accent + '70' : theme.border,
-                    borderRadius: 12,
-                    backgroundColor: selected
-                      ? theme.accent + '16'
-                      : pressed
-                        ? theme.raised
-                        : theme.surface,
-                    opacity: pending ? 0.45 : pressed ? 0.75 : 1
-                  })}
                 >
-                  <Text
+                  {derivedCurrency ?? '—'}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div
+            className="ui-stack"
+            style={{
+              gap: 8
+            }}
+          >
+            <Label>Период</Label>
+            <div
+              className="ui-stack"
+              role={'radiogroup'}
+              style={{
+                flexDirection: 'row',
+                gap: 6
+              }}
+            >
+              {PERIODS.map((period) => {
+                const selected = periodType === period.value
+                return (
+                  <Action
+                    key={period.value}
+                    role={'radio'}
+                    aria-label={period.label}
+                    aria-checked={selected}
+                    aria-disabled={pending}
+                    disabled={pending}
+                    onClick={() => {
+                      setPeriodType(period.value)
+                      setError('')
+                    }}
                     style={{
-                      color: selected ? theme.accent : theme.text,
-                      fontSize: 10.5,
-                      fontWeight: '700'
+                      minWidth: 0,
+                      flex: '1 1 0%',
+                      height: 42,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      borderWidth: 1,
+                      borderColor: selected ? theme.accent + '70' : theme.border,
+                      borderRadius: 12,
+                      backgroundColor: selected ? theme.accent + '16' : theme.surface,
+                      opacity: pending ? 0.45 : 1
+                    }}
+                    pressedStyle={{
+                      backgroundColor: selected ? theme.accent + '16' : theme.raised,
+                      opacity: pending ? 0.45 : 0.75
                     }}
                   >
-                    {period.label}
-                  </Text>
-                </Pressable>
-              )
-            })}
-          </View>
-        </View>
+                    <span
+                      className="ui-text"
+                      style={{
+                        color: selected ? theme.accent : theme.text,
+                        fontSize: 10.5,
+                        fontWeight: 700
+                      }}
+                    >
+                      {period.label}
+                    </span>
+                  </Action>
+                )
+              })}
+            </div>
+          </div>
 
-        <View style={{ gap: 8 }}>
-          <Label>Предупреждение, %</Label>
-          <AppTextField
-            accessibilityLabel="Процент предупреждения"
-            keyboardType="number-pad"
-            value={warningPercent}
-            placeholder="80"
-            disabled={pending}
-            onChangeText={(value) => {
-              setWarningPercent(value)
-              setError('')
+          <div
+            className="ui-stack"
+            style={{
+              gap: 8
             }}
-          />
-          <Text style={{ color: theme.muted, fontSize: 10.5, lineHeight: 15 }}>
-            MyMind предупредит, когда расходы по лимиту достигнут этого процента.
-          </Text>
-        </View>
-      </ScrollView>
+          >
+            <Label>Предупреждение, %</Label>
+            <AppTextField
+              aria-label="Процент предупреждения"
+              inputMode={'numeric'}
+              value={warningPercent}
+              placeholder="80"
+              disabled={pending}
+              onValueChange={(value) => {
+                setWarningPercent(value)
+                setError('')
+              }}
+            />
+            <span
+              className="ui-text"
+              style={{
+                color: theme.muted,
+                fontSize: 10.5,
+                lineHeight: '15px'
+              }}
+            >
+              MyMind предупредит, когда расходы по лимиту достигнут этого процента.
+            </span>
+          </div>
+        </div>
+      </div>
     </AppDialog>
   )
 }

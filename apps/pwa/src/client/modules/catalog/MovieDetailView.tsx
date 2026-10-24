@@ -1,5 +1,5 @@
+import { Action, useViewport, DialogLayer } from '../../../ui/browser'
 import { useState } from 'react'
-import { Image, Modal, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native'
 import type { MovieRecord } from '@mymind/contracts/movies'
 import {
   CalendarDays,
@@ -13,14 +13,12 @@ import {
   Tags,
   Users,
   type LucideIcon
-} from 'lucide-react-native'
-
+} from 'lucide-react'
 import { AppDialog } from '../../shared/ui/AppDialog'
 import { useConfirmation } from '../../shared/ui/confirmation-context'
 import { Button, IconButton } from '../../shared/ui/primitives'
 import { useTheme } from '../../shared/ui/theme'
 import { formatMovieRuntime, isEpisodicMovieType, movieTypeLabel } from './movie-presentation'
-
 interface MovieDetailViewProps {
   movie: MovieRecord
   busy: boolean
@@ -31,23 +29,22 @@ interface MovieDetailViewProps {
   onUpdate(movie: MovieRecord): void
   onSearchWeb(query: string): void
 }
-
 function MetadataChip({
   label,
   icon: Icon,
-  onPress
+  onClick
 }: {
   label: string
   icon?: LucideIcon
-  onPress?: () => void
+  onClick?: () => void
 }): React.JSX.Element {
   const theme = useTheme()
   return (
-    <Pressable
-      accessibilityRole={onPress ? 'button' : undefined}
-      onPress={onPress}
-      disabled={!onPress}
-      style={({ pressed }) => ({
+    <Action
+      role={onClick ? 'button' : undefined}
+      onClick={onClick}
+      disabled={!onClick}
+      style={{
         minHeight: 38,
         flexDirection: 'row',
         alignItems: 'center',
@@ -55,21 +52,32 @@ function MetadataChip({
         justifyContent: 'center',
         borderRadius: 12,
         borderWidth: 1,
-        borderColor: onPress && pressed ? theme.accent + '66' : theme.border,
-        backgroundColor: pressed ? theme.raised : theme.surface,
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        opacity: pressed ? 0.78 : 1
-      })}
+        borderColor: theme.border,
+        backgroundColor: theme.surface,
+        paddingInline: 12,
+        paddingBlock: 8,
+        opacity: 1
+      }}
+      pressedStyle={{
+        borderColor: onClick && true ? theme.accent + '66' : theme.border,
+        backgroundColor: theme.raised,
+        opacity: 0.78
+      }}
     >
-      {Icon ? <Icon size={15} color={onPress ? theme.accent : theme.muted} /> : null}
-      <Text style={{ color: onPress ? theme.accent : theme.text, fontSize: 13, fontWeight: '600' }}>
+      {Icon ? <Icon size={15} color={onClick ? theme.accent : theme.muted} /> : null}
+      <span
+        className="ui-text"
+        style={{
+          color: onClick ? theme.accent : theme.text,
+          fontSize: 13,
+          fontWeight: 600
+        }}
+      >
         {label}
-      </Text>
-    </Pressable>
+      </span>
+    </Action>
   )
 }
-
 function PersonRow({
   label,
   icon: Icon,
@@ -81,16 +89,40 @@ function PersonRow({
 }): React.JSX.Element {
   const theme = useTheme()
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
+    <div
+      className="ui-stack"
+      style={{
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        gap: 8
+      }}
+    >
       <Icon size={16} color={theme.muted} style={{ marginTop: 3 }} />
-      <Text style={{ color: theme.muted, fontSize: 13, lineHeight: 22 }}>{label}:</Text>
-      <View style={{ minWidth: 0, flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+      <span
+        className="ui-text"
+        style={{
+          color: theme.muted,
+          fontSize: 13,
+          lineHeight: '22px'
+        }}
+      >
+        {label}:
+      </span>
+      <div
+        className="ui-stack"
+        style={{
+          minWidth: 0,
+          flex: '1 1 0%',
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          gap: 6
+        }}
+      >
         {children}
-      </View>
-    </View>
+      </div>
+    </div>
   )
 }
-
 export function MovieDetailView({
   movie,
   busy,
@@ -103,7 +135,7 @@ export function MovieDetailView({
 }: MovieDetailViewProps): React.JSX.Element {
   const theme = useTheme()
   const confirm = useConfirmation()
-  const window = useWindowDimensions()
+  const window = useViewport()
   const [posterOpen, setPosterOpen] = useState(false)
   const [ratingOpen, setRatingOpen] = useState(false)
   const [pendingRating, setPendingRating] = useState<number | null>(null)
@@ -112,7 +144,6 @@ export function MovieDetailView({
   const episodeRuntime = formatMovieRuntime(movie.episodeRuntimeMinutes)
   const watched = movie.status === 'watched'
   const wide = window.width >= 620
-
   const requestWatchlist = (): void => {
     if (!watched || busy) return
     void confirm({
@@ -126,16 +157,20 @@ export function MovieDetailView({
       onConfirm: () => onUpdate({ ...movie, status: 'watchlist', rating: null })
     })
   }
-
   const requestWatched = (): void => {
     if (watched || busy) return
     setPendingRating(null)
     setRatingOpen(true)
   }
-
   return (
-    <View style={{ flex: 1 }}>
-      <View
+    <div
+      className="ui-stack"
+      style={{
+        flex: '1 1 0%'
+      }}
+    >
+      <div
+        className="ui-stack"
         style={{
           minHeight: 52,
           marginBottom: 12,
@@ -149,339 +184,489 @@ export function MovieDetailView({
           backgroundColor: theme.surface
         }}
       >
-        <Button label="Назад" icon="back" compact ghost onPress={onBack} disabled={busy} />
-        <View style={{ flex: 1 }} />
+        <Button label="Назад" icon="back" compact ghost onClick={onBack} disabled={busy} />
+        <div
+          className="ui-stack"
+          style={{
+            flex: '1 1 0%'
+          }}
+        ></div>
         <Button
           label="Смотреть"
           icon="play"
           compact
           primary
-          onPress={() => onSearchWeb(`Смотреть фильм ${movie.title}`)}
+          onClick={() => onSearchWeb(`Смотреть фильм ${movie.title}`)}
           disabled={busy}
         />
-        <IconButton label="JSON" icon="json" ghost onPress={onViewJson} disabled={busy} />
-        <IconButton label="Изменить" icon="edit" ghost onPress={onEdit} disabled={busy} />
-        <IconButton label="Удалить" icon="delete" danger ghost disabled={busy} onPress={onDelete} />
-      </View>
+        <IconButton label="JSON" icon="json" ghost onClick={onViewJson} disabled={busy} />
+        <IconButton label="Изменить" icon="edit" ghost onClick={onEdit} disabled={busy} />
+        <IconButton label="Удалить" icon="delete" danger ghost disabled={busy} onClick={onDelete} />
+      </div>
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 44 }}>
-        <View
+      <div className="ui-scroll">
+        <div
+          className="ui-stack ui-scroll-content"
           style={{
-            overflow: 'hidden',
-            borderWidth: 1,
-            borderColor: theme.border,
-            borderRadius: 22,
-            backgroundColor: theme.surface
+            paddingBottom: 44
           }}
         >
-          <View style={{ flexDirection: wide ? 'row' : 'column' }}>
-            <Pressable
-              accessibilityRole={movie.posterUrl ? 'button' : undefined}
-              accessibilityLabel={movie.posterUrl ? 'Открыть постер на весь экран' : undefined}
-              disabled={!movie.posterUrl}
-              onPress={() => setPosterOpen(true)}
-              style={({ pressed }) => ({
-                width: wide ? 250 : '100%',
-                aspectRatio: 2 / 3,
-                overflow: 'hidden',
-                backgroundColor: theme.background,
-                alignItems: 'center',
-                justifyContent: 'center',
-                opacity: pressed ? 0.82 : 1
-              })}
+          <div
+            className="ui-stack"
+            style={{
+              overflow: 'hidden',
+              borderWidth: 1,
+              borderColor: theme.border,
+              borderRadius: 22,
+              backgroundColor: theme.surface
+            }}
+          >
+            <div
+              className="ui-stack"
+              style={{
+                flexDirection: wide ? 'row' : 'column'
+              }}
             >
-              {movie.posterUrl ? (
-                <Image
-                  source={{ uri: movie.posterUrl }}
-                  resizeMode="contain"
-                  style={{ width: '100%', height: '100%' }}
-                />
-              ) : (
-                <Text style={{ color: theme.muted, fontSize: 14 }}>Постер не указан</Text>
-              )}
-            </Pressable>
-
-            <View style={{ minWidth: 0, flex: 1, padding: wide ? 28 : 16 }}>
-              <View
+              <Action
+                role={movie.posterUrl ? 'button' : undefined}
+                aria-label={movie.posterUrl ? 'Открыть постер на весь экран' : undefined}
+                disabled={!movie.posterUrl}
+                onClick={() => setPosterOpen(true)}
                 style={{
-                  paddingBottom: 20,
-                  flexDirection: 'row',
-                  alignItems: 'flex-start',
-                  gap: 12,
-                  borderBottomWidth: 1,
-                  borderBottomColor: theme.border
+                  width: wide ? 250 : '100%',
+                  aspectRatio: 2 / 3,
+                  overflow: 'hidden',
+                  backgroundColor: theme.background,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  opacity: 1
+                }}
+                pressedStyle={{
+                  opacity: 0.82
                 }}
               >
-                <View style={{ minWidth: 0, flex: 1 }}>
-                  <Text
+                {movie.posterUrl ? (
+                  <img
+                    src={movie.posterUrl}
                     style={{
-                      color: theme.text,
-                      fontSize: wide ? 30 : 25,
-                      lineHeight: wide ? 38 : 32,
-                      fontWeight: '700',
-                      letterSpacing: -0.7
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'contain'
+                    }}
+                    alt=""
+                    draggable="false"
+                  ></img>
+                ) : (
+                  <span
+                    className="ui-text"
+                    style={{
+                      color: theme.muted,
+                      fontSize: 14
                     }}
                   >
-                    {movie.title}
-                  </Text>
-                  {movie.originalTitle ? (
-                    <Text style={{ marginTop: 5, color: theme.muted, fontSize: 15 }}>
-                      {movie.originalTitle}
-                    </Text>
-                  ) : null}
-                </View>
+                    Постер не указан
+                  </span>
+                )}
+              </Action>
 
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  {watched && movie.rating !== null ? (
-                    <View
+              <div
+                className="ui-stack"
+                style={{
+                  minWidth: 0,
+                  flex: '1 1 0%',
+                  padding: wide ? 28 : 16
+                }}
+              >
+                <div
+                  className="ui-stack"
+                  style={{
+                    paddingBottom: 20,
+                    flexDirection: 'row',
+                    alignItems: 'flex-start',
+                    gap: 12,
+                    borderBottomWidth: 1,
+                    borderBottomColor: theme.border
+                  }}
+                >
+                  <div
+                    className="ui-stack"
+                    style={{
+                      minWidth: 0,
+                      flex: '1 1 0%'
+                    }}
+                  >
+                    <span
+                      className="ui-text"
                       style={{
-                        minHeight: 52,
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        gap: 7,
-                        paddingHorizontal: 12,
-                        borderWidth: 1,
-                        borderColor: '#fbbf2433',
-                        borderRadius: 16,
-                        backgroundColor: '#fbbf2414'
+                        color: theme.text,
+                        fontSize: wide ? 30 : 25,
+                        lineHeight: wide ? '38px' : '32px',
+                        fontWeight: 700,
+                        letterSpacing: -0.7
                       }}
                     >
-                      <Star size={19} color="#fde68a" fill="#fde68a" />
-                      <Text style={{ color: '#fde68a', fontSize: 19, fontWeight: '700' }}>
-                        {movie.rating}
-                      </Text>
-                      <Text style={{ color: '#fde68aAA', fontSize: 11 }}>/ 10</Text>
-                    </View>
-                  ) : null}
-
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={
-                      movie.favorite ? 'Убрать из избранного' : 'Добавить в избранное'
-                    }
-                    accessibilityState={{ selected: movie.favorite, disabled: busy }}
-                    disabled={busy}
-                    onPress={() => onUpdate({ ...movie, favorite: !movie.favorite })}
-                    style={({ pressed }) => ({
-                      width: 52,
-                      height: 52,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      borderWidth: 1,
-                      borderColor: movie.favorite ? '#fb718533' : theme.border,
-                      borderRadius: 16,
-                      backgroundColor: movie.favorite
-                        ? '#fb718514'
-                        : pressed
-                          ? theme.raised
-                          : theme.surface,
-                      opacity: busy ? 0.45 : pressed ? 0.78 : 1
-                    })}
-                  >
-                    <Heart
-                      size={20}
-                      color={movie.favorite ? '#fda4af' : theme.muted}
-                      fill={movie.favorite ? '#fda4af' : 'none'}
-                    />
-                  </Pressable>
-                </View>
-              </View>
-
-              <View style={{ marginTop: 20, flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                <MetadataChip icon={Film} label={movieTypeLabel(movie.type)} />
-                {movie.year !== null ? (
-                  <MetadataChip icon={CalendarDays} label={String(movie.year)} />
-                ) : null}
-                {!episodic && runtime ? <MetadataChip icon={Clock3} label={runtime} /> : null}
-                {episodic && movie.seasonCount !== null ? (
-                  <MetadataChip icon={Layers} label={`Сезонов: ${movie.seasonCount}`} />
-                ) : null}
-                {episodic && movie.episodesPerSeason !== null ? (
-                  <MetadataChip icon={List} label={`Серий в сезоне: ${movie.episodesPerSeason}`} />
-                ) : null}
-                {episodic && episodeRuntime ? (
-                  <MetadataChip icon={Clock3} label={`Серия: ${episodeRuntime}`} />
-                ) : null}
-              </View>
-
-              {movie.genres.length > 0 ? (
-                <View style={{ marginTop: 18 }}>
-                  <PersonRow label="Жанры" icon={Tags}>
-                    {movie.genres.map((genre) => (
-                      <MetadataChip
-                        key={genre}
-                        label={genre}
-                        onPress={() => onSearchWeb(`фильмы жанра ${genre}`)}
-                      />
-                    ))}
-                  </PersonRow>
-                </View>
-              ) : null}
-
-              {movie.director ? (
-                <View style={{ marginTop: 16 }}>
-                  <PersonRow label="Режиссёр" icon={Clapperboard}>
-                    <Pressable onPress={() => onSearchWeb(movie.director)}>
-                      <Text
+                      {movie.title}
+                    </span>
+                    {movie.originalTitle ? (
+                      <span
+                        className="ui-text"
                         style={{
-                          color: theme.text,
-                          fontSize: 13,
-                          lineHeight: 22,
-                          fontWeight: '600'
+                          marginTop: 5,
+                          color: theme.muted,
+                          fontSize: 15
                         }}
                       >
-                        {movie.director}
-                      </Text>
-                    </Pressable>
-                  </PersonRow>
-                </View>
-              ) : null}
+                        {movie.originalTitle}
+                      </span>
+                    ) : null}
+                  </div>
 
-              {movie.actors.length > 0 ? (
-                <View style={{ marginTop: 12 }}>
-                  <PersonRow label="Актёры" icon={Users}>
-                    {movie.actors.map((actor) => (
-                      <Pressable key={actor} onPress={() => onSearchWeb(actor)}>
-                        <Text
+                  <div
+                    className="ui-stack"
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 8
+                    }}
+                  >
+                    {watched && movie.rating !== null ? (
+                      <div
+                        className="ui-stack"
+                        style={{
+                          minHeight: 52,
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          gap: 7,
+                          paddingInline: 12,
+                          borderWidth: 1,
+                          borderColor: '#fbbf2433',
+                          borderRadius: 16,
+                          backgroundColor: '#fbbf2414'
+                        }}
+                      >
+                        <Star size={19} color="#fde68a" fill="#fde68a" />
+                        <span
+                          className="ui-text"
+                          style={{
+                            color: '#fde68a',
+                            fontSize: 19,
+                            fontWeight: 700
+                          }}
+                        >
+                          {movie.rating}
+                        </span>
+                        <span
+                          className="ui-text"
+                          style={{
+                            color: '#fde68aAA',
+                            fontSize: 11
+                          }}
+                        >
+                          / 10
+                        </span>
+                      </div>
+                    ) : null}
+
+                    <Action
+                      role={'button'}
+                      aria-label={movie.favorite ? 'Убрать из избранного' : 'Добавить в избранное'}
+                      aria-selected={movie.favorite}
+                      aria-disabled={busy}
+                      disabled={busy}
+                      onClick={() => onUpdate({ ...movie, favorite: !movie.favorite })}
+                      style={{
+                        width: 52,
+                        height: 52,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        borderWidth: 1,
+                        borderColor: movie.favorite ? '#fb718533' : theme.border,
+                        borderRadius: 16,
+                        backgroundColor: movie.favorite ? '#fb718514' : theme.surface,
+                        opacity: busy ? 0.45 : 1
+                      }}
+                      pressedStyle={{
+                        backgroundColor: movie.favorite ? '#fb718514' : theme.raised,
+                        opacity: busy ? 0.45 : 0.78
+                      }}
+                    >
+                      <Heart
+                        size={20}
+                        color={movie.favorite ? '#fda4af' : theme.muted}
+                        fill={movie.favorite ? '#fda4af' : 'none'}
+                      />
+                    </Action>
+                  </div>
+                </div>
+
+                <div
+                  className="ui-stack"
+                  style={{
+                    marginTop: 20,
+                    flexDirection: 'row',
+                    flexWrap: 'wrap',
+                    gap: 8
+                  }}
+                >
+                  <MetadataChip icon={Film} label={movieTypeLabel(movie.type)} />
+                  {movie.year !== null ? (
+                    <MetadataChip icon={CalendarDays} label={String(movie.year)} />
+                  ) : null}
+                  {!episodic && runtime ? <MetadataChip icon={Clock3} label={runtime} /> : null}
+                  {episodic && movie.seasonCount !== null ? (
+                    <MetadataChip icon={Layers} label={`Сезонов: ${movie.seasonCount}`} />
+                  ) : null}
+                  {episodic && movie.episodesPerSeason !== null ? (
+                    <MetadataChip
+                      icon={List}
+                      label={`Серий в сезоне: ${movie.episodesPerSeason}`}
+                    />
+                  ) : null}
+                  {episodic && episodeRuntime ? (
+                    <MetadataChip icon={Clock3} label={`Серия: ${episodeRuntime}`} />
+                  ) : null}
+                </div>
+
+                {movie.genres.length > 0 ? (
+                  <div
+                    className="ui-stack"
+                    style={{
+                      marginTop: 18
+                    }}
+                  >
+                    <PersonRow label="Жанры" icon={Tags}>
+                      {movie.genres.map((genre) => (
+                        <MetadataChip
+                          key={genre}
+                          label={genre}
+                          onClick={() => onSearchWeb(`фильмы жанра ${genre}`)}
+                        />
+                      ))}
+                    </PersonRow>
+                  </div>
+                ) : null}
+
+                {movie.director ? (
+                  <div
+                    className="ui-stack"
+                    style={{
+                      marginTop: 16
+                    }}
+                  >
+                    <PersonRow label="Режиссёр" icon={Clapperboard}>
+                      <Action onClick={() => onSearchWeb(movie.director)}>
+                        <span
+                          className="ui-text"
                           style={{
                             color: theme.text,
                             fontSize: 13,
-                            lineHeight: 22,
-                            fontWeight: '600'
+                            lineHeight: '22px',
+                            fontWeight: 600
                           }}
                         >
-                          {actor}
-                        </Text>
-                      </Pressable>
-                    ))}
-                  </PersonRow>
-                </View>
-              ) : null}
+                          {movie.director}
+                        </span>
+                      </Action>
+                    </PersonRow>
+                  </div>
+                ) : null}
 
-              <View style={{ marginTop: 20, flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                <View
-                  accessibilityLabel="Статус просмотра"
-                  style={{
-                    minHeight: 40,
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    padding: 4,
-                    borderWidth: 1,
-                    borderColor: theme.border,
-                    borderRadius: 12,
-                    backgroundColor: theme.surface
-                  }}
-                >
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: watched, disabled: busy }}
-                    disabled={busy}
-                    onPress={requestWatched}
-                    style={({ pressed }) => ({
-                      minHeight: 32,
-                      justifyContent: 'center',
-                      paddingHorizontal: 12,
-                      borderWidth: watched ? 1 : 0,
-                      borderColor: '#34d39933',
-                      borderRadius: 8,
-                      backgroundColor: watched
-                        ? '#34d39914'
-                        : pressed
-                          ? theme.raised
-                          : 'transparent'
-                    })}
-                  >
-                    <Text
-                      style={{
-                        color: watched ? '#6ee7b7' : theme.muted,
-                        fontSize: 13,
-                        fontWeight: watched ? '700' : '500'
-                      }}
-                    >
-                      Просмотрено
-                    </Text>
-                  </Pressable>
-                  <View
+                {movie.actors.length > 0 ? (
+                  <div
+                    className="ui-stack"
                     style={{
-                      width: 1,
-                      height: 20,
-                      marginHorizontal: 4,
-                      backgroundColor: theme.border
+                      marginTop: 12
                     }}
-                  />
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: !watched, disabled: busy }}
-                    disabled={busy}
-                    onPress={requestWatchlist}
-                    style={({ pressed }) => ({
-                      minHeight: 32,
-                      justifyContent: 'center',
-                      paddingHorizontal: 12,
-                      borderWidth: !watched ? 1 : 0,
-                      borderColor: theme.accent + '44',
-                      borderRadius: 8,
-                      backgroundColor: !watched
-                        ? theme.accent + '14'
-                        : pressed
-                          ? theme.raised
-                          : 'transparent'
-                    })}
                   >
-                    <Text
+                    <PersonRow label="Актёры" icon={Users}>
+                      {movie.actors.map((actor) => (
+                        <Action key={actor} onClick={() => onSearchWeb(actor)}>
+                          <span
+                            className="ui-text"
+                            style={{
+                              color: theme.text,
+                              fontSize: 13,
+                              lineHeight: '22px',
+                              fontWeight: 600
+                            }}
+                          >
+                            {actor}
+                          </span>
+                        </Action>
+                      ))}
+                    </PersonRow>
+                  </div>
+                ) : null}
+
+                <div
+                  className="ui-stack"
+                  style={{
+                    marginTop: 20,
+                    flexDirection: 'row',
+                    flexWrap: 'wrap',
+                    gap: 8
+                  }}
+                >
+                  <div
+                    className="ui-stack"
+                    aria-label={'Статус просмотра'}
+                    style={{
+                      minHeight: 40,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      padding: 4,
+                      borderWidth: 1,
+                      borderColor: theme.border,
+                      borderRadius: 12,
+                      backgroundColor: theme.surface
+                    }}
+                  >
+                    <Action
+                      role={'button'}
+                      aria-selected={watched}
+                      aria-disabled={busy}
+                      disabled={busy}
+                      onClick={requestWatched}
                       style={{
-                        color: !watched ? theme.accent : theme.muted,
-                        fontSize: 13,
-                        fontWeight: !watched ? '700' : '500'
+                        minHeight: 32,
+                        justifyContent: 'center',
+                        paddingInline: 12,
+                        borderWidth: watched ? 1 : 0,
+                        borderColor: '#34d39933',
+                        borderRadius: 8,
+                        backgroundColor: watched ? '#34d39914' : 'transparent'
+                      }}
+                      pressedStyle={{
+                        backgroundColor: watched ? '#34d39914' : theme.raised
                       }}
                     >
-                      Хочу посмотреть
-                    </Text>
-                  </Pressable>
-                </View>
-              </View>
+                      <span
+                        className="ui-text"
+                        style={{
+                          color: watched ? '#6ee7b7' : theme.muted,
+                          fontSize: 13,
+                          fontWeight: watched ? '700' : '500'
+                        }}
+                      >
+                        Просмотрено
+                      </span>
+                    </Action>
+                    <div
+                      className="ui-stack"
+                      style={{
+                        width: 1,
+                        height: 20,
+                        marginInline: 4,
+                        backgroundColor: theme.border
+                      }}
+                    ></div>
+                    <Action
+                      role={'button'}
+                      aria-selected={!watched}
+                      aria-disabled={busy}
+                      disabled={busy}
+                      onClick={requestWatchlist}
+                      style={{
+                        minHeight: 32,
+                        justifyContent: 'center',
+                        paddingInline: 12,
+                        borderWidth: !watched ? 1 : 0,
+                        borderColor: theme.accent + '44',
+                        borderRadius: 8,
+                        backgroundColor: !watched ? theme.accent + '14' : 'transparent'
+                      }}
+                      pressedStyle={{
+                        backgroundColor: !watched ? theme.accent + '14' : theme.raised
+                      }}
+                    >
+                      <span
+                        className="ui-text"
+                        style={{
+                          color: !watched ? theme.accent : theme.muted,
+                          fontSize: 13,
+                          fontWeight: !watched ? '700' : '500'
+                        }}
+                      >
+                        Хочу посмотреть
+                      </span>
+                    </Action>
+                  </div>
+                </div>
 
-              {movie.description ? (
-                <View
-                  style={{
-                    marginTop: 26,
-                    padding: 18,
-                    borderWidth: 1,
-                    borderColor: theme.border,
-                    borderRadius: 16,
-                    backgroundColor: theme.background
-                  }}
-                >
-                  <Text style={{ color: theme.text, fontSize: 14, fontWeight: '700' }}>
-                    Описание
-                  </Text>
-                  <Text style={{ marginTop: 10, color: theme.muted, fontSize: 14, lineHeight: 25 }}>
-                    {movie.description}
-                  </Text>
-                </View>
-              ) : null}
+                {movie.description ? (
+                  <div
+                    className="ui-stack"
+                    style={{
+                      marginTop: 26,
+                      padding: 18,
+                      borderWidth: 1,
+                      borderColor: theme.border,
+                      borderRadius: 16,
+                      backgroundColor: theme.background
+                    }}
+                  >
+                    <span
+                      className="ui-text"
+                      style={{
+                        color: theme.text,
+                        fontSize: 14,
+                        fontWeight: 700
+                      }}
+                    >
+                      Описание
+                    </span>
+                    <span
+                      className="ui-text"
+                      style={{
+                        marginTop: 10,
+                        color: theme.muted,
+                        fontSize: 14,
+                        lineHeight: '25px'
+                      }}
+                    >
+                      {movie.description}
+                    </span>
+                  </div>
+                ) : null}
 
-              {movie.comments ? (
-                <View
-                  style={{
-                    marginTop: 22,
-                    paddingTop: 20,
-                    borderTopWidth: 1,
-                    borderTopColor: theme.border
-                  }}
-                >
-                  <Text style={{ color: theme.text, fontSize: 14, fontWeight: '700' }}>
-                    Личные комментарии
-                  </Text>
-                  <Text style={{ marginTop: 10, color: theme.muted, fontSize: 14, lineHeight: 25 }}>
-                    {movie.comments}
-                  </Text>
-                </View>
-              ) : null}
-            </View>
-          </View>
-        </View>
-      </ScrollView>
+                {movie.comments ? (
+                  <div
+                    className="ui-stack"
+                    style={{
+                      marginTop: 22,
+                      paddingTop: 20,
+                      borderTopWidth: 1,
+                      borderTopColor: theme.border
+                    }}
+                  >
+                    <span
+                      className="ui-text"
+                      style={{
+                        color: theme.text,
+                        fontSize: 14,
+                        fontWeight: 700
+                      }}
+                    >
+                      Личные комментарии
+                    </span>
+                    <span
+                      className="ui-text"
+                      style={{
+                        marginTop: 10,
+                        color: theme.muted,
+                        fontSize: 14,
+                        lineHeight: '25px'
+                      }}
+                    >
+                      {movie.comments}
+                    </span>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <AppDialog
         open={ratingOpen}
@@ -496,12 +681,12 @@ export function MovieDetailView({
         presentation="card"
         footer={
           <>
-            <Button label="Отмена" disabled={busy} onPress={() => setRatingOpen(false)} />
+            <Button label="Отмена" disabled={busy} onClick={() => setRatingOpen(false)} />
             <Button
               label="Отметить просмотренным"
               primary
               disabled={busy || pendingRating === null}
-              onPress={() => {
+              onClick={() => {
                 if (pendingRating === null) return
                 onUpdate({ ...movie, status: 'watched', rating: pendingRating })
                 setRatingOpen(false)
@@ -511,19 +696,39 @@ export function MovieDetailView({
           </>
         }
       >
-        <View style={{ padding: 16, gap: 12 }}>
-          <Text style={{ color: theme.muted, fontSize: 13, lineHeight: 20 }}>
+        <div
+          className="ui-stack"
+          style={{
+            padding: 16,
+            gap: 12
+          }}
+        >
+          <span
+            className="ui-text"
+            style={{
+              color: theme.muted,
+              fontSize: 13,
+              lineHeight: '20px'
+            }}
+          >
             Выберите оценку. После сохранения фильм перейдёт в «Просмотрено».
-          </Text>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 7 }}>
+          </span>
+          <div
+            className="ui-stack"
+            style={{
+              flexDirection: 'row',
+              flexWrap: 'wrap',
+              gap: 7
+            }}
+          >
             {Array.from({ length: 10 }, (_, index) => index + 1).map((rating) => (
-              <Pressable
+              <Action
                 key={rating}
-                accessibilityRole="radio"
-                accessibilityState={{ selected: pendingRating === rating }}
+                role={'radio'}
+                aria-selected={pendingRating === rating}
                 disabled={busy}
-                onPress={() => setPendingRating(rating)}
-                style={({ pressed }) => ({
+                onClick={() => setPendingRating(rating)}
+                style={{
                   width: 46,
                   height: 44,
                   alignItems: 'center',
@@ -531,40 +736,42 @@ export function MovieDetailView({
                   borderWidth: 1,
                   borderColor: pendingRating === rating ? '#fbbf2459' : theme.border,
                   borderRadius: 12,
-                  backgroundColor:
-                    pendingRating === rating
-                      ? '#fbbf2426'
-                      : pressed
-                        ? theme.raised
-                        : theme.background
-                })}
+                  backgroundColor: pendingRating === rating ? '#fbbf2426' : theme.background
+                }}
+                pressedStyle={{
+                  backgroundColor: pendingRating === rating ? '#fbbf2426' : theme.raised
+                }}
               >
-                <Text
+                <span
+                  className="ui-text"
                   style={{
                     color: pendingRating === rating ? '#fde68a' : theme.muted,
                     fontSize: 14,
-                    fontWeight: '600'
+                    fontWeight: 600
                   }}
                 >
                   {rating}
-                </Text>
-              </Pressable>
+                </span>
+              </Action>
             ))}
-          </View>
-        </View>
+          </div>
+        </div>
       </AppDialog>
 
-      <Modal
-        visible={posterOpen}
-        animationType="fade"
-        transparent={false}
-        onRequestClose={() => setPosterOpen(false)}
-      >
-        <View style={{ flex: 1, backgroundColor: '#000', padding: 16, paddingTop: 48 }}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Закрыть полноэкранный постер"
-            onPress={() => setPosterOpen(false)}
+      <DialogLayer open={posterOpen} transition={'fade'} onClose={() => setPosterOpen(false)}>
+        <div
+          className="ui-stack"
+          style={{
+            flex: '1 1 0%',
+            backgroundColor: '#000',
+            padding: 16,
+            paddingTop: 48
+          }}
+        >
+          <Action
+            role={'button'}
+            aria-label={'Закрыть полноэкранный постер'}
+            onClick={() => setPosterOpen(false)}
             style={{
               position: 'absolute',
               top: 48,
@@ -578,17 +785,30 @@ export function MovieDetailView({
               backgroundColor: '#000000AA'
             }}
           >
-            <Text style={{ color: '#fff', fontSize: 22 }}>×</Text>
-          </Pressable>
+            <span
+              className="ui-text"
+              style={{
+                color: '#fff',
+                fontSize: 22
+              }}
+            >
+              ×
+            </span>
+          </Action>
           {movie.posterUrl ? (
-            <Image
-              source={{ uri: movie.posterUrl }}
-              resizeMode="contain"
-              style={{ flex: 1, width: '100%' }}
-            />
+            <img
+              src={movie.posterUrl}
+              style={{
+                flex: '1 1 0%',
+                width: '100%',
+                objectFit: 'contain'
+              }}
+              alt=""
+              draggable="false"
+            ></img>
           ) : null}
-        </View>
-      </Modal>
-    </View>
+        </div>
+      </DialogLayer>
+    </div>
   )
 }

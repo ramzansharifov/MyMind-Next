@@ -1,15 +1,13 @@
-import { Pressable, Text, View } from 'react-native'
+import { Action } from '../../../ui/browser'
 import type {
   FinanceAccountSummary,
   FinanceTagSummary,
   FinanceUserTransactionType
 } from '@mymind/contracts/finance'
 import { formatMoneyMinor } from '@mymind/core/finance-money'
-
 import { VisualIconBadge, VisualIconGlyph } from '../../shared/ui/VisualPickers'
 import { useTheme } from '../../shared/ui/theme'
 import { financeOperationTone, financeTagTone } from './finance-semantic-colors'
-
 import { FINANCE_OPERATION_OPTIONS } from './finance-operation-options'
 export function MobileFinanceOperationTypePicker({
   value,
@@ -21,24 +19,31 @@ export function MobileFinanceOperationTypePicker({
   onChange(value: FinanceUserTransactionType): void
 }): React.JSX.Element {
   const theme = useTheme()
-
   return (
-    <View accessibilityRole="radiogroup" style={{ flexDirection: 'row', gap: 7 }}>
+    <div
+      className="ui-stack"
+      role={'radiogroup'}
+      style={{
+        flexDirection: 'row',
+        gap: 7
+      }}
+    >
       {FINANCE_OPERATION_OPTIONS.map((option) => {
         const selected = value === option.value
         const tone = financeOperationTone(option.value, theme.accent)
         const Icon = option.icon
         return (
-          <Pressable
+          <Action
             key={option.value}
-            accessibilityRole="radio"
-            accessibilityLabel={option.label}
-            accessibilityState={{ checked: selected, disabled }}
+            role={'radio'}
+            aria-label={option.label}
+            aria-checked={selected}
+            aria-disabled={disabled}
             disabled={disabled}
-            onPress={() => onChange(option.value)}
-            style={({ pressed }) => ({
+            onClick={() => onChange(option.value)}
+            style={{
               minWidth: 0,
-              flex: 1,
+              flex: '1 1 0%',
               height: 46,
               flexDirection: 'row',
               alignItems: 'center',
@@ -47,27 +52,31 @@ export function MobileFinanceOperationTypePicker({
               borderWidth: 1,
               borderColor: selected ? tone + '80' : theme.border,
               borderRadius: 13,
-              backgroundColor: selected ? tone + '1F' : pressed ? theme.surface : theme.background,
-              opacity: disabled ? 0.45 : pressed ? 0.75 : 1
-            })}
+              backgroundColor: selected ? tone + '1F' : theme.background,
+              opacity: disabled ? 0.45 : 1
+            }}
+            pressedStyle={{
+              backgroundColor: selected ? tone + '1F' : theme.surface,
+              opacity: disabled ? 0.45 : 0.75
+            }}
           >
             <Icon size={16} color={selected ? tone : theme.muted} />
-            <Text
+            <span
+              className="ui-text"
               style={{
                 color: selected ? tone : theme.text,
                 fontSize: 12.5,
-                fontWeight: '700'
+                fontWeight: 700
               }}
             >
               {option.label}
-            </Text>
-          </Pressable>
+            </span>
+          </Action>
         )
       })}
-    </View>
+    </div>
   )
 }
-
 export function MobileFinanceAccountPicker({
   accounts,
   value,
@@ -80,10 +89,10 @@ export function MobileFinanceAccountPicker({
   onChange(value: string): void
 }): React.JSX.Element {
   const theme = useTheme()
-
   if (!accounts.length) {
     return (
-      <View
+      <div
+        className="ui-stack"
         style={{
           padding: 14,
           borderWidth: 1,
@@ -93,69 +102,100 @@ export function MobileFinanceAccountPicker({
           backgroundColor: '#f59e0b0A'
         }}
       >
-        <Text style={{ color: '#fbbf24', fontSize: 12.5, textAlign: 'center' }}>
+        <span
+          className="ui-text"
+          style={{
+            color: '#fbbf24',
+            fontSize: 12.5,
+            textAlign: 'center'
+          }}
+        >
           Нет доступных счетов.
-        </Text>
-      </View>
+        </span>
+      </div>
     )
   }
-
   return (
-    <View accessibilityRole="radiogroup" style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+    <div
+      className="ui-stack"
+      role={'radiogroup'}
+      style={{
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 8
+      }}
+    >
       {accounts.map((account) => {
         const selected = account.id === value
         return (
-          <Pressable
+          <Action
             key={account.id}
-            accessibilityRole="radio"
-            accessibilityLabel={`${account.name}, ${account.currencyCode}`}
-            accessibilityState={{ checked: selected, disabled }}
+            role={'radio'}
+            aria-label={`${account.name}, ${account.currencyCode}`}
+            aria-checked={selected}
+            aria-disabled={disabled}
             disabled={disabled}
-            onPress={() => onChange(account.id)}
-            style={({ pressed }) => ({
+            onClick={() => onChange(account.id)}
+            style={{
               width: '48.5%',
               minHeight: 98,
               alignItems: 'center',
               justifyContent: 'center',
-              paddingHorizontal: 8,
-              paddingVertical: 10,
+              paddingInline: 8,
+              paddingBlock: 10,
               borderWidth: 1,
               borderColor: selected ? theme.accent + '70' : theme.border,
               borderRadius: 14,
-              backgroundColor: selected
-                ? theme.accent + '14'
-                : pressed
-                  ? theme.raised
-                  : theme.surface,
-              opacity: disabled ? 0.45 : pressed ? 0.76 : 1
-            })}
+              backgroundColor: selected ? theme.accent + '14' : theme.surface,
+              opacity: disabled ? 0.45 : 1
+            }}
+            pressedStyle={{
+              backgroundColor: selected ? theme.accent + '14' : theme.raised,
+              opacity: disabled ? 0.45 : 0.76
+            }}
           >
             <VisualIconBadge value={account.icon} size={36} />
-            <Text
-              numberOfLines={1}
+            <span
+              className="ui-text"
+              data-lines={1}
               style={{
                 maxWidth: '100%',
                 marginTop: 7,
                 color: theme.text,
                 fontSize: 12,
-                fontWeight: '700'
+                fontWeight: 700,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                display: '-webkit-box',
+                WebkitBoxOrient: 'vertical',
+                WebkitLineClamp: 1
               }}
             >
               {account.name}
-            </Text>
-            <Text
-              numberOfLines={1}
-              style={{ marginTop: 2, color: theme.muted, fontSize: 9.5, fontWeight: '600' }}
+            </span>
+            <span
+              className="ui-text"
+              data-lines={1}
+              style={{
+                marginTop: 2,
+                color: theme.muted,
+                fontSize: 9.5,
+                fontWeight: 600,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                display: '-webkit-box',
+                WebkitBoxOrient: 'vertical',
+                WebkitLineClamp: 1
+              }}
             >
               {formatMoneyMinor(account.balanceMinor, account.currencyCode)}
-            </Text>
-          </Pressable>
+            </span>
+          </Action>
         )
       })}
-    </View>
+    </div>
   )
 }
-
 export function MobileFinanceTagPicker({
   tags,
   value,
@@ -168,10 +208,10 @@ export function MobileFinanceTagPicker({
   onChange(value: string): void
 }): React.JSX.Element {
   const theme = useTheme()
-
   if (!tags.length) {
     return (
-      <View
+      <div
+        className="ui-stack"
         style={{
           padding: 14,
           borderWidth: 1,
@@ -181,41 +221,61 @@ export function MobileFinanceTagPicker({
           backgroundColor: '#f59e0b0A'
         }}
       >
-        <Text style={{ color: '#fbbf24', fontSize: 12.5, textAlign: 'center' }}>
+        <span
+          className="ui-text"
+          style={{
+            color: '#fbbf24',
+            fontSize: 12.5,
+            textAlign: 'center'
+          }}
+        >
           Для этого типа операции пока нет подходящих тегов.
-        </Text>
-      </View>
+        </span>
+      </div>
     )
   }
-
   return (
-    <View accessibilityRole="radiogroup" style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 7 }}>
+    <div
+      className="ui-stack"
+      role={'radiogroup'}
+      style={{
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 7
+      }}
+    >
       {tags.map((tag) => {
         const selected = tag.id === value
         const tone = financeTagTone(tag.type, theme.accent)
         return (
-          <Pressable
+          <Action
             key={tag.id}
-            accessibilityRole="radio"
-            accessibilityLabel={tag.name}
-            accessibilityState={{ checked: selected, disabled }}
+            role={'radio'}
+            aria-label={tag.name}
+            aria-checked={selected}
+            aria-disabled={disabled}
             disabled={disabled}
-            onPress={() => onChange(tag.id)}
-            style={({ pressed }) => ({
+            onClick={() => onChange(tag.id)}
+            style={{
               width: '31.7%',
               minHeight: 78,
               alignItems: 'center',
               justifyContent: 'center',
-              paddingHorizontal: 6,
-              paddingVertical: 8,
+              paddingInline: 6,
+              paddingBlock: 8,
               borderWidth: 1,
               borderColor: selected ? tone + '99' : theme.border,
               borderRadius: 13,
-              backgroundColor: selected ? tone + '1F' : pressed ? theme.raised : theme.surface,
-              opacity: disabled ? 0.45 : pressed ? 0.76 : 1
-            })}
+              backgroundColor: selected ? tone + '1F' : theme.surface,
+              opacity: disabled ? 0.45 : 1
+            }}
+            pressedStyle={{
+              backgroundColor: selected ? tone + '1F' : theme.raised,
+              opacity: disabled ? 0.45 : 0.76
+            }}
           >
-            <View
+            <div
+              className="ui-stack"
               style={{
                 width: 32,
                 height: 32,
@@ -228,22 +288,28 @@ export function MobileFinanceTagPicker({
               }}
             >
               <VisualIconGlyph value={tag.icon} size={16} color={tone} />
-            </View>
-            <Text
-              numberOfLines={1}
+            </div>
+            <span
+              className="ui-text"
+              data-lines={1}
               style={{
                 maxWidth: '100%',
                 marginTop: 5,
                 color: theme.text,
                 fontSize: 10.5,
-                fontWeight: selected ? '700' : '600'
+                fontWeight: selected ? '700' : '600',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                display: '-webkit-box',
+                WebkitBoxOrient: 'vertical',
+                WebkitLineClamp: 1
               }}
             >
               {tag.name}
-            </Text>
-          </Pressable>
+            </span>
+          </Action>
         )
       })}
-    </View>
+    </div>
   )
 }

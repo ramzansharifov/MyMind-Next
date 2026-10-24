@@ -3,10 +3,7 @@ import mermaid from 'mermaid'
 import { useEffect, useMemo, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { DomViewportMeta } from './DomViewportMeta'
-
 export type RichContentKind = 'html' | 'markdown' | 'latex' | 'mermaid'
-
 export interface RichContentInternalLinkTarget {
   kind: 'material' | 'heading'
   materialId: string
@@ -14,7 +11,6 @@ export interface RichContentInternalLinkTarget {
 }
 type MermaidTheme = 'dark' | 'default' | 'neutral' | 'forest'
 type TextAlignment = 'left' | 'center' | 'right'
-
 export interface RichContentDomProps {
   kind: RichContentKind
   source: string
@@ -32,11 +28,9 @@ export interface RichContentDomProps {
   onOpenInternalLink?: (target: RichContentInternalLinkTarget) => Promise<void>
   onOpenExternalLink?: (href: string) => Promise<void>
 }
-
 function messageFor(reason: unknown): string {
   return reason instanceof Error ? reason.message : 'Не удалось отобразить содержимое'
 }
-
 function LatexContent({
   source,
   displayMode,
@@ -64,7 +58,6 @@ function LatexContent({
       return { html: '', error: messageFor(reason) }
     }
   }, [displayMode, source])
-
   if (rendered.error) return <ErrorPanel message={rendered.error} />
   return (
     <div
@@ -74,7 +67,6 @@ function LatexContent({
     />
   )
 }
-
 function MermaidContent({
   source,
   theme,
@@ -86,11 +78,13 @@ function MermaidContent({
   colorScheme: 'light' | 'dark'
   scale: number
 }): React.JSX.Element {
-  const [state, setState] = useState<{ svg: string; error: string | null }>({
+  const [state, setState] = useState<{
+    svg: string
+    error: string | null
+  }>({
     svg: '',
     error: null
   })
-
   useEffect(() => {
     let active = true
     const render = async (): Promise<void> => {
@@ -113,7 +107,6 @@ function MermaidContent({
       active = false
     }
   }, [colorScheme, source, theme])
-
   if (state.error) return <ErrorPanel message={state.error} />
   if (!state.svg) return <p className="muted">Построение диаграммы…</p>
   return (
@@ -124,7 +117,6 @@ function MermaidContent({
     />
   )
 }
-
 function HtmlContent({
   source,
   onOpenInternalLink,
@@ -137,7 +129,6 @@ function HtmlContent({
   const openTarget = (event: React.MouseEvent<HTMLElement>): void => {
     const element = event.target instanceof Element ? event.target : null
     if (!element) return
-
     const internalLink = element.closest<HTMLElement>('[data-study-internal-link="true"]')
     if (internalLink) {
       event.preventDefault()
@@ -152,14 +143,12 @@ function HtmlContent({
       })
       return
     }
-
     const anchor = element.closest<HTMLAnchorElement>('a[href]')
     if (!anchor || !onOpenExternalLink) return
     event.preventDefault()
     event.stopPropagation()
     void onOpenExternalLink(anchor.href)
   }
-
   return (
     <article
       className="html-content"
@@ -168,7 +157,6 @@ function HtmlContent({
     />
   )
 }
-
 function ErrorPanel({ message }: { message: string }): React.JSX.Element {
   return (
     <div className="error-panel" role="alert">
@@ -177,7 +165,6 @@ function ErrorPanel({ message }: { message: string }): React.JSX.Element {
     </div>
   )
 }
-
 export default function RichContentDom({
   kind,
   source,
@@ -203,10 +190,8 @@ export default function RichContentDom({
     event.preventDefault()
     void onOpenExternalLink(anchor.href)
   }
-
   return (
     <>
-      <DomViewportMeta />
       <main
         className={`rich-root ${colorScheme}`}
         onClick={openExternalTarget}
@@ -250,7 +235,6 @@ export default function RichContentDom({
     </>
   )
 }
-
 const styles = `
   html:not(:has(.pwa)), body:not(:has(.pwa)), #root { margin: 0; width: 100%; min-height: 1px; background: transparent; }
   .rich-root, .rich-root * { box-sizing: border-box; }

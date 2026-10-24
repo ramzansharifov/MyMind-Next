@@ -1,5 +1,5 @@
+import { Action, DialogLayer } from '../../../ui/browser'
 import { memo, useCallback, useState } from 'react'
-import { Modal, Pressable, Text, View } from 'react-native'
 import * as Clipboard from '../../../platform/clipboard'
 import {
   Check,
@@ -11,7 +11,7 @@ import {
   Minimize2,
   PencilLine,
   Workflow
-} from 'lucide-react-native'
+} from 'lucide-react'
 import { appearanceTokens } from '@mymind/design'
 import type {
   StudyBlock,
@@ -19,34 +19,32 @@ import type {
   StudyMarkdownViewMode,
   StudyMermaidViewMode
 } from '@mymind/contracts/study'
-
 import StudySourceBlockDom, {
   type StudySourceKind,
   type StudySourceViewMode
 } from './StudySourceBlockDom'
 import { getStudyCodeLanguage } from './studySourceLanguages'
 import { useTheme } from './theme'
-
-type TechnicalBlock = Extract<StudyBlock, { type: 'code' | 'markdown' | 'latex' | 'mermaid' }>
-
+type TechnicalBlock = Extract<
+  StudyBlock,
+  {
+    type: 'code' | 'markdown' | 'latex' | 'mermaid'
+  }
+>
 const StableStudySourceBlockDom = memo(StudySourceBlockDom)
-
 function sourceKind(block: TechnicalBlock): StudySourceKind {
   return block.type
 }
-
 function blockLabel(block: TechnicalBlock): string {
   if (block.type === 'code') return getStudyCodeLanguage(block.language).label
   if (block.type === 'markdown') return 'Markdown'
   if (block.type === 'latex') return 'LaTeX'
   return 'Mermaid'
 }
-
 function defaultViewMode(block: TechnicalBlock): StudySourceViewMode {
   if (block.type === 'code') return 'write'
   return block.viewMode ?? 'split'
 }
-
 function withViewMode(block: TechnicalBlock, viewMode: StudySourceViewMode): TechnicalBlock {
   if (block.type === 'markdown') {
     return { ...block, viewMode: viewMode as StudyMarkdownViewMode }
@@ -59,51 +57,50 @@ function withViewMode(block: TechnicalBlock, viewMode: StudySourceViewMode): Tec
   }
   return block
 }
-
 function withSource(block: TechnicalBlock, source: string): TechnicalBlock {
   return { ...block, source }
 }
-
 const modeItems = [
   { value: 'write' as const, label: 'Код', icon: PencilLine },
   { value: 'split' as const, label: 'Разделить', icon: Columns2 },
   { value: 'preview' as const, label: 'Просмотр', icon: Eye }
 ]
-
 function HeaderIcon({
   label,
   active = false,
-  onPress,
+  onClick,
   children
 }: {
   label: string
   active?: boolean
-  onPress(): void
+  onClick(): void
   children: React.ReactNode
 }): React.JSX.Element {
   const theme = useTheme()
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityState={{ selected: active }}
-      hitSlop={4}
-      onPress={onPress}
-      style={({ pressed }) => ({
+    <Action
+      role={'button'}
+      aria-label={label}
+      aria-selected={active}
+      onClick={onClick}
+      style={{
         width: 28,
         height: 28,
         alignItems: 'center',
         justifyContent: 'center',
         borderRadius: 7,
-        backgroundColor: active ? theme.accent + '18' : pressed ? theme.raised : 'transparent',
-        opacity: pressed ? 0.72 : 1
-      })}
+        backgroundColor: active ? theme.accent + '18' : 'transparent',
+        opacity: 1
+      }}
+      pressedStyle={{
+        backgroundColor: active ? theme.accent + '18' : theme.raised,
+        opacity: 0.72
+      }}
     >
       {children}
-    </Pressable>
+    </Action>
   )
 }
-
 export function StudySourceBlock({
   block,
   editable,
@@ -121,19 +118,16 @@ export function StudySourceBlock({
   const kind = sourceKind(block)
   const showHeader = editable || block.type === 'code' || block.type === 'mermaid'
   const framed = showHeader || block.type === 'latex'
-
   const handleHeight = useCallback(async (nextHeight: number): Promise<void> => {
     const normalized = Math.max(56, Math.min(1800, Math.ceil(nextHeight)))
     setHeight((current) => (Math.abs(current - normalized) >= 2 ? normalized : current))
   }, [])
-
   const handleSource = useCallback(
     async (source: string): Promise<void> => {
       update?.(withSource(block, source))
     },
     [block, update]
   )
-
   const editor = (
     <StableStudySourceBlockDom
       kind={kind}
@@ -157,21 +151,20 @@ export function StudySourceBlock({
       onHeightChange={handleHeight}
     />
   )
-
   const copy = async (): Promise<void> => {
     await Clipboard.setStringAsync(block.source)
     setCopied(true)
     setTimeout(() => setCopied(false), 1600)
   }
-
   const header = showHeader ? (
-    <View
+    <div
+      className="ui-stack"
       style={{
         minHeight: block.type === 'code' ? 40 : 44,
         flexDirection: 'row',
         alignItems: 'center',
         gap: 6,
-        paddingHorizontal: 10,
+        paddingInline: 10,
         borderBottomWidth: 1,
         borderBottomColor: theme.border,
         backgroundColor: theme.surface
@@ -183,20 +176,26 @@ export function StudySourceBlock({
         <Code2 size={15} color={theme.muted} />
       ) : null}
 
-      <Text
-        numberOfLines={1}
+      <span
+        className="ui-text"
+        data-lines={1}
         style={{
           minWidth: 0,
           marginRight: 'auto',
           color: theme.muted,
           fontSize: 11,
-          fontWeight: '700',
+          fontWeight: 700,
           letterSpacing: 0.8,
-          textTransform: 'uppercase'
+          textTransform: 'uppercase',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          display: '-webkit-box',
+          WebkitBoxOrient: 'vertical',
+          WebkitLineClamp: 1
         }}
       >
         {blockLabel(block)}
-      </Text>
+      </span>
 
       {editable && block.type !== 'code'
         ? modeItems.map((item) => {
@@ -207,7 +206,7 @@ export function StudySourceBlock({
                 key={item.value}
                 label={item.label}
                 active={active}
-                onPress={() => update?.(withViewMode(block, item.value))}
+                onClick={() => update?.(withViewMode(block, item.value))}
               >
                 <Icon size={14} color={active ? theme.accent : theme.muted} />
               </HeaderIcon>
@@ -215,12 +214,12 @@ export function StudySourceBlock({
           })
         : null}
 
-      <HeaderIcon label={copied ? 'Скопировано' : 'Копировать'} onPress={() => void copy()}>
+      <HeaderIcon label={copied ? 'Скопировано' : 'Копировать'} onClick={() => void copy()}>
         {copied ? <Check size={15} color="#6ee7b7" /> : <Copy size={15} color={theme.muted} />}
       </HeaderIcon>
       <HeaderIcon
         label={fullscreen ? 'Свернуть блок' : 'Развернуть блок'}
-        onPress={() => setFullscreen((value) => !value)}
+        onClick={() => setFullscreen((value) => !value)}
       >
         {fullscreen ? (
           <Minimize2 size={15} color={theme.muted} />
@@ -228,11 +227,11 @@ export function StudySourceBlock({
           <Maximize2 size={15} color={theme.muted} />
         )}
       </HeaderIcon>
-    </View>
+    </div>
   ) : null
-
   const inline = (
-    <View
+    <div
+      className="ui-stack"
       style={{
         overflow: 'hidden',
         borderWidth: framed ? 1 : 0,
@@ -243,14 +242,13 @@ export function StudySourceBlock({
     >
       {header}
       {editor}
-    </View>
+    </div>
   )
-
   if (!fullscreen) return inline
-
   return (
     <>
-      <View
+      <div
+        className="ui-stack"
         style={{
           overflow: 'hidden',
           borderWidth: 1,
@@ -260,39 +258,54 @@ export function StudySourceBlock({
         }}
       >
         {header}
-        <View
+        <div
+          className="ui-stack"
           style={{
             height: Math.min(Math.max(56, height), 200),
             backgroundColor: theme.raised
           }}
-        />
-      </View>
+        ></div>
+      </div>
 
-      <Modal
-        visible
-        animationType="fade"
-        onRequestClose={() => setFullscreen(false)}
-        statusBarTranslucent
-      >
-        <View style={{ flex: 1, paddingTop: 36, backgroundColor: theme.background }}>
-          <View
+      <DialogLayer open={true} transition={'fade'} onClose={() => setFullscreen(false)}>
+        <div
+          className="ui-stack"
+          style={{
+            flex: '1 1 0%',
+            paddingTop: 36,
+            backgroundColor: theme.background
+          }}
+        >
+          <div
+            className="ui-stack"
             style={{
               minHeight: 52,
               flexDirection: 'row',
               alignItems: 'center',
               gap: 8,
-              paddingHorizontal: 14,
+              paddingInline: 14,
               borderBottomWidth: 1,
               borderBottomColor: theme.border,
               backgroundColor: theme.surface
             }}
           >
-            <Text
-              numberOfLines={1}
-              style={{ flex: 1, color: theme.text, fontSize: 14, fontWeight: '700' }}
+            <span
+              className="ui-text"
+              data-lines={1}
+              style={{
+                flex: '1 1 0%',
+                color: theme.text,
+                fontSize: 14,
+                fontWeight: 700,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                display: '-webkit-box',
+                WebkitBoxOrient: 'vertical',
+                WebkitLineClamp: 1
+              }}
             >
               {blockLabel(block)}
-            </Text>
+            </span>
             {editable && block.type !== 'code'
               ? modeItems.map((item) => {
                   const Icon = item.icon
@@ -302,23 +315,31 @@ export function StudySourceBlock({
                       key={item.value}
                       label={item.label}
                       active={active}
-                      onPress={() => update?.(withViewMode(block, item.value))}
+                      onClick={() => update?.(withViewMode(block, item.value))}
                     >
                       <Icon size={14} color={active ? theme.accent : theme.muted} />
                     </HeaderIcon>
                   )
                 })
               : null}
-            <HeaderIcon label="Копировать" onPress={() => void copy()}>
+            <HeaderIcon label="Копировать" onClick={() => void copy()}>
               <Copy size={15} color={theme.muted} />
             </HeaderIcon>
-            <HeaderIcon label="Свернуть блок" onPress={() => setFullscreen(false)}>
+            <HeaderIcon label="Свернуть блок" onClick={() => setFullscreen(false)}>
               <Minimize2 size={15} color={theme.muted} />
             </HeaderIcon>
-          </View>
-          <View style={{ flex: 1, minHeight: 0 }}>{editor}</View>
-        </View>
-      </Modal>
+          </div>
+          <div
+            className="ui-stack"
+            style={{
+              flex: '1 1 0%',
+              minHeight: 0
+            }}
+          >
+            {editor}
+          </div>
+        </div>
+      </DialogLayer>
     </>
   )
 }

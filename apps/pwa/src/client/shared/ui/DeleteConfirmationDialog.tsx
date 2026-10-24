@@ -1,9 +1,7 @@
-import { Text, View } from 'react-native'
 import { AppDialog, type AppDialogTone } from './AppDialog'
 import { Button } from './primitives'
 import { AppIcon } from './icons'
 import { useTheme } from './theme'
-
 export function DeleteConfirmationDialog({
   open,
   title,
@@ -33,7 +31,6 @@ export function DeleteConfirmationDialog({
 }): React.JSX.Element {
   const theme = useTheme()
   const accent = tone === 'warning' ? '#f59e0b' : theme.error
-
   return (
     <AppDialog
       open={open}
@@ -47,46 +44,59 @@ export function DeleteConfirmationDialog({
       showClose={false}
       presentation="card"
     >
-      <View>
+      <div className="ui-stack">
         {subject ? (
-          <Text
+          <span
+            className="ui-text"
             style={{
-              paddingHorizontal: 18,
+              paddingInline: 18,
               paddingTop: 16,
               color: accent,
               fontSize: 14,
-              lineHeight: 20,
-              fontWeight: '700'
+              lineHeight: '20px',
+              fontWeight: 700
             }}
           >
             {subject}
-          </Text>
+          </span>
         ) : null}
 
         {notice ? (
-          <View
+          <div
+            className="ui-stack"
             style={{
               flexDirection: 'row',
               alignItems: 'center',
               gap: 8,
               marginTop: subject ? 10 : 0,
-              paddingHorizontal: 18,
-              paddingVertical: 13,
+              paddingInline: 18,
+              paddingBlock: 13,
               borderBottomWidth: 1,
               borderBottomColor: theme.border,
               backgroundColor: accent + '09'
             }}
           >
             <AppIcon name="info" size={16} color={accent} />
-            <Text style={{ flex: 1, color: accent, fontSize: 12.5, lineHeight: 18 }}>{notice}</Text>
-          </View>
+            <span
+              className="ui-text"
+              style={{
+                flex: '1 1 0%',
+                color: accent,
+                fontSize: 12.5,
+                lineHeight: '18px'
+              }}
+            >
+              {notice}
+            </span>
+          </div>
         ) : null}
 
         {error ? (
-          <View
-            accessibilityRole="alert"
+          <div
+            className="ui-stack"
+            role={'alert'}
             style={{
-              marginHorizontal: 16,
+              marginInline: 16,
               marginTop: 14,
               padding: 12,
               borderWidth: 1,
@@ -95,11 +105,21 @@ export function DeleteConfirmationDialog({
               backgroundColor: theme.error + '0D'
             }}
           >
-            <Text style={{ color: theme.error, fontSize: 13, lineHeight: 19 }}>{error}</Text>
-          </View>
+            <span
+              className="ui-text"
+              style={{
+                color: theme.error,
+                fontSize: 13,
+                lineHeight: '19px'
+              }}
+            >
+              {error}
+            </span>
+          </div>
         ) : null}
 
-        <View
+        <div
+          className="ui-stack"
           style={{
             flexDirection: 'row',
             justifyContent: 'flex-end',
@@ -107,17 +127,17 @@ export function DeleteConfirmationDialog({
             padding: 16
           }}
         >
-          <Button label="Отмена" disabled={busy} onPress={() => onOpenChange(false)} />
+          <Button label="Отмена" disabled={busy} onClick={() => onOpenChange(false)} />
           <Button
             label={busy ? submittingLabel : confirmLabel}
             icon={tone === 'warning' ? 'reset' : 'delete'}
             danger={tone === 'danger'}
             selected={tone === 'warning'}
             disabled={busy}
-            onPress={onConfirm}
+            onClick={onConfirm}
           />
-        </View>
-      </View>
+        </div>
+      </div>
     </AppDialog>
   )
 }

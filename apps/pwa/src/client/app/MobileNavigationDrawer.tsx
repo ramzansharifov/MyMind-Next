@@ -1,13 +1,9 @@
+import { Action, DialogLayer } from '../../ui/browser'
 import type { ReactNode } from 'react'
-import { Modal, Pressable, ScrollView, Text, View } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
-
 import { navigationRoutes, routeIcons, routeTitles, type Route } from './navigation'
 import { AppIcon, type AppIconName } from '../shared/ui/icons'
 import { useTheme } from '../shared/ui/theme'
-
 const moduleRoutes = navigationRoutes.filter((route) => route !== 'settings')
-
 export interface NavigationItem<T extends string> {
   route: T
   title: string
@@ -36,29 +32,33 @@ export function AppNavigationDrawer<T extends string>({
   const renderRoute = (entry: NavigationItem<T>): React.JSX.Element => {
     const route = entry.route
     const selected = route === currentRoute
-
     return (
-      <Pressable
+      <Action
         key={route}
-        accessibilityRole="button"
-        accessibilityLabel={entry.title}
-        accessibilityState={{ selected }}
-        onPress={() => navigate(route)}
-        style={({ pressed }) => ({
+        role={'button'}
+        aria-label={entry.title}
+        aria-selected={selected}
+        onClick={() => navigate(route)}
+        style={{
           minHeight: 54,
           flexDirection: 'row',
           alignItems: 'center',
           gap: 12,
-          paddingHorizontal: 12,
-          paddingVertical: 8,
+          paddingInline: 12,
+          paddingBlock: 8,
           borderWidth: 1,
           borderColor: selected ? theme.accent + '33' : 'transparent',
           borderRadius: 14,
-          backgroundColor: selected ? theme.accent + '14' : pressed ? theme.raised : 'transparent',
-          opacity: pressed ? 0.78 : 1
-        })}
+          backgroundColor: selected ? theme.accent + '14' : 'transparent',
+          opacity: 1
+        }}
+        pressedStyle={{
+          backgroundColor: selected ? theme.accent + '14' : theme.raised,
+          opacity: 0.78
+        }}
       >
-        <View
+        <div
+          className="ui-stack"
           style={{
             width: 34,
             height: 34,
@@ -71,48 +71,54 @@ export function AppNavigationDrawer<T extends string>({
           }}
         >
           <AppIcon name={entry.icon} size={18} color={selected ? theme.accent : theme.muted} />
-        </View>
+        </div>
 
-        <Text
-          numberOfLines={1}
+        <span
+          className="ui-text"
+          data-lines={1}
           style={{
-            flex: 1,
+            flex: '1 1 0%',
             color: selected ? theme.text : theme.muted,
             fontSize: 15,
-            lineHeight: 20,
-            fontWeight: selected ? '700' : '600'
+            lineHeight: '20px',
+            fontWeight: selected ? '700' : '600',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            display: '-webkit-box',
+            WebkitBoxOrient: 'vertical',
+            WebkitLineClamp: 1
           }}
         >
           {entry.title}
-        </Text>
+        </span>
 
         {selected ? (
-          <View
-            accessibilityLabel="Текущий раздел"
+          <div
+            className="ui-stack"
+            aria-label={'Текущий раздел'}
             style={{
               width: 7,
               height: 7,
               borderRadius: 4,
               backgroundColor: theme.accent
             }}
-          />
+          ></div>
         ) : null}
-      </Pressable>
+      </Action>
     )
   }
-
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      statusBarTranslucent
-      navigationBarTranslucent
-      onRequestClose={close}
-    >
-      <View style={{ flex: 1, flexDirection: 'row', backgroundColor: '#00000073' }}>
-        <SafeAreaView
-          edges={['top', 'bottom', 'left']}
+    <DialogLayer open={visible} transition={'fade'} onClose={close}>
+      <div
+        className="ui-stack"
+        style={{
+          flex: '1 1 0%',
+          flexDirection: 'row',
+          backgroundColor: '#00000073'
+        }}
+      >
+        <div
+          className="ui-stack ui-safe-area"
           style={{
             width: '84%',
             maxWidth: 360,
@@ -121,18 +127,20 @@ export function AppNavigationDrawer<T extends string>({
             borderRightColor: theme.border
           }}
         >
-          <View
+          <div
+            className="ui-stack"
             style={{
               minHeight: 72,
               flexDirection: 'row',
               alignItems: 'center',
               gap: 12,
-              paddingHorizontal: 16,
+              paddingInline: 16,
               borderBottomWidth: 1,
               borderBottomColor: theme.border
             }}
           >
-            <View
+            <div
+              className="ui-stack"
               style={{
                 width: 42,
                 height: 42,
@@ -146,66 +154,105 @@ export function AppNavigationDrawer<T extends string>({
               }}
             >
               <AppIcon name="brand" size={22} strokeWidth={2} color={theme.accent} />
-            </View>
+            </div>
 
-            <View style={{ flex: 1 }}>
-              <Text style={{ color: theme.text, fontSize: 17, fontWeight: '700' }}>MyMind</Text>
-              <Text style={{ marginTop: 2, color: theme.muted, fontSize: 11 }}>{versionLabel}</Text>
-            </View>
+            <div
+              className="ui-stack"
+              style={{
+                flex: '1 1 0%'
+              }}
+            >
+              <span
+                className="ui-text"
+                style={{
+                  color: theme.text,
+                  fontSize: 17,
+                  fontWeight: 700
+                }}
+              >
+                MyMind
+              </span>
+              <span
+                className="ui-text"
+                style={{
+                  marginTop: 2,
+                  color: theme.muted,
+                  fontSize: 11
+                }}
+              >
+                {versionLabel}
+              </span>
+            </div>
 
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Закрыть меню"
-              onPress={close}
-              hitSlop={8}
-              style={({ pressed }) => ({
+            <Action
+              role={'button'}
+              aria-label={'Закрыть меню'}
+              onClick={close}
+              style={{
                 width: 40,
                 height: 40,
                 alignItems: 'center',
                 justifyContent: 'center',
                 borderRadius: 12,
-                backgroundColor: pressed ? theme.raised : 'transparent',
-                opacity: pressed ? 0.75 : 1
-              })}
+                backgroundColor: 'transparent',
+                opacity: 1
+              }}
+              pressedStyle={{
+                backgroundColor: theme.raised,
+                opacity: 0.75
+              }}
             >
               <AppIcon name="close" size={20} color={theme.muted} />
-            </Pressable>
-          </View>
+            </Action>
+          </div>
 
           {updateContent}
 
-          <ScrollView
-            testID="mymind-navigation-items"
-            style={{ flex: 1, minHeight: 0 }}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ padding: 12, paddingBottom: 18, gap: 4 }}
+          <div
+            className="ui-scroll"
+            data-testid={'mymind-navigation-items'}
+            style={{
+              flex: '1 1 0%',
+              minHeight: 0
+            }}
           >
-            {entries.map(renderRoute)}
-
-            <View
+            <div
+              className="ui-stack ui-scroll-content"
               style={{
-                height: 1,
-                marginHorizontal: 4,
-                marginVertical: 8,
-                backgroundColor: theme.border
+                padding: 12,
+                paddingBottom: 18,
+                gap: 4
               }}
-            />
+            >
+              {entries.map(renderRoute)}
 
-            {renderRoute(settingsEntry)}
-          </ScrollView>
-        </SafeAreaView>
+              <div
+                className="ui-stack"
+                style={{
+                  height: 1,
+                  marginInline: 4,
+                  marginBlock: 8,
+                  backgroundColor: theme.border
+                }}
+              ></div>
 
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Закрыть меню навигации"
-          onPress={close}
-          style={{ flex: 1 }}
-        />
-      </View>
-    </Modal>
+              {renderRoute(settingsEntry)}
+            </div>
+          </div>
+        </div>
+
+        <Action
+          role={'button'}
+          aria-label={'Закрыть меню навигации'}
+          onClick={close}
+          style={{
+            flex: '1 1 0%'
+          }}
+        ></Action>
+      </div>
+    </DialogLayer>
   )
 }
-
 export function MobileNavigationDrawer({
   visible,
   currentRoute,

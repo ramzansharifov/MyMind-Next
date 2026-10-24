@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { View } from 'react-native'
 import type { AppearancePreferences } from '@mymind/contracts/preferences'
 import type { ClientServices } from '../client/app/services'
 import { SettingsScreen } from '../client/app/SettingsScreen'
@@ -16,7 +15,6 @@ import { enableReminders } from '../reminders/scheduler'
 import { reminderCalendar } from '../reminders/calendar-export'
 import type { usePwa } from './usePwa'
 import packageInfo from '../../package.json'
-
 interface Props {
   services: ClientServices
   db: PwaDatabase
@@ -27,7 +25,6 @@ interface Props {
   setBusy(value: boolean): void
   restored(): Promise<void>
 }
-
 /** Browser capabilities plug into the Android settings screen, without copying its UI. */
 export function PwaSettings({
   services,
@@ -62,9 +59,9 @@ export function PwaSettings({
     <>
       {error ? <ErrorState message={error} /> : null}
       {message ? (
-        <View accessibilityLiveRegion="polite">
+        <div className="ui-stack" aria-live={'polite'}>
           <Label muted>{message}</Label>
-        </View>
+        </div>
       ) : null}
     </>
   )
@@ -102,7 +99,13 @@ export function PwaSettings({
         pwa.updateReady ? 'Обновление загружено' : `Установлена v${packageInfo.version}`
       }
       reminders={
-        <View style={{ gap: 12, marginBottom: 24 }}>
+        <div
+          className="ui-stack"
+          style={{
+            gap: 12,
+            marginBottom: 24
+          }}
+        >
           <Label title>Напоминания</Label>
           <Label muted>
             При открытом приложении уведомления появляются в системе и на главной. Когда PWA
@@ -113,7 +116,7 @@ export function PwaSettings({
             label={remindersEnabled ? 'Выключить напоминания' : 'Включить напоминания'}
             selected={remindersEnabled}
             disabled={busy}
-            onPress={() =>
+            onClick={() =>
               void run(async () => {
                 if (remindersEnabled) {
                   services.settings.set('reminders.enabled', 'false')
@@ -128,21 +131,28 @@ export function PwaSettings({
             label="Передать напоминания в календарь телефона"
             icon="calendar"
             disabled={busy}
-            onPress={() => {
+            onClick={() => {
               download(reminderCalendar(services), 'MyMind-reminders.ics')
               setMessage('Импортируйте файл в календарь телефона для офлайн-уведомлений.')
             }}
           />
           {feedback}
-        </View>
+        </div>
       }
       dataExtras={
         <>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+          <div
+            className="ui-stack"
+            style={{
+              flexDirection: 'row',
+              flexWrap: 'wrap',
+              gap: 8
+            }}
+          >
             <Button
               label="Проверить резервную копию"
               disabled={busy}
-              onPress={() =>
+              onClick={() =>
                 void run(async () => {
                   const file = await pickFile('.mymindbackup')
                   if (!file) return
@@ -160,7 +170,7 @@ export function PwaSettings({
               label="Перенести desktop-библиотеку"
               icon="folder"
               disabled={busy}
-              onPress={() =>
+              onClick={() =>
                 void confirm({
                   title: 'Перенести desktop-библиотеку?',
                   description:
@@ -184,7 +194,7 @@ export function PwaSettings({
             <Button
               label="Запросить постоянное хранение"
               disabled={busy}
-              onPress={() =>
+              onClick={() =>
                 void run(async () => {
                   const granted = await navigator.storage?.persist?.()
                   setMessage(
@@ -195,7 +205,7 @@ export function PwaSettings({
                 })
               }
             />
-          </View>
+          </div>
           <Label muted>
             Очистка данных сайта удаляет локальную библиотеку — сохраняйте резервные копии.
           </Label>
@@ -208,33 +218,45 @@ export function PwaSettings({
           description={`MyMind v${packageInfo.version} · PWA`}
           icon="download"
         >
-          <View style={{ gap: 14 }}>
+          <div
+            className="ui-stack"
+            style={{
+              gap: 14
+            }}
+          >
             <Label muted>
               {pwa.offlineReady
                 ? 'Приложение подготовлено для работы без интернета.'
                 : 'Для офлайн-работы дождитесь загрузки приложения при подключении к интернету.'}
             </Label>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            <div
+              className="ui-stack"
+              style={{
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                gap: 8
+              }}
+            >
               {pwa.canInstall ? (
                 <Button
                   label="Установить MyMind"
                   primary
                   disabled={busy}
-                  onPress={() => void run(pwa.install)}
+                  onClick={() => void run(pwa.install)}
                 />
               ) : null}
               <Button
                 label="Проверить обновления"
                 icon="download"
                 disabled={busy}
-                onPress={() =>
+                onClick={() =>
                   void run(async () => {
                     await pwa.checkForUpdates()
                     setMessage('Проверка обновлений завершена.')
                   })
                 }
               />
-            </View>
+            </div>
             {!pwa.canInstall ? (
               <Label muted>
                 На Android: меню Chrome → установка приложения. На iPhone: Safari → «Поделиться» →
@@ -248,7 +270,7 @@ export function PwaSettings({
             ) : null}
             {pwa.error ? <ErrorState message={pwa.error} /> : null}
             {feedback}
-          </View>
+          </div>
         </WorkspacePanel>
       }
     />

@@ -4,10 +4,9 @@ import TextAlign from '@tiptap/extension-text-align'
 import { TextStyleKit } from '@tiptap/extension-text-style'
 import { Placeholder } from '@tiptap/extensions'
 import StarterKit from '@tiptap/starter-kit'
-import { useDOMImperativeHandle, type DOMImperativeFactory } from '../../../platform/dom'
+import { useImperativeHandle } from 'react'
 import { useCallback, useEffect, useRef, useState, type Ref } from 'react'
 import type { ResolveStudyInternalLinkTargetInput } from '@mymind/contracts/study'
-import { DomViewportMeta } from './DomViewportMeta'
 import type { NoteDocument, NoteAppearance } from '@mymind/contracts/notes'
 import { DEFAULT_NOTE_APPEARANCE } from '@mymind/contracts/notes'
 import type { Mark as ProseMirrorMark } from '@tiptap/pm/model'
@@ -30,9 +29,7 @@ import { changeSelectedTextCase } from '../../modules/notes/lib/text-case'
 import { mobileNoteStyles } from '../../modules/notes/mobile-note-styles'
 import { NoteTaskItem } from '../../modules/notes/MobileNoteTaskItem'
 import { NoteTaskList } from '../../modules/notes/MobileNoteTaskList'
-
 export type NotesRichTextAlignment = 'left' | 'center' | 'right' | 'justify'
-
 export interface NotesRichTextFormattingState {
   bold: boolean
   italic: boolean
@@ -43,7 +40,10 @@ export interface NotesRichTextFormattingState {
   bulletList: boolean
   orderedList: boolean
   taskList?: boolean
-  divider?: { variant: string; thickness: number }
+  divider?: {
+    variant: string
+    thickness: number
+  }
   attachmentId?: string
   alignment: NotesRichTextAlignment
   linkActive: boolean
@@ -54,7 +54,6 @@ export interface NotesRichTextFormattingState {
   canUndo: boolean
   canRedo: boolean
 }
-
 export type NotesRichTextCommand =
   | 'bold'
   | 'italic'
@@ -78,25 +77,21 @@ export type NotesRichTextCommand =
   | 'redo'
   | 'clearFormatting'
   | 'unlink'
-
-type NotesDomBridgeMethod = DOMImperativeFactory[string]
-
-export interface NotesRichTextDomRef extends DOMImperativeFactory {
-  insertAttachment: NotesDomBridgeMethod
-  updateAttachment: NotesDomBridgeMethod
-  deleteAttachment: NotesDomBridgeMethod
-  insertDivider: NotesDomBridgeMethod
-  flushEditor: (...args: Parameters<NotesDomBridgeMethod>) => Promise<void>
-  command: NotesDomBridgeMethod
-  setFontSize: NotesDomBridgeMethod
-  setTextColor: NotesDomBridgeMethod
-  setHighlightColor: NotesDomBridgeMethod
-  setLink: NotesDomBridgeMethod
+export interface NotesRichTextDomRef {
+  insertAttachment(block: MobileNoteAttachment, voice?: boolean): void
+  updateAttachment(block: MobileNoteAttachment): void
+  deleteAttachment(id: string): void
+  insertDivider(variant: string, thickness: number, forceInsert?: boolean): void
+  flushEditor(): Promise<void>
+  command(command: NotesRichTextCommand): void
+  setFontSize(value: string): void
+  setTextColor(value: string | null): void
+  setHighlightColor(value: string | null): void
+  setLink(href: string): void
   getSelectedText: () => Promise<string>
-  insertInternalLink: NotesDomBridgeMethod
+  insertInternalLink(html: string): void
   focusEditor: () => Promise<void>
 }
-
 export interface NotesRichTextDomProps {
   noteDocument?: NoteDocument
   noteAppearance?: NoteAppearance
@@ -104,8 +99,7 @@ export interface NotesRichTextDomProps {
   onCanvasChange?: (
     html: string,
     text: string,
-    attachments: MobileNoteAttachment[],
-    requestId?: string
+    attachments: MobileNoteAttachment[]
   ) => Promise<void>
   onEditorReady?: () => Promise<void>
   onAttachmentPress?: (id: string, action: AttachmentAction) => Promise<void>
@@ -125,19 +119,16 @@ export interface NotesRichTextDomProps {
   onOpenInternalLink?: (target: ResolveStudyInternalLinkTargetInput) => Promise<void>
   onOpenExternalLink?: (href: string) => Promise<void>
 }
-
 interface SavedSelection {
   from: number
   to: number
 }
-
 const StudyInternalLinkNode = Node.create({
   name: 'studyInternalLink',
   inline: true,
   group: 'inline',
   atom: true,
   selectable: true,
-
   addAttributes() {
     return {
       targetKind: {
@@ -204,11 +195,9 @@ const StudyInternalLinkNode = Node.create({
       }
     }
   },
-
   parseHTML() {
     return [{ tag: 'span[data-study-internal-link="true"]' }]
   },
-
   renderHTML({ node, HTMLAttributes }) {
     return [
       'span',
@@ -220,12 +209,10 @@ const StudyInternalLinkNode = Node.create({
       String(node.attrs.label || 'Внутренняя ссылка')
     ]
   },
-
   renderText({ node }) {
     return String(node.attrs.label ?? '')
   }
 })
-
 function createExtensions(readOnly: boolean): Extensions {
   return [
     StarterKit.extend({
@@ -276,7 +263,6 @@ function createExtensions(readOnly: boolean): Extensions {
     })
   ]
 }
-
 function normalizeHref(raw: string): string | null {
   const value = raw.trim()
   if (!value) return null
@@ -284,17 +270,14 @@ function normalizeHref(raw: string): string | null {
   if (/^[\w.-]+\.[a-z]{2,}(?:[/#?].*)?$/i.test(value)) return `https://${value}`
   return null
 }
-
 function alignment(value: unknown): NotesRichTextAlignment {
   return value === 'center' || value === 'right' || value === 'justify' ? value : 'left'
 }
-
 function formattingState(editor: Editor): NotesRichTextFormattingState {
   const textStyle = editor.getAttributes('textStyle')
   const paragraph = editor.getAttributes('paragraph')
   const link = editor.getAttributes('link')
   const highlight = editor.getAttributes('highlight')
-
   return {
     bold: editor.isActive('bold'),
     italic: editor.isActive('italic'),
@@ -328,7 +311,6 @@ function formattingState(editor: Editor): NotesRichTextFormattingState {
     canRedo: editor.can().chain().redo().run()
   }
 }
-
 function safeSelection(editor: Editor, selection: SavedSelection | null): SavedSelection {
   // Text selections live inside the document content, not at the outer doc boundary.
   // Clamping to content.size could produce a position one step past the last text node.
@@ -343,7 +325,6 @@ function safeSelection(editor: Editor, selection: SavedSelection | null): SavedS
   const to = Math.max(from, Math.min(selection.to, max))
   return { from, to }
 }
-
 export default function NotesRichTextDom({
   ref,
   html,
@@ -407,7 +388,6 @@ export default function NotesRichTextDom({
     onOpenInternalLink,
     onOpenExternalLink
   })
-
   useEffect(() => {
     callbacksRef.current = {
       onChange,
@@ -425,7 +405,6 @@ export default function NotesRichTextDom({
     onOpenExternalLink,
     onOpenInternalLink
   ])
-
   const emitFormatting = useCallback((editor: Editor): void => {
     if (editor.isDestroyed) return
     const state = formattingState(editor)
@@ -434,7 +413,6 @@ export default function NotesRichTextDom({
     lastFormattingRef.current = signature
     void callbacksRef.current.onFormattingState(state)
   }, [])
-
   const rememberSelection = useCallback(
     (editor: Editor): void => {
       if (editor.isDestroyed) return
@@ -446,7 +424,6 @@ export default function NotesRichTextDom({
     },
     [emitFormatting]
   )
-
   const commandChain = useCallback((editor: Editor) => {
     const selection = safeSelection(editor, savedSelectionRef.current)
     // This editor owns plain ProseMirror DOM, so focus can be restored synchronously.
@@ -458,20 +435,17 @@ export default function NotesRichTextDom({
       ? chain
       : chain.setTextSelection(selection)
   }, [])
-
-  useDOMImperativeHandle(
+  useImperativeHandle<NotesRichTextDomRef, NotesRichTextDomRef>(
     ref,
     () => ({
-      flushEditor: async (...args) => {
-        const requestId = typeof args[0] === 'string' ? args[0] : undefined
+      flushEditor: async () => {
         const editor = editorRef.current
         if (!editor || editor.isDestroyed) return
         if (canvasMode)
           await canvasCallbacks.current.onCanvasChange?.(
             editor.getHTML(),
             editor.getText({ blockSeparator: '\n\n' }),
-            canvasAttachments(editor),
-            requestId
+            canvasAttachments(editor)
           )
         else
           await callbacksRef.current.onChange(
@@ -479,13 +453,12 @@ export default function NotesRichTextDom({
             editor.getText({ blockSeparator: '\n\n' })
           )
       },
-      insertAttachment: (...args) => {
+      insertAttachment: (block, voice = false) => {
         const editor = editorRef.current
-        if (!editor || !editor.isEditable || typeof args[0] !== 'string') return
-        const block = JSON.parse(args[0]) as MobileNoteAttachment
+        if (!editor || !editor.isEditable) return
         const content = [
           {
-            type: args[1] === true ? 'noteVoiceRecording' : 'noteAttachment',
+            type: voice ? 'noteVoiceRecording' : 'noteAttachment',
             attrs: { attachment: block }
           },
           { type: 'paragraph' }
@@ -496,10 +469,9 @@ export default function NotesRichTextDom({
         else chain.insertContent(content).run()
         rememberSelection(editor)
       },
-      updateAttachment: (...args) => {
+      updateAttachment: (block) => {
         const editor = editorRef.current
-        if (!editor || !editor.isEditable || typeof args[0] !== 'string') return
-        const block = JSON.parse(args[0]) as MobileNoteAttachment
+        if (!editor || !editor.isEditable) return
         editor.commands.command(({ tr }) => {
           let changed = false
           tr.doc.descendants((node, pos) => {
@@ -511,12 +483,16 @@ export default function NotesRichTextDom({
           return changed
         })
       },
-      deleteAttachment: (...args) => {
+      deleteAttachment: (id) => {
         const editor = editorRef.current
-        if (!editor || !editor.isEditable || typeof args[0] !== 'string') return
-        const id = args[0]
+        if (!editor || !editor.isEditable) return
         editor.commands.command(({ tr }) => {
-          let target: { pos: number; size: number } | undefined
+          let target:
+            | {
+                pos: number
+                size: number
+              }
+            | undefined
           tr.doc.descendants((node, pos) => {
             if (isAttachment(node.type.name) && node.attrs.attachment?.id === id)
               target = { pos, size: node.nodeSize }
@@ -526,11 +502,11 @@ export default function NotesRichTextDom({
           return true
         })
       },
-      insertDivider: (...args) => {
+      insertDivider: (variant, thickness, forceInsert = false) => {
         const editor = editorRef.current
         if (!editor || !editor.isEditable) return
-        const attrs = { variant: args[0] || 'solid', thickness: args[1] || 3 }
-        if (editor.isActive('noteDivider') && args[2] !== true)
+        const attrs = { variant: variant || 'solid', thickness: thickness || 3 }
+        if (editor.isActive('noteDivider') && !forceInsert)
           editor.commands.updateAttributes('noteDivider', attrs)
         else if (editor.state.selection instanceof NodeSelection)
           commandChain(editor)
@@ -545,11 +521,9 @@ export default function NotesRichTextDom({
             .run()
         rememberSelection(editor)
       },
-      command: (...args) => {
+      command: (command) => {
         const editor = editorRef.current
-        const command = args[0]
         if (!editor || editor.isDestroyed || typeof command !== 'string') return
-
         const chain = commandChain(editor)
         // List/blockquote conversions must retain active marks for subsequent typing.
         // Desktop applies the same save/restore around structural commands.
@@ -642,43 +616,37 @@ export default function NotesRichTextDom({
         }
         rememberSelection(editor)
       },
-      setFontSize: (...args) => {
+      setFontSize: (value) => {
         const editor = editorRef.current
-        const value = args[0]
         if (!editor || editor.isDestroyed || typeof value !== 'string') return
         const chain = commandChain(editor)
         if (value === 'default') chain.unsetFontSize().run()
         else chain.setFontSize(value).run()
         rememberSelection(editor)
       },
-      setTextColor: (...args) => {
+      setTextColor: (value) => {
         const editor = editorRef.current
-        const value = args[0]
         if (!editor || editor.isDestroyed || (value !== null && typeof value !== 'string')) return
         const chain = commandChain(editor)
         if (value === null) chain.unsetColor().run()
         else chain.setColor(value).run()
         rememberSelection(editor)
       },
-      setHighlightColor: (...args) => {
+      setHighlightColor: (value) => {
         const editor = editorRef.current
-        const value = args[0]
         if (!editor || editor.isDestroyed || (value !== null && typeof value !== 'string')) return
         const chain = commandChain(editor)
         if (value === null) chain.unsetHighlight().run()
         else chain.setHighlight({ color: value }).run()
         rememberSelection(editor)
       },
-      setLink: (...args) => {
+      setLink: (rawHref) => {
         const editor = editorRef.current
-        const rawHref = args[0]
         if (!editor || editor.isDestroyed || typeof rawHref !== 'string') return
         const href = normalizeHref(rawHref)
         if (!href) return
-
         const selection = safeSelection(editor, savedSelectionRef.current)
         const chain = commandChain(editor)
-
         if (editor.isActive('link')) {
           chain.extendMarkRange('link').setLink({ href }).run()
         } else if (selection.from === selection.to) {
@@ -700,9 +668,8 @@ export default function NotesRichTextDom({
         const selection = safeSelection(editor, savedSelectionRef.current)
         return editor.state.doc.textBetween(selection.from, selection.to, ' ')
       },
-      insertInternalLink: (...args) => {
+      insertInternalLink: (linkHtml) => {
         const editor = editorRef.current
-        const linkHtml = args[0]
         if (!editor || editor.isDestroyed || typeof linkHtml !== 'string') return
         commandChain(editor).insertContent(linkHtml).run()
         rememberSelection(editor)
@@ -719,12 +686,10 @@ export default function NotesRichTextDom({
     }),
     [canvasMode, commandChain, rememberSelection]
   )
-
   useEffect(() => {
     const element = mountRef.current
     if (!element) return undefined
     const { canvasMode, editable } = initialContent
-
     const editor = new Editor({
       element,
       extensions: [
@@ -740,7 +705,7 @@ export default function NotesRichTextDom({
                       block.id === id && ['image', 'video', 'audio', 'file'].includes(block.type)
                   ) as MobileNoteAttachment | undefined),
                 getUri: (id) => assetsRef.current?.[id],
-                onPress: (id, action) => {
+                onClick: (id, action) => {
                   void canvasCallbacks.current.onAttachmentPress?.(id, action)
                 },
                 refreshers: refreshersRef.current
@@ -782,22 +747,18 @@ export default function NotesRichTextDom({
         emitFormatting(current)
       }
     })
-
     editorRef.current = editor
     void canvasCallbacks.current.onEditorReady?.()
     rememberSelection(editor)
-
     const dom = editor.view.dom
     const reportHeight = (): void => {
       const height = Math.max(28, Math.ceil(dom.scrollHeight))
       void callbacksRef.current.onHeightChange(height)
     }
-
     const handleReadOnlyClick = (event: MouseEvent): void => {
       if (editor.isEditable) return
       const element = event.target instanceof Element ? event.target : null
       if (!element) return
-
       const internal = element.closest<HTMLElement>('[data-study-internal-link="true"]')
       if (internal) {
         event.preventDefault()
@@ -810,7 +771,6 @@ export default function NotesRichTextDom({
         })
         return
       }
-
       const anchor = element.closest<HTMLAnchorElement>('a[href]')
       const href = anchor?.getAttribute('href')?.trim()
       if (href) {
@@ -818,12 +778,10 @@ export default function NotesRichTextDom({
         void callbacksRef.current.onOpenExternalLink?.(href)
       }
     }
-
     dom.addEventListener('click', handleReadOnlyClick)
     const observer = new ResizeObserver(reportHeight)
     observer.observe(dom)
     reportHeight()
-
     return () => {
       dom.removeEventListener('click', handleReadOnlyClick)
       observer.disconnect()
@@ -831,7 +789,6 @@ export default function NotesRichTextDom({
       editor.destroy()
     }
   }, [emitFormatting, initialContent, rememberSelection])
-
   useEffect(() => {
     const editor = editorRef.current
     if (!editor || editor.isDestroyed) return
@@ -839,7 +796,6 @@ export default function NotesRichTextDom({
     editor.view.dom.setAttribute('role', editable ? 'textbox' : 'document')
     refreshersRef.current.forEach((refresh) => refresh())
   }, [editable])
-
   const uriSignature = JSON.stringify(assetUris)
   useEffect(() => {
     refreshersRef.current.forEach((refresh) => refresh())
@@ -847,10 +803,8 @@ export default function NotesRichTextDom({
   useEffect(() => {
     editorRef.current?.view.dom.dispatchEvent(new Event(NOTE_PAGINATION_LAYOUT_EVENT))
   }, [appearance.variant, appearance.paperColor, appearance.paperPattern])
-
   return (
     <>
-      <DomViewportMeta />
       <main
         className="notes-rich-root"
         data-note-canvas={canvasMode ? 'true' : undefined}
@@ -898,7 +852,6 @@ export default function NotesRichTextDom({
     </>
   )
 }
-
 const styles = `
   html:not(:has(.pwa)), body:not(:has(.pwa)), #root { margin: 0; width: 100%; min-height: 1px; background: transparent; }
   .notes-rich-root, .notes-rich-root * { box-sizing: border-box; }

@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { ScrollView, View } from 'react-native'
 import type { CalendarUnreadReminderRecord } from '@mymind/contracts/calendar'
 import { calendarParseDate } from '@mymind/core/calendar-month'
 import { AppDialog } from '../../shared/ui/AppDialog'
@@ -7,7 +6,6 @@ import { Button, EmptyState, ErrorState } from '../../shared/ui/primitives'
 import { WorkspaceNodeCard } from '../../shared/ui/Workspace'
 import { messageFor } from '../../shared/ui/form-model'
 import { calendarReminderLabel } from './calendar-presentation'
-
 const MONTHS = [
   'января',
   'февраля',
@@ -22,7 +20,6 @@ const MONTHS = [
   'ноября',
   'декабря'
 ] as const
-
 function occurrenceLabel(reminder: CalendarUnreadReminderRecord): string {
   const date = calendarParseDate(reminder.occurrenceDate)
   const day = `${date.getDate()} ${MONTHS[date.getMonth()]} ${date.getFullYear()}`
@@ -30,7 +27,6 @@ function occurrenceLabel(reminder: CalendarUnreadReminderRecord): string {
     .filter(Boolean)
     .join(' · ')
 }
-
 export function CalendarReminderInboxModal({
   reminders,
   close,
@@ -42,7 +38,6 @@ export function CalendarReminderInboxModal({
 }): React.JSX.Element {
   const [busy, setBusy] = useState<string | null>(null)
   const [error, setError] = useState('')
-
   const run = (key: string, selected: CalendarUnreadReminderRecord[]): void => {
     if (busy) return
     setBusy(key)
@@ -55,7 +50,6 @@ export function CalendarReminderInboxModal({
       setBusy(null)
     }
   }
-
   return (
     <AppDialog
       open
@@ -72,38 +66,53 @@ export function CalendarReminderInboxModal({
       presentation="sheet"
       busy={Boolean(busy)}
     >
-      <ScrollView contentContainerStyle={{ padding: 14, gap: 10, paddingBottom: 28 }}>
-        {reminders.length > 1 ? (
-          <View style={{ alignItems: 'flex-start', marginBottom: 2 }}>
-            <Button
-              label={busy === 'all' ? 'Подождите…' : 'Понятно для всех'}
-              selected
-              disabled={Boolean(busy)}
-              onPress={() => run('all', reminders)}
-            />
-          </View>
-        ) : null}
-        {error ? <ErrorState message={error} /> : null}
-        {reminders.length === 0 ? <EmptyState text="Все напоминания прочитаны." /> : null}
-
-        {reminders.map((reminder) => (
-          <WorkspaceNodeCard
-            key={reminder.deliveryId}
-            title={reminder.title}
-            subtitle={occurrenceLabel(reminder)}
-            leadingIcon="calendar"
-            action={
+      <div className="ui-scroll">
+        <div
+          className="ui-stack ui-scroll-content"
+          style={{
+            padding: 14,
+            gap: 10,
+            paddingBottom: 28
+          }}
+        >
+          {reminders.length > 1 ? (
+            <div
+              className="ui-stack"
+              style={{
+                alignItems: 'flex-start',
+                marginBottom: 2
+              }}
+            >
               <Button
-                label={busy === reminder.deliveryId ? '…' : 'Понятно'}
-                compact
+                label={busy === 'all' ? 'Подождите…' : 'Понятно для всех'}
                 selected
                 disabled={Boolean(busy)}
-                onPress={() => run(reminder.deliveryId, [reminder])}
+                onClick={() => run('all', reminders)}
               />
-            }
-          />
-        ))}
-      </ScrollView>
+            </div>
+          ) : null}
+          {error ? <ErrorState message={error} /> : null}
+          {reminders.length === 0 ? <EmptyState text="Все напоминания прочитаны." /> : null}
+
+          {reminders.map((reminder) => (
+            <WorkspaceNodeCard
+              key={reminder.deliveryId}
+              title={reminder.title}
+              subtitle={occurrenceLabel(reminder)}
+              leadingIcon="calendar"
+              action={
+                <Button
+                  label={busy === reminder.deliveryId ? '…' : 'Понятно'}
+                  compact
+                  selected
+                  disabled={Boolean(busy)}
+                  onClick={() => run(reminder.deliveryId, [reminder])}
+                />
+              }
+            />
+          ))}
+        </div>
+      </div>
     </AppDialog>
   )
 }

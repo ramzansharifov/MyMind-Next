@@ -1,20 +1,18 @@
+import { Action } from '../../../ui/browser'
 import { runAfterInteraction } from './run-after-interaction'
 import { useState } from 'react'
-import { Pressable, Text, View } from 'react-native'
 import { AppDialog } from './AppDialog'
 import { AppIcon, type AppIconName } from './icons'
 import { IconButton } from './primitives'
 import { useTheme } from './theme'
-
 export type ActionMenuItem = {
   key?: string
   label: string
   icon: AppIconName
   danger?: boolean
   disabled?: boolean
-  onPress(): void
+  onClick(): void
 }
-
 export function ActionMenuDialog({
   open,
   onOpenChange,
@@ -29,7 +27,6 @@ export function ActionMenuDialog({
   description?: string
 }): React.JSX.Element {
   const theme = useTheme()
-
   return (
     <AppDialog
       open={open}
@@ -39,37 +36,45 @@ export function ActionMenuDialog({
       icon="more"
       presentation="sheet"
     >
-      <View style={{ padding: 12, paddingBottom: 18, gap: 6 }}>
+      <div
+        className="ui-stack"
+        style={{
+          padding: 12,
+          paddingBottom: 18,
+          gap: 6
+        }}
+      >
         {items.map((item) => {
           const color = item.danger ? theme.error : theme.text
           return (
-            <Pressable
+            <Action
               key={item.key ?? item.label}
-              accessibilityRole="button"
-              accessibilityLabel={item.label}
+              role={'button'}
+              aria-label={item.label}
               disabled={item.disabled}
-              onPress={() => {
+              onClick={() => {
                 if (item.disabled) return
                 onOpenChange(false)
-                runAfterInteraction(() => item.onPress())
+                runAfterInteraction(() => item.onClick())
               }}
-              style={({ pressed }) => ({
+              style={{
                 minHeight: 52,
                 flexDirection: 'row',
                 alignItems: 'center',
                 gap: 12,
-                paddingHorizontal: 13,
-                paddingVertical: 10,
+                paddingInline: 13,
+                paddingBlock: 10,
                 borderRadius: 14,
-                backgroundColor: pressed
-                  ? item.danger
-                    ? theme.error + '0E'
-                    : theme.surface
-                  : 'transparent',
-                opacity: item.disabled ? 0.4 : pressed ? 0.76 : 1
-              })}
+                backgroundColor: 'transparent',
+                opacity: item.disabled ? 0.4 : 1
+              }}
+              pressedStyle={{
+                backgroundColor: item.danger ? theme.error + '0E' : theme.surface,
+                opacity: item.disabled ? 0.4 : 0.76
+              }}
             >
-              <View
+              <div
+                className="ui-stack"
                 style={{
                   width: 34,
                   height: 34,
@@ -84,16 +89,25 @@ export function ActionMenuDialog({
                   size={17}
                   color={item.danger ? theme.error : theme.accent}
                 />
-              </View>
-              <Text style={{ flex: 1, color, fontSize: 15, fontWeight: '600' }}>{item.label}</Text>
-            </Pressable>
+              </div>
+              <span
+                className="ui-text"
+                style={{
+                  flex: '1 1 0%',
+                  color: color,
+                  fontSize: 15,
+                  fontWeight: 600
+                }}
+              >
+                {item.label}
+              </span>
+            </Action>
           )
         })}
-      </View>
+      </div>
     </AppDialog>
   )
 }
-
 export function ActionMenu({
   items,
   title = 'Действия',
@@ -110,7 +124,6 @@ export function ActionMenu({
   disabled?: boolean
 }): React.JSX.Element {
   const [open, setOpen] = useState(false)
-
   return (
     <>
       <IconButton
@@ -118,7 +131,7 @@ export function ActionMenu({
         icon="more"
         compact={compact}
         disabled={disabled}
-        onPress={() => setOpen(true)}
+        onClick={() => setOpen(true)}
       />
       <ActionMenuDialog
         open={open}

@@ -1,7 +1,6 @@
-import { Pressable, Text, View } from 'react-native'
+import { Action } from '../../ui/browser'
 import { AppIcon, type AppIconName } from '../shared/ui/icons'
 import { useTheme } from '../shared/ui/theme'
-
 export function MobileAppHeader({
   title,
   icon,
@@ -15,25 +14,32 @@ export function MobileAppHeader({
 }): React.JSX.Element {
   const theme = useTheme()
   return (
-    <View style={{ paddingHorizontal: 16, paddingTop: 10, paddingBottom: 12 }}>
-      <View
+    <div
+      className="ui-stack"
+      style={{
+        paddingInline: 16,
+        paddingTop: 10,
+        paddingBottom: 12
+      }}
+    >
+      <div
+        className="ui-stack"
         style={{
           minHeight: 80,
           flexDirection: 'row',
           alignItems: 'center',
           gap: 10,
-          paddingHorizontal: 12,
-          paddingVertical: 12,
+          paddingInline: 12,
+          paddingBlock: 12,
           overflow: 'hidden',
           borderWidth: 1,
           borderColor: theme.border,
           borderRadius: 28,
-          backgroundColor: theme.surface,
-          elevation: 2
+          backgroundColor: theme.surface
         }}
       >
-        <View
-          pointerEvents="none"
+        <div
+          className="ui-stack"
           style={{
             position: 'absolute',
             top: -82,
@@ -41,11 +47,12 @@ export function MobileAppHeader({
             width: 190,
             height: 190,
             borderRadius: 95,
-            backgroundColor: theme.accent + '12'
+            backgroundColor: theme.accent + '12',
+            pointerEvents: 'none'
           }}
-        />
-        <View
-          pointerEvents="none"
+        ></div>
+        <div
+          className="ui-stack"
           style={{
             position: 'absolute',
             bottom: -100,
@@ -53,20 +60,23 @@ export function MobileAppHeader({
             width: 176,
             height: 176,
             borderRadius: 88,
-            backgroundColor: theme.accent + '08'
+            backgroundColor: theme.accent + '08',
+            pointerEvents: 'none'
           }}
-        />
+        ></div>
 
-        <View
+        <div
+          className="ui-stack"
           style={{
-            flex: 1,
+            flex: '1 1 0%',
             minWidth: 0,
             flexDirection: 'row',
             alignItems: 'center',
             gap: 12
           }}
         >
-          <View
+          <div
+            className="ui-stack"
             style={{
               width: 48,
               height: 48,
@@ -79,30 +89,35 @@ export function MobileAppHeader({
             }}
           >
             <AppIcon name={icon} size={23} strokeWidth={2} color={theme.accent} />
-          </View>
+          </div>
 
-          <Text
-            numberOfLines={1}
+          <span
+            className="ui-text"
+            data-lines={1}
             style={{
-              flex: 1,
+              flex: '1 1 0%',
               color: theme.text,
               fontSize: 25,
-              lineHeight: 31,
-              fontWeight: '600',
-              letterSpacing: -0.8
+              lineHeight: '31px',
+              fontWeight: 600,
+              letterSpacing: -0.8,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              display: '-webkit-box',
+              WebkitBoxOrient: 'vertical',
+              WebkitLineClamp: 1
             }}
           >
             {title}
-          </Text>
-        </View>
+          </span>
+        </div>
 
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Открыть меню навигации"
+        <Action
+          role={'button'}
+          aria-label={'Открыть меню навигации'}
           disabled={disabled}
-          hitSlop={6}
-          onPress={onMenuPress}
-          style={({ pressed }) => ({
+          onClick={onMenuPress}
+          style={{
             width: 44,
             height: 44,
             alignItems: 'center',
@@ -110,13 +125,17 @@ export function MobileAppHeader({
             borderWidth: 1,
             borderColor: theme.border,
             borderRadius: 14,
-            backgroundColor: pressed ? theme.raised : theme.background + '99',
-            opacity: disabled ? 0.45 : pressed ? 0.76 : 1
-          })}
+            backgroundColor: theme.background + '99',
+            opacity: disabled ? 0.45 : 1
+          }}
+          pressedStyle={{
+            backgroundColor: theme.raised,
+            opacity: disabled ? 0.45 : 0.76
+          }}
         >
           <AppIcon name="menu" size={21} strokeWidth={2} color={theme.muted} />
-        </Pressable>
-      </View>
-    </View>
+        </Action>
+      </div>
+    </div>
   )
 }

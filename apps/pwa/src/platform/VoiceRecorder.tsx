@@ -2,11 +2,9 @@ import { useEffect, useRef, useState } from 'react'
 import type { NoteVoiceRecordingMimeType } from '@mymind/contracts/notes'
 import type { StudyLocalAsset } from '@mymind/contracts/study'
 import { NOTE_VOICE_RECORDING_MAX_BYTES } from '@mymind/contracts/notes'
-import { View } from 'react-native'
 import { Button, Label } from '../client/shared/ui/primitives'
 import { useTheme } from '../client/shared/ui/theme'
 import { AudioPlaybackControls } from '../client/shared/ui/AudioPlaybackControls'
-
 export interface VoiceRecordingInput {
   uri: string
   mimeType: NoteVoiceRecordingMimeType
@@ -18,7 +16,6 @@ interface Props {
   disabled?: boolean
   onBusyChange?: (busy: boolean) => void
 }
-
 export function VoiceRecorder({
   saveRecording,
   onSaved,
@@ -117,8 +114,20 @@ export function VoiceRecorder({
     }
   }
   return (
-    <View style={{ gap: 8 }}>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+    <div
+      className="ui-stack"
+      style={{
+        gap: 8
+      }}
+    >
+      <div
+        className="ui-stack"
+        style={{
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          gap: 8
+        }}
+      >
         <Button
           label={
             phase === 'recording'
@@ -131,7 +140,7 @@ export function VoiceRecorder({
           }
           selected={phase === 'recording'}
           disabled={disabled || phase === 'starting' || phase === 'saving'}
-          onPress={() => {
+          onClick={() => {
             if (phase === 'recording') recorder.current?.stop()
             else void start()
           }}
@@ -140,17 +149,23 @@ export function VoiceRecorder({
           <Button
             label="Отмена"
             danger
-            onPress={() => {
+            onClick={() => {
               cancelled.current = true
               recorder.current?.stop()
             }}
           />
         ) : null}
-      </View>
+      </div>
       {phase === 'recording' ? (
-        <View style={{ gap: 8 }}>
-          <View
-            accessibilityLabel="Идёт запись голоса"
+        <div
+          className="ui-stack"
+          style={{
+            gap: 8
+          }}
+        >
+          <div
+            className="ui-stack"
+            aria-label={'Идёт запись голоса'}
             style={{
               height: 40,
               flexDirection: 'row',
@@ -160,27 +175,27 @@ export function VoiceRecorder({
             }}
           >
             {Array.from({ length: 36 }, (_, index) => (
-              <View
+              <div
+                className="ui-stack"
                 key={index}
                 style={{
-                  flex: 1,
+                  flex: '1 1 0%',
                   height: 6 + Math.abs(Math.sin(index * 1.7 + elapsed / 220)) * 30,
                   backgroundColor: theme.accent,
                   borderRadius: 3
                 }}
-              />
+              ></div>
             ))}
-          </View>
+          </div>
           <Label muted>
             Запись · {String(Math.floor(elapsed / 60000)).padStart(2, '0')}:
             {String(Math.floor(elapsed / 1000) % 60).padStart(2, '0')}
           </Label>
-        </View>
+        </div>
       ) : null}
-    </View>
+    </div>
   )
 }
-
 export function AudioAssetPlayer({
   uri,
   onError
@@ -219,7 +234,12 @@ export function AudioAssetPlayer({
       })
   }
   return (
-    <View style={{ gap: 6 }}>
+    <div
+      className="ui-stack"
+      style={{
+        gap: 6
+      }}
+    >
       <audio
         ref={audio}
         key={uri}
@@ -256,6 +276,6 @@ export function AudioAssetPlayer({
           }
         }}
       />
-    </View>
+    </div>
   )
 }

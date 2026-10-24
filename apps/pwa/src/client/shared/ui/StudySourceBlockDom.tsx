@@ -19,14 +19,10 @@ import mermaid from 'mermaid'
 import ReactMarkdown, { type Components } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { useEffect, useMemo, useRef, useState } from 'react'
-
-import { DomViewportMeta } from './DomViewportMeta'
 import { getStudyCodeLanguage, normalizeStudyCodeLanguage } from './studySourceLanguages'
-
 export type StudySourceKind = 'code' | 'markdown' | 'latex' | 'mermaid'
 export type StudySourceViewMode = 'write' | 'split' | 'preview'
 export type StudySourceMermaidTheme = 'dark' | 'default' | 'neutral' | 'forest'
-
 interface StudySourceBlockDomProps {
   kind: StudySourceKind
   source: string
@@ -48,21 +44,17 @@ interface StudySourceBlockDomProps {
   onSourceChange: (source: string) => Promise<void>
   onHeightChange: (height: number) => Promise<void>
 }
-
 interface MermaidState {
   status: 'idle' | 'loading' | 'success' | 'error'
   svg: string
   error: string
 }
-
 const EMPTY_MERMAID: MermaidState = {
   status: 'idle',
   svg: '',
   error: ''
 }
-
 registerMermaidGrammar()
-
 function escapeHtml(value: string): string {
   return value
     .replaceAll('&', '&amp;')
@@ -71,28 +63,23 @@ function escapeHtml(value: string): string {
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#039;')
 }
-
 function normalizeLegacyCodeSource(source: string): string {
   return source.replace(/^[\t ]*\n/, '')
 }
-
 function highlightCode(source: string, language: string): string {
   const option = getStudyCodeLanguage(language)
   if (option.prismLanguage === 'plain') return escapeHtml(source)
   const grammar = Prism.languages[option.prismLanguage]
   return grammar ? Prism.highlight(source, grammar, option.prismLanguage) : escapeHtml(source)
 }
-
 function highlightMarkdown(source: string): string {
   const grammar = Prism.languages.markdown
   return grammar ? Prism.highlight(source, grammar, 'markdown') : escapeHtml(source)
 }
-
 function highlightLatex(source: string): string {
   const grammar = Prism.languages.latex
   return grammar ? Prism.highlight(source, grammar, 'latex') : escapeHtml(source)
 }
-
 function registerMermaidGrammar(): void {
   if (Prism.languages.mermaid) return
   Prism.languages.mermaid = {
@@ -112,23 +99,18 @@ function registerMermaidGrammar(): void {
     punctuation: /[()[\]{}:;|,]/
   }
 }
-
 function highlightMermaid(source: string): string {
   return Prism.highlight(source, Prism.languages.mermaid, 'mermaid')
 }
-
 function clampLatexScale(value: number): number {
   return Math.max(70, Math.min(180, value))
 }
-
 function clampMermaidScale(value: number): number {
   return Math.max(60, Math.min(180, value))
 }
-
 function LineNumbers({ source }: { source: string }): React.JSX.Element {
   const lineCount = Math.max(1, source.split('\n').length)
   const digits = Math.max(2, String(lineCount).length)
-
   return (
     <div className="line-numbers" style={{ minWidth: `calc(${digits}ch + 1.5rem)` }}>
       {Array.from({ length: lineCount }, (_, index) => (
@@ -137,7 +119,6 @@ function LineNumbers({ source }: { source: string }): React.JSX.Element {
     </div>
   )
 }
-
 function SourceEditor({
   source,
   placeholder,
@@ -177,7 +158,6 @@ function SourceEditor({
     </div>
   )
 }
-
 function ReadOnlyCode({
   source,
   language
@@ -214,7 +194,6 @@ function ReadOnlyCode({
     </div>
   )
 }
-
 const markdownComponents: Components = {
   a({ href, children }) {
     const internal = href?.startsWith('#') ?? false
@@ -233,7 +212,6 @@ const markdownComponents: Components = {
     const match = /language-([\w+-]+)/i.exec(className ?? '')
     const blockCode = Boolean(match) || rawSource.includes('\n') || rawSource.endsWith('\n')
     if (!blockCode) return <code className={className}>{children}</code>
-
     const source = rawSource.replace(/\n$/, '')
     const language = normalizeStudyCodeLanguage(match?.[1])
     return (
@@ -253,7 +231,6 @@ const markdownComponents: Components = {
     )
   }
 }
-
 function MarkdownPreview({ source }: { source: string }): React.JSX.Element {
   if (!source.trim()) return <p className="muted">Пустой Markdown-блок</p>
   return (
@@ -264,7 +241,6 @@ function MarkdownPreview({ source }: { source: string }): React.JSX.Element {
     </article>
   )
 }
-
 function LatexPreview({
   source,
   displayMode,
@@ -296,7 +272,6 @@ function LatexPreview({
       }
     }
   }, [displayMode, source])
-
   if (!source.trim()) return <p className="muted">Пустой LaTeX-блок</p>
   if (result.error) {
     return (
@@ -306,7 +281,6 @@ function LatexPreview({
       </div>
     )
   }
-
   return (
     <div
       className="latex-preview"
@@ -318,7 +292,6 @@ function LatexPreview({
     />
   )
 }
-
 function MermaidPreview({
   source,
   theme,
@@ -331,12 +304,10 @@ function MermaidPreview({
   scale: number
 }): React.JSX.Element {
   const [state, setState] = useState<MermaidState>(EMPTY_MERMAID)
-
   useEffect(() => {
     if (!source.trim()) {
       return undefined
     }
-
     let active = true
     const timer = window.setTimeout(() => {
       if (!active) return
@@ -347,7 +318,6 @@ function MermaidPreview({
         theme: theme === 'default' && colorScheme === 'dark' ? 'dark' : theme,
         suppressErrorRendering: true
       })
-
       const id = `mymind-mobile-mermaid-${Date.now()}-${Math.random().toString(36).slice(2)}`
       void mermaid
         .render(id, source)
@@ -363,13 +333,11 @@ function MermaidPreview({
           })
         })
     }, 320)
-
     return () => {
       active = false
       window.clearTimeout(timer)
     }
   }, [colorScheme, source, theme])
-
   if (!source.trim()) return <p className="muted">Пустой Mermaid-блок</p>
   if (state.status === 'idle' || state.status === 'loading') {
     return <p className="muted">Построение диаграммы…</p>
@@ -382,7 +350,6 @@ function MermaidPreview({
       </div>
     )
   }
-
   return (
     <div className="mermaid-preview">
       <div
@@ -393,11 +360,9 @@ function MermaidPreview({
     </div>
   )
 }
-
 function PanelLabel({ children }: { children: React.ReactNode }): React.JSX.Element {
   return <div className="panel-label">{children}</div>
 }
-
 export default function StudySourceBlockDom({
   kind,
   source,
@@ -424,18 +389,15 @@ export default function StudySourceBlockDom({
   const [localSource, setLocalSource] = useState(() =>
     kind === 'code' ? normalizeLegacyCodeSource(source) : source
   )
-
   useEffect(() => {
     if (source === emittedSourceRef.current) return
     const normalized = kind === 'code' ? normalizeLegacyCodeSource(source) : source
     setLocalSource(normalized)
     emittedSourceRef.current = source
   }, [kind, source])
-
   useEffect(() => {
     const root = rootRef.current
     if (!root) return undefined
-
     const report = (): void => {
       const height = Math.max(56, Math.ceil(root.scrollHeight))
       void onHeightChange(height)
@@ -448,15 +410,12 @@ export default function StudySourceBlockDom({
       observer.disconnect()
     }
   }, [kind, localSource, onHeightChange, viewMode])
-
   const changeSource = (value: string): void => {
     setLocalSource(value)
     emittedSourceRef.current = value
     void onSourceChange(value)
   }
-
   const activeMode: StudySourceViewMode = editable ? viewMode : 'preview'
-
   const editor = (() => {
     if (kind === 'code') {
       return editable ? (
@@ -471,7 +430,6 @@ export default function StudySourceBlockDom({
         <ReadOnlyCode source={localSource} language={language} />
       )
     }
-
     if (kind === 'markdown') {
       if (activeMode === 'write') {
         return (
@@ -506,7 +464,6 @@ export default function StudySourceBlockDom({
         </div>
       )
     }
-
     if (kind === 'latex') {
       const preview = (
         <LatexPreview
@@ -547,7 +504,6 @@ export default function StudySourceBlockDom({
         </div>
       )
     }
-
     const mermaidPreview = (
       <MermaidPreview
         source={localSource}
@@ -587,10 +543,8 @@ export default function StudySourceBlockDom({
       </div>
     )
   })()
-
   return (
     <>
-      <DomViewportMeta />
       <main
         ref={rootRef}
         className={`source-root ${colorScheme}`}
@@ -611,7 +565,6 @@ export default function StudySourceBlockDom({
     </>
   )
 }
-
 const styles = `
   html, body, #root { margin: 0; width: 100%; min-height: 1px; background: transparent; }
   * { box-sizing: border-box; }

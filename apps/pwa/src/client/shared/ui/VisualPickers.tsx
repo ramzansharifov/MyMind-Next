@@ -1,4 +1,4 @@
-import { Pressable, Text, View, useWindowDimensions } from 'react-native'
+import { useViewport, Action } from '../../../ui/browser'
 import {
   Archive,
   Atom,
@@ -69,12 +69,11 @@ import {
   Utensils,
   Wallet,
   type LucideIcon
-} from 'lucide-react-native'
+} from 'lucide-react'
 import type { VisualIconFamily } from './visual-options'
 import { AppIcon } from './icons'
 import { groupColorValue } from './visual-colors'
 import { useTheme } from './theme'
-
 const visualIcons: Record<string, LucideIcon> = {
   folder: Folder,
   book: BookOpen,
@@ -160,7 +159,6 @@ const visualIcons: Record<string, LucideIcon> = {
   'repeat-2': Repeat2,
   tag: Tag
 }
-
 export function VisualIconGlyph({
   value,
   size = 20,
@@ -176,7 +174,6 @@ export function VisualIconGlyph({
   const Icon = visualIcons[value] ?? Folder
   return <Icon size={size} color={color} strokeWidth={strokeWidth} />
 }
-
 export function VisualIconBadge({
   value,
   colorKey,
@@ -190,7 +187,8 @@ export function VisualIconBadge({
   const theme = useTheme()
   const color = groupColorValue(colorKey, theme.accent)
   return (
-    <View
+    <div
+      className="ui-stack"
       style={{
         width: size,
         height: size,
@@ -203,10 +201,9 @@ export function VisualIconBadge({
       }}
     >
       <VisualIconGlyph value={value} size={Math.round(size * 0.47)} color={color} />
-    </View>
+    </div>
   )
 }
-
 export function AppIconGrid({
   value,
   choices,
@@ -215,33 +212,48 @@ export function AppIconGrid({
 }: {
   family: VisualIconFamily
   value: string
-  choices: readonly { value: string | null; label: string }[]
+  choices: readonly {
+    value: string | null
+    label: string
+  }[]
   onChange(value: string): void
   disabled?: boolean
 }): React.JSX.Element {
   const theme = useTheme()
-  const { width } = useWindowDimensions()
+  const { width } = useViewport()
   const columns = width < 380 ? 4 : 5
   const gap = 8
   const available = Math.min(width - 64, 500)
   const tile = Math.max(52, Math.floor((available - gap * (columns - 1)) / columns))
   const selected = choices.find((choice) => choice.value === value)
-
   return (
-    <View style={{ gap: 10 }}>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap }}>
+    <div
+      className="ui-stack"
+      style={{
+        gap: 10
+      }}
+    >
+      <div
+        className="ui-stack"
+        style={{
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          gap: gap
+        }}
+      >
         {choices.map((choice) => {
           if (choice.value === null) return null
           const active = choice.value === value
           return (
-            <Pressable
+            <Action
               key={choice.value}
-              accessibilityRole="button"
-              accessibilityLabel={`Иконка: ${choice.label}`}
-              accessibilityState={{ selected: active, disabled }}
+              role={'button'}
+              aria-label={`Иконка: ${choice.label}`}
+              aria-selected={active}
+              aria-disabled={disabled}
               disabled={disabled}
-              onPress={() => onChange(choice.value as string)}
-              style={({ pressed }) => ({
+              onClick={() => onChange(choice.value as string)}
+              style={{
                 width: tile,
                 height: tile,
                 alignItems: 'center',
@@ -249,13 +261,13 @@ export function AppIconGrid({
                 borderRadius: 15,
                 borderWidth: 1,
                 borderColor: active ? theme.accent + '85' : theme.border,
-                backgroundColor: active
-                  ? theme.accent + '18'
-                  : pressed
-                    ? theme.raised
-                    : theme.surface,
-                opacity: disabled ? 0.42 : pressed ? 0.74 : 1
-              })}
+                backgroundColor: active ? theme.accent + '18' : theme.surface,
+                opacity: disabled ? 0.42 : 1
+              }}
+              pressedStyle={{
+                backgroundColor: active ? theme.accent + '18' : theme.raised,
+                opacity: disabled ? 0.42 : 0.74
+              }}
             >
               <VisualIconGlyph
                 value={choice.value}
@@ -263,17 +275,18 @@ export function AppIconGrid({
                 color={active ? theme.accent : theme.muted}
                 strokeWidth={active ? 2.4 : 2}
               />
-            </Pressable>
+            </Action>
           )
         })}
-      </View>
-      <View
+      </div>
+      <div
+        className="ui-stack"
         style={{
           minHeight: 42,
           flexDirection: 'row',
           alignItems: 'center',
           gap: 9,
-          paddingHorizontal: 11,
+          paddingInline: 11,
           borderWidth: 1,
           borderColor: theme.border,
           borderRadius: 13,
@@ -281,15 +294,21 @@ export function AppIconGrid({
         }}
       >
         <VisualIconGlyph value={value} size={17} color={theme.accent} />
-        <Text style={{ flex: 1, color: theme.muted, fontSize: 12.5 }}>
+        <span
+          className="ui-text"
+          style={{
+            flex: '1 1 0%',
+            color: theme.muted,
+            fontSize: 12.5
+          }}
+        >
           {selected?.label ?? value}
-        </Text>
+        </span>
         <AppIcon name="check" size={15} color={theme.accent} />
-      </View>
-    </View>
+      </div>
+    </div>
   )
 }
-
 export function AppColorGrid({
   value,
   choices,
@@ -297,28 +316,43 @@ export function AppColorGrid({
   disabled = false
 }: {
   value: string
-  choices: readonly { value: string | null; label: string }[]
+  choices: readonly {
+    value: string | null
+    label: string
+  }[]
   onChange(value: string): void
   disabled?: boolean
 }): React.JSX.Element {
   const theme = useTheme()
-
   return (
-    <View style={{ gap: 9 }}>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+    <div
+      className="ui-stack"
+      style={{
+        gap: 9
+      }}
+    >
+      <div
+        className="ui-stack"
+        style={{
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          gap: 8
+        }}
+      >
         {choices.map((choice) => {
           if (choice.value === null) return null
           const active = choice.value === value
           const color = groupColorValue(choice.value, theme.accent)
           return (
-            <Pressable
+            <Action
               key={choice.value}
-              accessibilityRole="button"
-              accessibilityLabel={`Цвет: ${choice.label}`}
-              accessibilityState={{ selected: active, disabled }}
+              role={'button'}
+              aria-label={`Цвет: ${choice.label}`}
+              aria-selected={active}
+              aria-disabled={disabled}
               disabled={disabled}
-              onPress={() => onChange(choice.value as string)}
-              style={({ pressed }) => ({
+              onClick={() => onChange(choice.value as string)}
+              style={{
                 width: 48,
                 height: 48,
                 alignItems: 'center',
@@ -327,10 +361,14 @@ export function AppColorGrid({
                 borderWidth: active ? 2 : 1,
                 borderColor: active ? color : theme.border,
                 backgroundColor: theme.surface,
-                opacity: disabled ? 0.42 : pressed ? 0.72 : 1
-              })}
+                opacity: disabled ? 0.42 : 1
+              }}
+              pressedStyle={{
+                opacity: disabled ? 0.42 : 0.72
+              }}
             >
-              <View
+              <div
+                className="ui-stack"
                 style={{
                   width: 24,
                   height: 24,
@@ -341,15 +379,14 @@ export function AppColorGrid({
                 }}
               >
                 {active ? <AppIcon name="check" size={14} color="#ffffff" strokeWidth={3} /> : null}
-              </View>
-            </Pressable>
+              </div>
+            </Action>
           )
         })}
-      </View>
-    </View>
+      </div>
+    </div>
   )
 }
-
 export function VisualGroupPreview({
   title,
   icon,
@@ -364,7 +401,8 @@ export function VisualGroupPreview({
 }): React.JSX.Element {
   const theme = useTheme()
   return (
-    <View
+    <div
+      className="ui-stack"
       style={{
         flexDirection: 'row',
         alignItems: 'center',
@@ -377,17 +415,42 @@ export function VisualGroupPreview({
       }}
     >
       <VisualIconBadge value={icon} colorKey={colorKey} />
-      <View style={{ flex: 1, minWidth: 0 }}>
-        <Text
-          numberOfLines={1}
-          style={{ color: theme.text, fontSize: 14, lineHeight: 19, fontWeight: '700' }}
+      <div
+        className="ui-stack"
+        style={{
+          flex: '1 1 0%',
+          minWidth: 0
+        }}
+      >
+        <span
+          className="ui-text"
+          data-lines={1}
+          style={{
+            color: theme.text,
+            fontSize: 14,
+            lineHeight: '19px',
+            fontWeight: 700,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            display: '-webkit-box',
+            WebkitBoxOrient: 'vertical',
+            WebkitLineClamp: 1
+          }}
         >
           {title.trim() || 'Название группы'}
-        </Text>
-        <Text style={{ marginTop: 2, color: theme.muted, fontSize: 11.5, lineHeight: 16 }}>
+        </span>
+        <span
+          className="ui-text"
+          style={{
+            marginTop: 2,
+            color: theme.muted,
+            fontSize: 11.5,
+            lineHeight: '16px'
+          }}
+        >
           {description}
-        </Text>
-      </View>
-    </View>
+        </span>
+      </div>
+    </div>
   )
 }

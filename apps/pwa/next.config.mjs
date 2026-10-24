@@ -7,23 +7,9 @@ const directory = path.dirname(fileURLToPath(import.meta.url))
 export default {
   reactStrictMode: true,
   images: { disableStaticImages: true },
-  transpilePackages: [
-    '@mymind/contracts',
-    '@mymind/core',
-    '@mymind/design',
-    '@mymind/persistence',
-    'react-native-web',
-    'react-native-svg',
-    'react-native-safe-area-context',
-    'lucide-react-native'
-  ],
+  transpilePackages: ['@mymind/contracts', '@mymind/core', '@mymind/design', '@mymind/persistence'],
   outputFileTracingRoot: path.resolve(directory, '../..'),
   webpack(config, { webpack }) {
-    config.resolve.alias = {
-      ...config.resolve.alias,
-      'react-native$': path.resolve(directory, 'src/platform/react-native.js')
-    }
-    config.resolve.extensions = ['.web.tsx', '.web.ts', '.web.js', ...config.resolve.extensions]
     config.resolve.fallback = { ...config.resolve.fallback, fs: false, path: false, crypto: false }
     config.module.rules.push({ test: /\.(webp|png|jpe?g|gif|woff2?)$/i, type: 'asset/resource' })
     config.plugins.push(new webpack.DefinePlugin({ 'import.meta.env.DEV': JSON.stringify(false) }))

@@ -1,4 +1,4 @@
-import { Pressable, ScrollView, Text, TextInput, View } from 'react-native'
+import { Action, TextControl } from '../../../ui/browser'
 import { useState } from 'react'
 import {
   AlignCenter,
@@ -22,8 +22,7 @@ import {
   Undo2,
   Unlink,
   type LucideIcon
-} from 'lucide-react-native'
-
+} from 'lucide-react'
 import { AppDialog } from './AppDialog'
 import type {
   NotesRichTextDomRef,
@@ -32,7 +31,6 @@ import type {
 } from './NotesRichTextDom'
 import { Button, Label } from './primitives'
 import { useTheme } from './theme'
-
 const FONT_SIZES = [
   { value: 'default', label: 'Авто' },
   { value: '0.75rem', label: '12' },
@@ -43,7 +41,6 @@ const FONT_SIZES = [
   { value: '1.65rem', label: '26' },
   { value: '2rem', label: '32' }
 ] as const
-
 const TEXT_COLORS = [
   '#202127',
   '#f2f3f5',
@@ -55,7 +52,6 @@ const TEXT_COLORS = [
   '#fb7185',
   '#f87171'
 ] as const
-
 const HIGHLIGHT_COLORS = [
   '#3f3f46',
   '#4c1d95',
@@ -66,33 +62,32 @@ const HIGHLIGHT_COLORS = [
   '#7f1d1d',
   '#701a75'
 ] as const
-
 function run(editor: NotesRichTextDomRef | null, command: NotesRichTextCommand): void {
   void editor?.command(command)
 }
-
 function ToolIcon({
   label,
   icon: Icon,
   active = false,
   disabled = false,
-  onPress
+  onClick
 }: {
   label: string
   icon: LucideIcon
   active?: boolean
   disabled?: boolean
-  onPress(): void
+  onClick(): void
 }): React.JSX.Element {
   const theme = useTheme()
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityState={{ selected: active, disabled }}
+    <Action
+      role={'button'}
+      aria-label={label}
+      aria-selected={active}
+      aria-disabled={disabled}
       disabled={disabled}
-      onPress={onPress}
-      style={({ pressed }) => ({
+      onClick={onClick}
+      style={{
         width: 44,
         height: 44,
         alignItems: 'center',
@@ -100,15 +95,18 @@ function ToolIcon({
         borderRadius: 10,
         borderWidth: active ? 1 : 0,
         borderColor: active ? theme.accent + '66' : 'transparent',
-        backgroundColor: active ? theme.accent + '18' : pressed ? theme.raised : 'transparent',
-        opacity: disabled ? 0.3 : pressed ? 0.7 : 1
-      })}
+        backgroundColor: active ? theme.accent + '18' : 'transparent',
+        opacity: disabled ? 0.3 : 1
+      }}
+      pressedStyle={{
+        backgroundColor: active ? theme.accent + '18' : theme.raised,
+        opacity: disabled ? 0.3 : 0.7
+      }}
     >
       <Icon size={17} color={active ? theme.accent : theme.muted} />
-    </Pressable>
+    </Action>
   )
 }
-
 export function NotesRichTextInlineControls({
   editor,
   state,
@@ -129,92 +127,103 @@ export function NotesRichTextInlineControls({
         label="Жирный"
         icon={Bold}
         active={state.bold}
-        onPress={() => run(editor, 'bold')}
+        onClick={() => run(editor, 'bold')}
       />
       <ToolIcon
         label="Курсив"
         icon={Italic}
         active={state.italic}
-        onPress={() => run(editor, 'italic')}
+        onClick={() => run(editor, 'italic')}
       />
       <ToolIcon
         label="Подчёркивание"
         icon={Underline}
         active={state.underline}
-        onPress={() => run(editor, 'underline')}
+        onClick={() => run(editor, 'underline')}
       />
       <ToolIcon
         label="Зачёркивание"
         icon={Strikethrough}
         active={state.strike}
-        onPress={() => run(editor, 'strike')}
+        onClick={() => run(editor, 'strike')}
       />
-      <ToolIcon label="Код" icon={Code2} active={state.code} onPress={() => run(editor, 'code')} />
+      <ToolIcon label="Код" icon={Code2} active={state.code} onClick={() => run(editor, 'code')} />
       <ToolIcon
         label="Маркированный список"
         icon={List}
         active={state.bulletList}
-        onPress={() => run(editor, 'bulletList')}
+        onClick={() => run(editor, 'bulletList')}
       />
       <ToolIcon
         label="Нумерованный список"
         icon={ListOrdered}
         active={state.orderedList}
-        onPress={() => run(editor, 'orderedList')}
+        onClick={() => run(editor, 'orderedList')}
       />
       {state.taskList !== undefined ? (
         <ToolIcon
           label="Список с чекбоксами"
           icon={CircleCheck}
           active={state.taskList}
-          onPress={() => run(editor, 'taskList')}
+          onClick={() => run(editor, 'taskList')}
         />
       ) : null}
       <ToolIcon
         label="Цитата"
         icon={Quote}
         active={state.blockquote}
-        onPress={() => run(editor, 'blockquote')}
+        onClick={() => run(editor, 'blockquote')}
       />
-      <ToolIcon label="Ссылка" icon={Link2} active={state.linkActive} onPress={openLink} />
+      <ToolIcon label="Ссылка" icon={Link2} active={state.linkActive} onClick={openLink} />
       {showSettings ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Все настройки текста"
-          onPress={openSettings}
-          style={({ pressed }) => ({
+        <Action
+          role={'button'}
+          aria-label={'Все настройки текста'}
+          onClick={openSettings}
+          style={{
             minWidth: 42,
             height: 44,
             alignItems: 'center',
             justifyContent: 'center',
             borderRadius: 10,
-            opacity: pressed ? 0.7 : 1
-          })}
+            opacity: 1
+          }}
+          pressedStyle={{
+            opacity: 0.7
+          }}
         >
-          <Text style={{ color: theme.text, fontSize: 13, fontWeight: '800' }}>Aa</Text>
-        </Pressable>
+          <span
+            className="ui-text"
+            style={{
+              color: theme.text,
+              fontSize: 13,
+              fontWeight: 800
+            }}
+          >
+            Aa
+          </span>
+        </Action>
       ) : null}
     </>
   )
 }
-
 function Swatch({
   color,
   selected,
-  onPress
+  onClick
 }: {
   color: string
   selected: boolean
-  onPress(): void
+  onClick(): void
 }): React.JSX.Element {
   const theme = useTheme()
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`Цвет ${color}`}
-      accessibilityState={{ selected }}
-      onPress={onPress}
-      style={({ pressed }) => ({
+    <Action
+      role={'button'}
+      aria-label={`Цвет ${color}`}
+      aria-selected={selected}
+      onClick={onClick}
+      style={{
         width: 42,
         height: 42,
         alignItems: 'center',
@@ -223,14 +232,24 @@ function Swatch({
         borderWidth: selected ? 2 : 1,
         borderColor: selected ? theme.accent : theme.border,
         backgroundColor: theme.surface,
-        opacity: pressed ? 0.72 : 1
-      })}
+        opacity: 1
+      }}
+      pressedStyle={{
+        opacity: 0.72
+      }}
     >
-      <View style={{ width: 24, height: 24, borderRadius: 8, backgroundColor: color }} />
-    </Pressable>
+      <div
+        className="ui-stack"
+        style={{
+          width: 24,
+          height: 24,
+          borderRadius: 8,
+          backgroundColor: color
+        }}
+      ></div>
+    </Action>
   )
 }
-
 export function NotesRichTextSettingsSheet({
   open,
   close,
@@ -247,12 +266,10 @@ export function NotesRichTextSettingsSheet({
   const theme = useTheme()
   const [linkOpen, setLinkOpen] = useState(false)
   const [href, setHref] = useState('')
-
   const openLink = (): void => {
     setHref(state.href)
     setLinkOpen(true)
   }
-
   return (
     <>
       <AppDialog
@@ -265,233 +282,353 @@ export function NotesRichTextSettingsSheet({
         icon="settings"
         presentation="sheet"
       >
-        <ScrollView contentContainerStyle={{ gap: 18, padding: 14, paddingBottom: 28 }}>
-          <View style={{ gap: 8 }}>
-            <Label muted>Быстро</Label>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-              <ToolIcon
-                label="Отменить"
-                icon={Undo2}
-                disabled={!state.canUndo}
-                onPress={() => run(editor, 'undo')}
-              />
-              <ToolIcon
-                label="Повторить"
-                icon={Redo2}
-                disabled={!state.canRedo}
-                onPress={() => run(editor, 'redo')}
-              />
-              <ToolIcon
-                label="Очистить форматирование"
-                icon={RemoveFormatting}
-                onPress={() => run(editor, 'clearFormatting')}
-              />
-            </View>
-          </View>
-
-          <View style={{ gap: 8 }}>
-            <Label muted>Текст</Label>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-              <ToolIcon
-                label="Жирный"
-                icon={Bold}
-                active={state.bold}
-                onPress={() => run(editor, 'bold')}
-              />
-              <ToolIcon
-                label="Курсив"
-                icon={Italic}
-                active={state.italic}
-                onPress={() => run(editor, 'italic')}
-              />
-              <ToolIcon
-                label="Подчёркивание"
-                icon={Underline}
-                active={state.underline}
-                onPress={() => run(editor, 'underline')}
-              />
-              <ToolIcon
-                label="Зачёркивание"
-                icon={Strikethrough}
-                active={state.strike}
-                onPress={() => run(editor, 'strike')}
-              />
-              <ToolIcon
-                label="Код"
-                icon={Code2}
-                active={state.code}
-                onPress={() => run(editor, 'code')}
-              />
-              <ToolIcon
-                label="Цитата"
-                icon={Quote}
-                active={state.blockquote}
-                onPress={() => run(editor, 'blockquote')}
-              />
-            </View>
-          </View>
-
-          <View style={{ gap: 8 }}>
-            <Label muted>Списки</Label>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-              <ToolIcon
-                label="Маркированный список"
-                icon={List}
-                active={state.bulletList}
-                onPress={() => run(editor, 'bulletList')}
-              />
-              <ToolIcon
-                label="Нумерованный список"
-                icon={ListOrdered}
-                active={state.orderedList}
-                onPress={() => run(editor, 'orderedList')}
-              />
-              {state.taskList !== undefined ? (
+        <div className="ui-scroll">
+          <div
+            className="ui-stack ui-scroll-content"
+            style={{
+              gap: 18,
+              padding: 14,
+              paddingBottom: 28
+            }}
+          >
+            <div
+              className="ui-stack"
+              style={{
+                gap: 8
+              }}
+            >
+              <Label muted>Быстро</Label>
+              <div
+                className="ui-stack"
+                style={{
+                  flexDirection: 'row',
+                  flexWrap: 'wrap',
+                  gap: 6
+                }}
+              >
                 <ToolIcon
-                  label="Список с чекбоксами"
-                  icon={CircleCheck}
-                  active={state.taskList}
-                  onPress={() => run(editor, 'taskList')}
+                  label="Отменить"
+                  icon={Undo2}
+                  disabled={!state.canUndo}
+                  onClick={() => run(editor, 'undo')}
                 />
-              ) : null}
-              <ToolIcon
-                label="Увеличить отступ"
-                icon={IndentIncrease}
-                onPress={() => run(editor, 'indent')}
-              />
-              <ToolIcon
-                label="Уменьшить отступ"
-                icon={IndentDecrease}
-                onPress={() => run(editor, 'outdent')}
-              />
-            </View>
-          </View>
+                <ToolIcon
+                  label="Повторить"
+                  icon={Redo2}
+                  disabled={!state.canRedo}
+                  onClick={() => run(editor, 'redo')}
+                />
+                <ToolIcon
+                  label="Очистить форматирование"
+                  icon={RemoveFormatting}
+                  onClick={() => run(editor, 'clearFormatting')}
+                />
+              </div>
+            </div>
 
-          {state.taskList !== undefined ? (
-            <View style={{ gap: 8 }}>
-              <Label muted>Регистр текста</Label>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                <Button
-                  label="aa"
-                  accessibilityLabel="Все строчные"
-                  onPress={() => run(editor, 'lowercase')}
+            <div
+              className="ui-stack"
+              style={{
+                gap: 8
+              }}
+            >
+              <Label muted>Текст</Label>
+              <div
+                className="ui-stack"
+                style={{
+                  flexDirection: 'row',
+                  flexWrap: 'wrap',
+                  gap: 6
+                }}
+              >
+                <ToolIcon
+                  label="Жирный"
+                  icon={Bold}
+                  active={state.bold}
+                  onClick={() => run(editor, 'bold')}
                 />
-                <Button
-                  label="AA"
-                  accessibilityLabel="Все прописные"
-                  onPress={() => run(editor, 'uppercase')}
+                <ToolIcon
+                  label="Курсив"
+                  icon={Italic}
+                  active={state.italic}
+                  onClick={() => run(editor, 'italic')}
                 />
-                <Button
-                  label="Aa"
-                  accessibilityLabel="Каждое слово с большой буквы"
-                  onPress={() => run(editor, 'titlecase')}
+                <ToolIcon
+                  label="Подчёркивание"
+                  icon={Underline}
+                  active={state.underline}
+                  onClick={() => run(editor, 'underline')}
                 />
-              </View>
-            </View>
-          ) : null}
-          <View style={{ gap: 8 }}>
-            <Label muted>Выравнивание</Label>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-              <ToolIcon
-                label="Слева"
-                icon={AlignLeft}
-                active={state.alignment === 'left'}
-                onPress={() => run(editor, 'alignLeft')}
-              />
-              <ToolIcon
-                label="По центру"
-                icon={AlignCenter}
-                active={state.alignment === 'center'}
-                onPress={() => run(editor, 'alignCenter')}
-              />
-              <ToolIcon
-                label="Справа"
-                icon={AlignRight}
-                active={state.alignment === 'right'}
-                onPress={() => run(editor, 'alignRight')}
-              />
-              <ToolIcon
-                label="По ширине"
-                icon={AlignJustify}
-                active={state.alignment === 'justify'}
-                onPress={() => run(editor, 'alignJustify')}
-              />
-            </View>
-          </View>
+                <ToolIcon
+                  label="Зачёркивание"
+                  icon={Strikethrough}
+                  active={state.strike}
+                  onClick={() => run(editor, 'strike')}
+                />
+                <ToolIcon
+                  label="Код"
+                  icon={Code2}
+                  active={state.code}
+                  onClick={() => run(editor, 'code')}
+                />
+                <ToolIcon
+                  label="Цитата"
+                  icon={Quote}
+                  active={state.blockquote}
+                  onClick={() => run(editor, 'blockquote')}
+                />
+              </div>
+            </div>
 
-          <View style={{ gap: 8 }}>
-            <Label muted>Размер текста</Label>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-              {FONT_SIZES.map((size) => (
+            <div
+              className="ui-stack"
+              style={{
+                gap: 8
+              }}
+            >
+              <Label muted>Списки</Label>
+              <div
+                className="ui-stack"
+                style={{
+                  flexDirection: 'row',
+                  flexWrap: 'wrap',
+                  gap: 6
+                }}
+              >
+                <ToolIcon
+                  label="Маркированный список"
+                  icon={List}
+                  active={state.bulletList}
+                  onClick={() => run(editor, 'bulletList')}
+                />
+                <ToolIcon
+                  label="Нумерованный список"
+                  icon={ListOrdered}
+                  active={state.orderedList}
+                  onClick={() => run(editor, 'orderedList')}
+                />
+                {state.taskList !== undefined ? (
+                  <ToolIcon
+                    label="Список с чекбоксами"
+                    icon={CircleCheck}
+                    active={state.taskList}
+                    onClick={() => run(editor, 'taskList')}
+                  />
+                ) : null}
+                <ToolIcon
+                  label="Увеличить отступ"
+                  icon={IndentIncrease}
+                  onClick={() => run(editor, 'indent')}
+                />
+                <ToolIcon
+                  label="Уменьшить отступ"
+                  icon={IndentDecrease}
+                  onClick={() => run(editor, 'outdent')}
+                />
+              </div>
+            </div>
+
+            {state.taskList !== undefined ? (
+              <div
+                className="ui-stack"
+                style={{
+                  gap: 8
+                }}
+              >
+                <Label muted>Регистр текста</Label>
+                <div
+                  className="ui-stack"
+                  style={{
+                    flexDirection: 'row',
+                    flexWrap: 'wrap',
+                    gap: 8
+                  }}
+                >
+                  <Button
+                    label="aa"
+                    accessibilityLabel="Все строчные"
+                    onClick={() => run(editor, 'lowercase')}
+                  />
+                  <Button
+                    label="AA"
+                    accessibilityLabel="Все прописные"
+                    onClick={() => run(editor, 'uppercase')}
+                  />
+                  <Button
+                    label="Aa"
+                    accessibilityLabel="Каждое слово с большой буквы"
+                    onClick={() => run(editor, 'titlecase')}
+                  />
+                </div>
+              </div>
+            ) : null}
+            <div
+              className="ui-stack"
+              style={{
+                gap: 8
+              }}
+            >
+              <Label muted>Выравнивание</Label>
+              <div
+                className="ui-stack"
+                style={{
+                  flexDirection: 'row',
+                  flexWrap: 'wrap',
+                  gap: 6
+                }}
+              >
+                <ToolIcon
+                  label="Слева"
+                  icon={AlignLeft}
+                  active={state.alignment === 'left'}
+                  onClick={() => run(editor, 'alignLeft')}
+                />
+                <ToolIcon
+                  label="По центру"
+                  icon={AlignCenter}
+                  active={state.alignment === 'center'}
+                  onClick={() => run(editor, 'alignCenter')}
+                />
+                <ToolIcon
+                  label="Справа"
+                  icon={AlignRight}
+                  active={state.alignment === 'right'}
+                  onClick={() => run(editor, 'alignRight')}
+                />
+                <ToolIcon
+                  label="По ширине"
+                  icon={AlignJustify}
+                  active={state.alignment === 'justify'}
+                  onClick={() => run(editor, 'alignJustify')}
+                />
+              </div>
+            </div>
+
+            <div
+              className="ui-stack"
+              style={{
+                gap: 8
+              }}
+            >
+              <Label muted>Размер текста</Label>
+              <div
+                className="ui-stack"
+                style={{
+                  flexDirection: 'row',
+                  flexWrap: 'wrap',
+                  gap: 6
+                }}
+              >
+                {FONT_SIZES.map((size) => (
+                  <Button
+                    key={size.value}
+                    label={size.label}
+                    compact
+                    selected={state.fontSize === size.value}
+                    onClick={() => void editor?.setFontSize(size.value)}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div
+              className="ui-stack"
+              style={{
+                gap: 8
+              }}
+            >
+              <Label muted>Цвет текста</Label>
+              <div
+                className="ui-stack"
+                style={{
+                  flexDirection: 'row',
+                  flexWrap: 'wrap',
+                  gap: 7
+                }}
+              >
+                <Swatch
+                  color={theme.accent}
+                  selected={state.color.toLowerCase() === theme.accent.toLowerCase()}
+                  onClick={() => void editor?.setTextColor(theme.accent)}
+                />
+                {TEXT_COLORS.map((color) => (
+                  <Swatch
+                    key={color}
+                    color={color}
+                    selected={state.color.toLowerCase() === color.toLowerCase()}
+                    onClick={() => void editor?.setTextColor(color)}
+                  />
+                ))}
+                <Button label="Сбросить" compact onClick={() => void editor?.setTextColor(null)} />
+              </div>
+            </div>
+
+            <div
+              className="ui-stack"
+              style={{
+                gap: 8
+              }}
+            >
+              <Label muted>Фон выделенного текста</Label>
+              <div
+                className="ui-stack"
+                style={{
+                  flexDirection: 'row',
+                  flexWrap: 'wrap',
+                  gap: 7
+                }}
+              >
+                <Swatch
+                  color={theme.accent}
+                  selected={state.backgroundColor.toLowerCase() === theme.accent.toLowerCase()}
+                  onClick={() => void editor?.setHighlightColor(theme.accent)}
+                />
+                {HIGHLIGHT_COLORS.map((color) => (
+                  <Swatch
+                    key={color}
+                    color={color}
+                    selected={state.backgroundColor.toLowerCase() === color.toLowerCase()}
+                    onClick={() => void editor?.setHighlightColor(color)}
+                  />
+                ))}
                 <Button
-                  key={size.value}
-                  label={size.label}
+                  label="Убрать"
                   compact
-                  selected={state.fontSize === size.value}
-                  onPress={() => void editor?.setFontSize(size.value)}
+                  onClick={() => void editor?.setHighlightColor(null)}
                 />
-              ))}
-            </View>
-          </View>
+              </div>
+            </div>
 
-          <View style={{ gap: 8 }}>
-            <Label muted>Цвет текста</Label>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 7 }}>
-              <Swatch
-                color={theme.accent}
-                selected={state.color.toLowerCase() === theme.accent.toLowerCase()}
-                onPress={() => void editor?.setTextColor(theme.accent)}
-              />
-              {TEXT_COLORS.map((color) => (
-                <Swatch
-                  key={color}
-                  color={color}
-                  selected={state.color.toLowerCase() === color.toLowerCase()}
-                  onPress={() => void editor?.setTextColor(color)}
+            <div
+              className="ui-stack"
+              style={{
+                gap: 8
+              }}
+            >
+              <Label muted>Ссылки</Label>
+              <div
+                className="ui-stack"
+                style={{
+                  flexDirection: 'row',
+                  gap: 8
+                }}
+              >
+                <Button
+                  label={state.linkActive ? 'Изменить ссылку' : 'Обычная ссылка'}
+                  compact
+                  onClick={openLink}
                 />
-              ))}
-              <Button label="Сбросить" compact onPress={() => void editor?.setTextColor(null)} />
-            </View>
-          </View>
-
-          <View style={{ gap: 8 }}>
-            <Label muted>Фон выделенного текста</Label>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 7 }}>
-              <Swatch
-                color={theme.accent}
-                selected={state.backgroundColor.toLowerCase() === theme.accent.toLowerCase()}
-                onPress={() => void editor?.setHighlightColor(theme.accent)}
-              />
-              {HIGHLIGHT_COLORS.map((color) => (
-                <Swatch
-                  key={color}
-                  color={color}
-                  selected={state.backgroundColor.toLowerCase() === color.toLowerCase()}
-                  onPress={() => void editor?.setHighlightColor(color)}
-                />
-              ))}
-              <Button label="Убрать" compact onPress={() => void editor?.setHighlightColor(null)} />
-            </View>
-          </View>
-
-          <View style={{ gap: 8 }}>
-            <Label muted>Ссылки</Label>
-            <View style={{ flexDirection: 'row', gap: 8 }}>
-              <Button
-                label={state.linkActive ? 'Изменить ссылку' : 'Обычная ссылка'}
-                compact
-                onPress={openLink}
-              />
-              {state.linkActive ? (
-                <ToolIcon
-                  label="Убрать ссылку"
-                  icon={Unlink}
-                  onPress={() => run(editor, 'unlink')}
-                />
-              ) : null}
-            </View>
-          </View>
-        </ScrollView>
+                {state.linkActive ? (
+                  <ToolIcon
+                    label="Убрать ссылку"
+                    icon={Unlink}
+                    onClick={() => run(editor, 'unlink')}
+                  />
+                ) : null}
+              </div>
+            </div>
+          </div>
+        </div>
       </AppDialog>
 
       <AppDialog
@@ -502,16 +639,23 @@ export function NotesRichTextSettingsSheet({
         icon="edit"
         presentation="sheet"
       >
-        <View style={{ gap: 12, padding: 14, paddingBottom: 22 }}>
-          <TextInput
-            accessibilityLabel="Адрес ссылки"
-            placeholder="https://example.com"
-            placeholderTextColor={theme.muted}
+        <div
+          className="ui-stack"
+          style={{
+            gap: 12,
+            padding: 14,
+            paddingBottom: 22
+          }}
+        >
+          <TextControl
+            aria-label={'Адрес ссылки'}
+            placeholder={'https://example.com'}
+            placeholderColor={theme.muted}
             value={href}
-            autoCapitalize="none"
-            autoCorrect={false}
-            keyboardType="url"
-            onChangeText={setHref}
+            autoCapitalize={'none'}
+            autoCorrect={'off'}
+            inputMode={'url'}
+            onValueChange={setHref}
             style={{
               minHeight: 50,
               borderWidth: 1,
@@ -519,16 +663,23 @@ export function NotesRichTextSettingsSheet({
               backgroundColor: theme.surface,
               color: theme.text,
               borderRadius: 12,
-              paddingHorizontal: 14,
+              paddingInline: 14,
               fontSize: 15
             }}
-          />
-          <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 8 }}>
+          ></TextControl>
+          <div
+            className="ui-stack"
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'flex-end',
+              gap: 8
+            }}
+          >
             {state.linkActive ? (
               <Button
                 label="Убрать"
                 danger
-                onPress={() => {
+                onClick={() => {
                   run(editor, 'unlink')
                   setLinkOpen(false)
                 }}
@@ -538,18 +689,17 @@ export function NotesRichTextSettingsSheet({
               label="Сохранить"
               selected
               disabled={!href.trim()}
-              onPress={() => {
+              onClick={() => {
                 void editor?.setLink(href)
                 setLinkOpen(false)
               }}
             />
-          </View>
-        </View>
+          </div>
+        </div>
       </AppDialog>
     </>
   )
 }
-
 export function NotesQuickLinkDialog({
   open,
   close,
@@ -563,7 +713,6 @@ export function NotesQuickLinkDialog({
 }): React.JSX.Element {
   const theme = useTheme()
   const [href, setHref] = useState(state.href)
-
   return (
     <AppDialog
       open={open}
@@ -574,16 +723,23 @@ export function NotesQuickLinkDialog({
       icon="edit"
       presentation="sheet"
     >
-      <View style={{ gap: 12, padding: 14, paddingBottom: 22 }}>
-        <TextInput
-          accessibilityLabel="Адрес ссылки"
-          placeholder="https://example.com"
-          placeholderTextColor={theme.muted}
+      <div
+        className="ui-stack"
+        style={{
+          gap: 12,
+          padding: 14,
+          paddingBottom: 22
+        }}
+      >
+        <TextControl
+          aria-label={'Адрес ссылки'}
+          placeholder={'https://example.com'}
+          placeholderColor={theme.muted}
           value={href}
-          autoCapitalize="none"
-          autoCorrect={false}
-          keyboardType="url"
-          onChangeText={setHref}
+          autoCapitalize={'none'}
+          autoCorrect={'off'}
+          inputMode={'url'}
+          onValueChange={setHref}
           style={{
             minHeight: 50,
             borderWidth: 1,
@@ -591,16 +747,23 @@ export function NotesQuickLinkDialog({
             backgroundColor: theme.surface,
             color: theme.text,
             borderRadius: 12,
-            paddingHorizontal: 14,
+            paddingInline: 14,
             fontSize: 15
           }}
-        />
-        <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 8 }}>
+        ></TextControl>
+        <div
+          className="ui-stack"
+          style={{
+            flexDirection: 'row',
+            justifyContent: 'flex-end',
+            gap: 8
+          }}
+        >
           {state.linkActive ? (
             <Button
               label="Убрать"
               danger
-              onPress={() => {
+              onClick={() => {
                 run(editor, 'unlink')
                 close()
               }}
@@ -610,13 +773,13 @@ export function NotesQuickLinkDialog({
             label="Сохранить"
             selected
             disabled={!href.trim()}
-            onPress={() => {
+            onClick={() => {
               void editor?.setLink(href)
               close()
             }}
           />
-        </View>
-      </View>
+        </div>
+      </div>
     </AppDialog>
   )
 }

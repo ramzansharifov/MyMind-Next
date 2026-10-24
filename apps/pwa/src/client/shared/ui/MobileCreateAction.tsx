@@ -1,7 +1,7 @@
+import type { PointerEvent } from 'react'
+import { Action } from '../../../ui/browser'
 import { runAfterInteraction } from './run-after-interaction'
 import { useCallback, useMemo, useRef, useState } from 'react'
-import { Pressable, Text, View, type GestureResponderEvent } from 'react-native'
-
 import { AppDialog } from './AppDialog'
 import { AppIcon, type AppIconName } from './icons'
 import {
@@ -11,7 +11,6 @@ import {
 import { useMobileCreateActionOverlay } from './MobileCreateActionOverlayContext'
 import { useFrameGesture } from './useFrameGesture'
 import { useTheme } from './theme'
-
 export interface MobileCreateActionItem {
   key: string
   label: string
@@ -19,13 +18,11 @@ export interface MobileCreateActionItem {
   icon?: AppIconName
   color?: string
   disabled?: boolean
-  onPress(): void
+  onClick(): void
   onHoldSelect?(): void
 }
-
 const HOLD_DELAY_MS = 380
 const TAP_MOVE_TOLERANCE = 18
-
 export function MobileCreateAction({
   actions,
   disabled = false,
@@ -43,7 +40,6 @@ export function MobileCreateAction({
   const overlay = useMobileCreateActionOverlay()
   const [open, setOpen] = useState(false)
   const [pressed, setPressed] = useState(false)
-
   const holdTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const touchActiveRef = useRef(false)
   const holdActiveRef = useRef(false)
@@ -56,46 +52,38 @@ export function MobileCreateAction({
   const carouselMotion = useFrameGesture((selection: { index: number; offsetY: number }) => {
     overlay?.update(selection.index, selection.offsetY)
   })
-
   const enabledActions = useMemo(
     () => actions.filter((action) => !disabled && !action.disabled),
     [actions, disabled]
   )
-
   const triggerDisabled = disabled || enabledActions.length === 0
-
   const clearHoldTimer = useCallback((): void => {
     if (!holdTimerRef.current) return
     clearTimeout(holdTimerRef.current)
     holdTimerRef.current = null
   }, [])
-
   const perform = useCallback(
     (action: MobileCreateActionItem): void => {
       if (disabled || action.disabled) return
-      runAfterInteraction(() => action.onPress())
+      runAfterInteraction(() => action.onClick())
     },
     [disabled]
   )
-
   const launch = (action: MobileCreateActionItem): void => {
     if (disabled || action.disabled) return
     setOpen(false)
     perform(action)
   }
-
   const launchDefaultAction = useCallback((): void => {
     if (triggerDisabled) return
     if (actions.length === 1) perform(actions[0])
     else setOpen(true)
   }, [actions, perform, triggerDisabled])
-
   const beginHoldTimer = useCallback((): void => {
     clearHoldTimer()
     holdTimerRef.current = setTimeout(() => {
       holdTimerRef.current = null
       if (!touchActiveRef.current || !overlay || !enabledActions.length) return
-
       holdActiveRef.current = true
       selectedIndexRef.current = 0
       anchorYRef.current = currentYRef.current
@@ -103,12 +91,10 @@ export function MobileCreateAction({
       overlay.show(enabledActions, 0)
     }, HOLD_DELAY_MS)
   }, [carouselMotion, clearHoldTimer, enabledActions, overlay])
-
   const updateCarousel = useCallback(
     (moveY: number): void => {
       currentYRef.current = moveY
       if (!holdActiveRef.current || !overlay || !enabledActions.length) return
-
       const selection = mobileCreateActionSelection(
         currentYRef.current - anchorYRef.current,
         enabledActions.length,
@@ -120,16 +106,13 @@ export function MobileCreateAction({
     },
     [carouselMotion, enabledActions, overlay]
   )
-
   const finishGesture = useCallback((): void => {
     touchActiveRef.current = false
     setPressed(false)
     clearHoldTimer()
     carouselMotion.flush()
-
     if (holdActiveRef.current && overlay && enabledActions.length) {
       holdActiveRef.current = false
-
       const action = enabledActions[selectedIndexRef.current]
       if (confirmHoldSelection) {
         overlay.awaitConfirmation('Дальше', (key) => {
@@ -138,7 +121,6 @@ export function MobileCreateAction({
             overlay.hide()
             return
           }
-
           if (confirmedAction.onHoldSelect) {
             overlay.handoff()
             setTimeout(() => confirmedAction.onHoldSelect?.(), 155)
@@ -156,7 +138,6 @@ export function MobileCreateAction({
       }
       return
     }
-
     const moved = Math.hypot(
       currentXRef.current - startXRef.current,
       currentYRef.current - startYRef.current
@@ -171,75 +152,80 @@ export function MobileCreateAction({
     overlay,
     perform
   ])
-
   const cancelGesture = useCallback((): void => {
     touchActiveRef.current = false
     setPressed(false)
     clearHoldTimer()
     carouselMotion.cancel()
-
     if (!holdActiveRef.current || !overlay) return
     holdActiveRef.current = false
     overlay.hide()
   }, [carouselMotion, clearHoldTimer, overlay])
-
   if (!actions.length) return null
-
   return (
     <>
-      <View
-        pointerEvents="box-none"
+      <div
+        className="ui-stack"
+        data-pass-through="true"
         style={{
           position: 'absolute',
           right: 2,
           bottom: 12,
-          zIndex: 30
+          zIndex: 30,
+          pointerEvents: 'none'
         }}
       >
-        <View
-          accessible
-          accessibilityRole="button"
-          accessibilityLabel={actions.length === 1 ? actions[0].label : label}
-          accessibilityHint={
+        <button
+          className="ui-stack"
+          role={'button'}
+          aria-label={actions.length === 1 ? actions[0].label : label}
+          title={
             enabledActions.length
               ? confirmHoldSelection
                 ? 'Удерживайте и проведите вверх или вниз, затем подтвердите выбор кнопкой Дальше'
                 : 'Удерживайте и проведите вверх или вниз для быстрого выбора действия'
               : undefined
           }
-          accessibilityState={{
-            disabled: triggerDisabled,
-            expanded: actions.length > 1 ? open : undefined
+          aria-disabled={triggerDisabled}
+          disabled={triggerDisabled}
+          aria-expanded={actions.length > 1 ? open : undefined}
+          type="button"
+          onClick={(event) => {
+            if (event.detail === 0) launchDefaultAction()
           }}
-          onAccessibilityTap={launchDefaultAction}
-          onStartShouldSetResponder={() => !triggerDisabled}
-          onStartShouldSetResponderCapture={() => !triggerDisabled}
-          onMoveShouldSetResponder={() => !triggerDisabled}
-          onMoveShouldSetResponderCapture={() => !triggerDisabled}
-          onResponderGrant={(event: GestureResponderEvent) => {
-            touchActiveRef.current = true
-            holdActiveRef.current = false
-            selectedIndexRef.current = 0
-            setPressed(true)
-
-            startXRef.current = event.nativeEvent.pageX
-            startYRef.current = event.nativeEvent.pageY
-            currentXRef.current = event.nativeEvent.pageX
-            currentYRef.current = event.nativeEvent.pageY
-            anchorYRef.current = event.nativeEvent.pageY
-            beginHoldTimer()
+          onPointerDown={(event) => {
+            if (event.button !== 0 || !event.isPrimary) return
+            event.currentTarget.setPointerCapture(event.pointerId)
+            ;((event: PointerEvent<HTMLElement>) => {
+              touchActiveRef.current = true
+              holdActiveRef.current = false
+              selectedIndexRef.current = 0
+              setPressed(true)
+              startXRef.current = event.pageX
+              startYRef.current = event.pageY
+              currentXRef.current = event.pageX
+              currentYRef.current = event.pageY
+              anchorYRef.current = event.pageY
+              beginHoldTimer()
+            })(event)
           }}
-          onResponderMove={(event: GestureResponderEvent) => {
-            currentXRef.current = event.nativeEvent.pageX
-            updateCarousel(event.nativeEvent.pageY)
+          onPointerMove={(event) => {
+            if (event.currentTarget.hasPointerCapture(event.pointerId))
+              ((event: PointerEvent<HTMLElement>) => {
+                currentXRef.current = event.pageX
+                updateCarousel(event.pageY)
+              })(event)
           }}
-          onResponderRelease={(event: GestureResponderEvent) => {
-            currentXRef.current = event.nativeEvent.pageX
-            currentYRef.current = event.nativeEvent.pageY
-            finishGesture()
+          onPointerUp={(event) => {
+            if (!event.currentTarget.hasPointerCapture(event.pointerId)) return
+            ;((event: PointerEvent<HTMLElement>) => {
+              currentXRef.current = event.pageX
+              currentYRef.current = event.pageY
+              finishGesture()
+            })(event)
+            event.currentTarget.releasePointerCapture(event.pointerId)
           }}
-          onResponderTerminationRequest={() => false}
-          onResponderTerminate={cancelGesture}
+          onPointerCancel={cancelGesture}
           style={{
             width: iconOnly ? 52 : undefined,
             height: iconOnly ? 52 : undefined,
@@ -248,17 +234,14 @@ export function MobileCreateAction({
             alignItems: 'center',
             justifyContent: 'center',
             gap: iconOnly ? 0 : 8,
-            paddingHorizontal: iconOnly ? 0 : 16,
+            paddingInline: iconOnly ? 0 : 16,
             borderRadius: iconOnly ? 26 : 12,
             borderWidth: 1,
             borderColor: theme.accent + '33',
             backgroundColor: theme.accent,
             opacity: triggerDisabled ? 0.4 : pressed ? 0.8 : 1,
-            elevation: 8,
-            shadowColor: '#000000',
-            shadowOpacity: 0.24,
-            shadowRadius: 12,
-            shadowOffset: { width: 0, height: 7 }
+            boxShadow: `0px ${7}px ${12}px color-mix(in srgb, ${'#000000'} calc(${0.24} * 100%), transparent)`,
+            touchAction: 'none'
           }}
         >
           <AppIcon
@@ -268,12 +251,19 @@ export function MobileCreateAction({
             color="#ffffff"
           />
           {!iconOnly ? (
-            <Text style={{ color: '#ffffff', fontSize: 14, fontWeight: '600' }}>
+            <span
+              className="ui-text"
+              style={{
+                color: '#ffffff',
+                fontSize: 14,
+                fontWeight: 600
+              }}
+            >
               {actions.length === 1 ? actions[0].label : label}
-            </Text>
+            </span>
           ) : null}
-        </View>
-      </View>
+        </button>
+      </div>
 
       {actions.length > 1 ? (
         <AppDialog
@@ -284,32 +274,44 @@ export function MobileCreateAction({
           icon="add"
           presentation="sheet"
         >
-          <View style={{ gap: 8, padding: 12, paddingBottom: 18 }}>
+          <div
+            className="ui-stack"
+            style={{
+              gap: 8,
+              padding: 12,
+              paddingBottom: 18
+            }}
+          >
             {actions.map((action) => {
               const actionColor = action.color ?? theme.accent
               return (
-                <Pressable
+                <Action
                   key={action.key}
-                  accessibilityRole="button"
-                  accessibilityLabel={action.label}
-                  accessibilityState={{ disabled: disabled || action.disabled }}
+                  role={'button'}
+                  aria-label={action.label}
+                  aria-disabled={disabled || action.disabled}
                   disabled={disabled || action.disabled}
-                  onPress={() => launch(action)}
-                  style={({ pressed: actionPressed }) => ({
+                  onClick={() => launch(action)}
+                  style={{
                     minHeight: 52,
                     flexDirection: 'row',
                     alignItems: 'center',
                     gap: 12,
-                    paddingHorizontal: 13,
-                    paddingVertical: 10,
+                    paddingInline: 13,
+                    paddingBlock: 10,
                     borderWidth: 1,
                     borderColor: theme.border,
                     borderRadius: 12,
-                    backgroundColor: actionPressed ? theme.raised : theme.surface,
-                    opacity: disabled || action.disabled ? 0.42 : actionPressed ? 0.78 : 1
-                  })}
+                    backgroundColor: theme.surface,
+                    opacity: disabled || action.disabled ? 0.42 : 1
+                  }}
+                  pressedStyle={{
+                    backgroundColor: theme.raised,
+                    opacity: disabled || action.disabled ? 0.42 : 0.78
+                  }}
                 >
-                  <View
+                  <div
+                    className="ui-stack"
                     style={{
                       width: 36,
                       height: 36,
@@ -322,36 +324,44 @@ export function MobileCreateAction({
                     }}
                   >
                     <AppIcon name={action.icon ?? 'add'} size={18} color={actionColor} />
-                  </View>
-                  <View style={{ flex: 1, minWidth: 0 }}>
-                    <Text
+                  </div>
+                  <div
+                    className="ui-stack"
+                    style={{
+                      flex: '1 1 0%',
+                      minWidth: 0
+                    }}
+                  >
+                    <span
+                      className="ui-text"
                       style={{
                         color: theme.text,
                         fontSize: 14.5,
-                        lineHeight: 20,
-                        fontWeight: '700'
+                        lineHeight: '20px',
+                        fontWeight: 700
                       }}
                     >
                       {action.label}
-                    </Text>
+                    </span>
                     {action.description ? (
-                      <Text
+                      <span
+                        className="ui-text"
                         style={{
                           marginTop: 2,
                           color: theme.muted,
                           fontSize: 12,
-                          lineHeight: 17
+                          lineHeight: '17px'
                         }}
                       >
                         {action.description}
-                      </Text>
+                      </span>
                     ) : null}
-                  </View>
+                  </div>
                   <AppIcon name="forward" size={17} color={theme.muted} />
-                </Pressable>
+                </Action>
               )
             })}
-          </View>
+          </div>
         </AppDialog>
       ) : null}
     </>

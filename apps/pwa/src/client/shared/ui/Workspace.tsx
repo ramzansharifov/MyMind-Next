@@ -1,8 +1,7 @@
+import { Action } from '../../../ui/browser'
 import type { PropsWithChildren, ReactNode } from 'react'
-import { Pressable, Text, View } from 'react-native'
 import { AppIcon, type AppIconName } from './icons'
 import { useTheme } from './theme'
-
 export function WorkspacePanel({
   title,
   description,
@@ -17,7 +16,8 @@ export function WorkspacePanel({
 }>): React.JSX.Element {
   const theme = useTheme()
   return (
-    <View
+    <div
+      className="ui-stack"
       style={{
         borderWidth: 1,
         borderColor: theme.border,
@@ -27,20 +27,22 @@ export function WorkspacePanel({
       }}
     >
       {title || description || icon || action ? (
-        <View
+        <div
+          className="ui-stack"
           style={{
             minHeight: 64,
             flexDirection: 'row',
             alignItems: 'center',
             gap: 12,
-            paddingHorizontal: 20,
-            paddingVertical: 12,
+            paddingInline: 20,
+            paddingBlock: 12,
             borderBottomWidth: 1,
             borderBottomColor: theme.border
           }}
         >
           {icon ? (
-            <View
+            <div
+              className="ui-stack"
               style={{
                 width: 40,
                 height: 40,
@@ -53,28 +55,56 @@ export function WorkspacePanel({
               }}
             >
               <AppIcon name={icon} size={17} color={theme.accent} />
-            </View>
+            </div>
           ) : null}
-          <View style={{ flex: 1, minWidth: 0 }}>
+          <div
+            className="ui-stack"
+            style={{
+              flex: '1 1 0%',
+              minWidth: 0
+            }}
+          >
             {title ? (
-              <Text style={{ color: theme.text, fontSize: 15, lineHeight: 20, fontWeight: '700' }}>
+              <span
+                className="ui-text"
+                style={{
+                  color: theme.text,
+                  fontSize: 15,
+                  lineHeight: '20px',
+                  fontWeight: 700
+                }}
+              >
                 {title}
-              </Text>
+              </span>
             ) : null}
             {description ? (
-              <Text style={{ marginTop: 2, color: theme.muted, fontSize: 12, lineHeight: 17 }}>
+              <span
+                className="ui-text"
+                style={{
+                  marginTop: 2,
+                  color: theme.muted,
+                  fontSize: 12,
+                  lineHeight: '17px'
+                }}
+              >
                 {description}
-              </Text>
+              </span>
             ) : null}
-          </View>
+          </div>
           {action}
-        </View>
+        </div>
       ) : null}
-      <View style={{ padding: 16 }}>{children}</View>
-    </View>
+      <div
+        className="ui-stack"
+        style={{
+          padding: 16
+        }}
+      >
+        {children}
+      </div>
+    </div>
   )
 }
-
 export function WorkspaceStatCard({
   label,
   value,
@@ -88,11 +118,12 @@ export function WorkspaceStatCard({
 }): React.JSX.Element {
   const theme = useTheme()
   return (
-    <View
-      accessibilityLabel={detail ? `${label}: ${value}. ${detail}` : `${label}: ${value}`}
+    <div
+      className="ui-stack"
+      aria-label={detail ? `${label}: ${value}. ${detail}` : `${label}: ${value}`}
       style={{
         minWidth: 145,
-        flex: 1,
+        flex: '1 1 0%',
         minHeight: 68,
         flexDirection: 'row',
         alignItems: 'center',
@@ -105,7 +136,8 @@ export function WorkspaceStatCard({
       }}
     >
       {icon ? (
-        <View
+        <div
+          className="ui-stack"
           style={{
             width: 40,
             height: 40,
@@ -119,37 +151,82 @@ export function WorkspaceStatCard({
           }}
         >
           <AppIcon name={icon} size={17} color={theme.accent} />
-        </View>
+        </div>
       ) : null}
-      <View style={{ flex: 1, minWidth: 0 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8 }}>
-          <Text style={{ color: theme.text, fontSize: 20, lineHeight: 25, fontWeight: '600' }}>
+      <div
+        className="ui-stack"
+        style={{
+          flex: '1 1 0%',
+          minWidth: 0
+        }}
+      >
+        <div
+          className="ui-stack"
+          style={{
+            flexDirection: 'row',
+            alignItems: 'baseline',
+            gap: 8
+          }}
+        >
+          <span
+            className="ui-text"
+            style={{
+              color: theme.text,
+              fontSize: 20,
+              lineHeight: '25px',
+              fontWeight: 600
+            }}
+          >
             {value}
-          </Text>
-          <Text
-            numberOfLines={1}
-            style={{ flex: 1, color: theme.text, fontSize: 12, lineHeight: 17, fontWeight: '500' }}
+          </span>
+          <span
+            className="ui-text"
+            data-lines={1}
+            style={{
+              flex: '1 1 0%',
+              color: theme.text,
+              fontSize: 12,
+              lineHeight: '17px',
+              fontWeight: 500,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              display: '-webkit-box',
+              WebkitBoxOrient: 'vertical',
+              WebkitLineClamp: 1
+            }}
           >
             {label}
-          </Text>
-        </View>
+          </span>
+        </div>
         {detail ? (
-          <Text numberOfLines={1} style={{ marginTop: 2, color: theme.muted, fontSize: 11 }}>
+          <span
+            className="ui-text"
+            data-lines={1}
+            style={{
+              marginTop: 2,
+              color: theme.muted,
+              fontSize: 11,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              display: '-webkit-box',
+              WebkitBoxOrient: 'vertical',
+              WebkitLineClamp: 1
+            }}
+          >
             {detail}
-          </Text>
+          </span>
         ) : null}
-      </View>
-    </View>
+      </div>
+    </div>
   )
 }
-
 export function WorkspaceNodeCard({
   title,
   subtitle,
   leadingIcon,
   leading,
-  onPress,
-  onLongPress,
+  onClick,
+  onHold,
   action,
   selected = false,
   subtitleColor
@@ -158,15 +235,16 @@ export function WorkspaceNodeCard({
   subtitle?: string
   leadingIcon?: AppIconName
   leading?: ReactNode
-  onPress?(): void
-  onLongPress?(): void
+  onClick?(): void
+  onHold?(): void
   action?: ReactNode
   selected?: boolean
   subtitleColor?: string
 }): React.JSX.Element {
   const theme = useTheme()
   return (
-    <View
+    <div
+      className="ui-stack"
       style={{
         minHeight: 64,
         marginBottom: 8,
@@ -179,14 +257,14 @@ export function WorkspaceNodeCard({
         backgroundColor: selected ? theme.accent + '0C' : theme.surface
       }}
     >
-      <Pressable
-        accessibilityRole={onPress ? 'button' : undefined}
-        accessibilityLabel={title}
-        accessibilityHint={onLongPress ? 'Удерживайте для дополнительных действий' : undefined}
-        onPress={onPress}
-        onLongPress={onLongPress}
-        style={({ pressed }) => ({
-          flex: 1,
+      <Action
+        role={onClick ? 'button' : undefined}
+        aria-label={title}
+        title={onHold ? 'Удерживайте для дополнительных действий' : undefined}
+        onClick={onClick}
+        onHold={onHold}
+        style={{
+          flex: '1 1 0%',
           minWidth: 0,
           minHeight: 62,
           flexDirection: 'row',
@@ -194,14 +272,18 @@ export function WorkspaceNodeCard({
           gap: 12,
           paddingLeft: 14,
           paddingRight: action ? 6 : 14,
-          paddingVertical: 12,
-          backgroundColor: pressed && onPress ? theme.raised : 'transparent'
-        })}
+          paddingBlock: 12,
+          backgroundColor: 'transparent'
+        }}
+        pressedStyle={{
+          backgroundColor: onClick ? theme.raised : 'transparent'
+        }}
       >
         {leading ? (
           leading
         ) : leadingIcon ? (
-          <View
+          <div
+            className="ui-stack"
             style={{
               width: 40,
               height: 40,
@@ -215,36 +297,66 @@ export function WorkspaceNodeCard({
             }}
           >
             <AppIcon name={leadingIcon} size={17} color={theme.accent} />
-          </View>
+          </div>
         ) : null}
-        <View style={{ flex: 1, minWidth: 0 }}>
-          <Text
-            numberOfLines={2}
-            style={{ color: theme.text, fontSize: 14.5, lineHeight: 20, fontWeight: '600' }}
+        <div
+          className="ui-stack"
+          style={{
+            flex: '1 1 0%',
+            minWidth: 0
+          }}
+        >
+          <span
+            className="ui-text"
+            data-lines={2}
+            style={{
+              color: theme.text,
+              fontSize: 14.5,
+              lineHeight: '20px',
+              fontWeight: 600,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              display: '-webkit-box',
+              WebkitBoxOrient: 'vertical',
+              WebkitLineClamp: 2
+            }}
           >
             {title}
-          </Text>
+          </span>
           {subtitle ? (
-            <Text
-              numberOfLines={3}
+            <span
+              className="ui-text"
+              data-lines={3}
               style={{
                 marginTop: 3,
                 color: subtitleColor ?? theme.muted,
                 fontSize: 12,
-                lineHeight: 17
+                lineHeight: '17px',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                display: '-webkit-box',
+                WebkitBoxOrient: 'vertical',
+                WebkitLineClamp: 3
               }}
             >
               {subtitle}
-            </Text>
+            </span>
           ) : null}
-        </View>
-        {!action && onPress ? <AppIcon name="forward" size={18} color={theme.muted} /> : null}
-      </Pressable>
+        </div>
+        {!action && onClick ? <AppIcon name="forward" size={18} color={theme.muted} /> : null}
+      </Action>
       {action ? (
-        <View style={{ alignItems: 'center', justifyContent: 'center', paddingRight: 8 }}>
+        <div
+          className="ui-stack"
+          style={{
+            alignItems: 'center',
+            justifyContent: 'center',
+            paddingRight: 8
+          }}
+        >
           {action}
-        </View>
+        </div>
       ) : null}
-    </View>
+    </div>
   )
 }

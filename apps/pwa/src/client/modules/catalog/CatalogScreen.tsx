@@ -1,5 +1,5 @@
+import { openExternalUrl, Action } from '../../../ui/browser'
 import { useCallback, useState } from 'react'
-import { Linking, Pressable, View } from 'react-native'
 import {
   Bookmark,
   Braces,
@@ -10,7 +10,7 @@ import {
   Music2,
   SlidersHorizontal,
   type LucideIcon
-} from 'lucide-react-native'
+} from 'lucide-react'
 import { stringifyMovieJson, type MovieRecord } from '@mymind/contracts/movies'
 import {
   normalizeMusicItemRecord,
@@ -51,13 +51,10 @@ import {
   musicYoutubeSearchUrl,
   musicTrackInputFromDraft
 } from './music-presentation'
-
 type MovieStatusFilter = 'all' | 'watchlist' | 'watched' | 'favorite'
 type MusicTopTab = 'tracks' | 'favorites' | 'playlists'
-
 const MOVIE_STATUS_TAB_IDS = ['all', 'watchlist', 'watched', 'favorite'] as const
 const MUSIC_TAB_IDS = ['tracks', 'favorites', 'playlists'] as const
-
 const MOVIE_STATUS_FILTERS: ReadonlyArray<{
   id: MovieStatusFilter
   label: string
@@ -68,7 +65,6 @@ const MOVIE_STATUS_FILTERS: ReadonlyArray<{
   { id: 'watched', label: 'Просмотрено', icon: Check },
   { id: 'favorite', label: 'Избранное', icon: Heart }
 ]
-
 const MUSIC_VIEW_FILTERS: ReadonlyArray<{
   id: MusicTopTab
   label: string
@@ -78,7 +74,6 @@ const MUSIC_VIEW_FILTERS: ReadonlyArray<{
   { id: 'favorites', label: 'Избранное', icon: Heart },
   { id: 'playlists', label: 'Плейлисты', icon: ListMusic }
 ]
-
 export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX.Element {
   const services = useServices()
   const theme = useTheme()
@@ -122,7 +117,6 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
   const [movieSwipeFeedback, showMovieSwipeFeedback] = useSwipeTabFeedback<MovieStatusFilter>()
   const [musicSwipeFeedback, showMusicSwipeFeedback] = useSwipeTabFeedback<MusicTopTab>()
   const [searchOpen, setSearchOpen] = useState(false)
-
   const changeMovieFilter = useCallback(
     (next: MovieStatusFilter): void => {
       if (next === filter) return
@@ -130,16 +124,13 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
     },
     [filter]
   )
-
   const changeMusicTab = useCallback(
     (next: MusicTopTab): void => {
       const current: MusicTopTab =
         playlistId || playlistsView ? 'playlists' : filter === 'favorite' ? 'favorites' : 'tracks'
       if (next === current && !playlistId) return
-
       setQuery('')
       setPlaylistId(null)
-
       if (next === 'favorites') {
         setFilter('favorite')
         setPlaylistsView(false)
@@ -153,7 +144,6 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
     },
     [filter, playlistId, playlistsView]
   )
-
   const editMovie = (item?: MovieRecord): void =>
     setForm({
       title: item ? 'Редактирование' : 'Добавить фильм',
@@ -171,7 +161,6 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
         state.refresh()
       }
     })
-
   const editTrack = (item?: MusicItemRecord): void => {
     const draft = musicTrackDraftFromItem(item)
     const playlists = state.data?.playlists ?? []
@@ -219,7 +208,6 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
       }
     })
   }
-
   const editPlaylist = (item?: MusicPlaylistRecord): void =>
     setForm({
       title: item ? 'Редактировать плейлист' : 'Новый плейлист',
@@ -238,16 +226,14 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
         state.refresh()
       }
     })
-
   const webSearch = async (searchQuery: string): Promise<void> => {
     setWebError('')
     try {
-      await Linking.openURL(`https://www.google.com/search?q=${encodeURIComponent(searchQuery)}`)
+      await openExternalUrl(`https://www.google.com/search?q=${encodeURIComponent(searchQuery)}`)
     } catch (reason) {
       setWebError(messageFor(reason))
     }
   }
-
   const allMovieItems = mode === 'movies' ? ((state.data?.items ?? []) as MovieRecord[]) : []
   const normalizedMovieQuery = query.trim().toLocaleLowerCase('ru')
   const movieItems = sortMovieRecords(
@@ -256,7 +242,6 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
         filter === 'all' || (filter === 'favorite' && item.favorite) || item.status === filter
       if (!statusMatches || !movieMatchesAdvancedFilters(item, movieAdvancedFilters)) return false
       if (!normalizedMovieQuery) return true
-
       return [
         item.title,
         item.description,
@@ -272,9 +257,7 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
     }),
     movieAdvancedFilters.sort
   )
-
   const movieFiltersActive = movieAdvancedFiltersActive(movieAdvancedFilters)
-
   const musicItems =
     mode === 'music'
       ? ((state.data?.items ?? []) as MusicItemRecord[]).map(normalizeMusicItemRecord)
@@ -314,14 +297,12 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
   const musicEmptyBecauseFilter =
     Boolean(normalizedQuery) || Boolean(musicArtist) || Boolean(musicYear)
   const musicAdvancedFiltersActive = Boolean(musicArtist || musicYear)
-
   const selectedMovie =
     mode === 'movies' && selectedMovieId
       ? ((state.data?.items as MovieRecord[] | undefined)?.find(
           (item) => item.id === selectedMovieId
         ) ?? null)
       : null
-
   const updateMovie = (movie: MovieRecord): void => {
     state.mutate(() => {
       services.movies.updateMovie(
@@ -329,7 +310,6 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
       )
     })
   }
-
   const updateMusic = (item: MusicItemRecord): void => {
     state.mutate(() => {
       services.music.updateMusicItem(
@@ -337,7 +317,6 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
       )
     })
   }
-
   const deletePlaylist = (playlist: MusicPlaylistRecord): void => {
     state.confirmDelete(
       'Удалить плейлист?',
@@ -351,10 +330,14 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
       'Треки останутся в музыкальной библиотеке. Удалится только сам плейлист.'
     )
   }
-
   if (mode === 'movies' && selectedMovie) {
     return (
-      <View style={{ flex: 1 }}>
+      <div
+        className="ui-stack"
+        style={{
+          flex: '1 1 0%'
+        }}
+      >
         {state.error && <ErrorState message={state.error} retry={state.refresh} />}
         {webError && <ErrorState message={webError} />}
         <MovieDetailView
@@ -393,20 +376,30 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
             close={() => setJsonView(null)}
           />
         ) : null}
-      </View>
+      </div>
     )
   }
-
   return (
-    <View style={{ flex: 1 }}>
-      <View style={{ gap: 8, marginBottom: 12 }}>
+    <div
+      className="ui-stack"
+      style={{
+        flex: '1 1 0%'
+      }}
+    >
+      <div
+        className="ui-stack"
+        style={{
+          gap: 8,
+          marginBottom: 12
+        }}
+      >
         {mode === 'movies' ? (
           <SwipeTabBar
             items={MOVIE_STATUS_FILTERS}
             value={filter}
             onChange={changeMovieFilter}
             feedback={movieSwipeFeedback}
-            search={{ value: query, onChangeText: setQuery }}
+            search={{ value: query, onValueChange: setQuery }}
             onSearchOpenChange={setSearchOpen}
             renderIcon={(item, selected) => {
               const Icon = item.icon
@@ -420,19 +413,20 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
             }}
             trailing={
               <>
-                <View
+                <div
+                  className="ui-stack"
                   style={{
                     width: 1,
                     height: 26,
-                    marginHorizontal: 2,
+                    marginInline: 2,
                     backgroundColor: theme.border
                   }}
-                />
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="JSON библиотеки"
+                ></div>
+                <Action
+                  role={'button'}
+                  aria-label={'JSON библиотеки'}
                   disabled={state.pending}
-                  onPress={() =>
+                  onClick={() =>
                     setJsonView({
                       title: 'JSON библиотеки',
                       description: `Полные сохранённые данные всех фильмов · ${allMovieItems.length}`,
@@ -441,40 +435,44 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
                       accessibilityLabel: 'JSON данных фильмов'
                     })
                   }
-                  style={({ pressed }) => ({
-                    flex: 1,
+                  style={{
+                    flex: '1 1 0%',
                     minWidth: 0,
                     height: 40,
                     alignItems: 'center',
                     justifyContent: 'center',
                     borderRadius: 12,
-                    backgroundColor: pressed ? theme.raised : 'transparent',
-                    opacity: state.pending ? 0.45 : pressed ? 0.72 : 1
-                  })}
+                    backgroundColor: 'transparent',
+                    opacity: state.pending ? 0.45 : 1
+                  }}
+                  pressedStyle={{
+                    backgroundColor: theme.raised,
+                    opacity: state.pending ? 0.45 : 0.72
+                  }}
                 >
                   <Braces size={19} strokeWidth={2} color={theme.muted} />
-                </Pressable>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Фильтры и сортировка"
-                  accessibilityState={{ selected: movieFiltersActive }}
+                </Action>
+                <Action
+                  role={'button'}
+                  aria-label={'Фильтры и сортировка'}
+                  aria-selected={movieFiltersActive}
                   disabled={state.pending}
-                  onPress={() => setMovieFiltersOpen(true)}
-                  style={({ pressed }) => ({
+                  onClick={() => setMovieFiltersOpen(true)}
+                  style={{
                     position: 'relative',
-                    flex: 1,
+                    flex: '1 1 0%',
                     minWidth: 0,
                     height: 40,
                     alignItems: 'center',
                     justifyContent: 'center',
                     borderRadius: 12,
-                    backgroundColor: movieFiltersActive
-                      ? theme.accent + '18'
-                      : pressed
-                        ? theme.raised
-                        : 'transparent',
-                    opacity: state.pending ? 0.45 : pressed ? 0.72 : 1
-                  })}
+                    backgroundColor: movieFiltersActive ? theme.accent + '18' : 'transparent',
+                    opacity: state.pending ? 0.45 : 1
+                  }}
+                  pressedStyle={{
+                    backgroundColor: movieFiltersActive ? theme.accent + '18' : theme.raised,
+                    opacity: state.pending ? 0.45 : 0.72
+                  }}
                 >
                   <SlidersHorizontal
                     size={19}
@@ -482,8 +480,8 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
                     color={movieFiltersActive ? theme.accent : theme.muted}
                   />
                   {movieFiltersActive ? (
-                    <View
-                      pointerEvents="none"
+                    <div
+                      className="ui-stack"
                       style={{
                         position: 'absolute',
                         top: 7,
@@ -491,11 +489,12 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
                         width: 6,
                         height: 6,
                         borderRadius: 3,
-                        backgroundColor: theme.accent
+                        backgroundColor: theme.accent,
+                        pointerEvents: 'none'
                       }}
-                    />
+                    ></div>
                   ) : null}
-                </Pressable>
+                </Action>
               </>
             }
           />
@@ -505,7 +504,7 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
             value={musicTopTab}
             onChange={changeMusicTab}
             feedback={musicSwipeFeedback}
-            search={{ value: query, onChangeText: setQuery }}
+            search={{ value: query, onValueChange: setQuery }}
             onSearchOpenChange={setSearchOpen}
             renderIcon={(item, selected) => {
               const Icon = item.icon
@@ -519,19 +518,20 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
             }}
             trailing={
               <>
-                <View
+                <div
+                  className="ui-stack"
                   style={{
                     width: 1,
                     height: 26,
-                    marginHorizontal: 2,
+                    marginInline: 2,
                     backgroundColor: theme.border
                   }}
-                />
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="JSON музыкальной библиотеки"
+                ></div>
+                <Action
+                  role={'button'}
+                  aria-label={'JSON музыкальной библиотеки'}
                   disabled={state.pending}
-                  onPress={() =>
+                  onClick={() =>
                     setJsonView({
                       title: 'JSON музыкальной библиотеки',
                       description: `Полные данные: ${musicItems.length} записей · ${musicPlaylists.length} плейлистов`,
@@ -540,31 +540,33 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
                       accessibilityLabel: 'JSON данных музыки'
                     })
                   }
-                  style={({ pressed }) => ({
-                    flex: 1,
+                  style={{
+                    flex: '1 1 0%',
                     minWidth: 0,
                     height: 40,
                     alignItems: 'center',
                     justifyContent: 'center',
                     borderRadius: 12,
-                    backgroundColor: pressed ? theme.raised : 'transparent',
-                    opacity: state.pending ? 0.45 : pressed ? 0.72 : 1
-                  })}
+                    backgroundColor: 'transparent',
+                    opacity: state.pending ? 0.45 : 1
+                  }}
+                  pressedStyle={{
+                    backgroundColor: theme.raised,
+                    opacity: state.pending ? 0.45 : 0.72
+                  }}
                 >
                   <Braces size={19} strokeWidth={2} color={theme.muted} />
-                </Pressable>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Фильтры музыки"
-                  accessibilityState={{
-                    disabled: playlistsView || Boolean(playlistId),
-                    selected: musicAdvancedFiltersActive
-                  }}
+                </Action>
+                <Action
+                  role={'button'}
+                  aria-label={'Фильтры музыки'}
+                  aria-disabled={playlistsView || Boolean(playlistId)}
+                  aria-selected={musicAdvancedFiltersActive}
                   disabled={state.pending || playlistsView || Boolean(playlistId)}
-                  onPress={() => setMusicFiltersOpen(true)}
-                  style={({ pressed }) => ({
+                  onClick={() => setMusicFiltersOpen(true)}
+                  style={{
                     position: 'relative',
-                    flex: 1,
+                    flex: '1 1 0%',
                     minWidth: 0,
                     height: 40,
                     alignItems: 'center',
@@ -572,12 +574,15 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
                     borderRadius: 12,
                     backgroundColor: musicAdvancedFiltersActive
                       ? theme.accent + '18'
-                      : pressed
-                        ? theme.raised
-                        : 'transparent',
-                    opacity:
-                      state.pending || playlistsView || playlistId ? 0.34 : pressed ? 0.72 : 1
-                  })}
+                      : 'transparent',
+                    opacity: state.pending || playlistsView || playlistId ? 0.34 : 1
+                  }}
+                  pressedStyle={{
+                    backgroundColor: musicAdvancedFiltersActive
+                      ? theme.accent + '18'
+                      : theme.raised,
+                    opacity: state.pending || playlistsView || playlistId ? 0.34 : 0.72
+                  }}
                 >
                   <SlidersHorizontal
                     size={19}
@@ -585,8 +590,8 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
                     color={musicAdvancedFiltersActive ? theme.accent : theme.muted}
                   />
                   {musicAdvancedFiltersActive ? (
-                    <View
-                      pointerEvents="none"
+                    <div
+                      className="ui-stack"
                       style={{
                         position: 'absolute',
                         top: 7,
@@ -594,16 +599,17 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
                         width: 6,
                         height: 6,
                         borderRadius: 3,
-                        backgroundColor: theme.accent
+                        backgroundColor: theme.accent,
+                        pointerEvents: 'none'
                       }}
-                    />
+                    ></div>
                   ) : null}
-                </Pressable>
+                </Action>
               </>
             }
           />
         )}
-      </View>
+      </div>
 
       {state.error && <ErrorState message={state.error} retry={state.refresh} />}
       {webError && <ErrorState message={webError} />}
@@ -666,7 +672,7 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
             onToggleFavorite={(item) => updateMusic({ ...item, favorite: !item.favorite })}
             onSearchWeb={(item) => {
               setWebError('')
-              void Linking.openURL(musicYoutubeSearchUrl(item)).catch((reason) => {
+              void openExternalUrl(musicYoutubeSearchUrl(item)).catch((reason) => {
                 setWebError(messageFor(reason))
               })
             }}
@@ -705,14 +711,14 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
                   label: 'Заполнить форму',
                   description: 'Добавить фильм или сериал вручную',
                   icon: 'movies',
-                  onPress: () => editMovie()
+                  onClick: () => editMovie()
                 },
                 {
                   key: 'movie-json',
                   label: 'Из JSON',
                   description: 'Импортировать одну или несколько записей',
                   icon: 'json',
-                  onPress: () => setJsonImportOpen(true)
+                  onClick: () => setJsonImportOpen(true)
                 }
               ]
             : [
@@ -721,21 +727,21 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
                   label: 'Добавить трек',
                   description: 'Создать новую музыкальную запись',
                   icon: 'music',
-                  onPress: () => editTrack()
+                  onClick: () => editTrack()
                 },
                 {
                   key: 'playlist',
                   label: 'Создать плейлист',
                   description: 'Создать плейлист и затем добавить в него треки',
                   icon: 'folder',
-                  onPress: () => editPlaylist()
+                  onClick: () => editPlaylist()
                 },
                 {
                   key: 'music-json',
                   label: 'Из JSON',
                   description: 'Импортировать одну или несколько музыкальных записей',
                   icon: 'json',
-                  onPress: () => setJsonImportOpen(true)
+                  onClick: () => setJsonImportOpen(true)
                 }
               ]
         }
@@ -784,6 +790,6 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
           close={() => setJsonView(null)}
         />
       ) : null}
-    </View>
+    </div>
   )
 }

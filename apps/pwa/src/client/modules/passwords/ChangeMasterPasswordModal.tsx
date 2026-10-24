@@ -1,12 +1,10 @@
 import { useState } from 'react'
-import { ScrollView, View } from 'react-native'
 import type { PasswordsRepository } from '@mymind/persistence/passwords'
 import { changeMasterPasswordInputSchema } from '@mymind/core/validation/passwords'
 import { AppDialog } from '../../shared/ui/AppDialog'
 import { AppTextField } from '../../shared/ui/FormControls'
 import { Button, ErrorState, Label } from '../../shared/ui/primitives'
 import { messageFor } from '../../shared/ui/form-model'
-
 function MasterInput({
   label,
   value,
@@ -19,21 +17,25 @@ function MasterInput({
   disabled?: boolean
 }): React.JSX.Element {
   return (
-    <View style={{ gap: 7 }}>
+    <div
+      className="ui-stack"
+      style={{
+        gap: 7
+      }}
+    >
       <Label>{label}</Label>
       <AppTextField
         value={value}
-        onChangeText={setValue}
+        onValueChange={setValue}
         disabled={disabled}
-        secureTextEntry
+        type="password"
         autoCapitalize="none"
-        autoCorrect={false}
-        accessibilityLabel={label}
+        autoCorrect="off"
+        aria-label={label}
       />
-    </View>
+    </div>
   )
 }
-
 export function ChangeMasterPasswordModal({
   api,
   close,
@@ -48,7 +50,6 @@ export function ChangeMasterPasswordModal({
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
   const [working, setWorking] = useState(false)
-
   const save = async (): Promise<void> => {
     if (working) return
     setWorking(true)
@@ -71,7 +72,6 @@ export function ChangeMasterPasswordModal({
       setWorking(false)
     }
   }
-
   return (
     <AppDialog
       open
@@ -88,34 +88,40 @@ export function ChangeMasterPasswordModal({
           label={working ? 'Смена…' : 'Сменить мастер-пароль'}
           primary
           disabled={working}
-          onPress={() => void save()}
+          onClick={() => void save()}
         />
       }
     >
-      <ScrollView
-        keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 28 }}
-      >
-        <MasterInput
-          label="Текущий мастер-пароль"
-          value={currentPassword}
-          setValue={setCurrentPassword}
-          disabled={working}
-        />
-        <MasterInput
-          label="Новый мастер-пароль"
-          value={newPassword}
-          setValue={setNewPassword}
-          disabled={working}
-        />
-        <MasterInput
-          label="Повторите новый мастер-пароль"
-          value={confirmPassword}
-          setValue={setConfirmPassword}
-          disabled={working}
-        />
-        {error ? <ErrorState message={error} /> : null}
-      </ScrollView>
+      <div className="ui-scroll">
+        <div
+          className="ui-stack ui-scroll-content"
+          style={{
+            padding: 16,
+            gap: 16,
+            paddingBottom: 28
+          }}
+        >
+          <MasterInput
+            label="Текущий мастер-пароль"
+            value={currentPassword}
+            setValue={setCurrentPassword}
+            disabled={working}
+          />
+          <MasterInput
+            label="Новый мастер-пароль"
+            value={newPassword}
+            setValue={setNewPassword}
+            disabled={working}
+          />
+          <MasterInput
+            label="Повторите новый мастер-пароль"
+            value={confirmPassword}
+            setValue={setConfirmPassword}
+            disabled={working}
+          />
+          {error ? <ErrorState message={error} /> : null}
+        </div>
+      </div>
     </AppDialog>
   )
 }

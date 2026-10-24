@@ -1,5 +1,5 @@
+import { Action, TextControl } from '../../../ui/browser'
 import { useCallback, useMemo, useState, type ReactNode } from 'react'
-import { Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native'
 import type {
   NutritionLogEntryRecord,
   NutritionTargetRecord,
@@ -23,16 +23,14 @@ import {
   Flame,
   Target,
   Utensils
-} from 'lucide-react-native'
+} from 'lucide-react'
 import { ActionMenu } from '../../shared/ui/ActionMenu'
 import { NutritionReportsView } from './NutritionReportsView'
 import { useTheme } from '../../shared/ui/theme'
 import { SwipeableTabContent } from '../../shared/ui/SwipeableTabContent'
 import { SwipeTabBar } from '../../shared/ui/SwipeTabBar'
 import { useSwipeTabFeedback } from '../../shared/ui/useSwipeTabFeedback'
-
 type Tab = 'today' | 'diary' | 'goal' | 'progress'
-
 const NUTRITION_TAB_IDS = ['today', 'diary', 'goal', 'progress'] as const
 const NUTRITION_TABS = [
   { id: 'today' as const, label: 'Сегодня', icon: Utensils },
@@ -40,7 +38,6 @@ const NUTRITION_TABS = [
   { id: 'goal' as const, label: 'Цель', icon: Target },
   { id: 'progress' as const, label: 'Прогресс', icon: BarChart3 }
 ]
-
 const mealLabels: Record<NutritionMealType, string> = {
   breakfast: 'Завтрак',
   lunch: 'Обед',
@@ -58,18 +55,15 @@ const zeroNutrients: NutritionValues = {
   sugarG: 0,
   sodiumMg: 0
 }
-
 function localDateKey(date = new Date()): string {
-  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000)
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000)
   return local.toISOString().slice(0, 10)
 }
-
 function shiftDate(value: string, days: number): string {
   const date = new Date(`${value}T12:00:00`)
   date.setDate(date.getDate() + days)
   return localDateKey(date)
 }
-
 function nutrientFields(): ReturnType<typeof textField>[] {
   return [
     textField('calories', 'Калории, ккал', 'number'),
@@ -81,7 +75,6 @@ function nutrientFields(): ReturnType<typeof textField>[] {
     textField('sodiumMg', 'Натрий, мг', 'number')
   ]
 }
-
 function nutrientsFrom(values: Record<string, unknown>): NutritionValues {
   return {
     calories: values.calories as number,
@@ -93,11 +86,9 @@ function nutrientsFrom(values: Record<string, unknown>): NutritionValues {
     sodiumMg: values.sodiumMg as number
   }
 }
-
 function macroLine(values: NutritionValues): string {
   return `${formatNutritionNumber(values.calories, 0)} ккал · Б ${formatNutritionNumber(values.proteinG)} · Ж ${formatNutritionNumber(values.fatG)} · У ${formatNutritionNumber(values.carbsG)}`
 }
-
 const goalFields = [
   { key: 'calories', label: 'Калории', hint: 'ккал' },
   { key: 'proteinG', label: 'Белки', hint: 'г' },
@@ -106,10 +97,8 @@ const goalFields = [
   { key: 'fiberG', label: 'Клетчатка', hint: 'г' },
   { key: 'waterMl', label: 'Вода', hint: 'мл' }
 ] as const
-
 type GoalFieldKey = (typeof goalFields)[number]['key']
 type GoalDraft = Record<GoalFieldKey, string>
-
 function goalDraft(target: NutritionTargetRecord | null): GoalDraft {
   return {
     calories: target?.calories?.toString() ?? '',
@@ -120,22 +109,18 @@ function goalDraft(target: NutritionTargetRecord | null): GoalDraft {
     waterMl: target?.waterMl?.toString() ?? ''
   }
 }
-
 function optionalPositive(value: string): number | null {
   if (!value.trim()) return null
   const parsed = Number(value.replace(',', '.'))
   return Number.isFinite(parsed) && parsed > 0 ? parsed : null
 }
-
 function formatNutritionNumber(value: number, maximumFractionDigits = 1): string {
   return value.toLocaleString('ru-RU', { maximumFractionDigits })
 }
-
 function nutritionProgress(value: number, target: number | null): number {
   if (!target || target <= 0) return 0
   return Math.min(100, Math.max(0, (value / target) * 100))
 }
-
 function NutritionMacroMetric({
   label,
   value,
@@ -147,8 +132,16 @@ function NutritionMacroMetric({
 }): React.JSX.Element {
   const theme = useTheme()
   return (
-    <View style={{ flex: 1, minWidth: 0, gap: 6 }}>
-      <View
+    <div
+      className="ui-stack"
+      style={{
+        flex: '1 1 0%',
+        minWidth: 0,
+        gap: 6
+      }}
+    >
+      <div
+        className="ui-stack"
         style={{
           flexDirection: 'row',
           alignItems: 'baseline',
@@ -156,30 +149,61 @@ function NutritionMacroMetric({
           gap: 4
         }}
       >
-        <Text numberOfLines={1} style={{ color: theme.text, fontSize: 11, fontWeight: '700' }}>
+        <span
+          className="ui-text"
+          data-lines={1}
+          style={{
+            color: theme.text,
+            fontSize: 11,
+            fontWeight: 700,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            display: '-webkit-box',
+            WebkitBoxOrient: 'vertical',
+            WebkitLineClamp: 1
+          }}
+        >
           {label}
-        </Text>
-        <Text numberOfLines={1} style={{ color: theme.muted, fontSize: 9.5 }}>
+        </span>
+        <span
+          className="ui-text"
+          data-lines={1}
+          style={{
+            color: theme.muted,
+            fontSize: 9.5,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            display: '-webkit-box',
+            WebkitBoxOrient: 'vertical',
+            WebkitLineClamp: 1
+          }}
+        >
           {formatNutritionNumber(value)}
           {target ? ` / ${formatNutritionNumber(target)}` : ''} г
-        </Text>
-      </View>
-      <View
-        style={{ height: 5, overflow: 'hidden', borderRadius: 99, backgroundColor: theme.raised }}
+        </span>
+      </div>
+      <div
+        className="ui-stack"
+        style={{
+          height: 5,
+          overflow: 'hidden',
+          borderRadius: 99,
+          backgroundColor: theme.raised
+        }}
       >
-        <View
+        <div
+          className="ui-stack"
           style={{
             width: `${nutritionProgress(value, target)}%`,
             height: '100%',
             borderRadius: 99,
             backgroundColor: theme.accent
           }}
-        />
-      </View>
-    </View>
+        ></div>
+      </div>
+    </div>
   )
 }
-
 function NutritionDaySummary({
   nutrients,
   target,
@@ -198,9 +222,9 @@ function NutritionDaySummary({
   const theme = useTheme()
   const [detailsOpen, setDetailsOpen] = useState(false)
   const calorieTarget = target?.calories ?? null
-
   return (
-    <View
+    <div
+      className="ui-stack"
       style={{
         overflow: 'hidden',
         borderWidth: 1,
@@ -209,9 +233,23 @@ function NutritionDaySummary({
         backgroundColor: theme.surface
       }}
     >
-      <View style={{ padding: 16, gap: 14 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-          <View
+      <div
+        className="ui-stack"
+        style={{
+          padding: 16,
+          gap: 14
+        }}
+      >
+        <div
+          className="ui-stack"
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 12
+          }}
+        >
+          <div
+            className="ui-stack"
             style={{
               width: 42,
               height: 42,
@@ -224,50 +262,113 @@ function NutritionDaySummary({
             }}
           >
             <Flame size={19} color={theme.accent} />
-          </View>
-          <View style={{ minWidth: 0, flex: 1 }}>
-            <Text style={{ color: theme.muted, fontSize: 10.5, fontWeight: '600' }}>За день</Text>
-            <View style={{ marginTop: 2, flexDirection: 'row', alignItems: 'baseline', gap: 5 }}>
-              <Text style={{ color: theme.text, fontSize: 27, lineHeight: 31, fontWeight: '800' }}>
-                {formatNutritionNumber(nutrients.calories, 0)}
-              </Text>
-              <Text style={{ color: theme.muted, fontSize: 11.5 }}>
-                {calorieTarget ? `/ ${formatNutritionNumber(calorieTarget, 0)} ккал` : 'ккал'}
-              </Text>
-            </View>
-          </View>
-          {!target ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Настроить цель питания"
-              onPress={onEditTargets}
-              style={({ pressed }) => ({
-                paddingHorizontal: 9,
-                paddingVertical: 7,
-                borderRadius: 10,
-                backgroundColor: pressed ? theme.accent + '1F' : theme.accent + '10',
-                opacity: pressed ? 0.72 : 1
-              })}
+          </div>
+          <div
+            className="ui-stack"
+            style={{
+              minWidth: 0,
+              flex: '1 1 0%'
+            }}
+          >
+            <span
+              className="ui-text"
+              style={{
+                color: theme.muted,
+                fontSize: 10.5,
+                fontWeight: 600
+              }}
             >
-              <Text style={{ color: theme.accent, fontSize: 10.5, fontWeight: '700' }}>Цель</Text>
-            </Pressable>
+              За день
+            </span>
+            <div
+              className="ui-stack"
+              style={{
+                marginTop: 2,
+                flexDirection: 'row',
+                alignItems: 'baseline',
+                gap: 5
+              }}
+            >
+              <span
+                className="ui-text"
+                style={{
+                  color: theme.text,
+                  fontSize: 27,
+                  lineHeight: '31px',
+                  fontWeight: 800
+                }}
+              >
+                {formatNutritionNumber(nutrients.calories, 0)}
+              </span>
+              <span
+                className="ui-text"
+                style={{
+                  color: theme.muted,
+                  fontSize: 11.5
+                }}
+              >
+                {calorieTarget ? `/ ${formatNutritionNumber(calorieTarget, 0)} ккал` : 'ккал'}
+              </span>
+            </div>
+          </div>
+          {!target ? (
+            <Action
+              role={'button'}
+              aria-label={'Настроить цель питания'}
+              onClick={onEditTargets}
+              style={{
+                paddingInline: 9,
+                paddingBlock: 7,
+                borderRadius: 10,
+                backgroundColor: theme.accent + '10',
+                opacity: 1
+              }}
+              pressedStyle={{
+                backgroundColor: theme.accent + '1F',
+                opacity: 0.72
+              }}
+            >
+              <span
+                className="ui-text"
+                style={{
+                  color: theme.accent,
+                  fontSize: 10.5,
+                  fontWeight: 700
+                }}
+              >
+                Цель
+              </span>
+            </Action>
           ) : null}
-        </View>
+        </div>
 
-        <View
-          style={{ height: 7, overflow: 'hidden', borderRadius: 99, backgroundColor: theme.raised }}
+        <div
+          className="ui-stack"
+          style={{
+            height: 7,
+            overflow: 'hidden',
+            borderRadius: 99,
+            backgroundColor: theme.raised
+          }}
         >
-          <View
+          <div
+            className="ui-stack"
             style={{
               width: `${nutritionProgress(nutrients.calories, calorieTarget)}%`,
               height: '100%',
               borderRadius: 99,
               backgroundColor: theme.accent
             }}
-          />
-        </View>
+          ></div>
+        </div>
 
-        <View style={{ flexDirection: 'row', gap: 12 }}>
+        <div
+          className="ui-stack"
+          style={{
+            flexDirection: 'row',
+            gap: 12
+          }}
+        >
           <NutritionMacroMetric
             label="Белки"
             value={nutrients.proteinG}
@@ -279,30 +380,35 @@ function NutritionDaySummary({
             value={nutrients.carbsG}
             target={target?.carbsG ?? null}
           />
-        </View>
-      </View>
+        </div>
+      </div>
 
-      <View
+      <div
+        className="ui-stack"
         style={{
-          paddingHorizontal: 14,
-          paddingVertical: 12,
+          paddingInline: 14,
+          paddingBlock: 12,
           borderTopWidth: 1,
           borderTopColor: theme.border,
           gap: 10
         }}
       >
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Указать точное количество воды"
-          onPress={onEditWater}
-          style={({ pressed }) => ({
+        <Action
+          role={'button'}
+          aria-label={'Указать точное количество воды'}
+          onClick={onEditWater}
+          style={{
             flexDirection: 'row',
             alignItems: 'center',
             gap: 10,
-            opacity: pressed ? 0.72 : 1
-          })}
+            opacity: 1
+          }}
+          pressedStyle={{
+            opacity: 0.72
+          }}
         >
-          <View
+          <div
+            className="ui-stack"
             style={{
               width: 34,
               height: 34,
@@ -313,13 +419,28 @@ function NutritionDaySummary({
             }}
           >
             <Droplets size={16} color="#22d3ee" />
-          </View>
-          <View style={{ minWidth: 0, flex: 1, gap: 5 }}>
-            <Text style={{ color: theme.text, fontSize: 12.5, fontWeight: '700' }}>
+          </div>
+          <div
+            className="ui-stack"
+            style={{
+              minWidth: 0,
+              flex: '1 1 0%',
+              gap: 5
+            }}
+          >
+            <span
+              className="ui-text"
+              style={{
+                color: theme.text,
+                fontSize: 12.5,
+                fontWeight: 700
+              }}
+            >
               Вода · {waterMl}
               {target?.waterMl ? ` / ${target.waterMl}` : ''} мл
-            </Text>
-            <View
+            </span>
+            <div
+              className="ui-stack"
               style={{
                 height: 5,
                 overflow: 'hidden',
@@ -327,37 +448,45 @@ function NutritionDaySummary({
                 backgroundColor: theme.raised
               }}
             >
-              <View
+              <div
+                className="ui-stack"
                 style={{
                   width: `${nutritionProgress(waterMl, target?.waterMl ?? null)}%`,
                   height: '100%',
                   borderRadius: 99,
                   backgroundColor: '#22d3ee'
                 }}
-              />
-            </View>
-          </View>
-        </Pressable>
+              ></div>
+            </div>
+          </div>
+        </Action>
 
-        <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 7 }}>
-          <Button label="+250 мл" compact onPress={() => onWaterChange(250)} />
+        <div
+          className="ui-stack"
+          style={{
+            flexDirection: 'row',
+            justifyContent: 'flex-end',
+            gap: 7
+          }}
+        >
+          <Button label="+250 мл" compact onClick={() => onWaterChange(250)} />
           <Button
             label="−250 мл"
             compact
             disabled={waterMl === 0}
-            onPress={() => onWaterChange(-250)}
+            onClick={() => onWaterChange(-250)}
           />
-        </View>
-      </View>
+        </div>
+      </div>
 
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={
+      <Action
+        role={'button'}
+        aria-label={
           detailsOpen ? 'Скрыть дополнительные показатели' : 'Показать дополнительные показатели'
         }
-        accessibilityState={{ expanded: detailsOpen }}
-        onPress={() => setDetailsOpen((current) => !current)}
-        style={({ pressed }) => ({
+        aria-expanded={detailsOpen}
+        onClick={() => setDetailsOpen((current) => !current)}
+        style={{
           minHeight: 38,
           flexDirection: 'row',
           alignItems: 'center',
@@ -365,20 +494,34 @@ function NutritionDaySummary({
           gap: 6,
           borderTopWidth: 1,
           borderTopColor: theme.border,
-          backgroundColor: pressed ? theme.raised : 'transparent',
-          opacity: pressed ? 0.78 : 1
-        })}
+          backgroundColor: 'transparent',
+          opacity: 1
+        }}
+        pressedStyle={{
+          backgroundColor: theme.raised,
+          opacity: 0.78
+        }}
       >
-        <Text style={{ color: theme.muted, fontSize: 10.5, fontWeight: '600' }}>Подробнее</Text>
+        <span
+          className="ui-text"
+          style={{
+            color: theme.muted,
+            fontSize: 10.5,
+            fontWeight: 600
+          }}
+        >
+          Подробнее
+        </span>
         <ChevronDown
           size={14}
           color={theme.muted}
-          style={{ transform: [{ rotate: detailsOpen ? '180deg' : '0deg' }] }}
+          style={{ transform: 'rotate(' + (detailsOpen ? '180deg' : '0deg') + ')' }}
         />
-      </Pressable>
+      </Action>
 
       {detailsOpen ? (
-        <View
+        <div
+          className="ui-stack"
           style={{
             flexDirection: 'row',
             gap: 8,
@@ -391,34 +534,57 @@ function NutritionDaySummary({
             ['Сахар', `${formatNutritionNumber(nutrients.sugarG)} г`],
             ['Натрий', `${formatNutritionNumber(nutrients.sodiumMg, 0)} мг`]
           ].map(([label, value]) => (
-            <View
+            <div
+              className="ui-stack"
               key={label}
               style={{
-                flex: 1,
+                flex: '1 1 0%',
                 minWidth: 0,
-                paddingHorizontal: 9,
-                paddingVertical: 9,
+                paddingInline: 9,
+                paddingBlock: 9,
                 borderRadius: 11,
                 backgroundColor: theme.background
               }}
             >
-              <Text numberOfLines={1} style={{ color: theme.muted, fontSize: 9 }}>
+              <span
+                className="ui-text"
+                data-lines={1}
+                style={{
+                  color: theme.muted,
+                  fontSize: 9,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  display: '-webkit-box',
+                  WebkitBoxOrient: 'vertical',
+                  WebkitLineClamp: 1
+                }}
+              >
                 {label}
-              </Text>
-              <Text
-                numberOfLines={1}
-                style={{ marginTop: 2, color: theme.text, fontSize: 11.5, fontWeight: '700' }}
+              </span>
+              <span
+                className="ui-text"
+                data-lines={1}
+                style={{
+                  marginTop: 2,
+                  color: theme.text,
+                  fontSize: 11.5,
+                  fontWeight: 700,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  display: '-webkit-box',
+                  WebkitBoxOrient: 'vertical',
+                  WebkitLineClamp: 1
+                }}
               >
                 {value}
-              </Text>
-            </View>
+              </span>
+            </div>
           ))}
-        </View>
+        </div>
       ) : null}
-    </View>
+    </div>
   )
 }
-
 function NutritionMealSection({
   mealType,
   label,
@@ -436,9 +602,9 @@ function NutritionMealSection({
 }): React.JSX.Element {
   const theme = useTheme()
   const calories = entries.reduce((sum, entry) => sum + entry.nutrients.calories, 0)
-
   return (
-    <View
+    <div
+      className="ui-stack"
       style={{
         overflow: 'hidden',
         borderWidth: 1,
@@ -447,7 +613,8 @@ function NutritionMealSection({
         backgroundColor: theme.surface
       }}
     >
-      <View
+      <div
+        className="ui-stack"
         style={{
           minHeight: 54,
           flexDirection: 'row',
@@ -455,68 +622,126 @@ function NutritionMealSection({
           gap: 10,
           paddingLeft: 13,
           paddingRight: 7,
-          paddingVertical: 7
+          paddingBlock: 7
         }}
       >
-        <View style={{ minWidth: 0, flex: 1 }}>
-          <Text style={{ color: theme.text, fontSize: 13.5, fontWeight: '700' }}>{label}</Text>
-          <Text numberOfLines={1} style={{ marginTop: 2, color: theme.muted, fontSize: 10.5 }}>
+        <div
+          className="ui-stack"
+          style={{
+            minWidth: 0,
+            flex: '1 1 0%'
+          }}
+        >
+          <span
+            className="ui-text"
+            style={{
+              color: theme.text,
+              fontSize: 13.5,
+              fontWeight: 700
+            }}
+          >
+            {label}
+          </span>
+          <span
+            className="ui-text"
+            data-lines={1}
+            style={{
+              marginTop: 2,
+              color: theme.muted,
+              fontSize: 10.5,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              display: '-webkit-box',
+              WebkitBoxOrient: 'vertical',
+              WebkitLineClamp: 1
+            }}
+          >
             {entries.length
               ? `${formatNutritionNumber(calories, 0)} ккал · ${entries.length} поз.`
               : 'Нет записей'}
-          </Text>
-        </View>
-        <IconButton label={`Добавить в «${label}»`} icon="add" compact onPress={onAdd} />
-      </View>
+          </span>
+        </div>
+        <IconButton label={`Добавить в «${label}»`} icon="add" compact onClick={onAdd} />
+      </div>
 
       {entries.map((entry) => (
-        <Pressable
+        <div
           key={entry.id}
-          accessibilityRole="button"
-          accessibilityLabel={`Изменить «${entry.title}»`}
-          onPress={() => onEdit(entry)}
-          onLongPress={() => onDelete(entry)}
-          style={({ pressed }) => ({
+          className="ui-stack"
+          style={{
             minHeight: 58,
             flexDirection: 'row',
             alignItems: 'center',
             gap: 8,
             paddingLeft: 13,
             paddingRight: 5,
-            paddingVertical: 9,
+            paddingBlock: 9,
             borderTopWidth: 1,
             borderTopColor: theme.border,
-            backgroundColor: pressed ? theme.raised : 'transparent',
-            opacity: pressed ? 0.78 : 1
-          })}
+            backgroundColor: 'transparent',
+            opacity: 1
+          }}
         >
-          <View style={{ minWidth: 0, flex: 1 }}>
-            <Text
-              numberOfLines={1}
-              style={{ color: theme.text, fontSize: 12.5, fontWeight: '600' }}
+          <Action
+            aria-label={`Изменить «${entry.title}»`}
+            onClick={() => onEdit(entry)}
+            onHold={() => onDelete(entry)}
+            style={{
+              minWidth: 0,
+              minHeight: 40,
+              flex: '1 1 0%',
+              justifyContent: 'center'
+            }}
+            pressedStyle={{ backgroundColor: theme.raised, opacity: 0.78 }}
+          >
+            <span
+              className="ui-text"
+              data-lines={1}
+              style={{
+                color: theme.text,
+                fontSize: 12.5,
+                fontWeight: 600,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                display: '-webkit-box',
+                WebkitBoxOrient: 'vertical',
+                WebkitLineClamp: 1
+              }}
             >
               {entry.title}
-            </Text>
-            <Text numberOfLines={1} style={{ marginTop: 2, color: theme.muted, fontSize: 10 }}>
+            </span>
+            <span
+              className="ui-text"
+              data-lines={1}
+              style={{
+                marginTop: 2,
+                color: theme.muted,
+                fontSize: 10,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                display: '-webkit-box',
+                WebkitBoxOrient: 'vertical',
+                WebkitLineClamp: 1
+              }}
+            >
               {formatNutritionNumber(entry.amount)} {unitLabels[entry.unit]} ·{' '}
               {macroLine(entry.nutrients)}
               {mealType === 'other' && entry.customMealName ? ` · ${entry.customMealName}` : ''}
-            </Text>
-          </View>
+            </span>
+          </Action>
           <ActionMenu
             title={entry.title}
             description={`${label} · ${formatNutritionNumber(entry.nutrients.calories, 0)} ккал`}
             items={[
-              { label: 'Изменить', icon: 'edit', onPress: () => onEdit(entry) },
-              { label: 'Удалить', icon: 'delete', danger: true, onPress: () => onDelete(entry) }
+              { label: 'Изменить', icon: 'edit', onClick: () => onEdit(entry) },
+              { label: 'Удалить', icon: 'delete', danger: true, onClick: () => onDelete(entry) }
             ]}
           />
-        </Pressable>
+        </div>
       ))}
-    </View>
+    </div>
   )
 }
-
 function NutritionGoalCard({
   target,
   onSave,
@@ -535,7 +760,6 @@ function NutritionGoalCard({
 }): React.JSX.Element {
   const theme = useTheme()
   const [values, setValues] = useState<GoalDraft>(() => goalDraft(target))
-
   const save = (): void => {
     const water = optionalPositive(values.waterMl)
     onSave(
@@ -549,104 +773,151 @@ function NutritionGoalCard({
       })
     )
   }
-
   return (
-    <ScrollView contentContainerStyle={{ paddingBottom: 28 }}>
-      {header}
-      <View
+    <div className="ui-scroll">
+      <div
+        className="ui-stack ui-scroll-content"
         style={{
-          overflow: 'hidden',
-          borderWidth: 1,
-          borderColor: theme.border,
-          borderRadius: 16,
-          backgroundColor: theme.surface
+          paddingBottom: 28
         }}
       >
-        <View
+        {header}
+        <div
+          className="ui-stack"
           style={{
-            padding: 18,
-            flexDirection: 'row',
-            alignItems: 'flex-start',
-            gap: 12,
-            borderBottomWidth: 1,
-            borderBottomColor: theme.border
+            overflow: 'hidden',
+            borderWidth: 1,
+            borderColor: theme.border,
+            borderRadius: 16,
+            backgroundColor: theme.surface
           }}
         >
-          <View
+          <div
+            className="ui-stack"
             style={{
-              width: 40,
-              height: 40,
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRadius: 12,
-              backgroundColor: theme.accent + '14'
+              padding: 18,
+              flexDirection: 'row',
+              alignItems: 'flex-start',
+              gap: 12,
+              borderBottomWidth: 1,
+              borderBottomColor: theme.border
             }}
           >
-            <Target size={20} color={theme.accent} />
-          </View>
-          <View style={{ minWidth: 0, flex: 1 }}>
-            <Text style={{ color: theme.text, fontSize: 16, fontWeight: '700' }}>
-              Общая цель питания
-            </Text>
-            <Text style={{ marginTop: 4, color: theme.muted, fontSize: 12, lineHeight: 19 }}>
-              Единые ориентиры для «Сегодня», «Дневника» и «Прогресса». Пустое поле означает, что
-              цель по показателю не задана.
-            </Text>
-          </View>
-        </View>
-
-        <View
-          style={{
-            padding: 18,
-            flexDirection: 'row',
-            flexWrap: 'wrap',
-            gap: 12
-          }}
-        >
-          {goalFields.map((field) => (
-            <View key={field.key} style={{ width: '47%', minWidth: 140, flexGrow: 1, gap: 6 }}>
-              <Text style={{ color: theme.text, fontSize: 13, fontWeight: '600' }}>
-                {field.label} · {field.hint}
-              </Text>
-              <TextInput
-                accessibilityLabel={field.label}
-                value={values[field.key]}
-                placeholder="Не задано"
-                placeholderTextColor={theme.muted}
-                keyboardType="decimal-pad"
-                onChangeText={(value) =>
-                  setValues((current) => ({ ...current, [field.key]: value }))
-                }
+            <div
+              className="ui-stack"
+              style={{
+                width: 40,
+                height: 40,
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: 12,
+                backgroundColor: theme.accent + '14'
+              }}
+            >
+              <Target size={20} color={theme.accent} />
+            </div>
+            <div
+              className="ui-stack"
+              style={{
+                minWidth: 0,
+                flex: '1 1 0%'
+              }}
+            >
+              <span
+                className="ui-text"
                 style={{
-                  minHeight: 44,
-                  paddingHorizontal: 12,
-                  borderWidth: 1,
-                  borderColor: theme.border,
-                  borderRadius: 12,
-                  backgroundColor: theme.background,
                   color: theme.text,
-                  fontSize: 14
+                  fontSize: 16,
+                  fontWeight: 700
                 }}
-              />
-            </View>
-          ))}
-        </View>
+              >
+                Общая цель питания
+              </span>
+              <span
+                className="ui-text"
+                style={{
+                  marginTop: 4,
+                  color: theme.muted,
+                  fontSize: 12,
+                  lineHeight: '19px'
+                }}
+              >
+                Единые ориентиры для «Сегодня», «Дневника» и «Прогресса». Пустое поле означает, что
+                цель по показателю не задана.
+              </span>
+            </div>
+          </div>
 
-        <View
-          style={{
-            padding: 16,
-            alignItems: 'flex-end',
-            borderTopWidth: 1,
-            borderTopColor: theme.border
-          }}
-        >
-          <Button label="Сохранить цель" icon="check" primary onPress={save} />
-        </View>
-      </View>
-    </ScrollView>
+          <div
+            className="ui-stack"
+            style={{
+              padding: 18,
+              flexDirection: 'row',
+              flexWrap: 'wrap',
+              gap: 12
+            }}
+          >
+            {goalFields.map((field) => (
+              <div
+                className="ui-stack"
+                key={field.key}
+                style={{
+                  width: '47%',
+                  minWidth: 140,
+                  flexGrow: 1,
+                  gap: 6
+                }}
+              >
+                <span
+                  className="ui-text"
+                  style={{
+                    color: theme.text,
+                    fontSize: 13,
+                    fontWeight: 600
+                  }}
+                >
+                  {field.label} · {field.hint}
+                </span>
+                <TextControl
+                  aria-label={field.label}
+                  value={values[field.key]}
+                  placeholder={'Не задано'}
+                  placeholderColor={theme.muted}
+                  inputMode={'decimal'}
+                  onValueChange={(value) =>
+                    setValues((current) => ({ ...current, [field.key]: value }))
+                  }
+                  style={{
+                    minHeight: 44,
+                    paddingInline: 12,
+                    borderWidth: 1,
+                    borderColor: theme.border,
+                    borderRadius: 12,
+                    backgroundColor: theme.background,
+                    color: theme.text,
+                    fontSize: 14
+                  }}
+                ></TextControl>
+              </div>
+            ))}
+          </div>
+
+          <div
+            className="ui-stack"
+            style={{
+              padding: 16,
+              alignItems: 'flex-end',
+              borderTopWidth: 1,
+              borderTopColor: theme.border
+            }}
+          >
+            <Button label="Сохранить цель" icon="check" primary onClick={save} />
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }
-
 export function NutritionScreen(): React.JSX.Element {
   const { nutrition: api } = useServices()
   const theme = useTheme()
@@ -655,7 +926,6 @@ export function NutritionScreen(): React.JSX.Element {
   const [tab, setTab] = useState<Tab>('today')
   const [form, setForm] = useState<FormSpec | null>(null)
   const [swipeTabFeedback, showSwipeTabFeedback] = useSwipeTabFeedback<Tab>()
-
   const changeTab = useCallback(
     (next: Tab): void => {
       if (next === tab) return
@@ -664,7 +934,6 @@ export function NutritionScreen(): React.JSX.Element {
     },
     [tab]
   )
-
   const data = overview.data
   const foods = useMemo(() => data?.foods ?? [], [data?.foods])
   const recipes = useMemo(() => data?.recipes ?? [], [data?.recipes])
@@ -746,7 +1015,6 @@ export function NutritionScreen(): React.JSX.Element {
       }
     })
   }
-
   const editWater = (): void => {
     setForm({
       title: 'Вода за день',
@@ -760,7 +1028,6 @@ export function NutritionScreen(): React.JSX.Element {
       }
     })
   }
-
   const editTargets = (): void => {
     const target = data?.currentTarget
     setForm({
@@ -787,7 +1054,6 @@ export function NutritionScreen(): React.JSX.Element {
       }
     })
   }
-
   const importDiary = (): void => {
     setForm({
       title: 'Импорт дневника JSON',
@@ -822,9 +1088,14 @@ export function NutritionScreen(): React.JSX.Element {
       }
     })
   }
-
   const header = (
-    <View style={{ gap: 10, paddingBottom: 12 }}>
+    <div
+      className="ui-stack"
+      style={{
+        gap: 10,
+        paddingBottom: 12
+      }}
+    >
       <SwipeTabBar
         items={NUTRITION_TABS}
         value={tab}
@@ -843,14 +1114,15 @@ export function NutritionScreen(): React.JSX.Element {
       />
 
       {tab === 'diary' ? (
-        <View
+        <div
+          className="ui-stack"
           style={{
             minHeight: 54,
             flexDirection: 'row',
             alignItems: 'center',
             gap: 4,
-            paddingHorizontal: 5,
-            paddingVertical: 5,
+            paddingInline: 5,
+            paddingBlock: 5,
             borderWidth: 1,
             borderColor: theme.border,
             borderRadius: 15,
@@ -861,13 +1133,13 @@ export function NutritionScreen(): React.JSX.Element {
             label="Предыдущий день"
             icon="back"
             ghost
-            onPress={() => setDate((value) => shiftDate(value, -1))}
+            onClick={() => setDate((value) => shiftDate(value, -1))}
           />
           <AppDateField
             compact
             label="Дата дневника питания"
             value={date}
-            onChangeText={(value) => {
+            onValueChange={(value) => {
               const next = validation.nutritionOverviewInputSchema.parse({ date: value }).date
               setDate(next)
             }}
@@ -876,13 +1148,12 @@ export function NutritionScreen(): React.JSX.Element {
             label="Следующий день"
             icon="forward"
             ghost
-            onPress={() => setDate((value) => shiftDate(value, 1))}
+            onClick={() => setDate((value) => shiftDate(value, 1))}
           />
-        </View>
+        </div>
       ) : null}
-    </View>
+    </div>
   )
-
   if (overview.loading) return <LoadingState />
   if (tab === 'today' || tab === 'diary') {
     const day = data?.day
@@ -896,10 +1167,14 @@ export function NutritionScreen(): React.JSX.Element {
         'Запись перестанет учитываться в дневнике и прогрессе.'
       )
     }
-
     return (
-      <View style={{ flex: 1 }}>
-        {Platform.OS !== 'web' ? header : null}
+      <div
+        className="ui-stack"
+        style={{
+          flex: '1 1 0%'
+        }}
+      >
+        {null}
         {overview.error ? <ErrorState message={overview.error} retry={overview.refresh} /> : null}
         <SwipeableTabContent
           tabs={NUTRITION_TAB_IDS}
@@ -907,51 +1182,61 @@ export function NutritionScreen(): React.JSX.Element {
           onChange={changeTab}
           onSwipeChange={showSwipeTabFeedback}
         >
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ gap: 12, paddingBottom: 96 }}
-          >
-            {Platform.OS === 'web' ? header : null}
-            <NutritionDaySummary
-              nutrients={day?.nutrients ?? zeroNutrients}
-              target={target ?? null}
-              waterMl={day?.waterMl ?? 0}
-              onEditWater={editWater}
-              onEditTargets={editTargets}
-              onWaterChange={(delta) =>
-                overview.mutate(() =>
-                  api.setWater({
-                    date,
-                    waterMl: Math.min(100_000, Math.max(0, (day?.waterMl ?? 0) + delta))
-                  })
-                )
-              }
-            />
+          <div className="ui-scroll">
+            <div
+              className="ui-stack ui-scroll-content"
+              style={{
+                gap: 12,
+                paddingBottom: 96
+              }}
+            >
+              {header}
+              <NutritionDaySummary
+                nutrients={day?.nutrients ?? zeroNutrients}
+                target={target ?? null}
+                waterMl={day?.waterMl ?? 0}
+                onEditWater={editWater}
+                onEditTargets={editTargets}
+                onWaterChange={(delta) =>
+                  overview.mutate(() =>
+                    api.setWater({
+                      date,
+                      waterMl: Math.min(100000, Math.max(0, (day?.waterMl ?? 0) + delta))
+                    })
+                  )
+                }
+              />
 
-            <View style={{ gap: 8 }}>
-              {visibleMeals.map((mealType) => (
-                <NutritionMealSection
-                  key={mealType}
-                  mealType={mealType}
-                  label={mealLabels[mealType]}
-                  entries={entries.filter((entry) => entry.mealType === mealType)}
-                  onAdd={() => editLog(undefined, mealType)}
-                  onEdit={editLog}
-                  onDelete={deleteEntry}
-                />
-              ))}
-              {otherEntries.length ? (
-                <NutritionMealSection
-                  mealType="other"
-                  label="Другое"
-                  entries={otherEntries}
-                  onAdd={() => editLog(undefined, 'other')}
-                  onEdit={editLog}
-                  onDelete={deleteEntry}
-                />
-              ) : null}
-            </View>
-          </ScrollView>
+              <div
+                className="ui-stack"
+                style={{
+                  gap: 8
+                }}
+              >
+                {visibleMeals.map((mealType) => (
+                  <NutritionMealSection
+                    key={mealType}
+                    mealType={mealType}
+                    label={mealLabels[mealType]}
+                    entries={entries.filter((entry) => entry.mealType === mealType)}
+                    onAdd={() => editLog(undefined, mealType)}
+                    onEdit={editLog}
+                    onDelete={deleteEntry}
+                  />
+                ))}
+                {otherEntries.length ? (
+                  <NutritionMealSection
+                    mealType="other"
+                    label="Другое"
+                    entries={otherEntries}
+                    onAdd={() => editLog(undefined, 'other')}
+                    onEdit={editLog}
+                    onDelete={deleteEntry}
+                  />
+                ) : null}
+              </div>
+            </div>
+          </div>
         </SwipeableTabContent>
 
         <MobileCreateAction
@@ -962,26 +1247,30 @@ export function NutritionScreen(): React.JSX.Element {
               label: 'Новая запись',
               description: 'Добавить еду в выбранный день',
               icon: 'nutrition',
-              onPress: () => editLog()
+              onClick: () => editLog()
             },
             {
               key: 'json',
               label: 'Добавить из JSON',
               description: 'Импортировать готовый дневник питания',
               icon: 'json',
-              onPress: importDiary
+              onClick: importDiary
             }
           ]}
         />
         {form ? <FormSheet spec={form} close={() => setForm(null)} /> : null}
-      </View>
+      </div>
     )
   }
-
   if (tab === 'goal') {
     return (
-      <View style={{ flex: 1 }}>
-        {Platform.OS !== 'web' ? header : null}
+      <div
+        className="ui-stack"
+        style={{
+          flex: '1 1 0%'
+        }}
+      >
+        {null}
         {overview.error ? <ErrorState message={overview.error} retry={overview.refresh} /> : null}
         <SwipeableTabContent
           tabs={NUTRITION_TAB_IDS}
@@ -992,7 +1281,7 @@ export function NutritionScreen(): React.JSX.Element {
           <NutritionGoalCard
             key={data?.currentTarget?.id ?? 'nutrition-goal-empty'}
             target={data?.currentTarget ?? null}
-            header={Platform.OS === 'web' ? header : null}
+            header={header}
             onSave={(input) =>
               overview.mutate(() => {
                 api.setTargets(input)
@@ -1000,14 +1289,18 @@ export function NutritionScreen(): React.JSX.Element {
             }
           />
         </SwipeableTabContent>
-      </View>
+      </div>
     )
   }
-
   if (tab === 'progress') {
     return (
-      <View style={{ flex: 1 }}>
-        {Platform.OS !== 'web' ? header : null}
+      <div
+        className="ui-stack"
+        style={{
+          flex: '1 1 0%'
+        }}
+      >
+        {null}
         {overview.error ? <ErrorState message={overview.error} retry={overview.refresh} /> : null}
         <SwipeableTabContent
           tabs={NUTRITION_TAB_IDS}
@@ -1015,11 +1308,19 @@ export function NutritionScreen(): React.JSX.Element {
           onChange={changeTab}
           onSwipeChange={showSwipeTabFeedback}
         >
-          <NutritionReportsView header={Platform.OS === 'web' ? header : null} />
+          <NutritionReportsView header={header} />
         </SwipeableTabContent>
-      </View>
+      </div>
     )
   }
-
-  return <View style={{ flex: 1 }}>{header}</View>
+  return (
+    <div
+      className="ui-stack"
+      style={{
+        flex: '1 1 0%'
+      }}
+    >
+      {header}
+    </div>
+  )
 }

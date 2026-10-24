@@ -1,14 +1,5 @@
+import { Action, RefreshRegion, TextControl } from '../../../ui/browser'
 import { useCallback, useMemo, useRef, useState } from 'react'
-import {
-  FlatList,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  View
-} from 'react-native'
 import { type TaskGroupRecord, type TaskRecord } from '@mymind/contracts/tasks'
 import * as schema from '@mymind/core/validation/tasks'
 import { sortTasks } from '@mymind/core/tasks'
@@ -34,11 +25,8 @@ import { SwipeableTabContent } from '../../shared/ui/SwipeableTabContent'
 import { SwipeTabBar } from '../../shared/ui/SwipeTabBar'
 import { useSwipeTabFeedback } from '../../shared/ui/useSwipeTabFeedback'
 import { quickTaskInput, taskEditorInput, taskSearchText } from './task-presentation'
-
 type TaskStatusFilter = 'all' | 'active' | 'completed'
-
 const TASK_STATUS_TABS = ['all', 'active', 'completed'] as const
-
 const STATUS_FILTERS: ReadonlyArray<{
   id: TaskStatusFilter
   label: string
@@ -48,7 +36,6 @@ const STATUS_FILTERS: ReadonlyArray<{
   { id: 'active', label: 'Активные задачи', icon: 'circle' },
   { id: 'completed', label: 'Выполненные задачи', icon: 'completed' }
 ]
-
 export function TasksScreen(): React.JSX.Element {
   const { tasks: api } = useServices()
   const theme = useTheme()
@@ -63,7 +50,6 @@ export function TasksScreen(): React.JSX.Element {
   const longPressedTaskId = useRef<string | null>(null)
   const [swipeTabFeedback, showSwipeTabFeedback] = useSwipeTabFeedback<TaskStatusFilter>()
   const [searchOpen, setSearchOpen] = useState(false)
-
   const changeFilter = useCallback(
     (next: TaskStatusFilter): void => {
       if (next === filter) return
@@ -71,7 +57,6 @@ export function TasksScreen(): React.JSX.Element {
     },
     [filter]
   )
-
   const groupChoices = useMemo(
     () => [
       { value: null, label: 'Без группы' },
@@ -79,7 +64,6 @@ export function TasksScreen(): React.JSX.Element {
     ],
     [state.data?.groups]
   )
-
   const edit = (task?: TaskRecord): void =>
     setForm({
       title: task ? 'Редактировать задачу' : 'Новая задача',
@@ -115,7 +99,6 @@ export function TasksScreen(): React.JSX.Element {
         state.refresh()
       }
     })
-
   const editGroup = (item?: TaskGroupRecord): void =>
     setForm({
       title: item ? 'Группа задач' : 'Новая группа',
@@ -134,7 +117,6 @@ export function TasksScreen(): React.JSX.Element {
         state.refresh()
       }
     })
-
   const toggle = (task: TaskRecord): void =>
     state.mutate(() => {
       api.updateTask(
@@ -149,7 +131,6 @@ export function TasksScreen(): React.JSX.Element {
         })
       )
     })
-
   const move = (task: TaskRecord): void =>
     setForm({
       title: 'Группа задачи',
@@ -166,7 +147,6 @@ export function TasksScreen(): React.JSX.Element {
         state.refresh()
       }
     })
-
   const quickAdd = (): void => {
     const title = quickTitle.trim()
     if (!title || state.pending) return
@@ -179,19 +159,16 @@ export function TasksScreen(): React.JSX.Element {
       setQuickTitle('')
     })
   }
-
   const groupById = useMemo(
     () => new Map((state.data?.groups ?? []).map((item) => [item.id, item])),
     [state.data?.groups]
   )
-
   const activeGroupLabel =
     group === undefined
       ? 'Все задачи'
       : group === null
         ? 'Без группы'
         : (groupById.get(group)?.name ?? 'Группа')
-
   const normalizedQuery = query.trim().toLocaleLowerCase('ru')
   const tasks = sortTasks(state.data?.tasks ?? []).filter((task) => {
     if (filter !== 'all' && task.status !== filter) return false
@@ -202,16 +179,20 @@ export function TasksScreen(): React.JSX.Element {
       task.groupId ? (groupById.get(task.groupId)?.name ?? '') : ''
     ).includes(normalizedQuery)
   })
-
   const tabHeader = (
     <>
-      <View style={{ marginBottom: 12 }}>
+      <div
+        className="ui-stack"
+        style={{
+          marginBottom: 12
+        }}
+      >
         <SwipeTabBar
           items={STATUS_FILTERS}
           value={filter}
           onChange={changeFilter}
           feedback={swipeTabFeedback}
-          search={{ value: query, onChangeText: setQuery }}
+          search={{ value: query, onValueChange: setQuery }}
           onSearchOpenChange={setSearchOpen}
           renderIcon={(item, selected) => (
             <AppIcon
@@ -223,36 +204,36 @@ export function TasksScreen(): React.JSX.Element {
           )}
           trailing={
             <>
-              <View
+              <div
+                className="ui-stack"
                 style={{
                   width: 1,
                   height: 26,
-                  marginHorizontal: 2,
+                  marginInline: 2,
                   backgroundColor: theme.border
                 }}
-              />
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={`Группы. Сейчас: ${activeGroupLabel}`}
-                accessibilityState={{ selected: group !== undefined }}
+              ></div>
+              <Action
+                role={'button'}
+                aria-label={`Группы. Сейчас: ${activeGroupLabel}`}
+                aria-selected={group !== undefined}
                 disabled={state.pending}
-                onPress={() => setGroupsOpen(true)}
-                style={({ pressed }) => ({
+                onClick={() => setGroupsOpen(true)}
+                style={{
                   position: 'relative',
-                  flex: 1,
+                  flex: '1 1 0%',
                   minWidth: 0,
                   height: 40,
                   alignItems: 'center',
                   justifyContent: 'center',
                   borderRadius: 12,
-                  backgroundColor:
-                    group !== undefined
-                      ? theme.accent + '18'
-                      : pressed
-                        ? theme.raised
-                        : 'transparent',
-                  opacity: state.pending ? 0.45 : pressed ? 0.72 : 1
-                })}
+                  backgroundColor: group !== undefined ? theme.accent + '18' : 'transparent',
+                  opacity: state.pending ? 0.45 : 1
+                }}
+                pressedStyle={{
+                  backgroundColor: group !== undefined ? theme.accent + '18' : theme.raised,
+                  opacity: state.pending ? 0.45 : 0.72
+                }}
               >
                 <AppIcon
                   name="folder"
@@ -261,8 +242,8 @@ export function TasksScreen(): React.JSX.Element {
                   color={group !== undefined ? theme.accent : theme.muted}
                 />
                 {group !== undefined ? (
-                  <View
-                    pointerEvents="none"
+                  <div
+                    className="ui-stack"
                     style={{
                       position: 'absolute',
                       top: 7,
@@ -270,26 +251,29 @@ export function TasksScreen(): React.JSX.Element {
                       width: 6,
                       height: 6,
                       borderRadius: 3,
-                      backgroundColor: theme.accent
+                      backgroundColor: theme.accent,
+                      pointerEvents: 'none'
                     }}
-                  />
+                  ></div>
                 ) : null}
-              </Pressable>
+              </Action>
             </>
           }
         />
-      </View>
+      </div>
 
       {state.error && <ErrorState message={state.error} retry={state.refresh} />}
     </>
   )
-
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={{ flex: 1, minHeight: 0 }}
+    <div
+      className="ui-stack"
+      style={{
+        flex: '1 1 0%',
+        minHeight: 0
+      }}
     >
-      {Platform.OS !== 'web' || state.loading ? tabHeader : null}
+      {state.loading ? tabHeader : null}
 
       <SwipeableTabContent
         tabs={TASK_STATUS_TABS}
@@ -301,188 +285,224 @@ export function TasksScreen(): React.JSX.Element {
         {state.loading ? (
           <LoadingState />
         ) : (
-          <FlatList
-            style={{ flex: 1 }}
-            ListHeaderComponent={Platform.OS === 'web' ? tabHeader : null}
-            data={tasks}
-            keyExtractor={(item) => item.id}
-            contentContainerStyle={{ paddingBottom: 8 }}
-            refreshing={state.loading}
-            onRefresh={state.refresh}
-            keyboardShouldPersistTaps="handled"
-            ListEmptyComponent={<EmptyState />}
-            renderItem={({ item }) => {
-              const taskGroup = item.groupId ? (groupById.get(item.groupId) ?? null) : null
-              const completed = item.status === 'completed'
-
-              return (
-                <View
-                  style={{
-                    position: 'relative',
-                    minHeight: 66,
-                    marginBottom: 8,
-                    overflow: 'hidden',
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    borderWidth: 1,
-                    borderColor: theme.border,
-                    borderRadius: 16,
-                    backgroundColor: completed ? theme.success + '0E' : theme.surface
-                  }}
-                >
-                  {completed ? (
-                    <View
-                      pointerEvents="none"
-                      style={{
-                        position: 'absolute',
-                        top: 8,
-                        bottom: 8,
-                        left: 0,
-                        width: 2,
-                        borderTopRightRadius: 2,
-                        borderBottomRightRadius: 2,
-                        backgroundColor: theme.success
-                      }}
-                    />
-                  ) : null}
-
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={
-                      completed ? 'Вернуть задачу ' + item.title : 'Выполнить задачу ' + item.title
-                    }
-                    accessibilityHint="Удерживайте для действий с задачей"
-                    onPress={() => {
-                      if (longPressedTaskId.current === item.id) {
-                        longPressedTaskId.current = null
-                        return
-                      }
-                      toggle(item)
-                    }}
-                    onLongPress={() => {
-                      if (state.pending) return
-                      longPressedTaskId.current = item.id
-                      setTaskActionsId(item.id)
-                    }}
-                    delayLongPress={380}
-                    disabled={state.pending}
-                    style={({ pressed }) => ({
-                      flex: 1,
-                      minWidth: 0,
-                      minHeight: 64,
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: 11,
-                      paddingLeft: 14,
-                      paddingRight: 14,
-                      paddingVertical: 11,
-                      opacity: pressed ? 0.72 : 1
-                    })}
-                  >
-                    <View
-                      style={{
-                        width: 22,
-                        height: 22,
-                        flexShrink: 0,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        borderRadius: 11,
-                        borderWidth: 1,
-                        borderColor: completed ? theme.success : theme.muted,
-                        backgroundColor: completed ? theme.success + '22' : 'transparent'
-                      }}
-                    >
-                      {completed ? (
-                        <AppIcon name="check" size={13} strokeWidth={3} color={theme.success} />
-                      ) : null}
-                    </View>
-
-                    <Text
-                      style={{
-                        flex: 1,
-                        minWidth: 0,
-                        color: completed ? theme.muted : theme.text,
-                        fontSize: 14,
-                        lineHeight: 20,
-                        fontWeight: '600',
-                        textDecorationLine: completed ? 'line-through' : 'none',
-                        textDecorationColor: completed ? theme.success : undefined
-                      }}
-                    >
-                      <Text style={{ textDecorationLine: completed ? 'line-through' : 'none' }}>
-                        {item.title}
-                      </Text>
-                      {taskGroup && (
-                        <Text
-                          style={{
-                            color: theme.accent,
-                            fontWeight: '400',
-                            textDecorationLine: 'none'
-                          }}
-                        >
-                          {' / '}
-                          {taskGroup.name}
-                        </Text>
-                      )}
-                    </Text>
-                  </Pressable>
-
-                  {Platform.OS === 'web' ? (
-                    <IconButton
-                      label={`Действия задачи ${item.title}`}
-                      icon="more"
-                      compact
-                      ghost
-                      disabled={state.pending}
-                      onPress={() => setTaskActionsId(item.id)}
-                    />
-                  ) : null}
-
-                  <ActionMenuDialog
-                    open={taskActionsId === item.id}
-                    onOpenChange={(open) => {
-                      if (!open) {
-                        setTaskActionsId(null)
-                        longPressedTaskId.current = null
-                      }
-                    }}
-                    title={item.title}
-                    items={[
-                      {
-                        key: 'group',
-                        label: `Группа: ${taskGroup?.name ?? 'Без группы'}`,
-                        icon: 'folder',
-                        disabled: state.pending,
-                        onPress: () => move(item)
-                      },
-                      {
-                        key: 'edit',
-                        label: 'Изменить',
-                        icon: 'edit',
-                        disabled: state.pending,
-                        onPress: () => edit(item)
-                      },
-                      {
-                        key: 'delete',
-                        label: 'Удалить',
-                        icon: 'delete',
-                        danger: true,
-                        disabled: state.pending,
-                        onPress: () =>
-                          state.confirmDelete('Удалить задачу?', () => {
-                            api.deleteTask({ id: item.id })
-                          })
-                      }
-                    ]}
-                  />
-                </View>
-              )
+          <RefreshRegion
+            className="ui-scroll"
+            style={{
+              flex: '1 1 0%'
             }}
-          />
+            onRefresh={state.refresh}
+            busy={state.loading}
+          >
+            <div
+              className="ui-stack ui-scroll-content"
+              style={{
+                paddingBottom: 8
+              }}
+            >
+              {tabHeader}
+              <div className="ui-stack ui-list" style={{}}>
+                {tasks.length > 0 ? (
+                  tasks.map((item) => {
+                    const taskGroup = item.groupId ? (groupById.get(item.groupId) ?? null) : null
+                    const completed = item.status === 'completed'
+                    return (
+                      <div className="ui-stack ui-list-item" key={((item) => item.id)(item)}>
+                        {
+                          <div
+                            className="ui-stack"
+                            style={{
+                              position: 'relative',
+                              minHeight: 66,
+                              marginBottom: 8,
+                              overflow: 'hidden',
+                              flexDirection: 'row',
+                              alignItems: 'center',
+                              borderWidth: 1,
+                              borderColor: theme.border,
+                              borderRadius: 16,
+                              backgroundColor: completed ? theme.success + '0E' : theme.surface
+                            }}
+                          >
+                            {completed ? (
+                              <div
+                                className="ui-stack"
+                                style={{
+                                  position: 'absolute',
+                                  top: 8,
+                                  bottom: 8,
+                                  left: 0,
+                                  width: 2,
+                                  borderTopRightRadius: 2,
+                                  borderBottomRightRadius: 2,
+                                  backgroundColor: theme.success,
+                                  pointerEvents: 'none'
+                                }}
+                              ></div>
+                            ) : null}
+
+                            <Action
+                              role={'button'}
+                              aria-label={
+                                completed
+                                  ? 'Вернуть задачу ' + item.title
+                                  : 'Выполнить задачу ' + item.title
+                              }
+                              title={'Удерживайте для действий с задачей'}
+                              onClick={() => {
+                                if (longPressedTaskId.current === item.id) {
+                                  longPressedTaskId.current = null
+                                  return
+                                }
+                                toggle(item)
+                              }}
+                              onHold={() => {
+                                if (state.pending) return
+                                longPressedTaskId.current = item.id
+                                setTaskActionsId(item.id)
+                              }}
+                              holdDelay={380}
+                              disabled={state.pending}
+                              style={{
+                                flex: '1 1 0%',
+                                minWidth: 0,
+                                minHeight: 64,
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                gap: 11,
+                                paddingLeft: 14,
+                                paddingRight: 14,
+                                paddingBlock: 11,
+                                opacity: 1
+                              }}
+                              pressedStyle={{
+                                opacity: 0.72
+                              }}
+                            >
+                              <div
+                                className="ui-stack"
+                                style={{
+                                  width: 22,
+                                  height: 22,
+                                  flexShrink: 0,
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  borderRadius: 11,
+                                  borderWidth: 1,
+                                  borderColor: completed ? theme.success : theme.muted,
+                                  backgroundColor: completed ? theme.success + '22' : 'transparent'
+                                }}
+                              >
+                                {completed ? (
+                                  <AppIcon
+                                    name="check"
+                                    size={13}
+                                    strokeWidth={3}
+                                    color={theme.success}
+                                  />
+                                ) : null}
+                              </div>
+
+                              <span
+                                className="ui-text"
+                                style={{
+                                  flex: '1 1 0%',
+                                  minWidth: 0,
+                                  color: completed ? theme.muted : theme.text,
+                                  fontSize: 14,
+                                  lineHeight: '20px',
+                                  fontWeight: 600,
+                                  textDecoration: completed ? 'line-through' : 'none',
+                                  textDecorationColor: completed ? theme.success : undefined
+                                }}
+                              >
+                                <span
+                                  className="ui-text"
+                                  style={{
+                                    textDecoration: completed ? 'line-through' : 'none'
+                                  }}
+                                >
+                                  {item.title}
+                                </span>
+                                {taskGroup && (
+                                  <span
+                                    className="ui-text"
+                                    style={{
+                                      color: theme.accent,
+                                      fontWeight: 400,
+                                      textDecoration: 'none'
+                                    }}
+                                  >
+                                    {' / '}
+                                    {taskGroup.name}
+                                  </span>
+                                )}
+                              </span>
+                            </Action>
+
+                            {
+                              <IconButton
+                                label={`Действия задачи ${item.title}`}
+                                icon="more"
+                                compact
+                                ghost
+                                disabled={state.pending}
+                                onClick={() => setTaskActionsId(item.id)}
+                              />
+                            }
+
+                            <ActionMenuDialog
+                              open={taskActionsId === item.id}
+                              onOpenChange={(open) => {
+                                if (!open) {
+                                  setTaskActionsId(null)
+                                  longPressedTaskId.current = null
+                                }
+                              }}
+                              title={item.title}
+                              items={[
+                                {
+                                  key: 'group',
+                                  label: `Группа: ${taskGroup?.name ?? 'Без группы'}`,
+                                  icon: 'folder',
+                                  disabled: state.pending,
+                                  onClick: () => move(item)
+                                },
+                                {
+                                  key: 'edit',
+                                  label: 'Изменить',
+                                  icon: 'edit',
+                                  disabled: state.pending,
+                                  onClick: () => edit(item)
+                                },
+                                {
+                                  key: 'delete',
+                                  label: 'Удалить',
+                                  icon: 'delete',
+                                  danger: true,
+                                  disabled: state.pending,
+                                  onClick: () =>
+                                    state.confirmDelete('Удалить задачу?', () => {
+                                      api.deleteTask({ id: item.id })
+                                    })
+                                }
+                              ]}
+                            />
+                          </div>
+                        }
+                      </div>
+                    )
+                  })
+                ) : (
+                  <EmptyState />
+                )}
+              </div>
+            </div>
+          </RefreshRegion>
         )}
       </SwipeableTabContent>
 
-      <View
+      <div
+        className="ui-stack"
         style={{
           paddingTop: 10,
           paddingBottom: 2,
@@ -491,7 +511,8 @@ export function TasksScreen(): React.JSX.Element {
           backgroundColor: theme.background
         }}
       >
-        <View
+        <div
+          className="ui-stack"
           style={{
             minHeight: 50,
             flexDirection: 'row',
@@ -499,42 +520,42 @@ export function TasksScreen(): React.JSX.Element {
             gap: 8
           }}
         >
-          <TextInput
-            accessibilityLabel="Быстро добавить задачу"
+          <TextControl
+            aria-label={'Быстро добавить задачу'}
             placeholder={
               typeof group === 'string'
                 ? `Новая задача в «${groupById.get(group)?.name ?? ''}»…`
                 : 'Новая задача…'
             }
-            placeholderTextColor={theme.muted}
+            placeholderColor={theme.muted}
             value={quickTitle}
-            onChangeText={setQuickTitle}
-            onSubmitEditing={quickAdd}
-            returnKeyType="send"
-            editable={!state.pending}
+            onValueChange={setQuickTitle}
+            onEnter={quickAdd}
+            enterKeyHint={'send'}
+            disabled={!!state.pending}
             maxLength={240}
             style={{
-              flex: 1,
+              flex: '1 1 0%',
               minHeight: 48,
               borderWidth: 1,
               borderColor: theme.border,
               borderRadius: 16,
               backgroundColor: theme.surface,
               color: theme.text,
-              paddingHorizontal: 15,
-              paddingVertical: 10,
+              paddingInline: 15,
+              paddingBlock: 10,
               fontSize: 14
             }}
-          />
+          ></TextControl>
           <IconButton
             label="Добавить задачу"
             icon="add"
             primary
             disabled={!quickTitle.trim() || state.pending}
-            onPress={quickAdd}
+            onClick={quickAdd}
           />
-        </View>
-      </View>
+        </div>
+      </div>
 
       <AppDialog
         open={groupsOpen}
@@ -544,86 +565,100 @@ export function TasksScreen(): React.JSX.Element {
         icon="folder"
         presentation="sheet"
       >
-        <ScrollView contentContainerStyle={{ padding: 12, paddingBottom: 24 }}>
-          <WorkspaceNodeCard
-            title="Все задачи"
-            subtitle={`${state.data?.tasks.length ?? 0} задач`}
-            leadingIcon="tasks"
-            selected={group === undefined}
-            onPress={() => {
-              setGroup(undefined)
-              setGroupsOpen(false)
+        <div className="ui-scroll">
+          <div
+            className="ui-stack ui-scroll-content"
+            style={{
+              padding: 12,
+              paddingBottom: 24
             }}
-          />
-          <WorkspaceNodeCard
-            title="Без группы"
-            subtitle={`${(state.data?.tasks ?? []).filter((task) => task.groupId === null).length} задач`}
-            leadingIcon="folder"
-            selected={group === null}
-            onPress={() => {
-              setGroup(null)
-              setGroupsOpen(false)
-            }}
-          />
-          {(state.data?.groups ?? []).map((item) => (
+          >
             <WorkspaceNodeCard
-              key={item.id}
-              title={item.name}
-              subtitle={`${(state.data?.tasks ?? []).filter((task) => task.groupId === item.id).length} задач`}
-              leading={<VisualIconBadge value={item.icon} colorKey="accent" />}
-              selected={group === item.id}
-              onPress={() => {
-                setGroup(item.id)
+              title="Все задачи"
+              subtitle={`${state.data?.tasks.length ?? 0} задач`}
+              leadingIcon="tasks"
+              selected={group === undefined}
+              onClick={() => {
+                setGroup(undefined)
                 setGroupsOpen(false)
               }}
-              action={
-                <ActionMenu
-                  title={item.name}
-                  items={[
-                    {
-                      label: 'Изменить группу',
-                      icon: 'edit',
-                      onPress: () => {
-                        setGroupsOpen(false)
-                        editGroup(item)
-                      }
-                    },
-                    {
-                      label: 'Удалить группу',
-                      icon: 'delete',
-                      danger: true,
-                      onPress: () => {
-                        setGroupsOpen(false)
-                        state.confirmDelete(
-                          'Удалить группу?',
-                          () => {
-                            api.deleteTaskGroup({ id: item.id })
-                            if (group === item.id) setGroup(null)
-                          },
-                          'Сами задачи сохранятся и будут перенесены в «Без группы».'
-                        )
-                      }
-                    }
-                  ]}
-                />
-              }
             />
-          ))}
-          <View style={{ marginTop: 8, alignItems: 'flex-start' }}>
-            <Button
-              label="Создать группу"
-              icon="add"
-              primary
-              onPress={() => {
+            <WorkspaceNodeCard
+              title="Без группы"
+              subtitle={`${(state.data?.tasks ?? []).filter((task) => task.groupId === null).length} задач`}
+              leadingIcon="folder"
+              selected={group === null}
+              onClick={() => {
+                setGroup(null)
                 setGroupsOpen(false)
-                editGroup()
               }}
             />
-          </View>
-        </ScrollView>
+            {(state.data?.groups ?? []).map((item) => (
+              <WorkspaceNodeCard
+                key={item.id}
+                title={item.name}
+                subtitle={`${(state.data?.tasks ?? []).filter((task) => task.groupId === item.id).length} задач`}
+                leading={<VisualIconBadge value={item.icon} colorKey="accent" />}
+                selected={group === item.id}
+                onClick={() => {
+                  setGroup(item.id)
+                  setGroupsOpen(false)
+                }}
+                action={
+                  <ActionMenu
+                    title={item.name}
+                    items={[
+                      {
+                        label: 'Изменить группу',
+                        icon: 'edit',
+                        onClick: () => {
+                          setGroupsOpen(false)
+                          editGroup(item)
+                        }
+                      },
+                      {
+                        label: 'Удалить группу',
+                        icon: 'delete',
+                        danger: true,
+                        onClick: () => {
+                          setGroupsOpen(false)
+                          state.confirmDelete(
+                            'Удалить группу?',
+                            () => {
+                              api.deleteTaskGroup({ id: item.id })
+                              if (group === item.id) setGroup(null)
+                            },
+                            'Сами задачи сохранятся и будут перенесены в «Без группы».'
+                          )
+                        }
+                      }
+                    ]}
+                  />
+                }
+              />
+            ))}
+            <div
+              className="ui-stack"
+              style={{
+                marginTop: 8,
+                alignItems: 'flex-start'
+              }}
+            >
+              <Button
+                label="Создать группу"
+                icon="add"
+                primary
+                onClick={() => {
+                  setGroupsOpen(false)
+                  editGroup()
+                }}
+              />
+            </div>
+          </div>
+        </div>
       </AppDialog>
 
       {form && <FormSheet spec={form} close={() => setForm(null)} />}
-    </KeyboardAvoidingView>
+    </div>
   )
 }

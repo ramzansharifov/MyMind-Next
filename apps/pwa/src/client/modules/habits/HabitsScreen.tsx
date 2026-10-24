@@ -1,13 +1,6 @@
+import { Action, RefreshRegion } from '../../../ui/browser'
 import { useCallback, useMemo, useRef, useState } from 'react'
-import { FlatList, Platform, Pressable, ScrollView, Text, View } from 'react-native'
-import {
-  BarChart3,
-  CalendarDays,
-  CheckCircle2,
-  Hash,
-  Target,
-  type LucideIcon
-} from 'lucide-react-native'
+import { BarChart3, CalendarDays, CheckCircle2, Hash, Target, type LucideIcon } from 'lucide-react'
 import { type HabitGroupRecord, type HabitRecord } from '@mymind/contracts/habits'
 import { addDays, isHabitScheduledOn, localDateKey } from '@mymind/core/habits'
 import * as schema from '@mymind/core/validation/habits'
@@ -41,11 +34,8 @@ import { SwipeableTabContent } from '../../shared/ui/SwipeableTabContent'
 import { SwipeTabBar } from '../../shared/ui/SwipeTabBar'
 import { useSwipeTabFeedback } from '../../shared/ui/useSwipeTabFeedback'
 import { HabitsReportsView } from './HabitsReportsView'
-
 type HabitView = 'today' | 'all' | 'reports'
-
 const HABIT_VIEW_TABS = ['today', 'all', 'reports'] as const
-
 const VIEW_FILTERS: ReadonlyArray<{
   id: HabitView
   label: string
@@ -55,7 +45,6 @@ const VIEW_FILTERS: ReadonlyArray<{
   { id: 'all', label: 'Все привычки', icon: Target },
   { id: 'reports', label: 'Отчёты', icon: BarChart3 }
 ]
-
 const TRACKING_FILTERS: ReadonlyArray<{
   id: 'all' | 'check' | 'count'
   label: string
@@ -65,7 +54,6 @@ const TRACKING_FILTERS: ReadonlyArray<{
   { id: 'check', label: 'Простая отметка', icon: CheckCircle2 },
   { id: 'count', label: 'Количество / прогресс', icon: Hash }
 ]
-
 export function HabitsScreen(): React.JSX.Element {
   const { habits: api } = useServices()
   const theme = useTheme()
@@ -81,7 +69,6 @@ export function HabitsScreen(): React.JSX.Element {
   const longPressedHabitId = useRef<string | null>(null)
   const [swipeTabFeedback, showSwipeTabFeedback] = useSwipeTabFeedback<HabitView>()
   const [searchOpen, setSearchOpen] = useState(false)
-
   const changeView = useCallback(
     (next: HabitView): void => {
       if (next === view) return
@@ -89,14 +76,12 @@ export function HabitsScreen(): React.JSX.Element {
     },
     [view]
   )
-
   const state = useCollection(
     useCallback(
       () => api.listHabitsOverview(schema.habitsOverviewInputSchema.parse({ date })),
       [api, date]
     )
   )
-
   const groupChoices = useMemo(
     () => [
       { value: null, label: 'Без группы' },
@@ -104,12 +89,10 @@ export function HabitsScreen(): React.JSX.Element {
     ],
     [state.data?.groups]
   )
-
   const groupById = useMemo(
     () => new Map((state.data?.groups ?? []).map((item) => [item.id, item])),
     [state.data?.groups]
   )
-
   const edit = (habit?: HabitRecord): void =>
     setForm({
       title: habit ? 'Редактировать привычку' : 'Новая привычка',
@@ -167,7 +150,6 @@ export function HabitsScreen(): React.JSX.Element {
         state.refresh()
       }
     })
-
   const move = (habit: HabitRecord): void =>
     setForm({
       title: 'Группа привычки',
@@ -182,7 +164,6 @@ export function HabitsScreen(): React.JSX.Element {
         state.refresh()
       }
     })
-
   const editGroup = (item?: HabitGroupRecord): void =>
     setForm({
       title: item ? 'Группа привычек' : 'Новая группа',
@@ -203,7 +184,6 @@ export function HabitsScreen(): React.JSX.Element {
         state.refresh()
       }
     })
-
   const visible = (state.data?.habits ?? []).filter(
     (habit) =>
       (view !== 'today' || isHabitScheduledOn(habit, date)) &&
@@ -211,25 +191,28 @@ export function HabitsScreen(): React.JSX.Element {
       (group === undefined || habit.groupId === group) &&
       habit.title.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase())
   )
-
   const scopeLabel =
     group === undefined
       ? 'Все привычки'
       : group === null
         ? 'Без группы'
         : (groupById.get(group)?.name ?? 'Выбранная группа')
-
   const activeGroupLabel = scopeLabel
-
   const tabHeader = (
     <>
-      <View style={{ marginBottom: 12, gap: 10 }}>
+      <div
+        className="ui-stack"
+        style={{
+          marginBottom: 12,
+          gap: 10
+        }}
+      >
         <SwipeTabBar
           items={VIEW_FILTERS}
           value={view}
           onChange={changeView}
           feedback={swipeTabFeedback}
-          search={view === 'reports' ? undefined : { value: query, onChangeText: setQuery }}
+          search={view === 'reports' ? undefined : { value: query, onValueChange: setQuery }}
           onSearchOpenChange={setSearchOpen}
           renderIcon={(item, selected) => {
             const Icon = item.icon
@@ -243,36 +226,36 @@ export function HabitsScreen(): React.JSX.Element {
           }}
           trailing={
             <>
-              <View
+              <div
+                className="ui-stack"
                 style={{
                   width: 1,
                   height: 26,
-                  marginHorizontal: 2,
+                  marginInline: 2,
                   backgroundColor: theme.border
                 }}
-              />
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={`Группы. Сейчас: ${activeGroupLabel}`}
-                accessibilityState={{ selected: group !== undefined }}
+              ></div>
+              <Action
+                role={'button'}
+                aria-label={`Группы. Сейчас: ${activeGroupLabel}`}
+                aria-selected={group !== undefined}
                 disabled={state.pending}
-                onPress={() => setGroupsOpen(true)}
-                style={({ pressed }) => ({
+                onClick={() => setGroupsOpen(true)}
+                style={{
                   position: 'relative',
-                  flex: 1,
+                  flex: '1 1 0%',
                   minWidth: 0,
                   height: 40,
                   alignItems: 'center',
                   justifyContent: 'center',
                   borderRadius: 12,
-                  backgroundColor:
-                    group !== undefined
-                      ? theme.accent + '18'
-                      : pressed
-                        ? theme.raised
-                        : 'transparent',
-                  opacity: state.pending ? 0.45 : pressed ? 0.72 : 1
-                })}
+                  backgroundColor: group !== undefined ? theme.accent + '18' : 'transparent',
+                  opacity: state.pending ? 0.45 : 1
+                }}
+                pressedStyle={{
+                  backgroundColor: group !== undefined ? theme.accent + '18' : theme.raised,
+                  opacity: state.pending ? 0.45 : 0.72
+                }}
               >
                 <AppIcon
                   name="folder"
@@ -281,8 +264,8 @@ export function HabitsScreen(): React.JSX.Element {
                   color={group !== undefined ? theme.accent : theme.muted}
                 />
                 {group !== undefined ? (
-                  <View
-                    pointerEvents="none"
+                  <div
+                    className="ui-stack"
                     style={{
                       position: 'absolute',
                       top: 7,
@@ -290,17 +273,19 @@ export function HabitsScreen(): React.JSX.Element {
                       width: 6,
                       height: 6,
                       borderRadius: 3,
-                      backgroundColor: theme.accent
+                      backgroundColor: theme.accent,
+                      pointerEvents: 'none'
                     }}
-                  />
+                  ></div>
                 ) : null}
-              </Pressable>
+              </Action>
             </>
           }
         />
 
         {view === 'all' ? (
-          <View
+          <div
+            className="ui-stack"
             style={{
               minHeight: 46,
               flexDirection: 'row',
@@ -316,63 +301,74 @@ export function HabitsScreen(): React.JSX.Element {
             {TRACKING_FILTERS.map((item) => {
               const selected = trackingFilter === item.id
               const Icon = item.icon
-
               return (
-                <Pressable
+                <Action
                   key={item.id}
-                  accessibilityRole="button"
-                  accessibilityLabel={item.label}
-                  accessibilityState={{ selected }}
-                  onPress={() => {
+                  role={'button'}
+                  aria-label={item.label}
+                  aria-selected={selected}
+                  onClick={() => {
                     if (selected) return
                     setTrackingFilter(item.id)
                     toast.info(item.label, 'habits-tracking-filter')
                   }}
-                  style={({ pressed }) => ({
-                    flex: 1,
+                  style={{
+                    flex: '1 1 0%',
                     height: 36,
                     alignItems: 'center',
                     justifyContent: 'center',
                     borderRadius: 11,
-                    backgroundColor: selected
-                      ? theme.accent + '14'
-                      : pressed
-                        ? theme.raised
-                        : 'transparent',
-                    opacity: pressed ? 0.72 : 1
-                  })}
+                    backgroundColor: selected ? theme.accent + '14' : 'transparent',
+                    opacity: 1
+                  }}
+                  pressedStyle={{
+                    backgroundColor: selected ? theme.accent + '14' : theme.raised,
+                    opacity: 0.72
+                  }}
                 >
                   <Icon
                     size={17}
                     strokeWidth={selected ? 2.35 : 2}
                     color={selected ? theme.accent : theme.muted}
                   />
-                </Pressable>
+                </Action>
               )
             })}
-          </View>
+          </div>
         ) : null}
 
         {view === 'today' ? (
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <div
+            className="ui-stack"
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 8
+            }}
+          >
             <IconButton
               label="Предыдущий день"
               icon="back"
-              onPress={() => setDate(addDays(date, -1))}
+              onClick={() => setDate(addDays(date, -1))}
             />
-            <View style={{ flex: 1 }}>
+            <div
+              className="ui-stack"
+              style={{
+                flex: '1 1 0%'
+              }}
+            >
               <AppDateField
                 label="Дата привычек"
                 value={date}
                 max={localDateKey()}
-                onChangeText={setDate}
+                onValueChange={setDate}
               />
-            </View>
+            </div>
             <IconButton
               label="Следующий день"
               icon="forward"
               disabled={date >= localDateKey()}
-              onPress={() => {
+              onClick={() => {
                 const next = addDays(date, 1)
                 setDate(next > localDateKey() ? localDateKey() : next)
               }}
@@ -381,19 +377,24 @@ export function HabitsScreen(): React.JSX.Element {
               label="Сегодня"
               icon="calendar"
               selected={date === localDateKey()}
-              onPress={() => setDate(localDateKey())}
+              onClick={() => setDate(localDateKey())}
             />
-          </View>
+          </div>
         ) : null}
-      </View>
+      </div>
 
       {state.error && <ErrorState message={state.error} retry={state.refresh} />}
     </>
   )
-
   return (
-    <View style={{ flex: 1, minHeight: 0 }}>
-      {Platform.OS !== 'web' || state.loading ? tabHeader : null}
+    <div
+      className="ui-stack"
+      style={{
+        flex: '1 1 0%',
+        minHeight: 0
+      }}
+    >
+      {state.loading ? tabHeader : null}
 
       <SwipeableTabContent
         tabs={HABIT_VIEW_TABS}
@@ -405,266 +406,321 @@ export function HabitsScreen(): React.JSX.Element {
         {state.loading ? (
           <LoadingState />
         ) : view === 'reports' ? (
-          <View style={{ flex: 1, minHeight: 0 }}>
+          <div
+            className="ui-stack"
+            style={{
+              flex: '1 1 0%',
+              minHeight: 0
+            }}
+          >
             <HabitsReportsView
               api={api}
               groupId={group}
               scopeLabel={scopeLabel}
-              header={Platform.OS === 'web' ? tabHeader : null}
+              header={tabHeader}
             />
-          </View>
+          </div>
         ) : (
-          <FlatList
-            style={{ flex: 1 }}
-            ListHeaderComponent={Platform.OS === 'web' ? tabHeader : null}
-            data={visible}
-            keyExtractor={(item) => item.id}
-            contentContainerStyle={{ paddingBottom: 8 }}
-            ListEmptyComponent={<EmptyState />}
-            onRefresh={state.refresh}
-            refreshing={state.loading}
-            renderItem={({ item }) => {
-              const entry = state.data?.entries.find((candidate) => candidate.habitId === item.id)
-              const scheduled = isHabitScheduledOn(item, date)
-              const habitGroup = item.groupId ? (groupById.get(item.groupId) ?? null) : null
-              const currentValue = entry?.value ?? 0
-              const completed = currentValue >= item.targetValue && !entry?.skipped
-
-              return (
-                <View
-                  style={{
-                    position: 'relative',
-                    minHeight: 70,
-                    marginBottom: 8,
-                    overflow: 'hidden',
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    borderWidth: 1,
-                    borderColor: theme.border,
-                    borderRadius: 16,
-                    backgroundColor: completed
-                      ? theme.success + '0E'
-                      : entry?.skipped
-                        ? theme.muted + '08'
-                        : theme.surface
-                  }}
-                >
-                  {completed || entry?.skipped ? (
-                    <View
-                      pointerEvents="none"
-                      style={{
-                        position: 'absolute',
-                        top: 8,
-                        bottom: 8,
-                        left: 0,
-                        width: 2,
-                        borderTopRightRadius: 2,
-                        borderBottomRightRadius: 2,
-                        backgroundColor: completed ? theme.success : theme.muted
-                      }}
-                    />
-                  ) : null}
-
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={`Изменить привычку ${item.title}`}
-                    accessibilityHint="Удерживайте для дополнительных действий"
-                    onPress={() => {
-                      if (longPressedHabitId.current === item.id) {
-                        longPressedHabitId.current = null
-                        return
-                      }
-                      edit(item)
-                    }}
-                    onLongPress={() => {
-                      if (state.pending) return
-                      longPressedHabitId.current = item.id
-                      setHabitActionsId(item.id)
-                    }}
-                    delayLongPress={380}
-                    disabled={state.pending}
-                    style={({ pressed }) => ({
-                      flex: 1,
-                      minWidth: 0,
-                      minHeight: 68,
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: 11,
-                      paddingLeft: 14,
-                      paddingRight: 6,
-                      paddingVertical: 10,
-                      opacity: pressed ? 0.72 : 1
-                    })}
-                  >
-                    <View
-                      style={{
-                        width: 34,
-                        height: 34,
-                        flexShrink: 0,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        borderWidth: 1,
-                        borderColor: completed ? theme.success + '44' : theme.border,
-                        borderRadius: 11,
-                        backgroundColor: completed ? theme.success + '12' : theme.background
-                      }}
-                    >
-                      <AppIcon
-                        name={completed ? 'check' : 'habits'}
-                        size={17}
-                        strokeWidth={completed ? 2.5 : 2}
-                        color={completed ? theme.success : theme.accent}
-                      />
-                    </View>
-
-                    <View style={{ flex: 1, minWidth: 0 }}>
-                      <Text
-                        numberOfLines={2}
-                        style={{
-                          color: completed ? theme.muted : theme.text,
-                          fontSize: 14,
-                          lineHeight: 20,
-                          fontWeight: '600'
-                        }}
-                      >
-                        {item.title}
-                      </Text>
-                      <Text
-                        numberOfLines={1}
-                        style={{
-                          marginTop: 3,
-                          color: entry?.skipped
-                            ? theme.muted
-                            : completed
-                              ? theme.success
-                              : theme.muted,
-                          fontSize: 11,
-                          lineHeight: 15,
-                          fontWeight: completed ? '600' : '500'
-                        }}
-                      >
-                        {entry?.skipped
-                          ? 'Пропущено'
-                          : !scheduled
-                            ? 'Не запланировано на эту дату'
-                            : `${currentValue} / ${item.targetValue}${item.unit ? ` ${item.unit}` : ''}`}
-                      </Text>
-                    </View>
-                  </Pressable>
-
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: 4,
-                      paddingRight: 6
-                    }}
-                  >
-                    {scheduled ? (
-                      <IconButton
-                        label={item.trackingType === 'count' ? 'Добавить единицу' : 'Выполнить'}
-                        icon="check"
-                        compact
-                        selected={completed}
-                        disabled={state.pending}
-                        onPress={() =>
-                          state.mutate(() => {
-                            api.upsertHabitEntry(
-                              schema.upsertHabitEntryInputSchema.parse({
-                                habitId: item.id,
-                                date,
-                                value: item.trackingType === 'count' ? currentValue + 1 : 1,
-                                skipped: false
-                              })
-                            )
-                          })
-                        }
-                      />
-                    ) : null}
-
-                    <ActionMenuDialog
-                      open={habitActionsId === item.id}
-                      onOpenChange={(open) => {
-                        if (!open) {
-                          setHabitActionsId(null)
-                          longPressedHabitId.current = null
-                        }
-                      }}
-                      title={item.title}
-                      items={[
-                        {
-                          key: 'group',
-                          label: `Группа: ${habitGroup?.name ?? 'Без группы'}`,
-                          icon: 'folder',
-                          disabled: state.pending,
-                          onPress: () => move(item)
-                        },
-                        ...(scheduled
-                          ? [
-                              {
-                                key: 'skip',
-                                label: 'Пропустить',
-                                icon: 'skip' as const,
-                                disabled: state.pending,
-                                onPress: () =>
-                                  state.mutate(() => {
-                                    api.upsertHabitEntry({
-                                      habitId: item.id,
-                                      date,
-                                      value: 0,
-                                      skipped: true
-                                    })
-                                  })
-                              }
-                            ]
-                          : []),
-                        ...(entry
-                          ? [
-                              {
-                                key: 'reset',
-                                label: 'Сбросить отметку',
-                                icon: 'reset' as const,
-                                disabled: state.pending,
-                                onPress: () =>
-                                  state.mutate(() => {
-                                    api.deleteHabitEntry({ habitId: item.id, date })
-                                  })
-                              }
-                            ]
-                          : []),
-                        {
-                          key: 'edit',
-                          label: 'Изменить',
-                          icon: 'edit',
-                          disabled: state.pending,
-                          onPress: () => edit(item)
-                        },
-                        {
-                          key: 'delete',
-                          label: 'Удалить привычку',
-                          icon: 'delete',
-                          danger: true,
-                          disabled: state.pending,
-                          onPress: () =>
-                            state.confirmDelete(
-                              'Удалить привычку?',
-                              () => {
-                                api.deleteHabit({ id: item.id })
-                              },
-                              'Будет удалена и история отметок.'
-                            )
-                        }
-                      ]}
-                    />
-                  </View>
-                </View>
-              )
+          <RefreshRegion
+            className="ui-scroll"
+            style={{
+              flex: '1 1 0%'
             }}
-          />
+            onRefresh={state.refresh}
+            busy={state.loading}
+          >
+            <div
+              className="ui-stack ui-scroll-content"
+              style={{
+                paddingBottom: 8
+              }}
+            >
+              {tabHeader}
+              <div className="ui-stack ui-list" style={{}}>
+                {visible.length > 0 ? (
+                  visible.map((item) => {
+                    const entry = state.data?.entries.find(
+                      (candidate) => candidate.habitId === item.id
+                    )
+                    const scheduled = isHabitScheduledOn(item, date)
+                    const habitGroup = item.groupId ? (groupById.get(item.groupId) ?? null) : null
+                    const currentValue = entry?.value ?? 0
+                    const completed = currentValue >= item.targetValue && !entry?.skipped
+                    return (
+                      <div className="ui-stack ui-list-item" key={((item) => item.id)(item)}>
+                        {
+                          <div
+                            className="ui-stack"
+                            style={{
+                              position: 'relative',
+                              minHeight: 70,
+                              marginBottom: 8,
+                              overflow: 'hidden',
+                              flexDirection: 'row',
+                              alignItems: 'center',
+                              borderWidth: 1,
+                              borderColor: theme.border,
+                              borderRadius: 16,
+                              backgroundColor: completed
+                                ? theme.success + '0E'
+                                : entry?.skipped
+                                  ? theme.muted + '08'
+                                  : theme.surface
+                            }}
+                          >
+                            {completed || entry?.skipped ? (
+                              <div
+                                className="ui-stack"
+                                style={{
+                                  position: 'absolute',
+                                  top: 8,
+                                  bottom: 8,
+                                  left: 0,
+                                  width: 2,
+                                  borderTopRightRadius: 2,
+                                  borderBottomRightRadius: 2,
+                                  backgroundColor: completed ? theme.success : theme.muted,
+                                  pointerEvents: 'none'
+                                }}
+                              ></div>
+                            ) : null}
+
+                            <Action
+                              role={'button'}
+                              aria-label={`Изменить привычку ${item.title}`}
+                              title={'Удерживайте для дополнительных действий'}
+                              onClick={() => {
+                                if (longPressedHabitId.current === item.id) {
+                                  longPressedHabitId.current = null
+                                  return
+                                }
+                                edit(item)
+                              }}
+                              onHold={() => {
+                                if (state.pending) return
+                                longPressedHabitId.current = item.id
+                                setHabitActionsId(item.id)
+                              }}
+                              holdDelay={380}
+                              disabled={state.pending}
+                              style={{
+                                flex: '1 1 0%',
+                                minWidth: 0,
+                                minHeight: 68,
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                gap: 11,
+                                paddingLeft: 14,
+                                paddingRight: 6,
+                                paddingBlock: 10,
+                                opacity: 1
+                              }}
+                              pressedStyle={{
+                                opacity: 0.72
+                              }}
+                            >
+                              <div
+                                className="ui-stack"
+                                style={{
+                                  width: 34,
+                                  height: 34,
+                                  flexShrink: 0,
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  borderWidth: 1,
+                                  borderColor: completed ? theme.success + '44' : theme.border,
+                                  borderRadius: 11,
+                                  backgroundColor: completed
+                                    ? theme.success + '12'
+                                    : theme.background
+                                }}
+                              >
+                                <AppIcon
+                                  name={completed ? 'check' : 'habits'}
+                                  size={17}
+                                  strokeWidth={completed ? 2.5 : 2}
+                                  color={completed ? theme.success : theme.accent}
+                                />
+                              </div>
+
+                              <div
+                                className="ui-stack"
+                                style={{
+                                  flex: '1 1 0%',
+                                  minWidth: 0
+                                }}
+                              >
+                                <span
+                                  className="ui-text"
+                                  data-lines={2}
+                                  style={{
+                                    color: completed ? theme.muted : theme.text,
+                                    fontSize: 14,
+                                    lineHeight: '20px',
+                                    fontWeight: 600,
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    display: '-webkit-box',
+                                    WebkitBoxOrient: 'vertical',
+                                    WebkitLineClamp: 2
+                                  }}
+                                >
+                                  {item.title}
+                                </span>
+                                <span
+                                  className="ui-text"
+                                  data-lines={1}
+                                  style={{
+                                    marginTop: 3,
+                                    color: entry?.skipped
+                                      ? theme.muted
+                                      : completed
+                                        ? theme.success
+                                        : theme.muted,
+                                    fontSize: 11,
+                                    lineHeight: '15px',
+                                    fontWeight: completed ? '600' : '500',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    display: '-webkit-box',
+                                    WebkitBoxOrient: 'vertical',
+                                    WebkitLineClamp: 1
+                                  }}
+                                >
+                                  {entry?.skipped
+                                    ? 'Пропущено'
+                                    : !scheduled
+                                      ? 'Не запланировано на эту дату'
+                                      : `${currentValue} / ${item.targetValue}${item.unit ? ` ${item.unit}` : ''}`}
+                                </span>
+                              </div>
+                            </Action>
+
+                            <div
+                              className="ui-stack"
+                              style={{
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                gap: 4,
+                                paddingRight: 6
+                              }}
+                            >
+                              {scheduled ? (
+                                <IconButton
+                                  label={
+                                    item.trackingType === 'count' ? 'Добавить единицу' : 'Выполнить'
+                                  }
+                                  icon="check"
+                                  compact
+                                  selected={completed}
+                                  disabled={state.pending}
+                                  onClick={() =>
+                                    state.mutate(() => {
+                                      api.upsertHabitEntry(
+                                        schema.upsertHabitEntryInputSchema.parse({
+                                          habitId: item.id,
+                                          date,
+                                          value:
+                                            item.trackingType === 'count' ? currentValue + 1 : 1,
+                                          skipped: false
+                                        })
+                                      )
+                                    })
+                                  }
+                                />
+                              ) : null}
+
+                              <ActionMenuDialog
+                                open={habitActionsId === item.id}
+                                onOpenChange={(open) => {
+                                  if (!open) {
+                                    setHabitActionsId(null)
+                                    longPressedHabitId.current = null
+                                  }
+                                }}
+                                title={item.title}
+                                items={[
+                                  {
+                                    key: 'group',
+                                    label: `Группа: ${habitGroup?.name ?? 'Без группы'}`,
+                                    icon: 'folder',
+                                    disabled: state.pending,
+                                    onClick: () => move(item)
+                                  },
+                                  ...(scheduled
+                                    ? [
+                                        {
+                                          key: 'skip',
+                                          label: 'Пропустить',
+                                          icon: 'skip' as const,
+                                          disabled: state.pending,
+                                          onClick: () =>
+                                            state.mutate(() => {
+                                              api.upsertHabitEntry({
+                                                habitId: item.id,
+                                                date,
+                                                value: 0,
+                                                skipped: true
+                                              })
+                                            })
+                                        }
+                                      ]
+                                    : []),
+                                  ...(entry
+                                    ? [
+                                        {
+                                          key: 'reset',
+                                          label: 'Сбросить отметку',
+                                          icon: 'reset' as const,
+                                          disabled: state.pending,
+                                          onClick: () =>
+                                            state.mutate(() => {
+                                              api.deleteHabitEntry({ habitId: item.id, date })
+                                            })
+                                        }
+                                      ]
+                                    : []),
+                                  {
+                                    key: 'edit',
+                                    label: 'Изменить',
+                                    icon: 'edit',
+                                    disabled: state.pending,
+                                    onClick: () => edit(item)
+                                  },
+                                  {
+                                    key: 'delete',
+                                    label: 'Удалить привычку',
+                                    icon: 'delete',
+                                    danger: true,
+                                    disabled: state.pending,
+                                    onClick: () =>
+                                      state.confirmDelete(
+                                        'Удалить привычку?',
+                                        () => {
+                                          api.deleteHabit({ id: item.id })
+                                        },
+                                        'Будет удалена и история отметок.'
+                                      )
+                                  }
+                                ]}
+                              />
+                            </div>
+                          </div>
+                        }
+                      </div>
+                    )
+                  })
+                ) : (
+                  <EmptyState />
+                )}
+              </div>
+            </div>
+          </RefreshRegion>
         )}
       </SwipeableTabContent>
 
-      <View
+      <div
+        className="ui-stack"
         style={{
           paddingTop: 10,
           paddingBottom: 2,
@@ -673,35 +729,48 @@ export function HabitsScreen(): React.JSX.Element {
           backgroundColor: theme.background
         }}
       >
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Создать привычку"
+        <Action
+          role={'button'}
+          aria-label={'Создать привычку'}
           disabled={state.pending}
-          onPress={() => edit()}
-          style={({ pressed }) => ({
+          onClick={() => edit()}
+          style={{
             minHeight: 50,
             flexDirection: 'row',
             alignItems: 'center',
             gap: 8,
-            opacity: state.pending ? 0.45 : pressed ? 0.76 : 1
-          })}
+            opacity: state.pending ? 0.45 : 1
+          }}
+          pressedStyle={{
+            opacity: state.pending ? 0.45 : 0.76
+          }}
         >
-          <View
+          <div
+            className="ui-stack"
             style={{
-              flex: 1,
+              flex: '1 1 0%',
               minHeight: 48,
               justifyContent: 'center',
-              paddingHorizontal: 15,
+              paddingInline: 15,
               borderWidth: 1,
               borderColor: theme.border,
               borderRadius: 16,
               backgroundColor: theme.surface
             }}
           >
-            <Text style={{ color: theme.muted, fontSize: 14 }}>Новая привычка…</Text>
-          </View>
+            <span
+              className="ui-text"
+              style={{
+                color: theme.muted,
+                fontSize: 14
+              }}
+            >
+              Новая привычка…
+            </span>
+          </div>
 
-          <View
+          <div
+            className="ui-stack"
             style={{
               width: 44,
               height: 44,
@@ -714,9 +783,9 @@ export function HabitsScreen(): React.JSX.Element {
             }}
           >
             <AppIcon name="add" size={18} strokeWidth={2.3} color="#ffffff" />
-          </View>
-        </Pressable>
-      </View>
+          </div>
+        </Action>
+      </div>
 
       <AppDialog
         open={groupsOpen}
@@ -726,86 +795,100 @@ export function HabitsScreen(): React.JSX.Element {
         icon="folder"
         presentation="sheet"
       >
-        <ScrollView contentContainerStyle={{ padding: 12, paddingBottom: 24 }}>
-          <WorkspaceNodeCard
-            title="Все привычки"
-            subtitle={`${state.data?.habits.length ?? 0} привычек`}
-            leadingIcon="habits"
-            selected={group === undefined}
-            onPress={() => {
-              setGroup(undefined)
-              setGroupsOpen(false)
+        <div className="ui-scroll">
+          <div
+            className="ui-stack ui-scroll-content"
+            style={{
+              padding: 12,
+              paddingBottom: 24
             }}
-          />
-          <WorkspaceNodeCard
-            title="Без группы"
-            subtitle={`${(state.data?.habits ?? []).filter((item) => item.groupId === null).length} привычек`}
-            leadingIcon="folder"
-            selected={group === null}
-            onPress={() => {
-              setGroup(null)
-              setGroupsOpen(false)
-            }}
-          />
-          {(state.data?.groups ?? []).map((item) => (
+          >
             <WorkspaceNodeCard
-              key={item.id}
-              title={item.name}
-              subtitle={`${(state.data?.habits ?? []).filter((habit) => habit.groupId === item.id).length} привычек`}
-              leading={<VisualIconBadge value={item.icon} colorKey={item.color} />}
-              selected={group === item.id}
-              onPress={() => {
-                setGroup(item.id)
+              title="Все привычки"
+              subtitle={`${state.data?.habits.length ?? 0} привычек`}
+              leadingIcon="habits"
+              selected={group === undefined}
+              onClick={() => {
+                setGroup(undefined)
                 setGroupsOpen(false)
               }}
-              action={
-                <ActionMenu
-                  title={item.name}
-                  items={[
-                    {
-                      label: 'Изменить группу',
-                      icon: 'edit',
-                      onPress: () => {
-                        setGroupsOpen(false)
-                        editGroup(item)
-                      }
-                    },
-                    {
-                      label: 'Удалить группу',
-                      icon: 'delete',
-                      danger: true,
-                      onPress: () => {
-                        setGroupsOpen(false)
-                        state.confirmDelete(
-                          'Удалить группу?',
-                          () => {
-                            api.deleteHabitGroup({ id: item.id })
-                            if (group === item.id) setGroup(undefined)
-                          },
-                          'Привычки сохранятся без группы.'
-                        )
-                      }
-                    }
-                  ]}
-                />
-              }
             />
-          ))}
-          <View style={{ marginTop: 8, alignItems: 'flex-start' }}>
-            <Button
-              label="Создать группу"
-              icon="add"
-              primary
-              onPress={() => {
+            <WorkspaceNodeCard
+              title="Без группы"
+              subtitle={`${(state.data?.habits ?? []).filter((item) => item.groupId === null).length} привычек`}
+              leadingIcon="folder"
+              selected={group === null}
+              onClick={() => {
+                setGroup(null)
                 setGroupsOpen(false)
-                editGroup()
               }}
             />
-          </View>
-        </ScrollView>
+            {(state.data?.groups ?? []).map((item) => (
+              <WorkspaceNodeCard
+                key={item.id}
+                title={item.name}
+                subtitle={`${(state.data?.habits ?? []).filter((habit) => habit.groupId === item.id).length} привычек`}
+                leading={<VisualIconBadge value={item.icon} colorKey={item.color} />}
+                selected={group === item.id}
+                onClick={() => {
+                  setGroup(item.id)
+                  setGroupsOpen(false)
+                }}
+                action={
+                  <ActionMenu
+                    title={item.name}
+                    items={[
+                      {
+                        label: 'Изменить группу',
+                        icon: 'edit',
+                        onClick: () => {
+                          setGroupsOpen(false)
+                          editGroup(item)
+                        }
+                      },
+                      {
+                        label: 'Удалить группу',
+                        icon: 'delete',
+                        danger: true,
+                        onClick: () => {
+                          setGroupsOpen(false)
+                          state.confirmDelete(
+                            'Удалить группу?',
+                            () => {
+                              api.deleteHabitGroup({ id: item.id })
+                              if (group === item.id) setGroup(undefined)
+                            },
+                            'Привычки сохранятся без группы.'
+                          )
+                        }
+                      }
+                    ]}
+                  />
+                }
+              />
+            ))}
+            <div
+              className="ui-stack"
+              style={{
+                marginTop: 8,
+                alignItems: 'flex-start'
+              }}
+            >
+              <Button
+                label="Создать группу"
+                icon="add"
+                primary
+                onClick={() => {
+                  setGroupsOpen(false)
+                  editGroup()
+                }}
+              />
+            </div>
+          </div>
+        </div>
       </AppDialog>
 
       {form && <FormSheet spec={form} close={() => setForm(null)} />}
-    </View>
+    </div>
   )
 }
