@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   BookmarkPlus, Check, Disc3, Download, ExternalLink, Heart, ListMusic, ListPlus, LoaderCircle,
   Music2, Pause, Play, Plus, Radio, Search, Shuffle, SkipBack, SkipForward, Repeat, Repeat1,
-  Volume2, VolumeX, X, Waves, Headphones, Clock3, SlidersHorizontal
+  Volume2, VolumeX, X, Waves, Headphones, Clock3, SlidersHorizontal, Compass, LibraryBig
 } from 'lucide-react'
 import {
   discoverMusic, mergeMusicSearchResults, providerLabel, type DiscoveredTrack, type MusicSource
@@ -106,6 +106,7 @@ export function MusicListening({
   const savedKeys = new Set(savedTracks.map((track) => track.key))
   const likedKeys = new Set(collection.likedKeys)
   const chosenPlaylist = collection.playlists.find((item) => item.id === savedFilter)
+  const browsingPlaylists = onlySaved && savedFilter === 'playlists'
   const visibleTracks = onlySaved
     ? savedTracks.filter((track) =>
         (savedFilter === 'all' || (savedFilter === 'liked'
@@ -499,6 +500,42 @@ export function MusicListening({
         onEnded={ended}
         onError={() => { setPlaying(false); setPlaybackError('Аудиопоток недоступен. Попробуйте другой трек или откройте его у источника.') }}
       />
+
+      <div className="mymusic-layout">
+        <aside className="mymusic-rail" aria-label="Навигация музыки">
+          <div className="mymusic-rail-mark" aria-hidden="true"><Music2 size={22} /></div>
+          <nav className="mymusic-rail-links" aria-label="Разделы музыки">
+            <button type="button" title="Поиск" aria-label="Поиск"
+              aria-pressed={!onlySaved} className={!onlySaved ? 'active' : ''}
+              onClick={() => { setOnlySaved(false); setQuery('') }}>
+              <Compass size={22} aria-hidden="true" /><span>Поиск</span>
+            </button>
+            <button type="button" title="Сохранённое" aria-label={'Сохранённое (' + savedTracks.length + ')'}
+              aria-pressed={onlySaved && savedFilter === 'all'} className={onlySaved && savedFilter === 'all' ? 'active' : ''}
+              onClick={() => { setOnlySaved(true); setSavedFilter('all'); setQuery('') }}>
+              <LibraryBig size={22} aria-hidden="true" /><span>Сохранённое</span>
+            </button>
+            <button type="button" title="Избранное" aria-label={'Избранное (' + likedKeys.size + ')'}
+              aria-pressed={onlySaved && savedFilter === 'liked'} className={onlySaved && savedFilter === 'liked' ? 'active' : ''}
+              onClick={() => { setOnlySaved(true); setSavedFilter('liked'); setQuery('') }}>
+              <Heart size={22} aria-hidden="true" /><span>Избранное</span>
+            </button>
+            {onOfflineList ? <button type="button" title="Загрузки" aria-label={'Загрузки (' + offlineKeys.length + ')'}
+              aria-pressed={onlySaved && savedFilter === 'offline'} className={onlySaved && savedFilter === 'offline' ? 'active' : ''}
+              onClick={() => { setOnlySaved(true); setSavedFilter('offline'); setQuery('') }}>
+              <Download size={22} aria-hidden="true" /><span>Загрузки</span>
+            </button> : null}
+            <div className="mymusic-rail-separator" aria-hidden="true" />
+            <button type="button" title="Плейлисты" aria-label="Плейлисты"
+              aria-pressed={onlySaved && (browsingPlaylists || Boolean(chosenPlaylist))}
+              className={onlySaved && (browsingPlaylists || Boolean(chosenPlaylist)) ? 'active' : ''}
+              onClick={() => { setOnlySaved(true); setSavedFilter('playlists'); setQuery('') }}>
+              <ListMusic size={22} aria-hidden="true" /><span>Плейлисты</span>
+            </button>
+          </nav>
+          <span className="mymusic-rail-footer" aria-hidden="true">MYMIND</span>
+        </aside>
+        <div className="mymusic-content">
       <header className="mymusic-topbar">
         <div className="mymusic-brand">
           <div className="mymusic-brand-mark"><Music2 size={23} aria-hidden="true" /></div>
@@ -524,6 +561,9 @@ export function MusicListening({
         <button type="button" aria-pressed={onlySaved && savedFilter === 'all'} className={onlySaved && savedFilter === 'all' ? 'active' : ''} onClick={() => { setOnlySaved(true); setSavedFilter('all'); setQuery('') }}>Сохранённое ({savedTracks.length})</button>
         <button type="button" aria-pressed={onlySaved && savedFilter === 'liked'} className={onlySaved && savedFilter === 'liked' ? 'active' : ''} onClick={() => { setOnlySaved(true); setSavedFilter('liked'); setQuery('') }}>Избранное ({likedKeys.size})</button>
         {onOfflineList ? <button type="button" aria-pressed={onlySaved && savedFilter === 'offline'} className={onlySaved && savedFilter === 'offline' ? 'active' : ''} onClick={() => { setOnlySaved(true); setSavedFilter('offline'); setQuery('') }}>Загрузки ({offlineKeys.length})</button> : null}
+        <button type="button" aria-pressed={browsingPlaylists || (onlySaved && Boolean(chosenPlaylist))}
+          className={browsingPlaylists || (onlySaved && Boolean(chosenPlaylist)) ? 'active' : ''}
+          onClick={() => { setOnlySaved(true); setSavedFilter('playlists'); setQuery('') }}>Плейлисты</button>
       </nav>
 
       {!onlySaved ? <div className="mymusic-mood-pills" role="group" aria-label="Быстрый поиск по настроению">
@@ -607,7 +647,7 @@ export function MusicListening({
         </section>
       ) : null}
 
-      <div className="mymusic-library-controls">
+      <div className={'mymusic-library-controls' + (browsingPlaylists ? ' is-overview' : '')}>
         <div className="mymusic-library-playlists">
           {collection.playlists.map((playlist) => (
             <button key={playlist.id} type="button"
@@ -651,15 +691,31 @@ export function MusicListening({
         <div>
           <span className="mymusic-eyebrow">{onlySaved ? 'МОЯ МУЗЫКА' : 'ОБЩИЙ ПОИСК'}</span>
           <h3>{onlySaved ? savedFilter === 'all' ? 'Сохранённые треки'
-  : savedFilter === 'liked' ? 'Избранное' : savedFilter === 'offline' ? 'Загрузки MyMind' : chosenPlaylist?.name ?? 'Плейлист'
+  : savedFilter === 'liked' ? 'Избранное' : savedFilter === 'offline' ? 'Загрузки MyMind'
+  : browsingPlaylists ? 'Плейлисты' : chosenPlaylist?.name ?? 'Плейлист'
   : query.trim() ? 'Результаты поиска' : 'Сейчас в тренде'}</h3>
         </div>
         <span className="mymusic-result-count">{String(visibleTracks.length)} треков{loading ? ' · поиск продолжается…' : ''}</span>
       </div>
+
+      {browsingPlaylists ? <div className="mymusic-playlist-grid">
+        {collection.playlists.map(playlist => {
+          const firstTrack = playlist.trackKeys.map(key => collection.tracks[key]).find(Boolean)
+          return <button type="button" key={playlist.id} className="mymusic-playlist-card"
+            aria-label={'Открыть плейлист ' + playlist.name}
+            onClick={() => { setSavedFilter(playlist.id); setQuery('') }}>
+            {firstTrack ? <Artwork track={firstTrack} size="large" /> :
+              <span className="mymusic-playlist-placeholder"><ListMusic size={31} aria-hidden="true" /></span>}
+            <strong>{playlist.name}</strong>
+            <small>{playlist.trackKeys.length} треков</small>
+          </button>
+        })}
+        {collection.playlists.length === 0 ? <p className="mymusic-playlist-empty">Плейлистов пока нет. Создай первый с помощью кнопки выше.</p> : null}
+      </div> : null}
       {!onlySaved && searchWarning && visibleTracks.length > 0 ? (
         <p className="mymusic-search-warning" role="status">{searchWarning}</p>
       ) : null}
-      {!onlySaved && loadError && !visibleTracks.length ? (
+      {browsingPlaylists ? null : !onlySaved && loadError && !visibleTracks.length ? (
         <div className="mymusic-message" role="alert">
           <span>{loadError}</span>
           <button type="button" onClick={() => setSearchAttempt((attempt) => attempt + 1)}>
@@ -728,6 +784,8 @@ export function MusicListening({
         </div>
       )}
 
+        </div>
+      </div>
       <div className="mymusic-player" role="region" aria-label="Музыкальный проигрыватель">
           <div className="mymusic-player-track">
             {current ? <Artwork track={current}/> : <div className="mymusic-idle-art"><Music2 size={22} aria-hidden="true" /></div>}
@@ -757,8 +815,10 @@ export function MusicListening({
           {queueOpen ? <div className="mymusic-queue"><h4>Очередь</h4>{queue.map((item, index) => <button key={item.key} type="button" className={index === currentIndex ? 'active' : ''} onClick={() => { setCurrentIndex(index); setQueueOpen(false) }}>{index + 1}. {item.title} / {item.artist}</button>)}</div> : null}
           {playbackError ? <div className="mymusic-player-error" role="alert">{playbackError}</div> : null}
         </div>
-      {downloadNotice ? <div className="mymusic-message" role="status">{downloadNotice}</div> : null}
+      <div className="mymusic-content-footer">
+        {downloadNotice ? <div className="mymusic-message" role="status">{downloadNotice}</div> : null}
       <div className="mymusic-attribution">YouTube · SoundCloud · Audius · Jamendo. Desktop сохраняет скачанные аудиофайлы во внутреннем хранилище MyMind для прослушивания без интернета (при наличии разрешения на копирование). На PWA доступна загрузка только с официального разрешения источника. Плейлисты и избранное сохраняются локально.</div>
+      </div>
     </section>
   )
 }
