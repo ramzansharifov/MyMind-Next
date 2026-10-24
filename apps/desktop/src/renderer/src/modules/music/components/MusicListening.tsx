@@ -515,7 +515,7 @@ export function MusicListening({
           {query ? <button type="button" aria-label="Очистить поиск" onClick={() => setQuery('')}><X size={17}/></button> : null}
         </label>
         <button type="button" className="mymusic-settings-button" onClick={() => setSettingsOpen((v) => !v)}
-          aria-expanded={settingsOpen}><SlidersHorizontal size={17} aria-hidden="true" /><span>Настройки поиска</span></button>
+          aria-label="Настройки поиска" aria-expanded={settingsOpen}><SlidersHorizontal size={17} aria-hidden="true" /><span>Настройки поиска</span></button>
       </div>
 
       <nav className="mymusic-providers" aria-label="Музыкальная библиотека">
