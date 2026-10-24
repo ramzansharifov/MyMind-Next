@@ -1,5 +1,4 @@
 import { useCallback, useMemo, useState } from 'react'
-import { FlatList, Text, View } from 'react-native'
 import type { DiaryReport, DiaryReportPoint } from '@mymind/contracts/diary'
 import { diaryDayKeySchema } from '@mymind/core/validation/diary'
 import { localDateKey } from '@mymind/core/habits'
@@ -16,7 +15,6 @@ import {
   expandDiaryReportTimeline,
   type DiaryReportPeriod
 } from './diary-presentation'
-
 const REPORT_PERIODS: DiaryReportPeriod[] = [
   'week',
   'month',
@@ -25,7 +23,6 @@ const REPORT_PERIODS: DiaryReportPeriod[] = [
   'all',
   'custom'
 ]
-
 export function DiaryReportsView({
   diaryId,
   onOpenDay
@@ -40,7 +37,6 @@ export function DiaryReportsView({
   const [customFrom, setCustomFrom] = useState(defaultRange.fromDay ?? today)
   const [customTo, setCustomTo] = useState(defaultRange.toDay ?? today)
   const [form, setForm] = useState<FormSpec | null>(null)
-
   const range = useMemo(
     () => diaryReportRange(period, customFrom, customTo, today),
     [customFrom, customTo, period, today]
@@ -48,7 +44,6 @@ export function DiaryReportsView({
   const state = useCollection(
     useCallback(() => api.getDiaryReport({ diaryId, ...range }), [api, diaryId, range])
   )
-
   const openCustomPeriod = (): void => {
     setForm({
       title: 'Свой период отчёта',
@@ -67,51 +62,63 @@ export function DiaryReportsView({
       }
     })
   }
-
   if (state.loading && !state.data) return <LoadingState />
   if (state.error && !state.data) return <ErrorState message={state.error} retry={state.refresh} />
-
   const report = state.data
   if (!report) return <EmptyState text="Для отчёта пока недостаточно данных." />
-
   return (
-    <View style={{ flex: 1 }}>
-      <FlatList
-        data={report.timeline}
-        keyExtractor={(item) => item.dayKey}
-        contentContainerStyle={{ paddingBottom: 24 }}
-        ListHeaderComponent={
-          <DiaryReportHeader
-            report={report}
-            period={period}
-            customFrom={customFrom}
-            customTo={customTo}
-            onSelectPeriod={(nextPeriod) => {
-              if (nextPeriod === 'custom') openCustomPeriod()
-              else setPeriod(nextPeriod)
-            }}
-          />
-        }
-        ListEmptyComponent={<EmptyState text="За выбранный период пока нет страниц." />}
-        ListFooterComponent={
-          state.error ? <ErrorState message={state.error} retry={state.refresh} /> : null
-        }
-        renderItem={({ item }) => {
-          const mood = diaryMoodMeta(item.mood)
-          return (
-            <Row
-              title={item.dayKey}
-              subtitle={`${item.entryCount} записей${mood ? ` · ${mood.emoji} ${mood.label}` : ''}`}
-              onPress={() => onOpenDay(item.dayKey)}
+    <div
+      className="ui-stack"
+      style={{
+        flex: '1 1 0%'
+      }}
+    >
+      <div className="ui-scroll">
+        <div
+          className="ui-stack ui-scroll-content"
+          style={{
+            paddingBottom: 24
+          }}
+        >
+          {
+            <DiaryReportHeader
+              report={report}
+              period={period}
+              customFrom={customFrom}
+              customTo={customTo}
+              onSelectPeriod={(nextPeriod) => {
+                if (nextPeriod === 'custom') openCustomPeriod()
+                else setPeriod(nextPeriod)
+              }}
             />
-          )
-        }}
-      />
+          }
+          <div className="ui-stack ui-list" style={{}}>
+            {report.timeline.length > 0 ? (
+              report.timeline.map((item) => {
+                const mood = diaryMoodMeta(item.mood)
+                return (
+                  <div className="ui-stack ui-list-item" key={((item) => item.dayKey)(item)}>
+                    {
+                      <Row
+                        title={item.dayKey}
+                        subtitle={`${item.entryCount} записей${mood ? ` · ${mood.emoji} ${mood.label}` : ''}`}
+                        onClick={() => onOpenDay(item.dayKey)}
+                      />
+                    }
+                  </div>
+                )
+              })
+            ) : (
+              <EmptyState text="За выбранный период пока нет страниц." />
+            )}
+          </div>
+          {state.error ? <ErrorState message={state.error} retry={state.refresh} /> : null}
+        </div>
+      </div>
       {form ? <FormSheet spec={form} close={() => setForm(null)} /> : null}
-    </View>
+    </div>
   )
 }
-
 function DiaryReportHeader({
   report,
   period,
@@ -134,27 +141,52 @@ function DiaryReportHeader({
     activityTimeline.length > 0
       ? Math.round((report.activeDays / activityTimeline.length) * 100)
       : 0
-
   return (
-    <View style={{ gap: 14, marginBottom: 16 }}>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+    <div
+      className="ui-stack"
+      style={{
+        gap: 14,
+        marginBottom: 16
+      }}
+    >
+      <div
+        className="ui-stack"
+        style={{
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          gap: 8
+        }}
+      >
         {REPORT_PERIODS.map((option) => (
           <Button
             key={option}
             label={diaryReportPeriodLabels[option]}
             selected={period === option}
-            onPress={() => onSelectPeriod(option)}
+            onClick={() => onSelectPeriod(option)}
           />
         ))}
-      </View>
+      </div>
 
       {period === 'custom' ? (
-        <Text style={{ color: theme.muted, fontSize: 12 }}>
+        <span
+          className="ui-text"
+          style={{
+            color: theme.muted,
+            fontSize: 12
+          }}
+        >
           {customFrom} → {customTo}
-        </Text>
+        </span>
       ) : null}
 
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+      <div
+        className="ui-stack"
+        style={{
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          gap: 10
+        }}
+      >
         <Metric
           label="Страниц"
           value={String(report.pageCount)}
@@ -173,9 +205,10 @@ function DiaryReportHeader({
           hint={`${report.moodDays} дней с оценкой`}
         />
         <Metric label="Регулярность" value={`${regularity}%`} hint="доля дней с записями" />
-      </View>
+      </div>
 
-      <View
+      <div
+        className="ui-stack"
         style={{
           borderWidth: 1,
           borderColor: theme.border,
@@ -185,50 +218,96 @@ function DiaryReportHeader({
           gap: 10
         }}
       >
-        <Text style={{ color: theme.text, fontSize: 15, fontWeight: '800' }}>
+        <span
+          className="ui-text"
+          style={{
+            color: theme.text,
+            fontSize: 15,
+            fontWeight: 800
+          }}
+        >
           Распределение настроения
-        </Text>
+        </span>
         {report.moodBreakdown.map((item) => {
           const meta = diaryMoodMeta(item.mood)
           return (
-            <View key={item.mood} style={{ flexDirection: 'row', alignItems: 'center', gap: 9 }}>
-              <Text style={{ width: 112, color: theme.text, fontSize: 12 }} numberOfLines={1}>
-                {meta?.emoji} {meta?.label}
-              </Text>
-              <View
+            <div
+              className="ui-stack"
+              key={item.mood}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 9
+              }}
+            >
+              <span
+                className="ui-text"
                 style={{
-                  flex: 1,
+                  width: 112,
+                  color: theme.text,
+                  fontSize: 12,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  display: '-webkit-box',
+                  WebkitBoxOrient: 'vertical',
+                  WebkitLineClamp: 1
+                }}
+                data-lines={1}
+              >
+                {meta?.emoji} {meta?.label}
+              </span>
+              <div
+                className="ui-stack"
+                style={{
+                  flex: '1 1 0%',
                   height: 7,
                   borderRadius: 99,
                   overflow: 'hidden',
                   backgroundColor: theme.raised
                 }}
               >
-                <View
+                <div
+                  className="ui-stack"
                   style={{
                     width: `${Math.max(0, Math.min(100, item.sharePercent))}%`,
                     height: '100%',
                     borderRadius: 99,
                     backgroundColor: theme.accent
                   }}
-                />
-              </View>
-              <Text style={{ width: 26, textAlign: 'right', color: theme.muted, fontSize: 11 }}>
+                ></div>
+              </div>
+              <span
+                className="ui-text"
+                style={{
+                  width: 26,
+                  textAlign: 'right',
+                  color: theme.muted,
+                  fontSize: 11
+                }}
+              >
                 {item.count}
-              </Text>
-            </View>
+              </span>
+            </div>
           )
         })}
-      </View>
+      </div>
 
       <DiaryMoodTrend points={activityTimeline} />
       <DiaryActivityHeatmap points={activityTimeline} />
 
-      <Text style={{ color: theme.muted, fontSize: 12, fontWeight: '700' }}>Дни периода</Text>
-    </View>
+      <span
+        className="ui-text"
+        style={{
+          color: theme.muted,
+          fontSize: 12,
+          fontWeight: 700
+        }}
+      >
+        Дни периода
+      </span>
+    </div>
   )
 }
-
 function Metric({
   label,
   value,
@@ -240,7 +319,8 @@ function Metric({
 }): React.JSX.Element {
   const theme = useTheme()
   return (
-    <View
+    <div
+      className="ui-stack"
       style={{
         minWidth: 145,
         flexGrow: 1,
@@ -253,19 +333,43 @@ function Metric({
         gap: 4
       }}
     >
-      <Text style={{ color: theme.muted, fontSize: 11 }}>{label}</Text>
-      <Text style={{ color: theme.text, fontSize: 19, fontWeight: '800' }}>{value}</Text>
-      <Text style={{ color: theme.muted, fontSize: 10 }}>{hint}</Text>
-    </View>
+      <span
+        className="ui-text"
+        style={{
+          color: theme.muted,
+          fontSize: 11
+        }}
+      >
+        {label}
+      </span>
+      <span
+        className="ui-text"
+        style={{
+          color: theme.text,
+          fontSize: 19,
+          fontWeight: 800
+        }}
+      >
+        {value}
+      </span>
+      <span
+        className="ui-text"
+        style={{
+          color: theme.muted,
+          fontSize: 10
+        }}
+      >
+        {hint}
+      </span>
+    </div>
   )
 }
-
 function DiaryMoodTrend({ points }: { points: DiaryReportPoint[] }): React.JSX.Element {
   const theme = useTheme()
   const hasMood = points.some((point) => point.moodScore !== null)
-
   return (
-    <View
+    <div
+      className="ui-stack"
       style={{
         borderWidth: 1,
         borderColor: theme.border,
@@ -275,70 +379,130 @@ function DiaryMoodTrend({ points }: { points: DiaryReportPoint[] }): React.JSX.E
         gap: 10
       }}
     >
-      <Text style={{ color: theme.text, fontSize: 15, fontWeight: '800' }}>
+      <span
+        className="ui-text"
+        style={{
+          color: theme.text,
+          fontSize: 15,
+          fontWeight: 800
+        }}
+      >
         Динамика настроения
-      </Text>
+      </span>
       {!hasMood ? (
-        <Text style={{ color: theme.muted, fontSize: 12 }}>Настроение пока не отмечалось.</Text>
+        <span
+          className="ui-text"
+          style={{
+            color: theme.muted,
+            fontSize: 12
+          }}
+        >
+          Настроение пока не отмечалось.
+        </span>
       ) : (
-        <View style={{ gap: 6 }}>
-          <FlatList
-            horizontal
-            data={points}
-            keyExtractor={(point) => point.dayKey}
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ alignItems: 'flex-end', gap: 5, minHeight: 116 }}
-            renderItem={({ item }) => {
-              const score = item.moodScore
-              const meta = diaryMoodMeta(item.mood)
-              return (
-                <View
-                  accessibilityLabel={
-                    score === null
-                      ? `${item.dayKey}: настроение не отмечено`
-                      : `${item.dayKey}: ${meta?.label ?? score}, ${score} из 5`
-                  }
-                  style={{
-                    width: 16,
-                    height: 112,
-                    justifyContent: 'flex-end',
-                    alignItems: 'center'
-                  }}
-                >
-                  {score === null ? (
-                    <View
-                      style={{
-                        width: 3,
-                        height: 3,
-                        borderRadius: 2,
-                        backgroundColor: theme.border
-                      }}
-                    />
-                  ) : (
-                    <View
-                      style={{
-                        width: 10,
-                        height: Math.max(12, score * 19),
-                        borderRadius: 5,
-                        backgroundColor: theme.accent,
-                        opacity: 0.32 + score * 0.12
-                      }}
-                    />
-                  )}
-                </View>
-              )
+        <div
+          className="ui-stack"
+          style={{
+            gap: 6
+          }}
+        >
+          <div data-horizontal={true} className="ui-scroll">
+            <div
+              className="ui-stack ui-scroll-content"
+              style={{
+                alignItems: 'flex-end',
+                gap: 5,
+                minHeight: 116
+              }}
+            >
+              <div
+                className="ui-stack ui-list"
+                style={{
+                  flexDirection: 'row',
+                  gap: 5
+                }}
+              >
+                {points.map((item) => {
+                  const score = item.moodScore
+                  const meta = diaryMoodMeta(item.mood)
+                  return (
+                    <div className="ui-stack ui-list-item" key={((point) => point.dayKey)(item)}>
+                      {
+                        <div
+                          className="ui-stack"
+                          aria-label={
+                            score === null
+                              ? `${item.dayKey}: настроение не отмечено`
+                              : `${item.dayKey}: ${meta?.label ?? score}, ${score} из 5`
+                          }
+                          style={{
+                            width: 16,
+                            height: 112,
+                            justifyContent: 'flex-end',
+                            alignItems: 'center'
+                          }}
+                        >
+                          {score === null ? (
+                            <div
+                              className="ui-stack"
+                              style={{
+                                width: 3,
+                                height: 3,
+                                borderRadius: 2,
+                                backgroundColor: theme.border
+                              }}
+                            ></div>
+                          ) : (
+                            <div
+                              className="ui-stack"
+                              style={{
+                                width: 10,
+                                height: Math.max(12, score * 19),
+                                borderRadius: 5,
+                                backgroundColor: theme.accent,
+                                opacity: 0.32 + score * 0.12
+                              }}
+                            ></div>
+                          )}
+                        </div>
+                      }
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+          <div
+            className="ui-stack"
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between'
             }}
-          />
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-            <Text style={{ color: theme.muted, fontSize: 10 }}>😞 Плохое</Text>
-            <Text style={{ color: theme.muted, fontSize: 10 }}>😄 Отличное</Text>
-          </View>
-        </View>
+          >
+            <span
+              className="ui-text"
+              style={{
+                color: theme.muted,
+                fontSize: 10
+              }}
+            >
+              😞 Плохое
+            </span>
+            <span
+              className="ui-text"
+              style={{
+                color: theme.muted,
+                fontSize: 10
+              }}
+            >
+              😄 Отличное
+            </span>
+          </div>
+        </div>
       )}
-    </View>
+    </div>
   )
 }
-
 function DiaryActivityHeatmap({ points }: { points: DiaryReportPoint[] }): React.JSX.Element {
   const theme = useTheme()
   const weeks = useMemo(() => {
@@ -347,9 +511,9 @@ function DiaryActivityHeatmap({ points }: { points: DiaryReportPoint[] }): React
       result.push(points.slice(index, index + 7))
     return result
   }, [points])
-
   return (
-    <View
+    <div
+      className="ui-stack"
       style={{
         borderWidth: 1,
         borderColor: theme.border,
@@ -359,54 +523,101 @@ function DiaryActivityHeatmap({ points }: { points: DiaryReportPoint[] }): React
         gap: 10
       }}
     >
-      <Text style={{ color: theme.text, fontSize: 15, fontWeight: '800' }}>
+      <span
+        className="ui-text"
+        style={{
+          color: theme.text,
+          fontSize: 15,
+          fontWeight: 800
+        }}
+      >
         Календарь активности
-      </Text>
+      </span>
       {weeks.length === 0 ? (
-        <Text style={{ color: theme.muted, fontSize: 12 }}>
+        <span
+          className="ui-text"
+          style={{
+            color: theme.muted,
+            fontSize: 12
+          }}
+        >
           За выбранный период пока нет страниц.
-        </Text>
+        </span>
       ) : (
-        <FlatList
-          horizontal
-          data={weeks}
-          keyExtractor={(_, index) => `week-${index}`}
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ gap: 4 }}
-          renderItem={({ item: week }) => (
-            <View style={{ gap: 4 }}>
-              {week.map((point) => {
-                const intensity = Math.min(4, point.entryCount)
+        <div data-horizontal={true} className="ui-scroll">
+          <div
+            className="ui-stack ui-scroll-content"
+            style={{
+              gap: 4
+            }}
+          >
+            <div
+              className="ui-stack ui-list"
+              style={{
+                flexDirection: 'row',
+                gap: 4
+              }}
+            >
+              {weeks.map((item, index) => {
+                const week = item
                 return (
-                  <View
-                    key={point.dayKey}
-                    accessibilityLabel={`${point.dayKey}: ${point.entryCount} записей`}
-                    style={{
-                      width: 14,
-                      height: 14,
-                      borderRadius: 4,
-                      borderWidth: 1,
-                      borderColor: theme.border,
-                      backgroundColor:
-                        intensity === 0
-                          ? theme.raised
-                          : theme.accent +
-                            (intensity === 1
-                              ? '35'
-                              : intensity === 2
-                                ? '59'
-                                : intensity === 3
-                                  ? '82'
-                                  : 'B8')
-                    }}
-                  />
+                  <div
+                    className="ui-stack ui-list-item"
+                    key={((_, index) => `week-${index}`)(item, index)}
+                  >
+                    {
+                      <div
+                        className="ui-stack"
+                        style={{
+                          gap: 4
+                        }}
+                      >
+                        {week.map((point) => {
+                          const intensity = Math.min(4, point.entryCount)
+                          return (
+                            <div
+                              className="ui-stack"
+                              key={point.dayKey}
+                              aria-label={`${point.dayKey}: ${point.entryCount} записей`}
+                              style={{
+                                width: 14,
+                                height: 14,
+                                borderRadius: 4,
+                                borderWidth: 1,
+                                borderColor: theme.border,
+                                backgroundColor:
+                                  intensity === 0
+                                    ? theme.raised
+                                    : theme.accent +
+                                      (intensity === 1
+                                        ? '35'
+                                        : intensity === 2
+                                          ? '59'
+                                          : intensity === 3
+                                            ? '82'
+                                            : 'B8')
+                              }}
+                            ></div>
+                          )
+                        })}
+                      </div>
+                    }
+                  </div>
                 )
               })}
-            </View>
-          )}
-        />
+            </div>
+          </div>
+        </div>
       )}
-      <Text style={{ color: theme.muted, fontSize: 10 }}>Слева старые дни · справа новые</Text>
-    </View>
+      <span
+        className="ui-text"
+        style={{
+          color: theme.muted,
+          fontSize: 10
+        }}
+      >
+        Слева старые дни · справа новые
+      </span>
+    </div>
   )
 }

@@ -1,5 +1,5 @@
+import { useViewport, Action, DialogLayer } from '../../../ui/browser'
 import { useMemo, useState } from 'react'
-import { Image, Modal, Pressable, Text, View, useWindowDimensions } from 'react-native'
 import type { StudyBlock, StudyLocalAsset } from '@mymind/contracts/study'
 import {
   ExternalLink,
@@ -9,26 +9,26 @@ import {
   FileVideo,
   Maximize2,
   Minimize2
-} from 'lucide-react-native'
+} from 'lucide-react'
 import { normalizeStudyRemoteImageUrl, parseStudyYouTubeUrl } from '@mymind/core/study-remote-media'
-
 import StudyYouTubeDom from './StudyYouTubeDom'
 import { AudioAssetPlayer } from '../../../platform/VoiceRecorder'
 import { useTheme } from './theme'
-
-type AttachmentBlock = Extract<StudyBlock, { type: 'image' | 'video' | 'audio' | 'file' }>
-
+type AttachmentBlock = Extract<
+  StudyBlock,
+  {
+    type: 'image' | 'video' | 'audio' | 'file'
+  }
+>
 interface StudyAttachmentBlockProps {
   block: AttachmentBlock
   resolveAssetUri?: (asset: StudyLocalAsset) => string | null
   openAsset?: (asset: StudyLocalAsset) => Promise<void>
   onError?: (reason: unknown) => void
 }
-
 function formatFileSize(bytes: number): string {
   if (!Number.isFinite(bytes) || bytes < 0) return 'Неизвестный размер'
   if (bytes < 1024) return `${bytes} Б`
-
   const units = ['КБ', 'МБ', 'ГБ', 'ТБ']
   let value = bytes / 1024
   let unitIndex = 0
@@ -36,17 +36,14 @@ function formatFileSize(bytes: number): string {
     value /= 1024
     unitIndex += 1
   }
-
   return `${value.toFixed(value >= 10 ? 0 : 1)} ${units[unitIndex]}`
 }
-
 function kindLabel(type: AttachmentBlock['type']): string {
   if (type === 'image') return 'Фото'
   if (type === 'video') return 'Видео'
   if (type === 'audio') return 'Аудио'
   return 'Файл'
 }
-
 function KindIcon({
   type,
   size = 20,
@@ -61,7 +58,6 @@ function KindIcon({
   if (type === 'audio') return <FileAudio size={size} color={color} />
   return <File size={size} color={color} />
 }
-
 function EmptyAttachment({ block }: { block: AttachmentBlock }): React.JSX.Element {
   const theme = useTheme()
   const message =
@@ -72,9 +68,9 @@ function EmptyAttachment({ block }: { block: AttachmentBlock }): React.JSX.Eleme
         : block.type === 'audio'
           ? 'Выберите аудиофайл в настройках блока'
           : 'Выберите файл в настройках блока'
-
   return (
-    <View
+    <div
+      className="ui-stack"
       style={{
         minHeight: 150,
         alignItems: 'center',
@@ -89,28 +85,36 @@ function EmptyAttachment({ block }: { block: AttachmentBlock }): React.JSX.Eleme
       }}
     >
       <KindIcon type={block.type} size={28} color={theme.muted} />
-      <Text style={{ color: theme.text, fontSize: 14, fontWeight: '600' }}>
+      <span
+        className="ui-text"
+        style={{
+          color: theme.text,
+          fontSize: 14,
+          fontWeight: 600
+        }}
+      >
         {kindLabel(block.type)}
-      </Text>
-      <Text
+      </span>
+      <span
+        className="ui-text"
         style={{
           maxWidth: 300,
           color: theme.muted,
           fontSize: 12,
-          lineHeight: 18,
+          lineHeight: '18px',
           textAlign: 'center'
         }}
       >
         {message}
-      </Text>
-    </View>
+      </span>
+    </div>
   )
 }
-
 function ErrorAttachment({ message }: { message: string }): React.JSX.Element {
   const theme = useTheme()
   return (
-    <View
+    <div
+      className="ui-stack"
       style={{
         minHeight: 110,
         justifyContent: 'center',
@@ -121,55 +125,86 @@ function ErrorAttachment({ message }: { message: string }): React.JSX.Element {
         backgroundColor: theme.error + '0D'
       }}
     >
-      <Text style={{ color: theme.error, fontSize: 14, fontWeight: '600' }}>
+      <span
+        className="ui-text"
+        style={{
+          color: theme.error,
+          fontSize: 14,
+          fontWeight: 600
+        }}
+      >
         Содержимое недоступно
-      </Text>
-      <Text style={{ marginTop: 5, color: theme.muted, fontSize: 12, lineHeight: 18 }}>
+      </span>
+      <span
+        className="ui-text"
+        style={{
+          marginTop: 5,
+          color: theme.muted,
+          fontSize: 12,
+          lineHeight: '18px'
+        }}
+      >
         {message}
-      </Text>
-    </View>
+      </span>
+    </div>
   )
 }
-
 function TitleBar({ title }: { title: string }): React.JSX.Element | null {
   const theme = useTheme()
   if (!title) return null
-
   return (
-    <View
+    <div
+      className="ui-stack"
       style={{
-        paddingHorizontal: 14,
-        paddingVertical: 11,
+        paddingInline: 14,
+        paddingBlock: 11,
         borderBottomWidth: 1,
         borderBottomColor: theme.border,
         backgroundColor: theme.surface
       }}
     >
-      <Text numberOfLines={1} style={{ color: theme.text, fontSize: 14, fontWeight: '600' }}>
+      <span
+        className="ui-text"
+        data-lines={1}
+        style={{
+          color: theme.text,
+          fontSize: 14,
+          fontWeight: 600,
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          display: '-webkit-box',
+          WebkitBoxOrient: 'vertical',
+          WebkitLineClamp: 1
+        }}
+      >
         {title}
-      </Text>
-    </View>
+      </span>
+    </div>
   )
 }
-
 function ImageAttachment({
   block,
   uri
 }: {
-  block: Extract<AttachmentBlock, { type: 'image' }>
+  block: Extract<
+    AttachmentBlock,
+    {
+      type: 'image'
+    }
+  >
   uri: string
 }): React.JSX.Element {
   const theme = useTheme()
-  const window = useWindowDimensions()
+  const window = useViewport()
   const [fullscreen, setFullscreen] = useState(false)
   const title =
     block.title?.trim() ||
     (block.source.type === 'local' ? block.source.asset?.name : '') ||
     'Изображение'
-
   return (
     <>
-      <View
+      <div
+        className="ui-stack"
         style={{
           overflow: 'hidden',
           borderWidth: 1,
@@ -179,7 +214,8 @@ function ImageAttachment({
         }}
       >
         <TitleBar title={block.title?.trim() ?? ''} />
-        <View
+        <div
+          className="ui-stack"
           style={{
             position: 'relative',
             width: '100%',
@@ -189,18 +225,23 @@ function ImageAttachment({
             backgroundColor: '#00000022'
           }}
         >
-          <Image
-            accessibilityLabel={title}
-            source={{ uri }}
-            resizeMode={block.imageFit ?? 'contain'}
-            style={{ width: '100%', height: '100%' }}
-          />
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`Развернуть фотографию «${title}»`}
-            hitSlop={4}
-            onPress={() => setFullscreen(true)}
-            style={({ pressed }) => ({
+          <img
+            aria-label={title}
+            src={uri}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: block.imageFit ?? 'contain'
+            }}
+            alt=""
+            draggable="false"
+          ></img>
+          <Action
+            hitPadding={4}
+            role={'button'}
+            aria-label={`Развернуть фотографию «${title}»`}
+            onClick={() => setFullscreen(true)}
+            style={{
               position: 'absolute',
               top: 12,
               right: 12,
@@ -211,71 +252,101 @@ function ImageAttachment({
               borderWidth: 1,
               borderColor: '#ffffff1A',
               borderRadius: 9,
-              backgroundColor: pressed ? '#000000C0' : '#00000099',
-              opacity: pressed ? 0.82 : 1
-            })}
+              backgroundColor: '#00000099',
+              opacity: 1
+            }}
+            pressedStyle={{
+              backgroundColor: '#000000C0',
+              opacity: 0.82
+            }}
           >
             <Maximize2 size={17} color="#ffffff" />
-          </Pressable>
-        </View>
-      </View>
+          </Action>
+        </div>
+      </div>
 
-      <Modal
-        visible={fullscreen}
-        animationType="fade"
-        statusBarTranslucent
-        onRequestClose={() => setFullscreen(false)}
-      >
-        <View style={{ flex: 1, backgroundColor: '#07080a' }}>
-          <View
+      <DialogLayer open={fullscreen} transition={'fade'} onClose={() => setFullscreen(false)}>
+        <div
+          className="ui-stack"
+          style={{
+            flex: '1 1 0%',
+            backgroundColor: '#07080a'
+          }}
+        >
+          <div
+            className="ui-stack"
             style={{
               height: 52,
               flexDirection: 'row',
               alignItems: 'center',
               gap: 12,
-              paddingHorizontal: 14,
+              paddingInline: 14,
               borderBottomWidth: 1,
               borderBottomColor: '#ffffff1A',
               backgroundColor: '#00000055'
             }}
           >
-            <Text
-              numberOfLines={1}
-              style={{ flex: 1, color: '#ffffff', fontSize: 14, fontWeight: '600' }}
+            <span
+              className="ui-text"
+              data-lines={1}
+              style={{
+                flex: '1 1 0%',
+                color: '#ffffff',
+                fontSize: 14,
+                fontWeight: 600,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                display: '-webkit-box',
+                WebkitBoxOrient: 'vertical',
+                WebkitLineClamp: 1
+              }}
             >
               {title}
-            </Text>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={`Свернуть фотографию «${title}»`}
-              hitSlop={6}
-              onPress={() => setFullscreen(false)}
-              style={({ pressed }) => ({
+            </span>
+            <Action
+              hitPadding={6}
+              role={'button'}
+              aria-label={`Свернуть фотографию «${title}»`}
+              onClick={() => setFullscreen(false)}
+              style={{
                 width: 36,
                 height: 36,
                 alignItems: 'center',
                 justifyContent: 'center',
                 borderRadius: 9,
-                backgroundColor: pressed ? '#ffffff14' : 'transparent'
-              })}
+                backgroundColor: 'transparent'
+              }}
+              pressedStyle={{
+                backgroundColor: '#ffffff14'
+              }}
             >
               <Minimize2 size={18} color="#ffffffCC" />
-            </Pressable>
-          </View>
-          <View style={{ flex: 1, padding: 14 }}>
-            <Image
-              accessibilityLabel={title}
-              source={{ uri }}
-              resizeMode="contain"
-              style={{ width: window.width - 28, flex: 1 }}
-            />
-          </View>
-        </View>
-      </Modal>
+            </Action>
+          </div>
+          <div
+            className="ui-stack"
+            style={{
+              flex: '1 1 0%',
+              padding: 14
+            }}
+          >
+            <img
+              aria-label={title}
+              src={uri}
+              style={{
+                width: window.width - 28,
+                flex: '1 1 0%',
+                objectFit: 'contain'
+              }}
+              alt=""
+              draggable="false"
+            ></img>
+          </div>
+        </div>
+      </DialogLayer>
     </>
   )
 }
-
 function FileCard({
   block,
   asset,
@@ -292,7 +363,6 @@ function FileCard({
   const theme = useTheme()
   const [opening, setOpening] = useState(false)
   const title = block.title?.trim() || asset.name
-
   const open = (): void => {
     if (!openAsset || opening || !uri) return
     setOpening(true)
@@ -300,15 +370,14 @@ function FileCard({
       .catch((reason) => onError?.(reason))
       .finally(() => setOpening(false))
   }
-
   return (
-    <Pressable
-      accessibilityRole={openAsset ? 'button' : undefined}
-      accessibilityLabel={openAsset ? `Открыть «${title}»` : undefined}
-      accessibilityState={{ disabled: !uri || opening }}
+    <Action
+      role={openAsset ? 'button' : undefined}
+      aria-label={openAsset ? `Открыть «${title}»` : undefined}
+      aria-disabled={!uri || opening}
       disabled={!openAsset || !uri || opening}
-      onPress={open}
-      style={({ pressed }) => ({
+      onClick={open}
+      style={{
         overflow: 'hidden',
         flexDirection: 'row',
         alignItems: 'center',
@@ -317,11 +386,15 @@ function FileCard({
         borderWidth: 1,
         borderColor: theme.border,
         borderRadius: 12,
-        backgroundColor: pressed ? theme.raised : theme.surface,
+        backgroundColor: theme.surface,
         opacity: opening ? 0.65 : 1
-      })}
+      }}
+      pressedStyle={{
+        backgroundColor: theme.raised
+      }}
     >
-      <View
+      <div
+        className="ui-stack"
         style={{
           width: 44,
           height: 44,
@@ -332,32 +405,77 @@ function FileCard({
         }}
       >
         <KindIcon type={block.type} color={theme.accent} />
-      </View>
+      </div>
 
-      <View style={{ minWidth: 0, flex: 1 }}>
-        <Text numberOfLines={2} style={{ color: theme.text, fontSize: 14, fontWeight: '600' }}>
+      <div
+        className="ui-stack"
+        style={{
+          minWidth: 0,
+          flex: '1 1 0%'
+        }}
+      >
+        <span
+          className="ui-text"
+          data-lines={2}
+          style={{
+            color: theme.text,
+            fontSize: 14,
+            fontWeight: 600,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            display: '-webkit-box',
+            WebkitBoxOrient: 'vertical',
+            WebkitLineClamp: 2
+          }}
+        >
           {title}
-        </Text>
+        </span>
         {block.title?.trim() ? (
-          <Text numberOfLines={1} style={{ marginTop: 3, color: theme.muted, fontSize: 12 }}>
+          <span
+            className="ui-text"
+            data-lines={1}
+            style={{
+              marginTop: 3,
+              color: theme.muted,
+              fontSize: 12,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              display: '-webkit-box',
+              WebkitBoxOrient: 'vertical',
+              WebkitLineClamp: 1
+            }}
+          >
             {asset.name}
-          </Text>
+          </span>
         ) : null}
-        <Text style={{ marginTop: 3, color: theme.muted, fontSize: 12 }}>
+        <span
+          className="ui-text"
+          style={{
+            marginTop: 3,
+            color: theme.muted,
+            fontSize: 12
+          }}
+        >
           {formatFileSize(asset.size)} · {asset.mimeType}
-        </Text>
+        </span>
         {!uri ? (
-          <Text style={{ marginTop: 3, color: theme.error, fontSize: 11.5 }}>
+          <span
+            className="ui-text"
+            style={{
+              marginTop: 3,
+              color: theme.error,
+              fontSize: 11.5
+            }}
+          >
             Файл не найден на этом устройстве
-          </Text>
+          </span>
         ) : null}
-      </View>
+      </div>
 
       {openAsset ? <ExternalLink size={17} color={theme.muted} /> : null}
-    </Pressable>
+    </Action>
   )
 }
-
 export function StudyAttachmentBlock({
   block,
   resolveAssetUri,
@@ -365,7 +483,6 @@ export function StudyAttachmentBlock({
   onError
 }: StudyAttachmentBlockProps): React.JSX.Element {
   const theme = useTheme()
-
   const remoteImage = useMemo(
     () =>
       block.type === 'image' && block.source.type === 'url'
@@ -380,21 +497,19 @@ export function StudyAttachmentBlock({
         : null,
     [block]
   )
-
   if (block.source.type === 'url') {
     if (!block.source.url.trim()) return <EmptyAttachment block={block} />
-
     if (block.type === 'image') {
       if (!remoteImage)
         return <ErrorAttachment message="Нужна прямая HTTPS-ссылка на изображение" />
       return <ImageAttachment block={block} uri={remoteImage} />
     }
-
     if (block.type === 'video') {
       if (!youtube) return <ErrorAttachment message="Нужна корректная ссылка на видео YouTube" />
       const title = block.title?.trim() || 'Видео YouTube'
       return (
-        <View
+        <div
+          className="ui-stack"
           style={{
             overflow: 'hidden',
             borderWidth: 1,
@@ -405,27 +520,23 @@ export function StudyAttachmentBlock({
         >
           <TitleBar title={block.title?.trim() ?? ''} />
           <StudyYouTubeDom embedUrl={youtube.embedUrl} title={title} />
-        </View>
+        </div>
       )
     }
-
     return <EmptyAttachment block={block} />
   }
-
   const asset = block.source.asset
   if (!asset) return <EmptyAttachment block={block} />
-
   const uri = resolveAssetUri?.(asset) ?? null
-
   if (block.type === 'image') {
     if (!uri)
       return <ErrorAttachment message="Локальная фотография не найдена на этом устройстве" />
     return <ImageAttachment block={block} uri={uri} />
   }
-
   if (block.type === 'audio' && uri) {
     return (
-      <View
+      <div
+        className="ui-stack"
         style={{
           overflow: 'hidden',
           borderWidth: 1,
@@ -435,12 +546,16 @@ export function StudyAttachmentBlock({
         }}
       >
         <TitleBar title={block.title?.trim() ?? ''} />
-        <View style={{ padding: 14 }}>
+        <div
+          className="ui-stack"
+          style={{
+            padding: 14
+          }}
+        >
           <AudioAssetPlayer uri={uri} onError={onError} />
-        </View>
-      </View>
+        </div>
+      </div>
     )
   }
-
   return <FileCard block={block} asset={asset} uri={uri} openAsset={openAsset} onError={onError} />
 }

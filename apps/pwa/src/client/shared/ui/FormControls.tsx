@@ -1,37 +1,34 @@
+import { TextControlProps, TextControl, Action } from '../../../ui/browser'
 import { useState } from 'react'
-import { Pressable, Text, TextInput, type TextInputProps, View } from 'react-native'
 import { AppDialog } from './AppDialog'
 import { AppIcon } from './icons'
 import { useTheme } from './theme'
-
 export type SelectChoice = {
   value: string | null
   label: string
 }
-
 export function AppTextField({
   value,
-  onChangeText,
+  onValueChange,
   disabled = false,
   multiline = false,
   ...props
-}: Omit<TextInputProps, 'value' | 'onChangeText' | 'editable' | 'multiline'> & {
+}: Omit<TextControlProps, 'value' | 'onValueChange' | 'editable' | 'multiline'> & {
   value: string
-  onChangeText(value: string): void
+  onValueChange(value: string): void
   disabled?: boolean
   multiline?: boolean
 }): React.JSX.Element {
   const theme = useTheme()
   const [focused, setFocused] = useState(false)
-
   return (
-    <TextInput
+    <TextControl
       {...props}
       value={value}
-      onChangeText={onChangeText}
-      editable={!disabled}
+      onValueChange={onValueChange}
+      disabled={!!disabled}
       multiline={multiline}
-      placeholderTextColor={theme.muted}
+      placeholderColor={theme.muted}
       onFocus={(event) => {
         setFocused(true)
         props.onFocus?.(event)
@@ -40,35 +37,31 @@ export function AppTextField({
         setFocused(false)
         props.onBlur?.(event)
       }}
-      style={[
-        {
-          color: theme.text,
-          backgroundColor: theme.surface,
-          borderWidth: 1,
-          borderColor: focused ? theme.accent + '8A' : theme.border,
-          borderRadius: 14,
-          paddingHorizontal: 14,
-          paddingVertical: 12,
-          minHeight: multiline ? 140 : 50,
-          textAlignVertical: multiline ? 'top' : 'center',
-          fontSize: 16,
-          opacity: disabled ? 0.5 : 1
-        },
-        props.style
-      ]}
-    />
+      style={{
+        color: theme.text,
+        backgroundColor: theme.surface,
+        borderWidth: 1,
+        borderColor: focused ? theme.accent + '8A' : theme.border,
+        borderRadius: 14,
+        paddingInline: 14,
+        paddingBlock: 12,
+        minHeight: multiline ? 140 : 50,
+        fontSize: 16,
+        opacity: disabled ? 0.5 : 1,
+        ...props.style
+      }}
+    ></TextControl>
   )
 }
-
 function TemporalField({
   value,
-  onChangeText,
+  onValueChange,
   label,
   disabled = false,
   optional = false
 }: {
   value: string
-  onChangeText(value: string): void
+  onValueChange(value: string): void
   label: string
   disabled?: boolean
   optional?: boolean
@@ -76,13 +69,14 @@ function TemporalField({
   const theme = useTheme()
   const [focused, setFocused] = useState(false)
   return (
-    <View
+    <div
+      className="ui-stack"
       style={{
         minHeight: 50,
         flexDirection: 'row',
         alignItems: 'center',
         gap: 10,
-        paddingHorizontal: 12,
+        paddingInline: 12,
         borderWidth: 1,
         borderColor: focused ? theme.accent + '8A' : theme.border,
         borderRadius: 14,
@@ -91,36 +85,39 @@ function TemporalField({
       }}
     >
       <AppIcon name="clock" size={18} color={focused ? theme.accent : theme.muted} />
-      <TextInput
-        accessibilityLabel={label}
+      <TextControl
+        aria-label={label}
         value={value}
-        onChangeText={onChangeText}
-        editable={!disabled}
+        onValueChange={onValueChange}
+        disabled={!!disabled}
         maxLength={5}
         placeholder={optional ? 'ЧЧ:ММ (необязательно)' : 'ЧЧ:ММ'}
-        placeholderTextColor={theme.muted}
-        autoCapitalize="none"
-        autoCorrect={false}
+        placeholderColor={theme.muted}
+        autoCapitalize={'none'}
+        autoCorrect={'off'}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
-        style={{ flex: 1, minHeight: 48, color: theme.text, fontSize: 16, paddingVertical: 10 }}
-      />
-    </View>
+        style={{
+          flex: '1 1 0%',
+          minHeight: 48,
+          color: theme.text,
+          fontSize: 16,
+          paddingBlock: 10
+        }}
+      ></TextControl>
+    </div>
   )
 }
-
 export { AppDateField, AppDatePickerDialog } from './AppDateField'
-
 export function AppTimeField(props: {
   value: string
-  onChangeText(value: string): void
+  onValueChange(value: string): void
   label: string
   disabled?: boolean
   optional?: boolean
 }): React.JSX.Element {
   return <TemporalField {...props} />
 }
-
 export function AppCheckbox({
   value,
   onChange,
@@ -135,35 +132,34 @@ export function AppCheckbox({
   disabled?: boolean
 }): React.JSX.Element {
   const theme = useTheme()
-
   return (
-    <Pressable
-      accessibilityRole="checkbox"
-      accessibilityLabel={accessibilityLabel ?? label}
-      accessibilityState={{ checked: value, disabled }}
+    <Action
+      role={'checkbox'}
+      aria-label={accessibilityLabel ?? label}
+      aria-checked={value}
+      aria-disabled={disabled}
       disabled={disabled}
-      onPress={() => onChange(!value)}
-      style={({ pressed }) => ({
+      onClick={() => onChange(!value)}
+      style={{
         minHeight: 46,
         flexDirection: 'row',
         alignItems: 'center',
         gap: 10,
-        paddingHorizontal: label ? 11 : 0,
-        paddingVertical: label ? 8 : 0,
+        paddingInline: label ? 11 : 0,
+        paddingBlock: label ? 8 : 0,
         borderWidth: label ? 1 : 0,
         borderColor: value ? theme.accent + '56' : theme.border,
         borderRadius: label ? 13 : 0,
-        backgroundColor: label
-          ? value
-            ? theme.accent + '0F'
-            : pressed
-              ? theme.raised
-              : theme.surface
-          : 'transparent',
-        opacity: disabled ? 0.45 : pressed ? 0.76 : 1
-      })}
+        backgroundColor: label ? (value ? theme.accent + '0F' : theme.surface) : 'transparent',
+        opacity: disabled ? 0.45 : 1
+      }}
+      pressedStyle={{
+        backgroundColor: label ? (value ? theme.accent + '0F' : theme.raised) : 'transparent',
+        opacity: disabled ? 0.45 : 0.76
+      }}
     >
-      <View
+      <div
+        className="ui-stack"
         style={{
           width: 24,
           height: 24,
@@ -176,14 +172,23 @@ export function AppCheckbox({
         }}
       >
         {value ? <AppIcon name="check" size={15} strokeWidth={3} color={theme.accent} /> : null}
-      </View>
+      </div>
       {label ? (
-        <Text style={{ flex: 1, color: theme.text, fontSize: 14, lineHeight: 20 }}>{label}</Text>
+        <span
+          className="ui-text"
+          style={{
+            flex: '1 1 0%',
+            color: theme.text,
+            fontSize: 14,
+            lineHeight: '20px'
+          }}
+        >
+          {label}
+        </span>
       ) : null}
-    </Pressable>
+    </Action>
   )
 }
-
 export function AppSelect({
   label,
   value,
@@ -202,40 +207,50 @@ export function AppSelect({
   const theme = useTheme()
   const [open, setOpen] = useState(false)
   const selected = choices.find((choice) => choice.value === value)
-
   return (
     <>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={label}
-        accessibilityState={{ disabled, expanded: open }}
+      <Action
+        role={'button'}
+        aria-label={label}
+        aria-disabled={disabled}
+        aria-expanded={open}
         disabled={disabled}
-        onPress={() => setOpen(true)}
-        style={({ pressed }) => ({
+        onClick={() => setOpen(true)}
+        style={{
           minHeight: 50,
           flexDirection: 'row',
           alignItems: 'center',
           gap: 10,
-          paddingHorizontal: 14,
+          paddingInline: 14,
           borderWidth: 1,
           borderColor: open ? theme.accent + '8A' : theme.border,
           borderRadius: 14,
-          backgroundColor: pressed ? theme.raised : theme.surface,
-          opacity: disabled ? 0.45 : pressed ? 0.76 : 1
-        })}
+          backgroundColor: theme.surface,
+          opacity: disabled ? 0.45 : 1
+        }}
+        pressedStyle={{
+          backgroundColor: theme.raised,
+          opacity: disabled ? 0.45 : 0.76
+        }}
       >
-        <Text
-          numberOfLines={1}
+        <span
+          className="ui-text"
+          data-lines={1}
           style={{
-            flex: 1,
+            flex: '1 1 0%',
             color: selected ? theme.text : theme.muted,
-            fontSize: 15
+            fontSize: 15,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            display: '-webkit-box',
+            WebkitBoxOrient: 'vertical',
+            WebkitLineClamp: 1
           }}
         >
           {selected?.label ?? placeholder}
-        </Text>
+        </span>
         <AppIcon name="down" size={18} color={theme.muted} />
-      </Pressable>
+      </Action>
 
       <AppDialog
         open={open}
@@ -244,49 +259,57 @@ export function AppSelect({
         description="Выберите один вариант"
         presentation="sheet"
       >
-        <View style={{ padding: 12, paddingBottom: 18, gap: 5 }}>
+        <div
+          className="ui-stack"
+          style={{
+            padding: 12,
+            paddingBottom: 18,
+            gap: 5
+          }}
+        >
           {choices.map((choice) => {
             const active = choice.value === value
             return (
-              <Pressable
+              <Action
                 key={String(choice.value)}
-                accessibilityRole="button"
-                accessibilityState={{ selected: active }}
-                onPress={() => {
+                role={'button'}
+                aria-selected={active}
+                onClick={() => {
                   onChange(choice.value)
                   setOpen(false)
                 }}
-                style={({ pressed }) => ({
+                style={{
                   minHeight: 50,
                   flexDirection: 'row',
                   alignItems: 'center',
                   gap: 10,
-                  paddingHorizontal: 13,
-                  paddingVertical: 9,
+                  paddingInline: 13,
+                  paddingBlock: 9,
                   borderRadius: 13,
-                  backgroundColor: active
-                    ? theme.accent + '12'
-                    : pressed
-                      ? theme.surface
-                      : 'transparent',
-                  opacity: pressed ? 0.76 : 1
-                })}
+                  backgroundColor: active ? theme.accent + '12' : 'transparent',
+                  opacity: 1
+                }}
+                pressedStyle={{
+                  backgroundColor: active ? theme.accent + '12' : theme.surface,
+                  opacity: 0.76
+                }}
               >
-                <Text
+                <span
+                  className="ui-text"
                   style={{
-                    flex: 1,
+                    flex: '1 1 0%',
                     color: active ? theme.accent : theme.text,
                     fontSize: 15,
                     fontWeight: active ? '700' : '500'
                   }}
                 >
                   {choice.label}
-                </Text>
+                </span>
                 {active ? <AppIcon name="check" size={17} color={theme.accent} /> : null}
-              </Pressable>
+              </Action>
             )
           })}
-        </View>
+        </div>
       </AppDialog>
     </>
   )

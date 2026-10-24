@@ -1,17 +1,12 @@
+import {
+  Action,
+  useSafeArea,
+  blurActiveElement,
+  openExternalUrl,
+  TextControl
+} from '../../../ui/browser'
 import { randomUUID } from '../../../platform/crypto'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import {
-  Keyboard,
-  KeyboardAvoidingView,
-  Image as NativeImage,
-  Linking,
-  Platform,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  View
-} from 'react-native'
 import {
   File,
   Image,
@@ -24,8 +19,7 @@ import {
   Type,
   Video,
   type LucideIcon
-} from 'lucide-react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
+} from 'lucide-react'
 import {
   DEFAULT_NOTE_APPEARANCE,
   getNoteAppearanceVariant,
@@ -51,51 +45,45 @@ import { useTheme } from '../../shared/ui/theme'
 import { messageFor } from '../../shared/ui/form-model'
 import { MobileNoteAppearanceSheet } from './MobileNoteAppearanceSheet'
 import type { AttachmentAction, MobileNoteAttachment } from './MobileNoteExtensions'
-
 export type MobileNoteMode = 'edit' | 'read' | 'view'
-
 function CanvasTool({
   label,
   icon: Icon,
   compact = false,
   selected = false,
   subtle = false,
-  onPress
+  onClick
 }: {
   label: string
   icon: LucideIcon
   compact?: boolean
   selected?: boolean
   subtle?: boolean
-  onPress(): void
+  onClick(): void
 }): React.JSX.Element {
   const theme = useTheme()
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityState={{ selected }}
-      onPress={onPress}
-      style={({ pressed }) => ({
+    <Action
+      role={'button'}
+      aria-label={label}
+      aria-selected={selected}
+      onClick={onClick}
+      style={{
         width: compact ? 40 : 44,
         height: 44,
         alignItems: 'center',
         justifyContent: 'center',
         borderRadius: 10,
-        backgroundColor: selected
-          ? subtle
-            ? theme.raised
-            : theme.accent + '20'
-          : pressed
-            ? theme.raised
-            : theme.surface
-      })}
+        backgroundColor: selected ? (subtle ? theme.raised : theme.accent + '20') : theme.surface
+      }}
+      pressedStyle={{
+        backgroundColor: selected ? (subtle ? theme.raised : theme.accent + '20') : theme.raised
+      }}
     >
       <Icon size={compact ? 18 : 20} color={subtle ? theme.muted : theme.accent} />
-    </Pressable>
+    </Action>
   )
 }
-
 export function MobileNoteCanvas({
   noteId,
   document,
@@ -110,15 +98,18 @@ export function MobileNoteCanvas({
   document: NoteDocument
   mode: MobileNoteMode
   disabled?: boolean
-  onChange(document: NoteDocument, options?: { saveImmediately?: boolean }): void
+  onChange(
+    document: NoteDocument,
+    options?: {
+      saveImmediately?: boolean
+    }
+  ): void
   onModeChange(mode: MobileNoteMode): void
   registerEditor(editor: NotesRichTextDomRef | null): void
   onError(reason: unknown): void
 }): React.JSX.Element {
   const theme = useTheme()
-  // Only the browser PWA uses the compact toolbar and reduced insertion menu.
-  const isPwa = Platform.OS === 'web'
-  const insets = useSafeAreaInsets()
+  const insets = useSafeArea()
   const { documentAssets } = useServices()
   const [initial] = useState(() => document)
   const current = useRef(document)
@@ -133,58 +124,33 @@ export function MobileNoteCanvas({
   const editorRef = useRef<NotesRichTextDomRef | null>(null)
   const pendingAttachmentUpdates = useRef(new Map<string, MobileNoteAttachment>())
   const [ready, setReady] = useState(false)
-  const pendingSnapshots = useRef(
-    new Map<
-      string,
-      { resolve(): void; reject(reason: Error): void; timer: ReturnType<typeof setTimeout> }
-    >()
-  )
-  // Expo's native imperative proxy is fire-and-forget. A snapshot is complete
-  // only after the DOM has sent its document back through the native action.
-  const editor = useMemo(
-    () =>
-      new Proxy({} as NotesRichTextDomRef, {
-        get(_target, method) {
-          if (method !== 'flushEditor')
-            return (...args: Parameters<NotesRichTextDomRef['command']>) =>
-              editorRef.current?.[String(method)]?.(...args)
-          return () =>
-            new Promise<void>((resolve, reject) => {
-              const bridge = editorRef.current
-              if (typeof bridge?.flushEditor !== 'function') {
-                reject(new Error('Редактор ещё загружается'))
-                return
-              }
-              const id = randomUUID()
-              const timer = setTimeout(() => {
-                pendingSnapshots.current.delete(id)
-                reject(
-                  new Error(
-                    'Не удалось получить последние изменения. Попробуйте сохранить ещё раз.'
-                  )
-                )
-              }, 8000)
-              pendingSnapshots.current.set(id, { resolve, reject, timer })
-              void bridge.flushEditor(id)
-            })
-        }
-      }),
-    []
-  )
+  // A stable, typed React ref controller keeps toolbar callbacks usable across editor renders.
+  const editor = useMemo<NotesRichTextDomRef>(() => {
+    const currentEditor = (): NotesRichTextDomRef => {
+      if (!editorRef.current) throw new Error('Редактор ещё загружается')
+      return editorRef.current
+    }
+    return {
+      flushEditor: async () => currentEditor().flushEditor(),
+      insertAttachment: (block, voice) => currentEditor().insertAttachment(block, voice),
+      updateAttachment: (block) => currentEditor().updateAttachment(block),
+      deleteAttachment: (id) => currentEditor().deleteAttachment(id),
+      insertDivider: (variant, thickness, force) =>
+        currentEditor().insertDivider(variant, thickness, force),
+      command: (command) => currentEditor().command(command),
+      setFontSize: (value) => currentEditor().setFontSize(value),
+      setTextColor: (value) => currentEditor().setTextColor(value),
+      setHighlightColor: (value) => currentEditor().setHighlightColor(value),
+      setLink: (href) => currentEditor().setLink(href),
+      getSelectedText: async () => currentEditor().getSelectedText(),
+      insertInternalLink: (html) => currentEditor().insertInternalLink(html),
+      focusEditor: async () => currentEditor().focusEditor()
+    }
+  }, [])
   useEffect(() => {
     registerEditor(editor)
     return () => registerEditor(null)
   }, [editor, registerEditor])
-  useEffect(
-    () => () => {
-      pendingSnapshots.current.forEach(({ reject, timer }) => {
-        clearTimeout(timer)
-        reject(new Error('Редактор закрыт'))
-      })
-      pendingSnapshots.current.clear()
-    },
-    []
-  )
   const [formatting, setFormatting] = useState(DEFAULT_NOTES_RICH_TEXT_STATE)
   const [panel, setPanel] = useState<
     'text' | 'insert' | 'divider' | 'link' | 'attachment' | 'voice' | 'legacy' | 'preview' | null
@@ -199,7 +165,7 @@ export function MobileNoteCanvas({
   }
   useEffect(() => {
     if (mode !== 'view') previousMode.current = mode
-    if (mode !== 'edit') Keyboard.dismiss()
+    if (mode !== 'edit') blurActiveElement()
   }, [mode])
   const [dividerStyle, setDividerStyle] = useState('solid')
   const [dividerSize, setDividerSize] = useState(3)
@@ -224,7 +190,10 @@ export function MobileNoteCanvas({
           )
     )
   const savedAppearance = document.appearance as
-    (Partial<NoteAppearance> & { backgroundPattern?: NoteAppearance['paperPattern'] }) | undefined
+    | (Partial<NoteAppearance> & {
+        backgroundPattern?: NoteAppearance['paperPattern']
+      })
+    | undefined
   const appearance: NoteAppearance = {
     ...DEFAULT_NOTE_APPEARANCE,
     ...savedAppearance,
@@ -241,7 +210,6 @@ export function MobileNoteCanvas({
       }
     }
   })
-
   const publish = (next: NoteDocument, saveImmediately = false): void => {
     current.current = next
     onChange(next, { saveImmediately })
@@ -249,8 +217,7 @@ export function MobileNoteCanvas({
   const canvasChanged = async (
     html: string,
     text: string,
-    attachments: MobileNoteAttachment[],
-    requestId?: string
+    attachments: MobileNoteAttachment[]
   ): Promise<void> => {
     const previous = current.current
     const preserved = previous.blocks.filter(
@@ -268,32 +235,23 @@ export function MobileNoteCanvas({
       ...preserved
     ]
     if (JSON.stringify(blocks) !== JSON.stringify(previous.blocks)) publish({ ...previous, blocks })
-    if (requestId) {
-      const pending = pendingSnapshots.current.get(requestId)
-      if (pending) {
-        clearTimeout(pending.timer)
-        pendingSnapshots.current.delete(requestId)
-        pending.resolve()
-      }
-    }
   }
   const openPanel = (next: typeof panel): void => {
     if ((next === 'insert' || next === 'divider') && formatting.divider) {
       setDividerStyle(formatting.divider.variant)
       setDividerSize(formatting.divider.thickness)
     }
-    Keyboard.dismiss()
+    blurActiveElement()
     setPanel(next)
   }
   const updateAttachment = (next: MobileNoteAttachment): void => {
-    // Native fields need synchronous feedback while the WebView receives the
-    // command. Keep older bridge snapshots from undoing the latest field edit.
+    // Keep document state and the editor transaction synchronized during an attachment edit.
     pendingAttachmentUpdates.current.set(next.id, next)
     publish({
       ...current.current,
       blocks: current.current.blocks.map((block) => (block.id === next.id ? next : block))
     })
-    editor.updateAttachment(JSON.stringify(next))
+    editor.updateAttachment(next)
   }
   const addAttachment = async (kind: StudyAssetKind | 'voice'): Promise<void> => {
     try {
@@ -303,7 +261,7 @@ export function MobileNoteCanvas({
         source: { type: 'local' },
         ...(kind === 'image' ? { imageFit: 'contain' as const, imageHeight: 360 } : {})
       }
-      editor.insertAttachment(JSON.stringify(block), kind === 'voice')
+      editor.insertAttachment(block, kind === 'voice')
       await editor.flushEditor()
       setSelectedId(block.id)
       setPanel(kind === 'voice' ? 'voice' : 'attachment')
@@ -328,11 +286,22 @@ export function MobileNoteCanvas({
       }
     }
   }
-
   const renderDividerControls = (): React.JSX.Element => (
-    <View style={{ gap: 14 }}>
+    <div
+      className="ui-stack"
+      style={{
+        gap: 14
+      }}
+    >
       <Label muted>Разделитель</Label>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+      <div
+        className="ui-stack"
+        style={{
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          gap: 8
+        }}
+      >
         {[
           ['solid', '━━━━'],
           ['tapered', '━◆━'],
@@ -344,29 +313,36 @@ export function MobileNoteCanvas({
             accessibilityLabel={`Разделитель: ${variant}`}
             label={label}
             selected={dividerStyle === variant}
-            onPress={() => setDividerStyle(variant)}
+            onClick={() => setDividerStyle(variant)}
           />
         ))}
-      </View>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+      </div>
+      <div
+        className="ui-stack"
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 16
+        }}
+      >
         <Button
           label="−"
           accessibilityLabel="Уменьшить толщину разделителя"
           disabled={dividerSize === 1}
-          onPress={() => setDividerSize((size) => size - 1)}
+          onClick={() => setDividerSize((size) => size - 1)}
         />
         <Label>{dividerSize} px</Label>
         <Button
           label="+"
           accessibilityLabel="Увеличить толщину разделителя"
           disabled={dividerSize === 12}
-          onPress={() => setDividerSize((size) => size + 1)}
+          onClick={() => setDividerSize((size) => size + 1)}
         />
-      </View>
+      </div>
       <Button
         label={formatting.divider ? 'Применить к разделителю' : 'Добавить разделитель'}
         primary
-        onPress={() => {
+        onClick={() => {
           editor.insertDivider(dividerStyle, dividerSize)
           setPanel(null)
         }}
@@ -374,19 +350,21 @@ export function MobileNoteCanvas({
       {formatting.divider ? (
         <Button
           label="Добавить новый разделитель"
-          onPress={() => {
+          onClick={() => {
             editor.insertDivider(dividerStyle, dividerSize, true)
             setPanel(null)
           }}
         />
       ) : null}
-    </View>
+    </div>
   )
-
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: theme.background }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    <div
+      className="ui-stack"
+      style={{
+        flex: '1 1 0%',
+        backgroundColor: theme.background
+      }}
     >
       <NotesRichTextDom
         ref={editorRef}
@@ -415,14 +393,15 @@ export function MobileNoteCanvas({
         onHeightChange={async () => undefined}
         onOpenExternalLink={async (href) => {
           try {
-            await Linking.openURL(href)
+            await openExternalUrl(href)
           } catch (reason) {
             onError(reason)
           }
         }}
       />
       {mode === 'edit' && ready && !disabled ? (
-        <View
+        <div
+          className="ui-stack"
           style={{
             paddingBottom: Math.max(6, insets.bottom),
             paddingTop: 6,
@@ -431,92 +410,106 @@ export function MobileNoteCanvas({
             backgroundColor: theme.surface
           }}
         >
-          <View
+          <div
+            className="ui-stack"
             style={{
               flexDirection: 'row',
               alignItems: 'center',
-              paddingHorizontal: isPwa ? 6 : 8,
-              gap: isPwa ? 8 : 4
+              paddingInline: 6,
+              gap: 8
             }}
           >
-            <ScrollView
-              horizontal
-              scrollEnabled={isPwa}
-              showsHorizontalScrollIndicator={false}
-              style={{ flex: 1, minWidth: 0 }}
-              contentContainerStyle={{
-                alignItems: 'center',
-                gap: isPwa ? 2 : 4,
-                paddingRight: isPwa ? 4 : 0
+            <div
+              className="ui-scroll"
+              style={{
+                flex: '1 1 0%',
+                minWidth: 0
+              }}
+              data-horizontal={true}
+            >
+              <div
+                className="ui-stack ui-scroll-content"
+                style={{
+                  alignItems: 'center',
+                  gap: 2,
+                  paddingRight: 4,
+                  flexDirection: 'row'
+                }}
+              >
+                <CanvasTool
+                  compact={true}
+                  subtle={true}
+                  label={'Добавить вложение'}
+                  icon={Plus}
+                  onClick={() => openPanel('insert')}
+                />
+                <CanvasTool
+                  compact={true}
+                  subtle={true}
+                  label="Форматирование текста"
+                  icon={Type}
+                  onClick={() => openPanel('text')}
+                />
+                {
+                  <CanvasTool
+                    compact
+                    subtle
+                    label="Создать чек-лист"
+                    icon={ListTodo}
+                    selected={Boolean(formatting.taskList)}
+                    onClick={() => {
+                      void (async () => {
+                        await editor.command('taskList')
+                        await editor.focusEditor()
+                      })().catch(onError)
+                    }}
+                  />
+                }
+                <CanvasTool
+                  compact={true}
+                  subtle={true}
+                  label="Вставить изображение"
+                  icon={Image}
+                  onClick={() => void addAttachment('image')}
+                />
+                <CanvasTool
+                  compact={true}
+                  subtle={true}
+                  label="Вставить разделитель"
+                  icon={Minus}
+                  onClick={() => openPanel('divider')}
+                />
+                <CanvasTool
+                  compact={true}
+                  subtle={true}
+                  label="Добавить ссылку"
+                  icon={Link2}
+                  onClick={() => openPanel('link')}
+                />
+                <CanvasTool
+                  compact={true}
+                  subtle={true}
+                  label="Добавить голосовую запись"
+                  icon={Mic}
+                  onClick={() => void addAttachment('voice')}
+                />
+              </div>
+            </div>
+          </div>
+          {legacy.length ? (
+            <div
+              className="ui-stack"
+              style={{
+                paddingInline: 8,
+                paddingTop: 6
               }}
             >
-              <CanvasTool
-                compact={isPwa}
-                subtle={isPwa}
-                label={isPwa ? 'Добавить вложение' : 'Добавить вложение или разделитель'}
-                icon={Plus}
-                onPress={() => openPanel('insert')}
-              />
-              <CanvasTool
-                compact={isPwa}
-                subtle={isPwa}
-                label="Форматирование текста"
-                icon={Type}
-                onPress={() => openPanel('text')}
-              />
-              {isPwa ? (
-                <CanvasTool
-                  compact
-                  subtle
-                  label="Создать чек-лист"
-                  icon={ListTodo}
-                  selected={Boolean(formatting.taskList)}
-                  onPress={() => {
-                    void (async () => {
-                      await editor.command('taskList')
-                      await editor.focusEditor()
-                    })().catch(onError)
-                  }}
-                />
-              ) : null}
-              <CanvasTool
-                compact={isPwa}
-                subtle={isPwa}
-                label="Вставить изображение"
-                icon={Image}
-                onPress={() => void addAttachment('image')}
-              />
-              <CanvasTool
-                compact={isPwa}
-                subtle={isPwa}
-                label="Вставить разделитель"
-                icon={Minus}
-                onPress={() => openPanel('divider')}
-              />
-              <CanvasTool
-                compact={isPwa}
-                subtle={isPwa}
-                label="Добавить ссылку"
-                icon={Link2}
-                onPress={() => openPanel('link')}
-              />
-              <CanvasTool
-                compact={isPwa}
-                subtle={isPwa}
-                label="Добавить голосовую запись"
-                icon={Mic}
-                onPress={() => void addAttachment('voice')}
-              />
-            </ScrollView>
-          </View>
-          {legacy.length ? (
-            <View style={{ paddingHorizontal: 8, paddingTop: 6 }}>
-              <Button label="Другие материалы" onPress={() => openPanel('legacy')} />
-            </View>
+              <Button label="Другие материалы" onClick={() => openPanel('legacy')} />
+            </div>
           ) : null}
-        </View>
+        </div>
       ) : legacy.length ? (
-        <Button label="Другие материалы" onPress={() => openPanel('legacy')} />
+        <Button label="Другие материалы" onClick={() => openPanel('legacy')} />
       ) : null}
 
       <NotesRichTextSettingsSheet
@@ -557,44 +550,68 @@ export function MobileNoteCanvas({
           if (!open) setPanel(null)
         }}
       >
-        <ScrollView contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 28 }}>
-          <Label muted>Вложения</Label>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-            {(
-              [
-                { kind: 'image', label: 'Изображение', icon: Image },
-                { kind: 'video', label: 'Видео', icon: Video },
-                { kind: 'audio', label: 'Аудио', icon: Music },
-                { kind: 'voice', label: 'Голосовое', icon: Mic },
-                { kind: 'file', label: 'Файл', icon: File }
-              ] as const
-            )
-              .filter((item) => !isPwa || (item.kind !== 'image' && item.kind !== 'voice'))
-              .map((item) => (
-                <Pressable
-                  key={item.kind}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Добавить: ${item.label}`}
-                  onPress={() => void addAttachment(item.kind)}
-                  style={{
-                    width: '30%',
-                    minHeight: 84,
-                    gap: 8,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    borderWidth: 1,
-                    borderColor: theme.border,
-                    borderRadius: 12,
-                    backgroundColor: theme.surface
-                  }}
-                >
-                  <item.icon size={24} color={theme.accent} />
-                  <Text style={{ color: theme.text, fontSize: 12 }}>{item.label}</Text>
-                </Pressable>
-              ))}
-          </View>
-          {!isPwa ? renderDividerControls() : null}
-        </ScrollView>
+        <div className="ui-scroll">
+          <div
+            className="ui-stack ui-scroll-content"
+            style={{
+              padding: 16,
+              gap: 16,
+              paddingBottom: 28
+            }}
+          >
+            <Label muted>Вложения</Label>
+            <div
+              className="ui-stack"
+              style={{
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                gap: 10
+              }}
+            >
+              {(
+                [
+                  { kind: 'image', label: 'Изображение', icon: Image },
+                  { kind: 'video', label: 'Видео', icon: Video },
+                  { kind: 'audio', label: 'Аудио', icon: Music },
+                  { kind: 'voice', label: 'Голосовое', icon: Mic },
+                  { kind: 'file', label: 'Файл', icon: File }
+                ] as const
+              )
+                .filter((item) => item.kind !== 'image' && item.kind !== 'voice')
+                .map((item) => (
+                  <Action
+                    key={item.kind}
+                    role={'button'}
+                    aria-label={`Добавить: ${item.label}`}
+                    onClick={() => void addAttachment(item.kind)}
+                    style={{
+                      width: '30%',
+                      minHeight: 84,
+                      gap: 8,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      borderWidth: 1,
+                      borderColor: theme.border,
+                      borderRadius: 12,
+                      backgroundColor: theme.surface
+                    }}
+                  >
+                    <item.icon size={24} color={theme.accent} />
+                    <span
+                      className="ui-text"
+                      style={{
+                        color: theme.text,
+                        fontSize: 12
+                      }}
+                    >
+                      {item.label}
+                    </span>
+                  </Action>
+                ))}
+            </div>
+            {null}
+          </div>
+        </div>
       </AppDialog>
 
       <AppDialog
@@ -606,7 +623,15 @@ export function MobileNoteCanvas({
           if (!open) setPanel(null)
         }}
       >
-        <View style={{ padding: 16, paddingBottom: 28 }}>{renderDividerControls()}</View>
+        <div
+          className="ui-stack"
+          style={{
+            padding: 16,
+            paddingBottom: 28
+          }}
+        >
+          {renderDividerControls()}
+        </div>
       </AppDialog>
 
       {panel === 'attachment' && attachment && !voice ? (
@@ -618,21 +643,26 @@ export function MobileNoteCanvas({
           importAsset={(kind) => documentAssets.importAsset(noteId, kind)}
           onAssetError={onError}
           footer={
-            <View style={{ gap: 12 }}>
+            <div
+              className="ui-stack"
+              style={{
+                gap: 12
+              }}
+            >
               {voice ? (
-                <Button label="Записать заново" icon="music" onPress={() => setPanel('voice')} />
+                <Button label="Записать заново" icon="music" onClick={() => setPanel('voice')} />
               ) : null}
               <Button
                 label="Удалить вложение из заметки"
                 danger
                 icon="delete"
-                onPress={() => {
+                onClick={() => {
                   editor.deleteAttachment(attachment.id)
                   setSelectedId(null)
                   setPanel(null)
                 }}
               />
-            </View>
+            </div>
           }
         />
       ) : null}
@@ -647,35 +677,41 @@ export function MobileNoteCanvas({
         }}
       >
         {attachment ? (
-          <View style={{ padding: 16, gap: 14 }}>
-            <TextInput
-              accessibilityLabel="Название голосовой записи"
-              placeholder="Название (необязательно)"
-              placeholderTextColor={theme.muted}
+          <div
+            className="ui-stack"
+            style={{
+              padding: 16,
+              gap: 14
+            }}
+          >
+            <TextControl
+              aria-label={'Название голосовой записи'}
+              placeholder={'Название (необязательно)'}
+              placeholderColor={theme.muted}
               value={attachment.title ?? ''}
-              onChangeText={(title) => updateAttachment({ ...attachment, title })}
+              onValueChange={(title) => updateAttachment({ ...attachment, title })}
               style={{
                 minHeight: 48,
-                paddingHorizontal: 12,
+                paddingInline: 12,
                 borderRadius: 12,
                 borderWidth: 1,
                 borderColor: theme.border,
                 backgroundColor: theme.surface,
                 color: theme.text
               }}
-            />
-            <Button label="Записать заново" icon="music" onPress={() => setPanel('voice')} />
+            ></TextControl>
+            <Button label="Записать заново" icon="music" onClick={() => setPanel('voice')} />
             <Button
               label="Удалить голосовое из заметки"
               danger
               icon="delete"
-              onPress={() => {
+              onClick={() => {
                 editor.deleteAttachment(attachment.id)
                 setSelectedId(null)
                 setPanel(null)
               }}
             />
-          </View>
+          </div>
         ) : null}
       </AppDialog>
 
@@ -689,7 +725,14 @@ export function MobileNoteCanvas({
           if (!open) setPanel(null)
         }}
       >
-        <View style={{ padding: 16, paddingBottom: 28, gap: 12 }}>
+        <div
+          className="ui-stack"
+          style={{
+            padding: 16,
+            paddingBottom: 28,
+            gap: 12
+          }}
+        >
           <Label muted>Запись будет добавлена в выбранное место заметки.</Label>
           {panel === 'voice' && attachment?.type === 'audio' ? (
             <VoiceRecorder
@@ -707,7 +750,7 @@ export function MobileNoteCanvas({
               onError={onError}
             />
           ) : null}
-        </View>
+        </div>
       </AppDialog>
       <AppDialog
         open={panel === 'legacy'}
@@ -736,28 +779,37 @@ export function MobileNoteCanvas({
         }}
       >
         {attachment?.type === 'image' ? (
-          <NativeImage
-            accessibilityLabel={attachment.title || 'Изображение'}
-            source={{
-              uri:
-                attachment.source.type === 'url'
-                  ? (normalizeStudyRemoteImageUrl(attachment.source.url) ?? '')
-                  : assetUris[attachment.id]
+          <img
+            aria-label={attachment.title || 'Изображение'}
+            src={
+              attachment.source.type === 'url'
+                ? (normalizeStudyRemoteImageUrl(attachment.source.url) ?? '')
+                : assetUris[attachment.id]
+            }
+            style={{
+              flex: '1 1 0%',
+              width: '100%',
+              objectFit: 'contain'
             }}
-            resizeMode="contain"
-            style={{ flex: 1, width: '100%' }}
-          />
+            alt=""
+            draggable="false"
+          ></img>
         ) : attachment ? (
-          <View style={{ padding: 16 }}>
+          <div
+            className="ui-stack"
+            style={{
+              padding: 16
+            }}
+          >
             <StudyAttachmentBlock
               block={attachment}
               openAsset={documentAssets.openAsset}
               resolveAssetUri={documentAssets.resolveAssetUri}
               onError={onError}
             />
-          </View>
+          </div>
         ) : null}
       </AppDialog>
-    </KeyboardAvoidingView>
+    </div>
   )
 }

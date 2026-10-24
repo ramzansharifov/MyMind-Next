@@ -1,5 +1,5 @@
+import { TextControl } from '../../../ui/browser'
 import { useMemo, useState } from 'react'
-import { ScrollView, TextInput, View } from 'react-native'
 import type { UpsertMovieInput } from '@mymind/contracts/movies'
 import type { UpsertMusicLibraryInput } from '@mymind/contracts/music'
 import { parseMoviesJson, parseMusicJson } from '@mymind/core/catalog-json-import'
@@ -8,7 +8,6 @@ import { Button, ErrorState, Label } from '../../shared/ui/primitives'
 import { messageFor } from '../../shared/ui/form-model'
 import { useConfirmation } from '../../shared/ui/confirmation-context'
 import { useTheme } from '../../shared/ui/theme'
-
 const MOVIE_EXAMPLE = `[
   {
     "title": "Аркейн",
@@ -24,7 +23,6 @@ const MOVIE_EXAMPLE = `[
     "rating": 9
   }
 ]`
-
 const MUSIC_EXAMPLE = `[
   {
     "title": "Blinding Lights",
@@ -34,14 +32,12 @@ const MUSIC_EXAMPLE = `[
     "favorite": true
   }
 ]`
-
 interface CatalogJsonImportModalProps {
   mode: 'movies' | 'music'
   close(): void
   importMovies(items: UpsertMovieInput[]): void | Promise<void>
   importMusic(input: UpsertMusicLibraryInput): void | Promise<void>
 }
-
 export function CatalogJsonImportModal({
   mode,
   close,
@@ -64,7 +60,6 @@ export function CatalogJsonImportModal({
   const title = mode === 'movies' ? 'Применить JSON фильмов' : 'Применить JSON музыки'
   const example = mode === 'movies' ? MOVIE_EXAMPLE : MUSIC_EXAMPLE
   const importCount = parsed.items.length + (parsed.mode === 'music' ? parsed.playlists.length : 0)
-
   const requestClose = (): void => {
     if (busy) return
     if (!value.trim()) {
@@ -80,7 +75,6 @@ export function CatalogJsonImportModal({
       onConfirm: close
     })
   }
-
   const submit = async (): Promise<void> => {
     if (
       busy ||
@@ -101,7 +95,6 @@ export function CatalogJsonImportModal({
       setBusy(false)
     }
   }
-
   return (
     <AppDialog
       open
@@ -115,66 +108,78 @@ export function CatalogJsonImportModal({
       busy={busy}
       footer={
         <>
-          <Button label="Отмена" disabled={busy} onPress={requestClose} />
+          <Button label="Отмена" disabled={busy} onClick={requestClose} />
           <Button
             label={busy ? 'Применение…' : 'Применить JSON'}
             primary
             disabled={busy || importCount === 0 || Boolean(parsed.error)}
-            onPress={() => void submit()}
+            onClick={() => void submit()}
           />
         </>
       }
     >
-      <ScrollView
-        keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 28 }}
-      >
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-          <Button label="Пример" disabled={busy} onPress={() => setValue(example)} />
-          <Button label="Очистить" disabled={busy || !value} onPress={() => setValue('')} />
-        </View>
-
-        <TextInput
-          accessibilityLabel={mode === 'movies' ? 'JSON фильмов' : 'JSON музыки'}
-          value={value}
-          onChangeText={(next) => {
-            setValue(next)
-            setSubmitError('')
-          }}
-          multiline
-          autoCapitalize="none"
-          autoCorrect={false}
-          spellCheck={false}
-          placeholder={
-            mode === 'movies'
-              ? '[{ "title": "Аркейн", "type": "animated_series" }]'
-              : '[{ "title": "Blinding Lights", "artist": "The Weeknd" }]'
-          }
-          placeholderTextColor={theme.muted}
+      <div className="ui-scroll">
+        <div
+          className="ui-stack ui-scroll-content"
           style={{
-            minHeight: 300,
-            color: theme.text,
-            backgroundColor: theme.surface,
-            borderWidth: 1,
-            borderColor: theme.border,
-            borderRadius: 14,
-            padding: 14,
-            textAlignVertical: 'top',
-            fontFamily: 'monospace',
-            fontSize: 14,
-            lineHeight: 21
+            padding: 16,
+            gap: 14,
+            paddingBottom: 28
           }}
-        />
+        >
+          <div
+            className="ui-stack"
+            style={{
+              flexDirection: 'row',
+              flexWrap: 'wrap',
+              gap: 8
+            }}
+          >
+            <Button label="Пример" disabled={busy} onClick={() => setValue(example)} />
+            <Button label="Очистить" disabled={busy || !value} onClick={() => setValue('')} />
+          </div>
 
-        {error ? <ErrorState message={error} /> : null}
-        {!error && importCount > 0 ? (
-          <Label muted>
-            {parsed.mode === 'movies'
-              ? `Готово к применению: ${parsed.items.length}`
-              : `Готово: треков ${parsed.items.length}, плейлистов ${parsed.playlists.length}`}
-          </Label>
-        ) : null}
-      </ScrollView>
+          <TextControl
+            aria-label={mode === 'movies' ? 'JSON фильмов' : 'JSON музыки'}
+            value={value}
+            onValueChange={(next) => {
+              setValue(next)
+              setSubmitError('')
+            }}
+            multiline={true}
+            autoCapitalize={'none'}
+            autoCorrect={'off'}
+            spellCheck={false}
+            placeholder={
+              mode === 'movies'
+                ? '[{ "title": "Аркейн", "type": "animated_series" }]'
+                : '[{ "title": "Blinding Lights", "artist": "The Weeknd" }]'
+            }
+            placeholderColor={theme.muted}
+            style={{
+              minHeight: 300,
+              color: theme.text,
+              backgroundColor: theme.surface,
+              borderWidth: 1,
+              borderColor: theme.border,
+              borderRadius: 14,
+              padding: 14,
+              fontFamily: 'monospace',
+              fontSize: 14,
+              lineHeight: '21px'
+            }}
+          ></TextControl>
+
+          {error ? <ErrorState message={error} /> : null}
+          {!error && importCount > 0 ? (
+            <Label muted>
+              {parsed.mode === 'movies'
+                ? `Готово к применению: ${parsed.items.length}`
+                : `Готово: треков ${parsed.items.length}, плейлистов ${parsed.playlists.length}`}
+            </Label>
+          ) : null}
+        </div>
+      </div>
     </AppDialog>
   )
 }

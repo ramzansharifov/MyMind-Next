@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react'
-import { ScrollView, Text, View } from 'react-native'
 import type {
   FinanceAccountSummary,
   FinanceLimitImpact,
@@ -11,7 +10,6 @@ import type {
 import type { FinanceRepository } from '@mymind/persistence/finance'
 import { FINANCE_RATE_SCALE, formatMinorPlain, parseMoneyToMinor } from '@mymind/core/finance-money'
 import * as validation from '@mymind/core/validation/finance'
-
 import { notifyDataChanged } from '../../app/changes'
 import { AppDialog } from '../../shared/ui/AppDialog'
 import { AppDateField, AppTextField, AppTimeField } from '../../shared/ui/FormControls'
@@ -26,9 +24,7 @@ import {
 } from './MobileFinanceSelectionPickers'
 import { FINANCE_OPERATION_OPTIONS } from './finance-operation-options'
 import { financeTemplateTransactionDefaults } from './finance-template-transaction'
-
 type OperationType = FinanceUserTransactionType
-
 function localDateKey(timestamp = Date.now()): string {
   const date = new Date(timestamp)
   const year = date.getFullYear()
@@ -36,18 +32,15 @@ function localDateKey(timestamp = Date.now()): string {
   const day = String(date.getDate()).padStart(2, '0')
   return `${year}-${month}-${day}`
 }
-
 function localTimeKey(timestamp = Date.now()): string {
   const date = new Date(timestamp)
   return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
 }
-
 function timestampFrom(date: string, time: string): number {
   const value = new Date(`${date}T${time || '12:00'}:00`)
   if (Number.isNaN(value.getTime())) throw new Error('Укажите корректные дату и время')
   return value.getTime()
 }
-
 function initialValues(
   type: OperationType,
   accounts: FinanceAccountSummary[],
@@ -80,9 +73,7 @@ function initialValues(
       comment: transaction.comment
     }
   }
-
   if (template) return financeTemplateTransactionDefaults(template, accounts)
-
   return {
     type,
     accountId: accounts[0]?.id ?? '',
@@ -94,7 +85,6 @@ function initialValues(
     comment: ''
   }
 }
-
 function ImpactNotice({
   impact,
   tags
@@ -104,9 +94,9 @@ function ImpactNotice({
 }): React.JSX.Element | null {
   const theme = useTheme()
   if (!impact.items.length) return null
-
   return (
-    <View
+    <div
+      className="ui-stack"
       style={{
         gap: 5,
         padding: 12,
@@ -116,29 +106,50 @@ function ImpactNotice({
         backgroundColor: '#f59e0b0C'
       }}
     >
-      <Text style={{ color: '#fbbf24', fontSize: 12.5, fontWeight: '700' }}>Влияние на лимиты</Text>
+      <span
+        className="ui-text"
+        style={{
+          color: '#fbbf24',
+          fontSize: 12.5,
+          fontWeight: 700
+        }}
+      >
+        Влияние на лимиты
+      </span>
       {impact.items.map((item) => {
         const label = tags.find((tag) => tag.id === item.limit.tagId)?.name ?? 'Лимит'
         const after =
           item.convertedExpenseMinor === null
             ? 'нельзя рассчитать без курса'
-            : `${Math.round(item.limit.usagePercent)}% → ${Math.round(
-                (item.spentAfterMinor / item.limit.amountMinor) * 100
-              )}%`
+            : `${Math.round(item.limit.usagePercent)}% → ${Math.round((item.spentAfterMinor / item.limit.amountMinor) * 100)}%`
         return (
-          <Text key={item.limit.id} style={{ color: theme.text, fontSize: 11, lineHeight: 16 }}>
+          <span
+            className="ui-text"
+            key={item.limit.id}
+            style={{
+              color: theme.text,
+              fontSize: 11,
+              lineHeight: '16px'
+            }}
+          >
             {label}: {after}
             {item.exceededAfterMinor > 0 ? ' · будет превышен' : ''}
-          </Text>
+          </span>
         )
       })}
-      <Text style={{ color: theme.muted, fontSize: 10.5, lineHeight: 15 }}>
+      <span
+        className="ui-text"
+        style={{
+          color: theme.muted,
+          fontSize: 10.5,
+          lineHeight: '15px'
+        }}
+      >
         Повторное нажатие «Подтвердить расход» сохранит операцию.
-      </Text>
-    </View>
+      </span>
+    </div>
   )
 }
-
 export function MobileFinanceTransactionSheet({
   api,
   accounts,
@@ -176,7 +187,6 @@ export function MobileFinanceTransactionSheet({
   const [error, setError] = useState('')
   const [impact, setImpact] = useState<FinanceLimitImpact | null>(null)
   const [impactConfirmed, setImpactConfirmed] = useState(false)
-
   const selectedAccount = accounts.find((account) => account.id === accountId)
   const selectedDestination = accounts.find((account) => account.id === destinationAccountId)
   const compatibleTags = tags.filter((tag) => tag.type === 'both' || tag.type === type)
@@ -185,12 +195,10 @@ export function MobileFinanceTransactionSheet({
     FINANCE_OPERATION_OPTIONS[0]
   const currentTone = financeOperationTone(type, theme.accent)
   const CurrentIcon = currentOption.icon
-
   const clearImpact = (): void => {
     setImpact(null)
     setImpactConfirmed(false)
   }
-
   const chooseType = (next: OperationType): void => {
     if (transaction || template || next === type) return
     setType(next)
@@ -206,18 +214,15 @@ export function MobileFinanceTransactionSheet({
     const selectedTag = tags.find((tag) => tag.id === tagId)
     if (selectedTag && selectedTag.type !== 'both' && selectedTag.type !== next) setTagId('')
   }
-
   const save = (): void => {
     if (pending) return
     setError('')
-
     try {
       const account = accounts.find((item) => item.id === accountId)
       if (!account) throw new Error('Выберите счёт')
       const amountMinor = parseMoneyToMinor(amount, account.currencyCode)
       if (amountMinor <= 0) throw new Error('Сумма должна быть больше нуля')
       const occurredAt = timestampFrom(date, time)
-
       if (type === 'expense' && !impactConfirmed) {
         if (!tagId) throw new Error('Выберите тег')
         const nextImpact = api.previewExpenseImpact({
@@ -233,9 +238,7 @@ export function MobileFinanceTransactionSheet({
           return
         }
       }
-
       setPending(true)
-
       if (type === 'transfer') {
         const destination = accounts.find((item) => item.id === destinationAccountId)
         if (!destination) throw new Error('Выберите счёт зачисления')
@@ -267,7 +270,6 @@ export function MobileFinanceTransactionSheet({
         if (transaction) api.updateTransaction({ id: transaction.id, transaction: payload })
         else api.createTransaction(payload)
       }
-
       notifyDataChanged()
       onSaved()
       toast.success(transaction ? 'Операция обновлена' : 'Операция создана')
@@ -278,7 +280,6 @@ export function MobileFinanceTransactionSheet({
       setPending(false)
     }
   }
-
   const title = transaction
     ? 'Изменить операцию'
     : template
@@ -288,7 +289,6 @@ export function MobileFinanceTransactionSheet({
         : type === 'expense'
           ? 'Новый расход'
           : 'Новый перевод'
-
   return (
     <AppDialog
       open
@@ -302,7 +302,7 @@ export function MobileFinanceTransactionSheet({
       busy={pending}
       footer={
         <>
-          <Button label="Отмена" disabled={pending} onPress={onClose} />
+          <Button label="Отмена" disabled={pending} onClick={onClose} />
           <Button
             label={
               pending
@@ -316,148 +316,219 @@ export function MobileFinanceTransactionSheet({
             icon="check"
             primary
             disabled={pending || !accounts.length}
-            onPress={save}
+            onClick={save}
           />
         </>
       }
     >
-      <ScrollView
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ gap: 18, padding: 14, paddingBottom: 26 }}
-      >
-        {error ? <ErrorState message={error} /> : null}
+      <div className="ui-scroll">
+        <div
+          className="ui-stack ui-scroll-content"
+          style={{
+            gap: 18,
+            padding: 14,
+            paddingBottom: 26
+          }}
+        >
+          {error ? <ErrorState message={error} /> : null}
 
-        {!transaction && !template ? (
-          <MobileFinanceOperationTypePicker value={type} disabled={pending} onChange={chooseType} />
-        ) : (
-          <View
+          {!transaction && !template ? (
+            <MobileFinanceOperationTypePicker
+              value={type}
+              disabled={pending}
+              onChange={chooseType}
+            />
+          ) : (
+            <div
+              className="ui-stack"
+              style={{
+                minHeight: 42,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 8,
+                paddingInline: 11,
+                borderWidth: 1,
+                borderColor: currentTone + '55',
+                borderRadius: 12,
+                backgroundColor: currentTone + '12'
+              }}
+            >
+              <CurrentIcon size={16} color={currentTone} />
+              <span
+                className="ui-text"
+                style={{
+                  color: currentTone,
+                  fontSize: 12.5,
+                  fontWeight: 700
+                }}
+              >
+                {currentOption.label}
+              </span>
+            </div>
+          )}
+
+          <div
+            className="ui-stack"
             style={{
-              minHeight: 42,
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 8,
-              paddingHorizontal: 11,
-              borderWidth: 1,
-              borderColor: currentTone + '55',
-              borderRadius: 12,
-              backgroundColor: currentTone + '12'
+              gap: 8
             }}
           >
-            <CurrentIcon size={16} color={currentTone} />
-            <Text style={{ color: currentTone, fontSize: 12.5, fontWeight: '700' }}>
-              {currentOption.label}
-            </Text>
-          </View>
-        )}
-
-        <View style={{ gap: 8 }}>
-          <Label>{type === 'transfer' ? 'Счёт списания' : 'Счёт'}</Label>
-          <MobileFinanceAccountPicker
-            accounts={accounts}
-            value={accountId}
-            disabled={pending}
-            onChange={(value) => {
-              setAccountId(value)
-              clearImpact()
-              if (value === destinationAccountId) {
-                setDestinationAccountId(accounts.find((account) => account.id !== value)?.id ?? '')
-              }
-            }}
-          />
-        </View>
-
-        {type === 'transfer' ? (
-          <View style={{ gap: 8 }}>
-            <Label>Счёт зачисления</Label>
+            <Label>{type === 'transfer' ? 'Счёт списания' : 'Счёт'}</Label>
             <MobileFinanceAccountPicker
-              accounts={accounts.filter((account) => account.id !== accountId)}
-              value={destinationAccountId}
+              accounts={accounts}
+              value={accountId}
               disabled={pending}
               onChange={(value) => {
-                setDestinationAccountId(value)
+                setAccountId(value)
                 clearImpact()
+                if (value === destinationAccountId) {
+                  setDestinationAccountId(
+                    accounts.find((account) => account.id !== value)?.id ?? ''
+                  )
+                }
               }}
             />
-          </View>
-        ) : (
-          <View style={{ gap: 8 }}>
-            <Label>Тег</Label>
-            <MobileFinanceTagPicker
-              tags={compatibleTags}
-              value={tagId}
-              disabled={pending}
-              onChange={(value) => {
-                setTagId(value)
-                clearImpact()
-              }}
-            />
-          </View>
-        )}
+          </div>
 
-        <View style={{ gap: 8 }}>
-          <Label>Сумма</Label>
-          <AppTextField
-            accessibilityLabel="Сумма"
-            keyboardType="decimal-pad"
-            value={amount}
-            placeholder="0.00"
-            disabled={pending}
-            onChangeText={(value) => {
-              setAmount(value)
-              clearImpact()
+          {type === 'transfer' ? (
+            <div
+              className="ui-stack"
+              style={{
+                gap: 8
+              }}
+            >
+              <Label>Счёт зачисления</Label>
+              <MobileFinanceAccountPicker
+                accounts={accounts.filter((account) => account.id !== accountId)}
+                value={destinationAccountId}
+                disabled={pending}
+                onChange={(value) => {
+                  setDestinationAccountId(value)
+                  clearImpact()
+                }}
+              />
+            </div>
+          ) : (
+            <div
+              className="ui-stack"
+              style={{
+                gap: 8
+              }}
+            >
+              <Label>Тег</Label>
+              <MobileFinanceTagPicker
+                tags={compatibleTags}
+                value={tagId}
+                disabled={pending}
+                onChange={(value) => {
+                  setTagId(value)
+                  clearImpact()
+                }}
+              />
+            </div>
+          )}
+
+          <div
+            className="ui-stack"
+            style={{
+              gap: 8
             }}
-          />
-          <Text style={{ color: theme.muted, fontSize: 10.5, lineHeight: 15 }}>
-            {type === 'transfer' && selectedAccount && selectedDestination
-              ? `${selectedAccount.currencyCode} → ${selectedDestination.currencyCode} · одна и та же сумма`
-              : selectedAccount
-                ? `Валюта: ${selectedAccount.currencyCode}`
-                : 'Сначала выберите счёт'}
-          </Text>
-        </View>
-
-        <View style={{ flexDirection: 'row', gap: 8 }}>
-          <View style={{ minWidth: 0, flex: 1, gap: 8 }}>
-            <Label>Дата</Label>
-            <AppDateField
-              label="Дата операции"
-              value={date}
+          >
+            <Label>Сумма</Label>
+            <AppTextField
+              aria-label="Сумма"
+              inputMode={'decimal'}
+              value={amount}
+              placeholder="0.00"
               disabled={pending}
-              onChangeText={(value) => {
-                setDate(value)
+              onValueChange={(value) => {
+                setAmount(value)
                 clearImpact()
               }}
             />
-          </View>
-          <View style={{ minWidth: 0, flex: 1, gap: 8 }}>
-            <Label>Время</Label>
-            <AppTimeField
-              label="Время операции"
-              value={time}
-              disabled={pending}
-              onChangeText={(value) => {
-                setTime(value)
-                clearImpact()
+            <span
+              className="ui-text"
+              style={{
+                color: theme.muted,
+                fontSize: 10.5,
+                lineHeight: '15px'
               }}
+            >
+              {type === 'transfer' && selectedAccount && selectedDestination
+                ? `${selectedAccount.currencyCode} → ${selectedDestination.currencyCode} · одна и та же сумма`
+                : selectedAccount
+                  ? `Валюта: ${selectedAccount.currencyCode}`
+                  : 'Сначала выберите счёт'}
+            </span>
+          </div>
+
+          <div
+            className="ui-stack"
+            style={{
+              flexDirection: 'row',
+              gap: 8
+            }}
+          >
+            <div
+              className="ui-stack"
+              style={{
+                minWidth: 0,
+                flex: '1 1 0%',
+                gap: 8
+              }}
+            >
+              <Label>Дата</Label>
+              <AppDateField
+                label="Дата операции"
+                value={date}
+                disabled={pending}
+                onValueChange={(value) => {
+                  setDate(value)
+                  clearImpact()
+                }}
+              />
+            </div>
+            <div
+              className="ui-stack"
+              style={{
+                minWidth: 0,
+                flex: '1 1 0%',
+                gap: 8
+              }}
+            >
+              <Label>Время</Label>
+              <AppTimeField
+                label="Время операции"
+                value={time}
+                disabled={pending}
+                onValueChange={(value) => {
+                  setTime(value)
+                  clearImpact()
+                }}
+              />
+            </div>
+          </div>
+
+          <div
+            className="ui-stack"
+            style={{
+              gap: 8
+            }}
+          >
+            <Label>Комментарий</Label>
+            <AppTextField
+              aria-label="Комментарий"
+              value={comment}
+              placeholder="Необязательное пояснение"
+              multiline
+              disabled={pending}
+              onValueChange={setComment}
             />
-          </View>
-        </View>
+          </div>
 
-        <View style={{ gap: 8 }}>
-          <Label>Комментарий</Label>
-          <AppTextField
-            accessibilityLabel="Комментарий"
-            value={comment}
-            placeholder="Необязательное пояснение"
-            multiline
-            disabled={pending}
-            onChangeText={setComment}
-          />
-        </View>
-
-        {impact ? <ImpactNotice impact={impact} tags={tags} /> : null}
-      </ScrollView>
+          {impact ? <ImpactNotice impact={impact} tags={tags} /> : null}
+        </div>
+      </div>
     </AppDialog>
   )
 }

@@ -1,5 +1,5 @@
+import { TextControl, DialogLayer, Toggle } from '../../../ui/browser'
 import { useMemo, useState } from 'react'
-import { Modal, ScrollView, Switch, TextInput, View } from 'react-native'
 import type {
   PasswordCustomField,
   PasswordGroupRecord,
@@ -15,7 +15,6 @@ import { Button, ErrorState, Label } from '../../shared/ui/primitives'
 import { messageFor } from '../../shared/ui/form-model'
 import { useTheme } from '../../shared/ui/theme'
 import { PasswordGeneratorModal } from './PasswordGeneratorModal'
-
 function SecretInput({
   label,
   value,
@@ -33,17 +32,27 @@ function SecretInput({
 }): React.JSX.Element {
   const theme = useTheme()
   return (
-    <View style={{ gap: 7 }}>
+    <div
+      className="ui-stack"
+      style={{
+        gap: 7
+      }}
+    >
       <Label>{label}</Label>
-      <View style={{ gap: 8 }}>
-        <TextInput
+      <div
+        className="ui-stack"
+        style={{
+          gap: 8
+        }}
+      >
+        <TextControl
           value={value}
-          onChangeText={setValue}
-          secureTextEntry={!visible && !multiline}
+          onValueChange={setValue}
+          type={!visible && !multiline ? 'password' : 'text'}
           multiline={multiline}
-          autoCapitalize="none"
-          autoCorrect={false}
-          accessibilityLabel={label}
+          autoCapitalize={'none'}
+          autoCorrect={'off'}
+          aria-label={label}
           style={{
             minHeight: multiline ? 96 : 48,
             borderWidth: 1,
@@ -51,22 +60,25 @@ function SecretInput({
             borderRadius: 12,
             backgroundColor: theme.surface,
             color: theme.text,
-            paddingHorizontal: 14,
-            paddingVertical: 12,
-            fontSize: 16,
-            textAlignVertical: multiline ? 'top' : 'center'
+            paddingInline: 14,
+            paddingBlock: 12,
+            fontSize: 16
           }}
-        />
+        ></TextControl>
         {!multiline ? (
-          <View style={{ alignItems: 'flex-start' }}>
-            <Button label={visible ? 'Скрыть' : 'Показать'} onPress={() => setVisible(!visible)} />
-          </View>
+          <div
+            className="ui-stack"
+            style={{
+              alignItems: 'flex-start'
+            }}
+          >
+            <Button label={visible ? 'Скрыть' : 'Показать'} onClick={() => setVisible(!visible)} />
+          </div>
         ) : null}
-      </View>
-    </View>
+      </div>
+    </div>
   )
 }
-
 function TextField({
   label,
   value,
@@ -82,15 +94,20 @@ function TextField({
 }): React.JSX.Element {
   const theme = useTheme()
   return (
-    <View style={{ gap: 7 }}>
+    <div
+      className="ui-stack"
+      style={{
+        gap: 7
+      }}
+    >
       <Label>{label}</Label>
-      <TextInput
+      <TextControl
         value={value}
-        onChangeText={setValue}
+        onValueChange={setValue}
         multiline={multiline}
         autoCapitalize={autoCapitalize}
-        autoCorrect={autoCapitalize !== 'none'}
-        accessibilityLabel={label}
+        autoCorrect={autoCapitalize !== 'none' ? 'on' : 'off'}
+        aria-label={label}
         style={{
           minHeight: multiline ? 96 : 48,
           borderWidth: 1,
@@ -98,16 +115,14 @@ function TextField({
           borderRadius: 12,
           backgroundColor: theme.surface,
           color: theme.text,
-          paddingHorizontal: 14,
-          paddingVertical: 12,
-          fontSize: 16,
-          textAlignVertical: multiline ? 'top' : 'center'
+          paddingInline: 14,
+          paddingBlock: 12,
+          fontSize: 16
         }}
-      />
-    </View>
+      ></TextControl>
+    </div>
   )
 }
-
 export function PasswordItemEditor({
   api,
   groups,
@@ -148,7 +163,6 @@ export function PasswordItemEditor({
         .filter(Boolean),
     [tagsText]
   )
-
   const save = (): void => {
     try {
       const raw = {
@@ -176,223 +190,297 @@ export function PasswordItemEditor({
       setError(messageFor(reason))
     }
   }
-
   const updateCustomField = (index: number, patch: Partial<PasswordCustomField>): void => {
     setCustomFields((fields) =>
       fields.map((field, fieldIndex) => (fieldIndex === index ? { ...field, ...patch } : field))
     )
   }
-
   return (
-    <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={close}>
-      <View style={{ flex: 1, backgroundColor: theme.background }}>
-        <ScrollView
-          keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ padding: 20, gap: 16, paddingBottom: 56 }}
-        >
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12 }}>
-            <View style={{ flex: 1 }}>
-              <Label title>{item ? 'Редактировать запись' : 'Новая запись'}</Label>
-              <Label muted>Все поля сохраняются только в зашифрованном виде.</Label>
-            </View>
-            <Button label="Закрыть" onPress={close} />
-          </View>
-
-          <View style={{ gap: 7 }}>
-            <Label>Тип</Label>
-            <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-              <Button label="Логин" selected={type === 'login'} onPress={() => setType('login')} />
-              <Button
-                label="Пароль"
-                selected={type === 'password'}
-                onPress={() => setType('password')}
-              />
-            </View>
-          </View>
-
-          <View style={{ gap: 7 }}>
-            <Label>Группа</Label>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ gap: 8 }}
-            >
-              <Button
-                label="Без группы"
-                selected={groupId === null}
-                onPress={() => setGroupId(null)}
-              />
-              {groups.map((group) => (
-                <Button
-                  key={group.id}
-                  label={group.name}
-                  selected={groupId === group.id}
-                  onPress={() => setGroupId(group.id)}
-                />
-              ))}
-            </ScrollView>
-          </View>
-
-          <TextField label="Название" value={title} setValue={setTitle} />
-          <TextField
-            label="Логин / email"
-            value={username}
-            setValue={setUsername}
-            autoCapitalize="none"
-          />
-
-          <SecretInput
-            label="Пароль"
-            value={password}
-            setValue={setPassword}
-            visible={passwordVisible}
-            setVisible={setPasswordVisible}
-          />
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-            <Button label="Генератор" onPress={() => setGeneratorOpen(true)} />
-            {password ? (
-              <Button
-                label="Копировать пароль"
-                onPress={() =>
-                  void copy(password).catch((reason: unknown) => setError(messageFor(reason)))
-                }
-              />
-            ) : null}
-          </View>
-
-          <TextField label="Сайт" value={website} setValue={setWebsite} autoCapitalize="none" />
-          <TextField label="Заметка" value={notes} setValue={setNotes} multiline />
-          <TextField
-            label="Теги через запятую"
-            value={tagsText}
-            setValue={setTagsText}
-            autoCapitalize="none"
-          />
-
-          <View
+    <DialogLayer open={true} transition={'slide'} onClose={close}>
+      <div
+        className="ui-stack"
+        style={{
+          flex: '1 1 0%',
+          backgroundColor: theme.background
+        }}
+      >
+        <div className="ui-scroll">
+          <div
+            className="ui-stack ui-scroll-content"
             style={{
-              minHeight: 54,
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              borderWidth: 1,
-              borderColor: theme.border,
-              backgroundColor: theme.surface,
-              borderRadius: 12,
-              paddingHorizontal: 14,
-              gap: 12
+              padding: 20,
+              gap: 16,
+              paddingBottom: 56
             }}
           >
-            <Label>В избранном</Label>
-            <Switch
-              value={favorite}
-              onValueChange={setFavorite}
-              trackColor={{ true: theme.accent }}
-            />
-          </View>
-
-          <View style={{ gap: 10 }}>
-            <View
+            <div
+              className="ui-stack"
               style={{
                 flexDirection: 'row',
                 justifyContent: 'space-between',
-                gap: 10,
-                alignItems: 'center'
+                gap: 12
               }}
             >
-              <View style={{ flex: 1 }}>
-                <Label>Дополнительные поля</Label>
-                <Label muted>Например, PIN, recovery code или секретный ответ.</Label>
-              </View>
-              <Button
-                label="+ Поле"
-                disabled={customFields.length >= 20}
-                onPress={() => setCustomFields((fields) => [...fields, { label: '', value: '' }])}
-              />
-            </View>
-            {customFields.map((field, index) => (
-              <View
-                key={index}
+              <div
+                className="ui-stack"
                 style={{
-                  gap: 10,
-                  borderWidth: 1,
-                  borderColor: theme.border,
-                  backgroundColor: theme.surface,
-                  borderRadius: 14,
-                  padding: 12
+                  flex: '1 1 0%'
                 }}
               >
-                <TextInput
-                  value={field.label}
-                  onChangeText={(value) => updateCustomField(index, { label: value })}
-                  placeholder="Название поля"
-                  placeholderTextColor={theme.muted}
-                  accessibilityLabel={`Название дополнительного поля ${index + 1}`}
-                  style={{
-                    minHeight: 46,
-                    borderWidth: 1,
-                    borderColor: theme.border,
-                    borderRadius: 10,
-                    color: theme.text,
-                    backgroundColor: theme.raised,
-                    paddingHorizontal: 12,
-                    fontSize: 16
-                  }}
+                <Label title>{item ? 'Редактировать запись' : 'Новая запись'}</Label>
+                <Label muted>Все поля сохраняются только в зашифрованном виде.</Label>
+              </div>
+              <Button label="Закрыть" onClick={close} />
+            </div>
+
+            <div
+              className="ui-stack"
+              style={{
+                gap: 7
+              }}
+            >
+              <Label>Тип</Label>
+              <div
+                className="ui-stack"
+                style={{
+                  flexDirection: 'row',
+                  gap: 8,
+                  flexWrap: 'wrap'
+                }}
+              >
+                <Button
+                  label="Логин"
+                  selected={type === 'login'}
+                  onClick={() => setType('login')}
                 />
-                <TextInput
-                  value={field.value}
-                  onChangeText={(value) => updateCustomField(index, { value })}
-                  secureTextEntry={!customVisible[index]}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  placeholder="Значение"
-                  placeholderTextColor={theme.muted}
-                  accessibilityLabel={`Значение дополнительного поля ${index + 1}`}
-                  style={{
-                    minHeight: 46,
-                    borderWidth: 1,
-                    borderColor: theme.border,
-                    borderRadius: 10,
-                    color: theme.text,
-                    backgroundColor: theme.raised,
-                    paddingHorizontal: 12,
-                    fontSize: 16
-                  }}
+                <Button
+                  label="Пароль"
+                  selected={type === 'password'}
+                  onClick={() => setType('password')}
                 />
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+              </div>
+            </div>
+
+            <div
+              className="ui-stack"
+              style={{
+                gap: 7
+              }}
+            >
+              <Label>Группа</Label>
+              <div className="ui-scroll" data-horizontal={true}>
+                <div
+                  className="ui-stack ui-scroll-content"
+                  style={{
+                    gap: 8,
+                    flexDirection: 'row'
+                  }}
+                >
                   <Button
-                    label={customVisible[index] ? 'Скрыть' : 'Показать'}
-                    onPress={() =>
-                      setCustomVisible((current) => ({ ...current, [index]: !current[index] }))
-                    }
+                    label="Без группы"
+                    selected={groupId === null}
+                    onClick={() => setGroupId(null)}
                   />
-                  {field.value ? (
+                  {groups.map((group) => (
                     <Button
-                      label="Копировать"
-                      onPress={() =>
-                        void copy(field.value).catch((reason: unknown) =>
-                          setError(messageFor(reason))
+                      key={group.id}
+                      label={group.name}
+                      selected={groupId === group.id}
+                      onClick={() => setGroupId(group.id)}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <TextField label="Название" value={title} setValue={setTitle} />
+            <TextField
+              label="Логин / email"
+              value={username}
+              setValue={setUsername}
+              autoCapitalize="none"
+            />
+
+            <SecretInput
+              label="Пароль"
+              value={password}
+              setValue={setPassword}
+              visible={passwordVisible}
+              setVisible={setPasswordVisible}
+            />
+            <div
+              className="ui-stack"
+              style={{
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                gap: 8
+              }}
+            >
+              <Button label="Генератор" onClick={() => setGeneratorOpen(true)} />
+              {password ? (
+                <Button
+                  label="Копировать пароль"
+                  onClick={() =>
+                    void copy(password).catch((reason: unknown) => setError(messageFor(reason)))
+                  }
+                />
+              ) : null}
+            </div>
+
+            <TextField label="Сайт" value={website} setValue={setWebsite} autoCapitalize="none" />
+            <TextField label="Заметка" value={notes} setValue={setNotes} multiline />
+            <TextField
+              label="Теги через запятую"
+              value={tagsText}
+              setValue={setTagsText}
+              autoCapitalize="none"
+            />
+
+            <div
+              className="ui-stack"
+              style={{
+                minHeight: 54,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                borderWidth: 1,
+                borderColor: theme.border,
+                backgroundColor: theme.surface,
+                borderRadius: 12,
+                paddingInline: 14,
+                gap: 12
+              }}
+            >
+              <Label>В избранном</Label>
+              <Toggle
+                checked={favorite}
+                onValueChange={setFavorite}
+                trackColors={{ true: theme.accent }}
+              ></Toggle>
+            </div>
+
+            <div
+              className="ui-stack"
+              style={{
+                gap: 10
+              }}
+            >
+              <div
+                className="ui-stack"
+                style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  gap: 10,
+                  alignItems: 'center'
+                }}
+              >
+                <div
+                  className="ui-stack"
+                  style={{
+                    flex: '1 1 0%'
+                  }}
+                >
+                  <Label>Дополнительные поля</Label>
+                  <Label muted>Например, PIN, recovery code или секретный ответ.</Label>
+                </div>
+                <Button
+                  label="+ Поле"
+                  disabled={customFields.length >= 20}
+                  onClick={() => setCustomFields((fields) => [...fields, { label: '', value: '' }])}
+                />
+              </div>
+              {customFields.map((field, index) => (
+                <div
+                  className="ui-stack"
+                  key={index}
+                  style={{
+                    gap: 10,
+                    borderWidth: 1,
+                    borderColor: theme.border,
+                    backgroundColor: theme.surface,
+                    borderRadius: 14,
+                    padding: 12
+                  }}
+                >
+                  <TextControl
+                    value={field.label}
+                    onValueChange={(value) => updateCustomField(index, { label: value })}
+                    placeholder={'Название поля'}
+                    placeholderColor={theme.muted}
+                    aria-label={`Название дополнительного поля ${index + 1}`}
+                    style={{
+                      minHeight: 46,
+                      borderWidth: 1,
+                      borderColor: theme.border,
+                      borderRadius: 10,
+                      color: theme.text,
+                      backgroundColor: theme.raised,
+                      paddingInline: 12,
+                      fontSize: 16
+                    }}
+                  ></TextControl>
+                  <TextControl
+                    value={field.value}
+                    onValueChange={(value) => updateCustomField(index, { value })}
+                    type={!customVisible[index] ? 'password' : 'text'}
+                    autoCapitalize={'none'}
+                    autoCorrect={'off'}
+                    placeholder={'Значение'}
+                    placeholderColor={theme.muted}
+                    aria-label={`Значение дополнительного поля ${index + 1}`}
+                    style={{
+                      minHeight: 46,
+                      borderWidth: 1,
+                      borderColor: theme.border,
+                      borderRadius: 10,
+                      color: theme.text,
+                      backgroundColor: theme.raised,
+                      paddingInline: 12,
+                      fontSize: 16
+                    }}
+                  ></TextControl>
+                  <div
+                    className="ui-stack"
+                    style={{
+                      flexDirection: 'row',
+                      flexWrap: 'wrap',
+                      gap: 8
+                    }}
+                  >
+                    <Button
+                      label={customVisible[index] ? 'Скрыть' : 'Показать'}
+                      onClick={() =>
+                        setCustomVisible((current) => ({ ...current, [index]: !current[index] }))
+                      }
+                    />
+                    {field.value ? (
+                      <Button
+                        label="Копировать"
+                        onClick={() =>
+                          void copy(field.value).catch((reason: unknown) =>
+                            setError(messageFor(reason))
+                          )
+                        }
+                      />
+                    ) : null}
+                    <Button
+                      label="Удалить поле"
+                      danger
+                      onClick={() =>
+                        setCustomFields((fields) =>
+                          fields.filter((_, fieldIndex) => fieldIndex !== index)
                         )
                       }
                     />
-                  ) : null}
-                  <Button
-                    label="Удалить поле"
-                    danger
-                    onPress={() =>
-                      setCustomFields((fields) =>
-                        fields.filter((_, fieldIndex) => fieldIndex !== index)
-                      )
-                    }
-                  />
-                </View>
-              </View>
-            ))}
-          </View>
+                  </div>
+                </div>
+              ))}
+            </div>
 
-          {error ? <ErrorState message={error} /> : null}
-          <Button label="Сохранить" selected onPress={save} />
-        </ScrollView>
+            {error ? <ErrorState message={error} /> : null}
+            <Button label="Сохранить" selected onClick={save} />
+          </div>
+        </div>
         {generatorOpen ? (
           <PasswordGeneratorModal
             generate={api.generatePassword}
@@ -404,7 +492,7 @@ export function PasswordItemEditor({
             }}
           />
         ) : null}
-      </View>
-    </Modal>
+      </div>
+    </DialogLayer>
   )
 }

@@ -1,17 +1,13 @@
 import { useMemo, useState } from 'react'
-import { ScrollView } from 'react-native'
 import type { MusicItemRecord } from '@mymind/contracts/music'
-
 import { AppDialog } from '../../shared/ui/AppDialog'
 import { Button } from '../../shared/ui/primitives'
 import { musicFilterArtists, musicFilterYears } from './music-presentation'
 import { SearchableFilterDropdown } from './SearchableFilterDropdown'
-
 export interface MusicLibraryFilters {
   artist: string
   year: string
 }
-
 export function MusicFiltersSheet({
   items,
   value,
@@ -26,11 +22,9 @@ export function MusicFiltersSheet({
   const artists = useMemo(() => musicFilterArtists(items), [items])
   const years = useMemo(() => musicFilterYears(items).map((year) => String(year)), [items])
   const [draft, setDraft] = useState<MusicLibraryFilters>({ ...value })
-
   const reset = (): void => {
     setDraft({ artist: '', year: '' })
   }
-
   return (
     <AppDialog
       open
@@ -43,13 +37,13 @@ export function MusicFiltersSheet({
       presentation="sheet"
       footer={
         <>
-          <Button label="Сбросить" ghost onPress={reset} />
-          <Button label="Отмена" onPress={onClose} />
+          <Button label="Сбросить" ghost onClick={reset} />
+          <Button label="Отмена" onClick={onClose} />
           <Button
             label="Сохранить"
             icon="check"
             primary
-            onPress={() => {
+            onClick={() => {
               onApply(draft)
               onClose()
             }}
@@ -57,26 +51,32 @@ export function MusicFiltersSheet({
         </>
       }
     >
-      <ScrollView
-        keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ padding: 16, gap: 22, paddingBottom: 28 }}
-      >
-        <SearchableFilterDropdown
-          label="Исполнитель"
-          value={draft.artist}
-          options={artists}
-          placeholder="Все исполнители"
-          onChange={(artist) => setDraft((previous) => ({ ...previous, artist }))}
-        />
+      <div className="ui-scroll">
+        <div
+          className="ui-stack ui-scroll-content"
+          style={{
+            padding: 16,
+            gap: 22,
+            paddingBottom: 28
+          }}
+        >
+          <SearchableFilterDropdown
+            label="Исполнитель"
+            value={draft.artist}
+            options={artists}
+            placeholder="Все исполнители"
+            onChange={(artist) => setDraft((previous) => ({ ...previous, artist }))}
+          />
 
-        <SearchableFilterDropdown
-          label="Год"
-          value={draft.year}
-          options={years}
-          placeholder="Любой год"
-          onChange={(year) => setDraft((previous) => ({ ...previous, year }))}
-        />
-      </ScrollView>
+          <SearchableFilterDropdown
+            label="Год"
+            value={draft.year}
+            options={years}
+            placeholder="Любой год"
+            onChange={(year) => setDraft((previous) => ({ ...previous, year }))}
+          />
+        </div>
+      </div>
     </AppDialog>
   )
 }

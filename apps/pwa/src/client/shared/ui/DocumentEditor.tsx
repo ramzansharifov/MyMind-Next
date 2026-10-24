@@ -1,5 +1,5 @@
+import { TextControl, Action, openExternalUrl } from '../../../ui/browser'
 import { useEffect, useRef, useState } from 'react'
-import { FlatList, Linking, Pressable, ScrollView, Text, TextInput, View } from 'react-native'
 import type {
   StudyAssetKind,
   StudyBlock,
@@ -28,7 +28,7 @@ import {
   Video,
   Workflow,
   type LucideIcon
-} from 'lucide-react-native'
+} from 'lucide-react'
 import { AppDialog } from './AppDialog'
 import { AppIcon } from './icons'
 import { DocumentRichTextViewer, NotesRichTextBlock } from './NotesRichTextBlock'
@@ -48,7 +48,6 @@ import { useConfirmation } from './confirmation-context'
 import { Button, Label } from './primitives'
 import { useTheme } from './theme'
 import { VoiceRecorder, type VoiceRecordingInput } from '../../../platform/VoiceRecorder'
-
 const INSERTABLE_BLOCKS: ReadonlyArray<{
   type: StudyBlockType
   label: string
@@ -63,7 +62,6 @@ const INSERTABLE_BLOCKS: ReadonlyArray<{
   { type: 'mermaid', label: 'Mermaid', description: 'Диаграмма Mermaid', icon: Workflow },
   { type: 'divider', label: 'Разделитель', description: 'Визуальная линия', icon: Minus }
 ]
-
 const ASSET_BLOCKS: ReadonlyArray<{
   type: StudyAssetKind
   label: string
@@ -75,16 +73,13 @@ const ASSET_BLOCKS: ReadonlyArray<{
   { type: 'audio', label: 'Аудио', description: 'Аудиофайл', icon: AudioLines },
   { type: 'file', label: 'Файл', description: 'Любой локальный файл', icon: Paperclip }
 ]
-
 type DocumentEditorPresentation = 'default' | 'notes-clean'
-
 interface DocumentAssetActions {
   importAsset?: (kind: StudyAssetKind) => Promise<StudyLocalAsset | null>
   openAsset?: (asset: StudyLocalAsset) => Promise<void>
   resolveAssetUri?: (asset: StudyLocalAsset) => string | null
   onAssetError?: (reason: unknown) => void
 }
-
 interface DocumentEditorProps {
   document: StudyDocument
   onChange(document: StudyDocument): void
@@ -100,7 +95,6 @@ interface DocumentEditorProps {
   saveRecordedAudio?: (input: VoiceRecordingInput) => Promise<StudyLocalAsset>
   onAssetError?: (reason: unknown) => void
 }
-
 function newBlock(type: StudyBlockType, id: string): StudyBlock | null {
   switch (type) {
     case 'text':
@@ -136,7 +130,6 @@ function newBlock(type: StudyBlockType, id: string): StudyBlock | null {
       return null
   }
 }
-
 function newAssetBlock(type: StudyAssetKind, id: string, asset: StudyLocalAsset): StudyBlock {
   const source = { type: 'local' as const, asset }
   if (type === 'image') return { id, type, source, imageFit: 'contain', imageHeight: 360 }
@@ -144,7 +137,6 @@ function newAssetBlock(type: StudyAssetKind, id: string, asset: StudyLocalAsset)
   if (type === 'audio') return { id, type, source }
   return { id, type: 'file', source }
 }
-
 function blockLabel(block: StudyBlock): string {
   switch (block.type) {
     case 'text':
@@ -173,7 +165,6 @@ function blockLabel(block: StudyBlock): string {
       return 'Доска'
   }
 }
-
 function headingTypography(level: 1 | 2 | 3): {
   fontSize: number
   lineHeight: number
@@ -187,7 +178,6 @@ function headingTypography(level: 1 | 2 | 3): {
   }
   return { fontSize: 30, lineHeight: 36, letterSpacing: -0.6 }
 }
-
 function BlockInput({
   block,
   update,
@@ -212,44 +202,46 @@ function BlockInput({
     fontSize: 16
   } as const
   const sourceStyle = { ...inputStyle, minHeight: 120, textAlignVertical: 'top' as const }
-
   switch (block.type) {
     case 'text':
       return (
-        <TextInput
-          accessibilityLabel="Текстовый блок"
-          multiline
-          placeholder="Начните писать…"
-          placeholderTextColor={theme.muted}
+        <TextControl
+          aria-label={'Текстовый блок'}
+          multiline={true}
+          placeholder={'Начните писать…'}
+          placeholderColor={theme.muted}
           value={block.text}
-          onChangeText={(text) => update({ ...block, text, html: undefined })}
+          onValueChange={(text) => update({ ...block, text, html: undefined })}
           style={{
             ...sourceStyle,
             minHeight: clean ? 112 : 96,
             fontSize: clean ? 17 : 16,
-            lineHeight: clean ? 25 : undefined
+            lineHeight: clean ? '25px' : undefined
           }}
-        />
+        ></TextControl>
       )
     case 'heading': {
       const typography = headingTypography(block.level)
       const backgroundScope = block.backgroundScope ?? 'container'
       return (
-        <View style={{ gap: 8 }}>
-          <TextInput
-            accessibilityLabel="Заголовок"
-            placeholder="Заголовок"
-            placeholderTextColor={theme.muted}
+        <div
+          className="ui-stack"
+          style={{
+            gap: 8
+          }}
+        >
+          <TextControl
+            aria-label={'Заголовок'}
+            placeholder={'Заголовок'}
+            placeholderColor={theme.muted}
             value={block.text}
-            multiline
-            scrollEnabled={false}
-            textAlignVertical="top"
-            onChangeText={(text) => update({ ...block, text })}
+            multiline={true}
+            onValueChange={(text) => update({ ...block, text })}
             style={{
               minHeight: typography.lineHeight + 16,
               maxHeight: 384,
-              paddingHorizontal: 8,
-              paddingVertical: 8,
+              paddingInline: 8,
+              paddingBlock: 8,
               borderWidth: 0,
               borderRadius: 8,
               color: block.color ?? theme.text,
@@ -257,26 +249,32 @@ function BlockInput({
                 backgroundScope === 'container'
                   ? (block.backgroundColor ?? 'transparent')
                   : 'transparent',
-              fontWeight: '600',
+              fontWeight: 600,
               fontSize: typography.fontSize,
-              lineHeight: typography.lineHeight,
+              lineHeight: `${typography.lineHeight}px`,
               letterSpacing: typography.letterSpacing,
               textAlign: block.alignment ?? 'left'
             }}
-          />
+          ></TextControl>
           {!clean ? (
-            <View style={{ flexDirection: 'row', gap: 8 }}>
+            <div
+              className="ui-stack"
+              style={{
+                flexDirection: 'row',
+                gap: 8
+              }}
+            >
               {([1, 2, 3] as const).map((level) => (
                 <Button
                   key={level}
                   label={`H${level}`}
                   selected={block.level === level}
-                  onPress={() => update({ ...block, level })}
+                  onClick={() => update({ ...block, level })}
                 />
               ))}
-            </View>
+            </div>
           ) : null}
-        </View>
+        </div>
       )
     }
     case 'code':
@@ -300,7 +298,8 @@ function BlockInput({
       return <StudyDividerBlock block={block} spacing="edit" />
     case 'board':
       return (
-        <View
+        <div
+          className="ui-stack"
           style={{
             padding: 14,
             borderWidth: 1,
@@ -309,57 +308,66 @@ function BlockInput({
             backgroundColor: theme.surface
           }}
         >
-          <Text style={{ color: theme.muted, fontSize: 13, lineHeight: 19 }}>
+          <span
+            className="ui-text"
+            style={{
+              color: theme.muted,
+              fontSize: 13,
+              lineHeight: '19px'
+            }}
+          >
             Этот блок доступен только в desktop-версии MyMind.
-          </Text>
-        </View>
+          </span>
+        </div>
       )
   }
 }
-
 function BlockHeaderIcon({
   label,
   icon: Icon,
   disabled = false,
   danger = false,
   rotation = 0,
-  onPress
+  onClick
 }: {
   label: string
   icon: LucideIcon
   disabled?: boolean
   danger?: boolean
   rotation?: number
-  onPress(): void
+  onClick(): void
 }): React.JSX.Element {
   const theme = useTheme()
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityState={{ disabled }}
+    <Action
+      hitPadding={5}
+      role={'button'}
+      aria-label={label}
+      aria-disabled={disabled}
       disabled={disabled}
-      hitSlop={5}
-      onPress={onPress}
-      style={({ pressed }) => ({
+      onClick={onClick}
+      style={{
         width: 28,
         height: 28,
         alignItems: 'center',
         justifyContent: 'center',
         borderRadius: 7,
-        backgroundColor: pressed ? (danger ? '#ef44441A' : theme.raised) : 'transparent',
-        opacity: disabled ? 0.25 : pressed ? 0.72 : 1
-      })}
+        backgroundColor: 'transparent',
+        opacity: disabled ? 0.25 : 1
+      }}
+      pressedStyle={{
+        backgroundColor: danger ? '#ef44441A' : theme.raised,
+        opacity: disabled ? 0.25 : 0.72
+      }}
     >
       <Icon
         size={16}
         color={danger ? theme.error : theme.muted}
-        style={{ transform: [{ rotate: `${rotation}deg` }] }}
+        style={{ transform: 'rotate(' + `${rotation}deg` + ')' }}
       />
-    </Pressable>
+    </Action>
   )
 }
-
 function DesktopParityBlockCard({
   block,
   active,
@@ -387,9 +395,9 @@ function DesktopParityBlockCard({
 }): React.JSX.Element {
   const theme = useTheme()
   return (
-    <Pressable
-      accessibilityRole="none"
-      onPress={activate}
+    <Action
+      role={'none'}
+      onClick={activate}
       style={{
         padding: active ? 11 : 12,
         borderWidth: active ? 2 : 1,
@@ -398,7 +406,8 @@ function DesktopParityBlockCard({
         backgroundColor: theme.surface
       }}
     >
-      <View
+      <div
+        className="ui-stack"
         style={{
           minHeight: 30,
           flexDirection: 'row',
@@ -407,9 +416,9 @@ function DesktopParityBlockCard({
           marginBottom: collapsed ? 0 : 8
         }}
       >
-        <View
-          accessibilityElementsHidden
-          importantForAccessibility="no-hide-descendants"
+        <div
+          className="ui-stack"
+          aria-hidden={true}
           style={{
             width: 28,
             height: 28,
@@ -419,7 +428,7 @@ function DesktopParityBlockCard({
           }}
         >
           <GripVertical size={16} color={theme.muted} />
-        </View>
+        </div>
         <BlockHeaderIcon
           label={
             collapsed
@@ -428,73 +437,110 @@ function DesktopParityBlockCard({
           }
           icon={ChevronRight}
           rotation={collapsed ? 0 : 90}
-          onPress={toggleCollapsed}
+          onClick={toggleCollapsed}
         />
-        <Text
-          numberOfLines={1}
+        <span
+          className="ui-text"
+          data-lines={1}
           style={{
-            flex: 1,
+            flex: '1 1 0%',
             marginLeft: 4,
             color: theme.muted,
             fontSize: 11,
-            lineHeight: 15,
-            fontWeight: '700',
+            lineHeight: '15px',
+            fontWeight: 700,
             letterSpacing: 0.8,
-            textTransform: 'uppercase'
+            textTransform: 'uppercase',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            display: '-webkit-box',
+            WebkitBoxOrient: 'vertical',
+            WebkitLineClamp: 1
           }}
         >
           {blockLabel(block)}
-        </Text>
+        </span>
         <BlockHeaderIcon
           label="Переместить блок вверх"
           icon={ArrowUp}
           disabled={first}
-          onPress={() => move(-1)}
+          onClick={() => move(-1)}
         />
         <BlockHeaderIcon
           label="Переместить блок вниз"
           icon={ArrowDown}
           disabled={last}
-          onPress={() => move(1)}
+          onClick={() => move(1)}
         />
-        <BlockHeaderIcon label="Дублировать блок" icon={CopyPlus} onPress={duplicate} />
-        <BlockHeaderIcon label="Удалить блок" icon={Trash2} danger onPress={remove} />
-      </View>
-      <View style={{ display: collapsed ? 'none' : 'flex' }}>{children}</View>
-    </Pressable>
+        <BlockHeaderIcon label="Дублировать блок" icon={CopyPlus} onClick={duplicate} />
+        <BlockHeaderIcon label="Удалить блок" icon={Trash2} danger onClick={remove} />
+      </div>
+      <div
+        className="ui-stack"
+        style={{
+          display: collapsed ? 'none' : 'flex'
+        }}
+      >
+        {children}
+      </div>
+    </Action>
   )
 }
-
-function DesktopParityInsertControl({ onPress }: { onPress(): void }): React.JSX.Element {
+function DesktopParityInsertControl({ onClick }: { onClick(): void }): React.JSX.Element {
   const theme = useTheme()
   return (
-    <View style={{ height: 32, flexDirection: 'row', alignItems: 'center' }}>
-      <View style={{ height: 1, flex: 1, backgroundColor: theme.border }} />
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Добавить блок здесь"
-        hitSlop={8}
-        onPress={onPress}
-        style={({ pressed }) => ({
+    <div
+      className="ui-stack"
+      style={{
+        height: 32,
+        flexDirection: 'row',
+        alignItems: 'center'
+      }}
+    >
+      <div
+        className="ui-stack"
+        style={{
+          height: 1,
+          flex: '1 1 0%',
+          backgroundColor: theme.border
+        }}
+      ></div>
+      <Action
+        hitPadding={8}
+        role={'button'}
+        aria-label={'Добавить блок здесь'}
+        onClick={onClick}
+        style={{
           width: 26,
           height: 26,
-          marginHorizontal: 8,
+          marginInline: 8,
           alignItems: 'center',
           justifyContent: 'center',
           borderWidth: 1,
-          borderColor: pressed ? theme.accent + '88' : theme.border,
+          borderColor: theme.border,
           borderRadius: 13,
-          backgroundColor: pressed ? theme.accent + '14' : theme.surface,
-          opacity: pressed ? 0.75 : 1
-        })}
+          backgroundColor: theme.surface,
+          opacity: 1
+        }}
+        pressedStyle={{
+          borderColor: theme.accent + '88',
+          backgroundColor: theme.accent + '14',
+          opacity: 0.75
+        }}
       >
         <Plus size={14} color={theme.muted} />
-      </Pressable>
-      <View style={{ height: 1, flex: 1, backgroundColor: theme.border }} />
-    </View>
+      </Action>
+      <div
+        className="ui-stack"
+        style={{
+          height: 1,
+          flex: '1 1 0%',
+          backgroundColor: theme.border
+        }}
+      ></div>
+    </div>
   )
 }
-
 function RichTextFormattingDock({
   editor,
   state,
@@ -508,7 +554,8 @@ function RichTextFormattingDock({
 }): React.JSX.Element {
   const theme = useTheme()
   return (
-    <View
+    <div
+      className="ui-stack"
       style={{
         minHeight: 52,
         borderTopWidth: 1,
@@ -516,29 +563,29 @@ function RichTextFormattingDock({
         backgroundColor: theme.surface
       }}
     >
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{
-          minHeight: 52,
-          alignItems: 'center',
-          gap: 3,
-          paddingHorizontal: 10,
-          paddingVertical: 8
-        }}
-      >
-        <NotesRichTextInlineControls
-          editor={editor}
-          state={state}
-          openSettings={openSettings}
-          openLink={openLink}
-        />
-      </ScrollView>
-    </View>
+      <div className="ui-scroll" data-horizontal={true}>
+        <div
+          className="ui-stack ui-scroll-content"
+          style={{
+            minHeight: 52,
+            alignItems: 'center',
+            gap: 3,
+            paddingInline: 10,
+            paddingBlock: 8,
+            flexDirection: 'row'
+          }}
+        >
+          <NotesRichTextInlineControls
+            editor={editor}
+            state={state}
+            openSettings={openSettings}
+            openLink={openLink}
+          />
+        </div>
+      </div>
+    </div>
   )
 }
-
 function NotesInsertSheet({
   open,
   pendingAsset,
@@ -563,7 +610,6 @@ function NotesInsertSheet({
   onAssetError?: (reason: unknown) => void
 }): React.JSX.Element {
   const theme = useTheme()
-
   return (
     <AppDialog
       open={open}
@@ -575,98 +621,54 @@ function NotesInsertSheet({
       icon="add"
       presentation="sheet"
     >
-      <ScrollView
-        keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ gap: 16, padding: 14, paddingBottom: 24 }}
-      >
-        <View style={{ gap: 8 }}>
-          <Label muted>Содержимое</Label>
-          {INSERTABLE_BLOCKS.filter(
-            (item) => !allowedBlockTypes || allowedBlockTypes.includes(item.type)
-          ).map((item) => {
-            const Icon = item.icon
-            return (
-              <Pressable
-                key={item.type}
-                accessibilityRole="button"
-                accessibilityLabel={item.label}
-                onPress={() => {
-                  insert(item.type)
-                  close()
-                }}
-                style={({ pressed }) => ({
-                  minHeight: 58,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 12,
-                  paddingHorizontal: 12,
-                  borderRadius: 15,
-                  borderWidth: 1,
-                  borderColor: theme.border,
-                  backgroundColor: pressed ? theme.raised : theme.surface,
-                  opacity: pressed ? 0.76 : 1
-                })}
-              >
-                <View
-                  style={{
-                    width: 38,
-                    height: 38,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    borderRadius: 12,
-                    backgroundColor: theme.accent + '12'
-                  }}
-                >
-                  <Icon size={18} color={theme.accent} />
-                </View>
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text style={{ color: theme.text, fontSize: 14, fontWeight: '700' }}>
-                    {item.label}
-                  </Text>
-                  <Text
-                    style={{ marginTop: 2, color: theme.muted, fontSize: 11.5, lineHeight: 16 }}
-                  >
-                    {item.description}
-                  </Text>
-                </View>
-                <AppIcon name="forward" size={16} color={theme.muted} />
-              </Pressable>
-            )
-          })}
-        </View>
-
-        {importAsset ? (
-          <View style={{ gap: 8 }}>
-            <Label muted>Файлы и медиа</Label>
-            {ASSET_BLOCKS.filter(
+      <div className="ui-scroll">
+        <div
+          className="ui-stack ui-scroll-content"
+          style={{
+            gap: 16,
+            padding: 14,
+            paddingBottom: 24
+          }}
+        >
+          <div
+            className="ui-stack"
+            style={{
+              gap: 8
+            }}
+          >
+            <Label muted>Содержимое</Label>
+            {INSERTABLE_BLOCKS.filter(
               (item) => !allowedBlockTypes || allowedBlockTypes.includes(item.type)
             ).map((item) => {
               const Icon = item.icon
               return (
-                <Pressable
+                <Action
                   key={item.type}
-                  accessibilityRole="button"
-                  accessibilityLabel={item.label}
-                  accessibilityState={{ disabled: pendingAsset !== null }}
-                  disabled={pendingAsset !== null}
-                  onPress={() => {
+                  role={'button'}
+                  aria-label={item.label}
+                  onClick={() => {
+                    insert(item.type)
                     close()
-                    insertAsset(item.type)
                   }}
-                  style={({ pressed }) => ({
+                  style={{
                     minHeight: 58,
                     flexDirection: 'row',
                     alignItems: 'center',
                     gap: 12,
-                    paddingHorizontal: 12,
+                    paddingInline: 12,
                     borderRadius: 15,
                     borderWidth: 1,
                     borderColor: theme.border,
-                    backgroundColor: pressed ? theme.raised : theme.surface,
-                    opacity: pendingAsset !== null ? 0.45 : pressed ? 0.76 : 1
-                  })}
+                    backgroundColor: theme.surface,
+                    opacity: 1
+                  }}
+                  pressedStyle={{
+                    backgroundColor: theme.raised,
+                    opacity: 0.76
+                  }}
                 >
-                  <View
+                  <div
+                    className="ui-stack"
                     style={{
                       width: 38,
                       height: 38,
@@ -677,59 +679,183 @@ function NotesInsertSheet({
                     }}
                   >
                     <Icon size={18} color={theme.accent} />
-                  </View>
-                  <View style={{ flex: 1, minWidth: 0 }}>
-                    <Text style={{ color: theme.text, fontSize: 14, fontWeight: '700' }}>
-                      {pendingAsset === item.type ? 'Выбор…' : item.label}
-                    </Text>
-                    <Text
-                      style={{ marginTop: 2, color: theme.muted, fontSize: 11.5, lineHeight: 16 }}
+                  </div>
+                  <div
+                    className="ui-stack"
+                    style={{
+                      flex: '1 1 0%',
+                      minWidth: 0
+                    }}
+                  >
+                    <span
+                      className="ui-text"
+                      style={{
+                        color: theme.text,
+                        fontSize: 14,
+                        fontWeight: 700
+                      }}
+                    >
+                      {item.label}
+                    </span>
+                    <span
+                      className="ui-text"
+                      style={{
+                        marginTop: 2,
+                        color: theme.muted,
+                        fontSize: 11.5,
+                        lineHeight: '16px'
+                      }}
                     >
                       {item.description}
-                    </Text>
-                  </View>
-                </Pressable>
+                    </span>
+                  </div>
+                  <AppIcon name="forward" size={16} color={theme.muted} />
+                </Action>
               )
             })}
-          </View>
-        ) : null}
+          </div>
 
-        {saveRecordedAudio && (!allowedBlockTypes || allowedBlockTypes.includes('audio')) ? (
-          <View style={{ gap: 8 }}>
-            <Label muted>Голосовая запись</Label>
-            <VoiceRecorder
-              saveRecording={saveRecordedAudio}
-              onSaved={(asset) => {
-                appendRecorded(asset)
-                close()
+          {importAsset ? (
+            <div
+              className="ui-stack"
+              style={{
+                gap: 8
               }}
-              onError={onAssetError}
-              disabled={pendingAsset !== null}
-            />
-          </View>
-        ) : null}
-      </ScrollView>
+            >
+              <Label muted>Файлы и медиа</Label>
+              {ASSET_BLOCKS.filter(
+                (item) => !allowedBlockTypes || allowedBlockTypes.includes(item.type)
+              ).map((item) => {
+                const Icon = item.icon
+                return (
+                  <Action
+                    key={item.type}
+                    role={'button'}
+                    aria-label={item.label}
+                    aria-disabled={pendingAsset !== null}
+                    disabled={pendingAsset !== null}
+                    onClick={() => {
+                      close()
+                      insertAsset(item.type)
+                    }}
+                    style={{
+                      minHeight: 58,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 12,
+                      paddingInline: 12,
+                      borderRadius: 15,
+                      borderWidth: 1,
+                      borderColor: theme.border,
+                      backgroundColor: theme.surface,
+                      opacity: pendingAsset !== null ? 0.45 : 1
+                    }}
+                    pressedStyle={{
+                      backgroundColor: theme.raised,
+                      opacity: pendingAsset !== null ? 0.45 : 0.76
+                    }}
+                  >
+                    <div
+                      className="ui-stack"
+                      style={{
+                        width: 38,
+                        height: 38,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        borderRadius: 12,
+                        backgroundColor: theme.accent + '12'
+                      }}
+                    >
+                      <Icon size={18} color={theme.accent} />
+                    </div>
+                    <div
+                      className="ui-stack"
+                      style={{
+                        flex: '1 1 0%',
+                        minWidth: 0
+                      }}
+                    >
+                      <span
+                        className="ui-text"
+                        style={{
+                          color: theme.text,
+                          fontSize: 14,
+                          fontWeight: 700
+                        }}
+                      >
+                        {pendingAsset === item.type ? 'Выбор…' : item.label}
+                      </span>
+                      <span
+                        className="ui-text"
+                        style={{
+                          marginTop: 2,
+                          color: theme.muted,
+                          fontSize: 11.5,
+                          lineHeight: '16px'
+                        }}
+                      >
+                        {item.description}
+                      </span>
+                    </div>
+                  </Action>
+                )
+              })}
+            </div>
+          ) : null}
+
+          {saveRecordedAudio && (!allowedBlockTypes || allowedBlockTypes.includes('audio')) ? (
+            <div
+              className="ui-stack"
+              style={{
+                gap: 8
+              }}
+            >
+              <Label muted>Голосовая запись</Label>
+              <VoiceRecorder
+                saveRecording={saveRecordedAudio}
+                onSaved={(asset) => {
+                  appendRecorded(asset)
+                  close()
+                }}
+                onError={onAssetError}
+                disabled={pendingAsset !== null}
+              />
+            </div>
+          ) : null}
+        </div>
+      </div>
     </AppDialog>
   )
 }
-
 type NotesReadNode =
-  | { kind: 'block'; block: StudyBlock }
+  | {
+      kind: 'block'
+      block: StudyBlock
+    }
   | {
       kind: 'section'
-      heading: Extract<StudyBlock, { type: 'heading' }>
+      heading: Extract<
+        StudyBlock,
+        {
+          type: 'heading'
+        }
+      >
       children: NotesReadNode[]
     }
-
 function buildNotesReadOutline(blocks: StudyBlock[]): NotesReadNode[] {
   const root: NotesReadNode[] = []
-  const stack: Array<Extract<NotesReadNode, { kind: 'section' }>> = []
-
+  const stack: Array<
+    Extract<
+      NotesReadNode,
+      {
+        kind: 'section'
+      }
+    >
+  > = []
   const closeSections = (nextLevel?: 1 | 2 | 3): void => {
     while (stack.length > 0) {
       const section = stack[stack.length - 1]
       if (!section || (nextLevel !== undefined && section.heading.level < nextLevel)) return
-
       const trailing = section.children[section.children.length - 1]
       if (trailing?.kind === 'block' && trailing.block.type === 'divider') {
         section.children.pop()
@@ -740,10 +866,14 @@ function buildNotesReadOutline(blocks: StudyBlock[]): NotesReadNode[] {
       stack.pop()
     }
   }
-
   blocks.forEach((block) => {
     if (block.type === 'heading') {
-      const section: Extract<NotesReadNode, { kind: 'section' }> = {
+      const section: Extract<
+        NotesReadNode,
+        {
+          kind: 'section'
+        }
+      > = {
         kind: 'section',
         heading: block,
         children: []
@@ -755,59 +885,61 @@ function buildNotesReadOutline(blocks: StudyBlock[]): NotesReadNode[] {
       stack.push(section)
       return
     }
-
     const node: NotesReadNode = { kind: 'block', block }
     const parent = stack[stack.length - 1]
     if (parent) parent.children.push(node)
     else root.push(node)
   })
-
   closeSections()
   return root
 }
-
 function NotesReadHeading({
   heading
 }: {
-  heading: Extract<StudyBlock, { type: 'heading' }>
+  heading: Extract<
+    StudyBlock,
+    {
+      type: 'heading'
+    }
+  >
 }): React.JSX.Element {
   const theme = useTheme()
   const backgroundScope = heading.backgroundScope ?? 'container'
   const backgroundColor = heading.backgroundColor ?? 'transparent'
   const typography = headingTypography(heading.level)
-
   return (
-    <View
+    <div
+      className="ui-stack"
       style={{
         borderRadius: 8,
         backgroundColor: backgroundScope === 'container' ? backgroundColor : 'transparent',
-        paddingHorizontal: 4,
-        paddingVertical: 6
+        paddingInline: 4,
+        paddingBlock: 6
       }}
     >
-      <Text
-        selectable
+      <span
+        className="ui-text"
         style={{
           color: heading.color ?? theme.text,
           fontSize: typography.fontSize,
-          lineHeight: typography.lineHeight,
+          lineHeight: `${typography.lineHeight}px`,
           letterSpacing: typography.letterSpacing,
-          fontWeight: '600',
+          fontWeight: 600,
           textAlign: heading.alignment ?? 'left'
         }}
       >
-        <Text
+        <span
+          className="ui-text"
           style={{
             backgroundColor: backgroundScope === 'text' ? backgroundColor : 'transparent'
           }}
         >
           {heading.text || 'Без заголовка'}
-        </Text>
-      </Text>
-    </View>
+        </span>
+      </span>
+    </div>
   )
 }
-
 function NotesReadBlock({
   block,
   assetActions
@@ -816,22 +948,28 @@ function NotesReadBlock({
   assetActions: DocumentAssetActions
 }): React.JSX.Element {
   const theme = useTheme()
-
   switch (block.type) {
     case 'text':
       return block.text.trim() || block.html?.trim() ? (
         <DocumentRichTextViewer
           html={resolveStudyRichTextHtml(block)}
           onOpenExternalLink={(href) => {
-            void Linking.openURL(href).catch((reason: unknown) => {
+            void openExternalUrl(href).catch((reason: unknown) => {
               assetActions.onAssetError?.(reason)
             })
           }}
         />
       ) : (
-        <Text selectable style={{ color: theme.muted, fontSize: 13, lineHeight: 20 }}>
+        <span
+          className="ui-text"
+          style={{
+            color: theme.muted,
+            fontSize: 13,
+            lineHeight: '20px'
+          }}
+        >
           Пустой текстовый блок
-        </Text>
+        </span>
       )
     case 'heading':
       return <NotesReadHeading heading={block} />
@@ -856,7 +994,8 @@ function NotesReadBlock({
       return <StudyDividerBlock block={block} spacing="read" />
     case 'board':
       return (
-        <View
+        <div
+          className="ui-stack"
           style={{
             padding: 14,
             borderWidth: 1,
@@ -865,62 +1004,87 @@ function NotesReadBlock({
             backgroundColor: theme.surface
           }}
         >
-          <Text style={{ color: theme.muted, fontSize: 13, lineHeight: 19 }}>
+          <span
+            className="ui-text"
+            style={{
+              color: theme.muted,
+              fontSize: 13,
+              lineHeight: '19px'
+            }}
+          >
             Этот блок доступен только в desktop-версии MyMind.
-          </Text>
-        </View>
+          </span>
+        </div>
       )
   }
 }
-
 function NotesReadSection({
   section,
   assetActions,
   depth = 0
 }: {
-  section: Extract<NotesReadNode, { kind: 'section' }>
+  section: Extract<
+    NotesReadNode,
+    {
+      kind: 'section'
+    }
+  >
   assetActions: DocumentAssetActions
   depth?: number
 }): React.JSX.Element {
   const theme = useTheme()
   const [open, setOpen] = useState(true)
   const hasContent = section.children.length > 0
-
   return (
-    <View style={{ gap: 10 }}>
-      <Pressable
-        accessibilityRole={hasContent ? 'button' : undefined}
-        accessibilityLabel={
+    <div
+      className="ui-stack"
+      style={{
+        gap: 10
+      }}
+    >
+      <Action
+        role={hasContent ? 'button' : undefined}
+        aria-label={
           hasContent
             ? `${open ? 'Свернуть' : 'Развернуть'} раздел «${section.heading.text || 'Без заголовка'}»`
             : undefined
         }
         disabled={!hasContent}
-        onPress={() => setOpen((current) => !current)}
-        style={({ pressed }) => ({
+        onClick={() => setOpen((current) => !current)}
+        style={{
           flexDirection: 'row',
           alignItems: 'center',
           gap: 6,
           marginLeft: depth ? -3 : 0,
-          paddingVertical: 2,
-          opacity: pressed ? 0.72 : 1
-        })}
+          paddingBlock: 2,
+          opacity: 1
+        }}
+        pressedStyle={{
+          opacity: 0.72
+        }}
       >
         <ChevronRight
           size={16}
           color={theme.muted}
           style={{
             opacity: hasContent ? 1 : 0,
-            transform: [{ rotate: open ? '90deg' : '0deg' }]
+            transform: 'rotate(' + (open ? '90deg' : '0deg') + ')'
           }}
         />
-        <View style={{ flex: 1, minWidth: 0 }}>
+        <div
+          className="ui-stack"
+          style={{
+            flex: '1 1 0%',
+            minWidth: 0
+          }}
+        >
           <NotesReadHeading heading={section.heading} />
-        </View>
-      </Pressable>
+        </div>
+      </Action>
 
       {open && hasContent ? (
-        <View
+        <div
+          className="ui-stack"
           style={{
             gap: 18,
             marginLeft: 8,
@@ -945,12 +1109,11 @@ function NotesReadSection({
               />
             )
           )}
-        </View>
+        </div>
       ) : null}
-    </View>
+    </div>
   )
 }
-
 function NotesDocumentReader({
   document,
   assetActions
@@ -959,9 +1122,13 @@ function NotesDocumentReader({
   assetActions: DocumentAssetActions
 }): React.JSX.Element {
   const outline = buildNotesReadOutline(document.blocks)
-
   return (
-    <View style={{ gap: 22 }}>
+    <div
+      className="ui-stack"
+      style={{
+        gap: 22
+      }}
+    >
       {outline.map((node) =>
         node.kind === 'section' ? (
           <NotesReadSection key={node.heading.id} section={node} assetActions={assetActions} />
@@ -969,10 +1136,9 @@ function NotesDocumentReader({
           <NotesReadBlock key={node.block.id} block={node.block} assetActions={assetActions} />
         )
       )}
-    </View>
+    </div>
   )
 }
-
 export function DocumentEditor({
   document,
   onChange,
@@ -1005,11 +1171,9 @@ export function DocumentEditor({
   )
   const [richTextRefs, setRichTextRefs] = useState(() => new Map<string, NotesRichTextDomRef>())
   const assetActions = { importAsset, openAsset, resolveAssetUri, onAssetError }
-
   useEffect(() => {
     documentRef.current = document
   }, [document])
-
   // Clear dependent controls as part of rendering the changed document.
   if (activeBlockId && !document.blocks.some((block) => block.id === activeBlockId)) {
     setActiveBlockId(null)
@@ -1018,53 +1182,64 @@ export function DocumentEditor({
     setQuickLinkOpen(false)
     setRichTextState(DEFAULT_NOTES_RICH_TEXT_STATE)
   }
-
   if (clean && mode === 'read') {
     return (
-      <ScrollView
-        style={{ flex: 1 }}
-        keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{
-          paddingHorizontal: 14,
-          paddingTop: 4,
-          paddingBottom: 48
+      <div
+        className="ui-scroll"
+        style={{
+          flex: '1 1 0%'
         }}
       >
-        {header}
-        <View
-          accessibilityLabel="Содержимое заметки"
+        <div
+          className="ui-stack ui-scroll-content"
           style={{
-            minHeight: 360,
-            paddingHorizontal: 18,
-            paddingVertical: 22,
-            borderWidth: 1,
-            borderColor: theme.border,
-            borderRadius: 20,
-            backgroundColor: theme.surface
+            paddingInline: 14,
+            paddingTop: 4,
+            paddingBottom: 48
           }}
         >
-          <NotesDocumentReader document={document} assetActions={assetActions} />
-        </View>
-        {readFooter ? <View style={{ marginTop: 14 }}>{readFooter}</View> : null}
-      </ScrollView>
+          {header}
+          <div
+            className="ui-stack"
+            aria-label={'Содержимое заметки'}
+            style={{
+              minHeight: 360,
+              paddingInline: 18,
+              paddingBlock: 22,
+              borderWidth: 1,
+              borderColor: theme.border,
+              borderRadius: 20,
+              backgroundColor: theme.surface
+            }}
+          >
+            <NotesDocumentReader document={document} assetActions={assetActions} />
+          </div>
+          {readFooter ? (
+            <div
+              className="ui-stack"
+              style={{
+                marginTop: 14
+              }}
+            >
+              {readFooter}
+            </div>
+          ) : null}
+        </div>
+      </div>
     )
   }
-
   const blockAllowed = (type: StudyBlockType): boolean =>
     !allowedBlockTypes || allowedBlockTypes.includes(type)
-
   const emit = (next: StudyDocument): void => {
     documentRef.current = next
     onChange(next)
   }
-
   const replace = (index: number, block: StudyBlock): void => {
     const currentDocument = documentRef.current
     const blocks = currentDocument.blocks.slice()
     blocks[index] = block
     emit({ ...currentDocument, blocks })
   }
-
   const remove = (index: number): void => {
     const currentDocument = documentRef.current
     const removed = currentDocument.blocks[index]
@@ -1075,7 +1250,6 @@ export function DocumentEditor({
       setSettingsOpen(false)
     }
   }
-
   const move = (index: number, direction: -1 | 1): void => {
     const currentDocument = documentRef.current
     const destination = index + direction
@@ -1088,7 +1262,6 @@ export function DocumentEditor({
     blocks[destination] = current
     emit({ ...currentDocument, blocks })
   }
-
   const insertBlockAt = (block: StudyBlock, requestedIndex = insertIndex): void => {
     const currentDocument = documentRef.current
     const index = Math.max(0, Math.min(requestedIndex, currentDocument.blocks.length))
@@ -1098,7 +1271,6 @@ export function DocumentEditor({
     setActiveBlockId(block.id)
     setInsertIndex(index + 1)
   }
-
   const duplicate = (index: number): void => {
     const currentDocument = documentRef.current
     const source = currentDocument.blocks[index]
@@ -1109,7 +1281,6 @@ export function DocumentEditor({
     emit({ ...currentDocument, blocks })
     setActiveBlockId(copy.id)
   }
-
   const openInsertAt = (index: number): void => {
     setInsertIndex(index)
     setSettingsOpen(false)
@@ -1122,7 +1293,6 @@ export function DocumentEditor({
     }
     setInsertOpen(true)
   }
-
   const insert = (type: StudyBlockType): void => {
     if (!blockAllowed(type)) return
     const block = newBlock(type, createId())
@@ -1130,7 +1300,6 @@ export function DocumentEditor({
     insertBlockAt(block)
     setInsertOpen(false)
   }
-
   const insertAsset = async (type: StudyAssetKind): Promise<void> => {
     if (!blockAllowed(type) || !importAsset || pendingAsset) return
     setPendingAsset(type)
@@ -1145,7 +1314,6 @@ export function DocumentEditor({
       setPendingAsset(null)
     }
   }
-
   const requestRemove = (index: number): void => {
     const target = documentRef.current.blocks[index]
     if (!target) return
@@ -1157,7 +1325,6 @@ export function DocumentEditor({
       onConfirm: () => remove(index)
     })
   }
-
   const toggleCollapsed = (blockId: string): void => {
     setCollapsedBlockIds((current) => {
       const next = new Set(current)
@@ -1166,92 +1333,110 @@ export function DocumentEditor({
       return next
     })
   }
-
   const activeIndex = activeBlockId
     ? document.blocks.findIndex((block) => block.id === activeBlockId)
     : -1
   const activeBlock = activeIndex >= 0 ? (document.blocks[activeIndex] ?? null) : null
   const activeRichEditor =
     activeBlock?.type === 'text' ? (richTextRefs.get(activeBlock.id) ?? null) : null
-
   const list = (
-    <FlatList
-      style={{ flex: 1 }}
-      data={document.blocks}
-      keyExtractor={(block) => block.id}
-      keyboardShouldPersistTaps="handled"
-      contentContainerStyle={{
-        paddingHorizontal: 12,
-        paddingBottom: activeBlock?.type === 'text' ? 18 : 48
+    <div
+      className="ui-scroll"
+      style={{
+        flex: '1 1 0%'
       }}
-      ListHeaderComponent={header ?? null}
-      ListEmptyComponent={
-        <View style={{ paddingVertical: 18 }}>
-          <Label muted>Документ пуст. Добавьте первый блок.</Label>
-        </View>
-      }
-      renderItem={({ item, index }) => (
-        <View>
-          <DesktopParityInsertControl onPress={() => openInsertAt(index)} />
-          <DesktopParityBlockCard
-            block={item}
-            active={activeBlockId === item.id}
-            collapsed={collapsedBlockIds.has(item.id)}
-            first={index === 0}
-            last={index === document.blocks.length - 1}
-            activate={() => {
-              setActiveBlockId(item.id)
-              setSettingsOpen(false)
-              if (item.type !== 'text') {
-                setRichSettingsOpen(false)
-                setQuickLinkOpen(false)
-              }
-            }}
-            toggleCollapsed={() => toggleCollapsed(item.id)}
-            move={(direction) => move(index, direction)}
-            duplicate={() => duplicate(index)}
-            remove={() => requestRemove(index)}
-          >
-            {item.type === 'text' ? (
-              <NotesRichTextBlock
-                block={item}
-                registerRef={(editor) => {
-                  setRichTextRefs((current) => {
-                    if ((current.get(item.id) ?? null) === editor) return current
-                    const next = new Map(current)
-                    if (editor) next.set(item.id, editor)
-                    else next.delete(item.id)
-                    return next
-                  })
-                }}
-                activate={() => {
-                  setActiveBlockId(item.id)
-                  setSettingsOpen(false)
-                }}
-                update={(next) => replace(index, next)}
-                formattingChanged={(state) => {
-                  setActiveBlockId(item.id)
-                  setRichTextState(state)
-                }}
-              />
-            ) : (
-              <BlockInput
-                block={item}
-                update={(next) => replace(index, next)}
-                assetActions={assetActions}
-              />
-            )}
-          </DesktopParityBlockCard>
-        </View>
-      )}
-      ListFooterComponent={
-        <DesktopParityInsertControl onPress={() => openInsertAt(document.blocks.length)} />
-      }
-    />
+    >
+      <div
+        className="ui-stack ui-scroll-content"
+        style={{
+          paddingInline: 12,
+          paddingBottom: activeBlock?.type === 'text' ? 18 : 48
+        }}
+      >
+        {header ?? null}
+        <div className="ui-stack ui-list" style={{}}>
+          {document.blocks.length > 0 ? (
+            document.blocks.map((item, index) => (
+              <div className="ui-stack ui-list-item" key={((block) => block.id)(item)}>
+                {
+                  <div className="ui-stack">
+                    <DesktopParityInsertControl onClick={() => openInsertAt(index)} />
+                    <DesktopParityBlockCard
+                      block={item}
+                      active={activeBlockId === item.id}
+                      collapsed={collapsedBlockIds.has(item.id)}
+                      first={index === 0}
+                      last={index === document.blocks.length - 1}
+                      activate={() => {
+                        setActiveBlockId(item.id)
+                        setSettingsOpen(false)
+                        if (item.type !== 'text') {
+                          setRichSettingsOpen(false)
+                          setQuickLinkOpen(false)
+                        }
+                      }}
+                      toggleCollapsed={() => toggleCollapsed(item.id)}
+                      move={(direction) => move(index, direction)}
+                      duplicate={() => duplicate(index)}
+                      remove={() => requestRemove(index)}
+                    >
+                      {item.type === 'text' ? (
+                        <NotesRichTextBlock
+                          block={item}
+                          registerRef={(editor) => {
+                            setRichTextRefs((current) => {
+                              if ((current.get(item.id) ?? null) === editor) return current
+                              const next = new Map(current)
+                              if (editor) next.set(item.id, editor)
+                              else next.delete(item.id)
+                              return next
+                            })
+                          }}
+                          activate={() => {
+                            setActiveBlockId(item.id)
+                            setSettingsOpen(false)
+                          }}
+                          update={(next) => replace(index, next)}
+                          formattingChanged={(state) => {
+                            setActiveBlockId(item.id)
+                            setRichTextState(state)
+                          }}
+                        />
+                      ) : (
+                        <BlockInput
+                          block={item}
+                          update={(next) => replace(index, next)}
+                          assetActions={assetActions}
+                        />
+                      )}
+                    </DesktopParityBlockCard>
+                  </div>
+                }
+              </div>
+            ))
+          ) : (
+            <div
+              className="ui-stack"
+              style={{
+                paddingBlock: 18
+              }}
+            >
+              <Label muted>Документ пуст. Добавьте первый блок.</Label>
+            </div>
+          )}
+        </div>
+        {<DesktopParityInsertControl onClick={() => openInsertAt(document.blocks.length)} />}
+      </div>
+    </div>
   )
-
   return (
-    <View style={{ flex: 1, minHeight: 0 }}>
+    <div
+      className="ui-stack"
+      style={{
+        flex: '1 1 0%',
+        minHeight: 0
+      }}
+    >
       {list}
 
       {activeBlock?.type === 'text' ? (
@@ -1262,30 +1447,63 @@ export function DocumentEditor({
           openLink={() => setQuickLinkOpen(true)}
         />
       ) : activeBlock && activeBlock.type !== 'board' ? (
-        <View
+        <div
+          className="ui-stack"
           style={{
             minHeight: 52,
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'space-between',
             gap: 10,
-            paddingHorizontal: 12,
-            paddingVertical: 8,
+            paddingInline: 12,
+            paddingBlock: 8,
             borderTopWidth: 1,
             borderTopColor: theme.border,
             backgroundColor: theme.surface
           }}
         >
-          <View style={{ minWidth: 0, flex: 1 }}>
-            <Text numberOfLines={1} style={{ color: theme.text, fontSize: 13, fontWeight: '600' }}>
+          <div
+            className="ui-stack"
+            style={{
+              minWidth: 0,
+              flex: '1 1 0%'
+            }}
+          >
+            <span
+              className="ui-text"
+              data-lines={1}
+              style={{
+                color: theme.text,
+                fontSize: 13,
+                fontWeight: 600,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                display: '-webkit-box',
+                WebkitBoxOrient: 'vertical',
+                WebkitLineClamp: 1
+              }}
+            >
               {blockLabel(activeBlock)}
-            </Text>
-            <Text numberOfLines={1} style={{ marginTop: 2, color: theme.muted, fontSize: 11 }}>
+            </span>
+            <span
+              className="ui-text"
+              data-lines={1}
+              style={{
+                marginTop: 2,
+                color: theme.muted,
+                fontSize: 11,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                display: '-webkit-box',
+                WebkitBoxOrient: 'vertical',
+                WebkitLineClamp: 1
+              }}
+            >
               Настройки активного блока
-            </Text>
-          </View>
-          <Button label="Настройки" icon="settings" compact onPress={() => setSettingsOpen(true)} />
-        </View>
+            </span>
+          </div>
+          <Button label="Настройки" icon="settings" compact onClick={() => setSettingsOpen(true)} />
+        </div>
       ) : null}
 
       <NotesInsertSheet
@@ -1335,6 +1553,6 @@ export function DocumentEditor({
           onAssetError={onAssetError}
         />
       ) : null}
-    </View>
+    </div>
   )
 }

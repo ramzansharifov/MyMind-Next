@@ -1,7 +1,5 @@
 import { useState } from 'react'
-import { ScrollView, Text, View } from 'react-native'
 import type { StudyTextBlock } from '@mymind/contracts/study'
-
 import { NotesRichTextBlock } from '../../shared/ui/NotesRichTextBlock'
 import { DEFAULT_NOTES_RICH_TEXT_STATE } from '../../shared/ui/notes-rich-text-state'
 import {
@@ -14,7 +12,6 @@ import type {
   NotesRichTextFormattingState
 } from '../../shared/ui/NotesRichTextDom'
 import { useTheme } from '../../shared/ui/theme'
-
 export function MobileNoteAppendEditor({
   block,
   update
@@ -29,9 +26,9 @@ export function MobileNoteAppendEditor({
   )
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [linkOpen, setLinkOpen] = useState(false)
-
   return (
-    <View
+    <div
+      className="ui-stack"
       style={{
         overflow: 'hidden',
         borderWidth: 1,
@@ -40,22 +37,45 @@ export function MobileNoteAppendEditor({
         backgroundColor: theme.surface
       }}
     >
-      <View
+      <div
+        className="ui-stack"
         style={{
-          paddingHorizontal: 14,
+          paddingInline: 14,
           paddingTop: 13,
           paddingBottom: 4
         }}
       >
-        <Text style={{ color: theme.accent, fontSize: 11, fontWeight: '800' }}>
+        <span
+          className="ui-text"
+          style={{
+            color: theme.accent,
+            fontSize: 11,
+            fontWeight: 800
+          }}
+        >
           ДОПИСАТЬ В КОНЕЦ
-        </Text>
-        <Text style={{ marginTop: 3, color: theme.muted, fontSize: 11.5, lineHeight: 16 }}>
+        </span>
+        <span
+          className="ui-text"
+          style={{
+            marginTop: 3,
+            color: theme.muted,
+            fontSize: 11.5,
+            lineHeight: '16px'
+          }}
+        >
           Существующие блоки защищены. На телефоне можно добавить только текст.
-        </Text>
-      </View>
+        </span>
+      </div>
 
-      <View style={{ minHeight: 112, paddingHorizontal: 12, paddingBottom: 8 }}>
+      <div
+        className="ui-stack"
+        style={{
+          minHeight: 112,
+          paddingInline: 12,
+          paddingBottom: 8
+        }}
+      >
         <NotesRichTextBlock
           block={block}
           registerRef={setEditor}
@@ -63,9 +83,10 @@ export function MobileNoteAppendEditor({
           update={update}
           formattingChanged={setFormatting}
         />
-      </View>
+      </div>
 
-      <View
+      <div
+        className="ui-stack"
         style={{
           minHeight: 52,
           borderTopWidth: 1,
@@ -73,26 +94,27 @@ export function MobileNoteAppendEditor({
           backgroundColor: theme.background
         }}
       >
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{
-            minHeight: 52,
-            alignItems: 'center',
-            gap: 3,
-            paddingHorizontal: 10,
-            paddingVertical: 8
-          }}
-        >
-          <NotesRichTextInlineControls
-            editor={editor}
-            state={formatting}
-            openSettings={() => setSettingsOpen(true)}
-            openLink={() => setLinkOpen(true)}
-          />
-        </ScrollView>
-      </View>
+        <div className="ui-scroll" data-horizontal={true}>
+          <div
+            className="ui-stack ui-scroll-content"
+            style={{
+              minHeight: 52,
+              alignItems: 'center',
+              gap: 3,
+              paddingInline: 10,
+              paddingBlock: 8,
+              flexDirection: 'row'
+            }}
+          >
+            <NotesRichTextInlineControls
+              editor={editor}
+              state={formatting}
+              openSettings={() => setSettingsOpen(true)}
+              openLink={() => setLinkOpen(true)}
+            />
+          </div>
+        </div>
+      </div>
 
       <NotesRichTextSettingsSheet
         open={settingsOpen}
@@ -107,6 +129,6 @@ export function MobileNoteAppendEditor({
         editor={editor}
         state={formatting}
       />
-    </View>
+    </div>
   )
 }

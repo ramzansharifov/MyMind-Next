@@ -1,11 +1,8 @@
 import { useState } from 'react'
-import { Platform, ScrollView, Text, View } from 'react-native'
 import * as Clipboard from '../../../platform/clipboard'
-
 import { AppDialog } from '../../shared/ui/AppDialog'
 import { Button } from '../../shared/ui/primitives'
 import { useTheme } from '../../shared/ui/theme'
-
 export function CatalogJsonViewerModal({
   title,
   description,
@@ -24,7 +21,6 @@ export function CatalogJsonViewerModal({
   const theme = useTheme()
   const [copied, setCopied] = useState(false)
   const [copyError, setCopyError] = useState('')
-
   const copy = async (): Promise<void> => {
     setCopyError('')
     try {
@@ -34,7 +30,6 @@ export function CatalogJsonViewerModal({
       setCopyError('Не удалось скопировать JSON в буфер обмена')
     }
   }
-
   return (
     <AppDialog
       open
@@ -47,60 +42,93 @@ export function CatalogJsonViewerModal({
       presentation="sheet"
       footer={
         <>
-          <Button label="Закрыть" onPress={close} />
+          <Button label="Закрыть" onClick={close} />
           <Button
             label={copied ? 'Скопировано' : 'Копировать'}
             icon={copied ? 'check' : 'copy'}
             primary
-            onPress={() => void copy()}
+            onClick={() => void copy()}
           />
         </>
       }
     >
-      <View style={{ flex: 1, minHeight: 0, padding: 14, gap: 10 }}>
-        <View
+      <div
+        className="ui-stack"
+        style={{
+          flex: '1 1 0%',
+          minHeight: 0,
+          padding: 14,
+          gap: 10
+        }}
+      >
+        <div
+          className="ui-stack"
           style={{
-            paddingHorizontal: 12,
-            paddingVertical: 10,
+            paddingInline: 12,
+            paddingBlock: 10,
             borderWidth: 1,
             borderColor: theme.border,
             borderRadius: 13,
             backgroundColor: theme.background
           }}
         >
-          <Text style={{ color: theme.muted, fontSize: 11.5, lineHeight: 17 }}>{note}</Text>
-        </View>
+          <span
+            className="ui-text"
+            style={{
+              color: theme.muted,
+              fontSize: 11.5,
+              lineHeight: '17px'
+            }}
+          >
+            {note}
+          </span>
+        </div>
 
-        <ScrollView
+        <div
+          className="ui-scroll"
           style={{
-            flex: 1,
+            flex: '1 1 0%',
             minHeight: 0,
             borderWidth: 1,
             borderColor: theme.border,
             borderRadius: 14,
             backgroundColor: theme.background
           }}
-          contentContainerStyle={{ padding: 14 }}
-          nestedScrollEnabled
         >
-          <Text
-            selectable
-            accessibilityLabel={accessibilityLabel}
+          <div
+            className="ui-stack ui-scroll-content"
             style={{
-              color: theme.text,
-              fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-              fontSize: 12,
-              lineHeight: 19
+              padding: 14
             }}
           >
-            {json}
-          </Text>
-        </ScrollView>
+            <span
+              className="ui-text"
+              aria-label={accessibilityLabel}
+              style={{
+                color: theme.text,
+                fontFamily: 'monospace',
+                fontSize: 12,
+                lineHeight: '19px'
+              }}
+            >
+              {json}
+            </span>
+          </div>
+        </div>
 
         {copyError ? (
-          <Text style={{ color: theme.error, fontSize: 12.5, lineHeight: 18 }}>{copyError}</Text>
+          <span
+            className="ui-text"
+            style={{
+              color: theme.error,
+              fontSize: 12.5,
+              lineHeight: '18px'
+            }}
+          >
+            {copyError}
+          </span>
         ) : null}
-      </View>
+      </div>
     </AppDialog>
   )
 }

@@ -1,5 +1,5 @@
+import { TextControl, Toggle } from '../../ui/browser'
 import { useEffect, useMemo, useState } from 'react'
-import { Switch, Text, TextInput, View } from 'react-native'
 import {
   type LanSyncDevice,
   type LocalProfile,
@@ -7,7 +7,6 @@ import {
   type ProfileGender,
   type SyncResult
 } from '@mymind/contracts/profile-sync'
-
 import { notifyDataChanged } from './changes'
 import { useServices } from './context'
 import { Button, ErrorState, Label } from '../shared/ui/primitives'
@@ -16,10 +15,13 @@ import { AppIcon, type AppIconName } from '../shared/ui/icons'
 import { useTheme } from '../shared/ui/theme'
 import { messageFor } from '../shared/ui/form-model'
 import type { SyncPreview } from '../../sync/types'
-
 const modulePresentation: Record<
   MobileSyncModule,
-  { label: string; description: string; icon: AppIconName }
+  {
+    label: string
+    description: string
+    icon: AppIconName
+  }
 > = {
   notes: {
     label: 'Заметки',
@@ -72,7 +74,6 @@ const modulePresentation: Record<
     icon: 'passwords'
   }
 }
-
 function resultText(result: SyncResult): string {
   const received = result.modules.reduce((sum, module) => sum + module.received, 0)
   const sent = result.modules.reduce((sum, module) => sum + module.sent, 0)
@@ -80,7 +81,6 @@ function resultText(result: SyncResult): string {
   const conflicts = result.modules.reduce((sum, module) => sum + module.conflicts, 0)
   return `Готово: получено ${received}, отправлено ${sent}, удалений ${deleted}, конфликтов ${conflicts}.`
 }
-
 export function MobileProfileSyncSettings(): React.JSX.Element {
   const theme = useTheme()
   const { profile: profileApi, lanSync } = useServices()
@@ -97,7 +97,6 @@ export function MobileProfileSyncSettings(): React.JSX.Element {
   const [busy, setBusy] = useState<'profile' | 'scan' | 'preview' | 'sync' | null>(null)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
-
   useEffect(() => {
     let active = true
     queueMicrotask(() => {
@@ -112,12 +111,10 @@ export function MobileProfileSyncSettings(): React.JSX.Element {
       active = false
     }
   }, [profileApi])
-
   const selectedDevice = useMemo(
     () => devices.find((device) => device.deviceId === selectedDeviceId) ?? null,
     [devices, selectedDeviceId]
   )
-
   const createProfile = async (): Promise<void> => {
     if (busy) return
     setBusy('profile')
@@ -139,7 +136,6 @@ export function MobileProfileSyncSettings(): React.JSX.Element {
       setBusy(null)
     }
   }
-
   const saveProfile = async (): Promise<void> => {
     if (busy || !profile) return
     setBusy('profile')
@@ -155,7 +151,6 @@ export function MobileProfileSyncSettings(): React.JSX.Element {
       setBusy(null)
     }
   }
-
   const replaceCredentials = async (): Promise<void> => {
     if (busy || !profile) return
     if (!password) {
@@ -176,7 +171,6 @@ export function MobileProfileSyncSettings(): React.JSX.Element {
       setBusy(null)
     }
   }
-
   const scan = async (): Promise<void> => {
     if (busy || !profile) return
     setBusy('scan')
@@ -199,7 +193,6 @@ export function MobileProfileSyncSettings(): React.JSX.Element {
       setBusy(null)
     }
   }
-
   const connect = async (device: LanSyncDevice): Promise<void> => {
     if (busy) return
     setSelectedDeviceId(device.deviceId)
@@ -219,7 +212,6 @@ export function MobileProfileSyncSettings(): React.JSX.Element {
       setBusy(null)
     }
   }
-
   const runSync = async (): Promise<void> => {
     if (busy || !selectedDevice || !preview) return
     const modules = preview.modules
@@ -229,7 +221,6 @@ export function MobileProfileSyncSettings(): React.JSX.Element {
       setError('Выберите хотя бы один модуль для этой синхронизации.')
       return
     }
-
     setBusy('sync')
     setError('')
     setMessage('')
@@ -237,7 +228,6 @@ export function MobileProfileSyncSettings(): React.JSX.Element {
       const result = await lanSync.sync(selectedDevice, modules)
       notifyDataChanged()
       setMessage(resultText(result))
-
       const refreshed = await lanSync.preview(selectedDevice)
       setPreview(refreshed)
       setSelectedModules(new Set(refreshed.modules.map((item) => item.module)))
@@ -247,7 +237,6 @@ export function MobileProfileSyncSettings(): React.JSX.Element {
       setBusy(null)
     }
   }
-
   const toggleModule = (module: MobileSyncModule): void => {
     setSelectedModules((current) => {
       const next = new Set(current)
@@ -256,7 +245,6 @@ export function MobileProfileSyncSettings(): React.JSX.Element {
       return next
     })
   }
-
   const inputStyle = {
     minHeight: 46,
     borderWidth: 1,
@@ -266,17 +254,27 @@ export function MobileProfileSyncSettings(): React.JSX.Element {
     color: theme.text,
     backgroundColor: theme.background
   } as const
-
   return (
-    <View style={{ gap: 14 }}>
+    <div
+      className="ui-stack"
+      style={{
+        gap: 14
+      }}
+    >
       <WorkspacePanel
         title="Профиль"
         description="Локальный профиль связывает ваши устройства. Пароль остаётся только у вас."
         icon="settings"
       >
-        <View style={{ gap: 12 }}>
+        <div
+          className="ui-stack"
+          style={{
+            gap: 12
+          }}
+        >
           {profile ? (
-            <View
+            <div
+              className="ui-stack"
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
@@ -288,7 +286,8 @@ export function MobileProfileSyncSettings(): React.JSX.Element {
                 backgroundColor: theme.accent + '0D'
               }}
             >
-              <View
+              <div
+                className="ui-stack"
                 style={{
                   width: 44,
                   height: 44,
@@ -299,107 +298,161 @@ export function MobileProfileSyncSettings(): React.JSX.Element {
                 }}
               >
                 <AppIcon name="brand" size={21} color={theme.accent} />
-              </View>
-              <View style={{ flex: 1, minWidth: 0 }}>
-                <Text style={{ color: theme.text, fontSize: 15, fontWeight: '700' }}>
+              </div>
+              <div
+                className="ui-stack"
+                style={{
+                  flex: '1 1 0%',
+                  minWidth: 0
+                }}
+              >
+                <span
+                  className="ui-text"
+                  style={{
+                    color: theme.text,
+                    fontSize: 15,
+                    fontWeight: 700
+                  }}
+                >
                   {profile.name?.trim() || profile.login}
-                </Text>
-                <Text style={{ marginTop: 3, color: theme.muted, fontSize: 12 }}>
+                </span>
+                <span
+                  className="ui-text"
+                  style={{
+                    marginTop: 3,
+                    color: theme.muted,
+                    fontSize: 12
+                  }}
+                >
                   @{profile.login} · локальный профиль
-                </Text>
-              </View>
-            </View>
+                </span>
+              </div>
+            </div>
           ) : null}
 
-          <View style={{ gap: 6 }}>
+          <div
+            className="ui-stack"
+            style={{
+              gap: 6
+            }}
+          >
             <Label title>Логин *</Label>
-            <TextInput
+            <TextControl
               value={login}
-              accessibilityLabel="Логин профиля"
-              editable={!busy}
-              autoCapitalize="none"
-              autoCorrect={false}
+              aria-label={'Логин профиля'}
+              disabled={!!busy}
+              autoCapitalize={'none'}
+              autoCorrect={'off'}
               style={inputStyle}
-              onChangeText={setLogin}
-            />
-          </View>
-          <View style={{ gap: 6 }}>
+              onValueChange={setLogin}
+            ></TextControl>
+          </div>
+          <div
+            className="ui-stack"
+            style={{
+              gap: 6
+            }}
+          >
             <Label title>{profile ? 'Новый пароль для смены данных' : 'Пароль *'}</Label>
-            <TextInput
+            <TextControl
               value={password}
-              accessibilityLabel="Пароль профиля"
-              editable={!busy}
-              secureTextEntry
-              autoCapitalize="none"
-              autoCorrect={false}
+              aria-label={'Пароль профиля'}
+              disabled={!!busy}
+              type={'password'}
+              autoCapitalize={'none'}
+              autoCorrect={'off'}
               style={inputStyle}
-              onChangeText={setPassword}
-            />
-          </View>
-          <View style={{ gap: 6 }}>
+              onValueChange={setPassword}
+            ></TextControl>
+          </div>
+          <div
+            className="ui-stack"
+            style={{
+              gap: 6
+            }}
+          >
             <Label title>Имя</Label>
-            <TextInput
-              accessibilityLabel="Имя профиля"
+            <TextControl
+              aria-label={'Имя профиля'}
               value={name}
-              editable={!busy}
+              disabled={!!busy}
               style={inputStyle}
-              onChangeText={setName}
-            />
-          </View>
-          <View style={{ gap: 8 }}>
+              onValueChange={setName}
+            ></TextControl>
+          </div>
+          <div
+            className="ui-stack"
+            style={{
+              gap: 8
+            }}
+          >
             <Label title>Пол</Label>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            <div
+              className="ui-stack"
+              style={{
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                gap: 8
+              }}
+            >
               <Button
                 label="Не указан"
                 selected={gender === null}
                 disabled={Boolean(busy)}
-                onPress={() => setGender(null)}
+                onClick={() => setGender(null)}
               />
               <Button
                 label="Мужской"
                 selected={gender === 'male'}
                 disabled={Boolean(busy)}
-                onPress={() => setGender('male')}
+                onClick={() => setGender('male')}
               />
               <Button
                 label="Женский"
                 selected={gender === 'female'}
                 disabled={Boolean(busy)}
-                onPress={() => setGender('female')}
+                onClick={() => setGender('female')}
               />
-            </View>
-          </View>
+            </div>
+          </div>
 
           {!profile ? (
             <Button
               label={busy === 'profile' ? 'Создание…' : 'Создать профиль'}
               primary
               disabled={Boolean(busy)}
-              onPress={() => void createProfile()}
+              onClick={() => void createProfile()}
             />
           ) : (
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            <div
+              className="ui-stack"
+              style={{
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                gap: 8
+              }}
+            >
               <Button
                 label="Сохранить имя и пол"
                 icon="check"
                 primary
                 disabled={Boolean(busy)}
-                onPress={() => void saveProfile()}
+                onClick={() => void saveProfile()}
               />
               <Button
                 label="Сменить логин / пароль"
                 icon="passwords"
                 disabled={Boolean(busy) || !password}
-                onPress={() => void replaceCredentials()}
+                onClick={() => void replaceCredentials()}
               />
-            </View>
+            </div>
           )}
 
           <Label muted>
             Пароль не сохраняется в базе и не отправляется компьютеру. Устройства подтверждают
             одинаковый пароль через защищённый challenge-response.
           </Label>
-        </View>
+        </div>
       </WorkspacePanel>
 
       {profile ? (
@@ -408,36 +461,51 @@ export function MobileProfileSyncSettings(): React.JSX.Element {
           description="Найдите компьютер, подключитесь и выберите данные для текущего обмена."
           icon="download"
         >
-          <View style={{ gap: 12 }}>
-            <View style={{ gap: 6 }}>
+          <div
+            className="ui-stack"
+            style={{
+              gap: 12
+            }}
+          >
+            <div
+              className="ui-stack"
+              style={{
+                gap: 6
+              }}
+            >
               <Label title>IP компьютера — необязательно</Label>
-              <TextInput
+              <TextControl
                 value={manualHost}
-                editable={!busy}
-                placeholder="Например, 192.168.1.25"
-                placeholderTextColor={theme.muted}
-                autoCapitalize="none"
-                autoCorrect={false}
-                keyboardType="numbers-and-punctuation"
+                disabled={!!busy}
+                placeholder={'Например, 192.168.1.25'}
+                placeholderColor={theme.muted}
+                autoCapitalize={'none'}
+                autoCorrect={'off'}
+                inputMode={'text'}
                 style={inputStyle}
-                onChangeText={setManualHost}
-              />
+                onValueChange={setManualHost}
+              ></TextControl>
               <Label muted>
                 Обычно MyMind находит компьютер сам. Ручной IP нужен только если локальная сеть
                 блокирует автоматический поиск.
               </Label>
-            </View>
+            </div>
 
             <Button
               label={busy === 'scan' ? 'Ищем компьютеры…' : 'Найти компьютеры MyMind'}
               icon="search"
               primary
               disabled={Boolean(busy)}
-              onPress={() => void scan()}
+              onClick={() => void scan()}
             />
 
             {devices.length ? (
-              <View style={{ gap: 4 }}>
+              <div
+                className="ui-stack"
+                style={{
+                  gap: 4
+                }}
+              >
                 <Label title>Компьютеры</Label>
                 {devices.map((device) => (
                   <WorkspaceNodeCard
@@ -446,14 +514,15 @@ export function MobileProfileSyncSettings(): React.JSX.Element {
                     subtitle={`${device.host}:${device.port} · ${device.modules.length} мобильных модулей`}
                     leadingIcon="brand"
                     selected={selectedDeviceId === device.deviceId}
-                    onPress={() => void connect(device)}
+                    onClick={() => void connect(device)}
                   />
                 ))}
-              </View>
+              </div>
             ) : null}
 
             {busy === 'preview' && selectedDevice ? (
-              <View
+              <div
+                className="ui-stack"
                 style={{
                   padding: 14,
                   borderWidth: 1,
@@ -462,41 +531,87 @@ export function MobileProfileSyncSettings(): React.JSX.Element {
                   backgroundColor: theme.accent + '0B'
                 }}
               >
-                <Text style={{ color: theme.text, fontSize: 13, fontWeight: '600' }}>
+                <span
+                  className="ui-text"
+                  style={{
+                    color: theme.text,
+                    fontSize: 13,
+                    fontWeight: 600
+                  }}
+                >
                   Подключаемся к «{selectedDevice.deviceName}»…
-                </Text>
-                <Text style={{ marginTop: 4, color: theme.muted, fontSize: 12, lineHeight: 18 }}>
+                </span>
+                <span
+                  className="ui-text"
+                  style={{
+                    marginTop: 4,
+                    color: theme.muted,
+                    fontSize: 12,
+                    lineHeight: '18px'
+                  }}
+                >
                   Проверяем профиль и собираем сводку данных на телефоне и компьютере.
-                </Text>
-              </View>
+                </span>
+              </div>
             ) : null}
 
             {preview && selectedDevice ? (
-              <View style={{ gap: 12 }}>
-                <View
+              <div
+                className="ui-stack"
+                style={{
+                  gap: 12
+                }}
+              >
+                <div
+                  className="ui-stack"
                   style={{
                     height: 1,
-                    marginVertical: 2,
+                    marginBlock: 2,
                     backgroundColor: theme.border
                   }}
-                />
+                ></div>
 
-                <View style={{ gap: 5 }}>
-                  <Text style={{ color: theme.text, fontSize: 16, fontWeight: '700' }}>
+                <div
+                  className="ui-stack"
+                  style={{
+                    gap: 5
+                  }}
+                >
+                  <span
+                    className="ui-text"
+                    style={{
+                      color: theme.text,
+                      fontSize: 16,
+                      fontWeight: 700
+                    }}
+                  >
                     Что синхронизировать
-                  </Text>
-                  <Text style={{ color: theme.muted, fontSize: 12.5, lineHeight: 18 }}>
+                  </span>
+                  <span
+                    className="ui-text"
+                    style={{
+                      color: theme.muted,
+                      fontSize: 12.5,
+                      lineHeight: '18px'
+                    }}
+                  >
                     Включены все доступные мобильные модули. Выключите ненужные — выбор действует
                     только для этого запуска.
-                  </Text>
-                </View>
+                  </span>
+                </div>
 
-                <View style={{ flexDirection: 'row', gap: 8 }}>
+                <div
+                  className="ui-stack"
+                  style={{
+                    flexDirection: 'row',
+                    gap: 8
+                  }}
+                >
                   <Button
                     label="Выбрать всё"
                     compact
                     disabled={Boolean(busy) || selectedModules.size === preview.modules.length}
-                    onPress={() =>
+                    onClick={() =>
                       setSelectedModules(new Set(preview.modules.map((item) => item.module)))
                     }
                   />
@@ -504,16 +619,22 @@ export function MobileProfileSyncSettings(): React.JSX.Element {
                     label="Снять всё"
                     compact
                     disabled={Boolean(busy) || selectedModules.size === 0}
-                    onPress={() => setSelectedModules(new Set())}
+                    onClick={() => setSelectedModules(new Set())}
                   />
-                </View>
+                </div>
 
-                <View style={{ gap: 8 }}>
+                <div
+                  className="ui-stack"
+                  style={{
+                    gap: 8
+                  }}
+                >
                   {preview.modules.map((item) => {
                     const meta = modulePresentation[item.module]
                     const enabled = selectedModules.has(item.module)
                     return (
-                      <View
+                      <div
+                        className="ui-stack"
                         key={item.module}
                         style={{
                           flexDirection: 'row',
@@ -527,7 +648,8 @@ export function MobileProfileSyncSettings(): React.JSX.Element {
                           opacity: enabled ? 1 : 0.72
                         }}
                       >
-                        <View
+                        <div
+                          className="ui-stack"
                           style={{
                             width: 42,
                             height: 42,
@@ -542,52 +664,67 @@ export function MobileProfileSyncSettings(): React.JSX.Element {
                             size={19}
                             color={enabled ? theme.accent : theme.muted}
                           />
-                        </View>
+                        </div>
 
-                        <View style={{ flex: 1, minWidth: 0 }}>
-                          <Text style={{ color: theme.text, fontSize: 14, fontWeight: '700' }}>
+                        <div
+                          className="ui-stack"
+                          style={{
+                            flex: '1 1 0%',
+                            minWidth: 0
+                          }}
+                        >
+                          <span
+                            className="ui-text"
+                            style={{
+                              color: theme.text,
+                              fontSize: 14,
+                              fontWeight: 700
+                            }}
+                          >
                             {meta.label}
-                          </Text>
-                          <Text
+                          </span>
+                          <span
+                            className="ui-text"
                             style={{
                               marginTop: 2,
                               color: theme.muted,
                               fontSize: 11.5,
-                              lineHeight: 16
+                              lineHeight: '16px'
                             }}
                           >
                             {meta.description}
-                          </Text>
-                          <Text
+                          </span>
+                          <span
+                            className="ui-text"
                             style={{
                               marginTop: 6,
                               color: enabled ? theme.text : theme.muted,
                               fontSize: 11.5,
-                              lineHeight: 16
+                              lineHeight: '16px'
                             }}
                           >
                             Телефон: {item.phone.records} · Компьютер: {item.computer.records}
                             {item.phone.deleted || item.computer.deleted
                               ? ` · удалений: ${item.phone.deleted + item.computer.deleted}`
                               : ''}
-                          </Text>
-                        </View>
+                          </span>
+                        </div>
 
-                        <Switch
-                          accessibilityLabel={`Синхронизация модуля «${meta.label}»`}
-                          value={enabled}
+                        <Toggle
+                          aria-label={`Синхронизация модуля «${meta.label}»`}
+                          checked={enabled}
                           disabled={Boolean(busy)}
                           onValueChange={() => toggleModule(item.module)}
-                          trackColor={{
+                          trackColors={{
                             false: theme.border,
                             true: theme.accent + '75'
                           }}
                           thumbColor={enabled ? theme.accent : theme.muted}
-                        />
-                      </View>
+                        ></Toggle>
+                      </div>
                     )
                   })}
-                </View>
+                </div>
 
                 <Button
                   label={
@@ -598,10 +735,11 @@ export function MobileProfileSyncSettings(): React.JSX.Element {
                   icon="download"
                   primary
                   disabled={Boolean(busy) || selectedModules.size === 0}
-                  onPress={() => void runSync()}
+                  onClick={() => void runSync()}
                 />
 
-                <View
+                <div
+                  className="ui-stack"
                   style={{
                     flexDirection: 'row',
                     alignItems: 'flex-start',
@@ -614,22 +752,39 @@ export function MobileProfileSyncSettings(): React.JSX.Element {
                   }}
                 >
                   <AppIcon name="info" size={17} color={theme.accent} />
-                  <Text style={{ flex: 1, color: theme.muted, fontSize: 11.5, lineHeight: 17 }}>
+                  <span
+                    className="ui-text"
+                    style={{
+                      flex: '1 1 0%',
+                      color: theme.muted,
+                      fontSize: 11.5,
+                      lineHeight: '17px'
+                    }}
+                  >
                     Здесь отображаются только модули, которые существуют на телефоне. Desktop-only
                     разделы не могут попасть в мобильную синхронизацию. Для паролей дополнительно
                     действует защита совместимости vault.
-                  </Text>
-                </View>
-              </View>
+                  </span>
+                </div>
+              </div>
             ) : null}
-          </View>
+          </div>
         </WorkspacePanel>
       ) : null}
 
       {error ? <ErrorState message={error} /> : null}
       {message ? (
-        <Text style={{ color: theme.text, fontSize: 13, lineHeight: 19 }}>{message}</Text>
+        <span
+          className="ui-text"
+          style={{
+            color: theme.text,
+            fontSize: 13,
+            lineHeight: '19px'
+          }}
+        >
+          {message}
+        </span>
       ) : null}
-    </View>
+    </div>
   )
 }

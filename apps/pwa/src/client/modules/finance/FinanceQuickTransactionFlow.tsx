@@ -1,17 +1,15 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import type { PointerEvent } from 'react'
+import { motionValue, mapValue, motion } from 'framer-motion'
 import {
-  Animated,
-  Easing,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-  type GestureResponderEvent
-} from 'react-native'
+  playMotion,
+  motionStep,
+  stopMotion,
+  parallelMotion,
+  DialogLayer,
+  Action,
+  TextControl
+} from '../../../ui/browser'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type {
   FinanceAccountSummary,
   FinanceLimitImpact,
@@ -21,7 +19,6 @@ import type {
 import type { FinanceRepository } from '@mymind/persistence/finance'
 import { FINANCE_RATE_SCALE, formatMoneyMinor, parseMoneyToMinor } from '@mymind/core/finance-money'
 import * as validation from '@mymind/core/validation/finance'
-
 import { notifyDataChanged } from '../../app/changes'
 import { AppIcon, type AppIconName } from '../../shared/ui/icons'
 import {
@@ -40,23 +37,29 @@ import {
   type FinanceQuickTransactionStage
 } from './finance-quick-transaction'
 import { financeOperationTone } from './finance-semantic-colors'
-
 interface CarouselOption {
   key: string
   title: string
   subtitle: string
   tone: string
   icon:
-    | { kind: 'app'; value: AppIconName }
-    | { kind: 'visual'; value: string }
-    | { kind: 'glyph'; value: string }
+    | {
+        kind: 'app'
+        value: AppIconName
+      }
+    | {
+        kind: 'visual'
+        value: string
+      }
+    | {
+        kind: 'glyph'
+        value: string
+      }
 }
-
 const CAROUSEL_HEIGHT = 382
 const CARD_HEIGHT = 108
 const CARD_TOP = (CAROUSEL_HEIGHT - CARD_HEIGHT) / 2
 const HALF_STEP = MOBILE_CREATE_ACTION_STEP / 2
-
 function slotScaleRange(slot: number): [number, number, number] {
   if (slot === 0) return [0.95, 1, 0.95]
   if (slot === -1) return [0.82, 0.9, 0.95]
@@ -64,7 +67,6 @@ function slotScaleRange(slot: number): [number, number, number] {
   if (slot < -1) return [0.74, 0.8, 0.82]
   return [0.82, 0.8, 0.74]
 }
-
 function slotOpacityRange(slot: number): [number, number, number] {
   if (slot === 0) return [0.86, 1, 0.86]
   if (slot === -1) return [0.22, 0.58, 0.86]
@@ -72,7 +74,6 @@ function slotOpacityRange(slot: number): [number, number, number] {
   if (slot < -1) return [0.02, 0.1, 0.22]
   return [0.22, 0.1, 0.02]
 }
-
 function QuickSelectionChip({
   label,
   tone,
@@ -82,63 +83,64 @@ function QuickSelectionChip({
   tone: string
   icon?: AppIconName
 }): React.JSX.Element {
-  const [progress] = useState(() => new Animated.Value(0))
-
+  const [progress] = useState(() => motionValue(0))
   useEffect(() => {
-    Animated.spring(progress, {
-      toValue: 1,
-      damping: 20,
-      stiffness: 260,
-      mass: 0.72,
-      overshootClamping: true,
-      useNativeDriver: true
-    }).start()
+    playMotion(
+      motionStep(progress, 1, {
+        damping: 20,
+        stiffness: 260,
+        mass: 0.72,
+        type: 'spring'
+      })
+    )
   }, [progress])
-
-  const translateY = progress.interpolate({
-    inputRange: [0, 1],
-    outputRange: [-8, 0]
+  const translateY = mapValue(progress, [0, 1], [-8, 0], {
+    clamp: true
   })
-  const scale = progress.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.94, 1]
+  const scale = mapValue(progress, [0, 1], [0.94, 1], {
+    clamp: true
   })
-
   return (
-    <Animated.View
+    <motion.div
+      className="ui-stack"
       style={{
         maxWidth: 185,
         minHeight: 36,
         flexDirection: 'row',
         alignItems: 'center',
         gap: 7,
-        paddingHorizontal: 10,
+        paddingInline: 10,
         borderWidth: 1,
         borderColor: tone + '50',
         borderRadius: 12,
         backgroundColor: '#111318E8',
         opacity: progress,
-        transform: [{ translateY }, { scale }]
+        y: translateY,
+        scale: scale
       }}
     >
       {icon ? <AppIcon name={icon} size={15.5} color={tone} strokeWidth={2.2} /> : null}
-      <Text
-        numberOfLines={1}
-        ellipsizeMode="tail"
+      <span
+        className="ui-text"
+        data-lines={1}
         style={{
           flexShrink: 1,
           color: tone,
           fontSize: 11.5,
-          lineHeight: 16,
-          fontWeight: '700'
+          lineHeight: '16px',
+          fontWeight: 700,
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          display: '-webkit-box',
+          WebkitBoxOrient: 'vertical',
+          WebkitLineClamp: 1
         }}
       >
         {label}
-      </Text>
-    </Animated.View>
+      </span>
+    </motion.div>
   )
 }
-
 function QuickCarousel({
   options,
   selectedIndex,
@@ -151,98 +153,104 @@ function QuickCarousel({
   onBusyChange(busy: boolean): void
 }): React.JSX.Element {
   const theme = useTheme()
-  const [offsetY] = useState(() => new Animated.Value(0))
+  const [offsetY] = useState(() => motionValue(0))
   const gestureStartYRef = useRef(0)
   const gestureBaseIndexRef = useRef(0)
   const displayedIndexRef = useRef(selectedIndex)
   useLayoutEffect(() => {
     displayedIndexRef.current = selectedIndex
   }, [selectedIndex])
-  const motion = useFrameGesture((selection: { index: number; offsetY: number }) => {
-    offsetY.setValue(selection.offsetY)
+  const carouselMotion = useFrameGesture((selection: { index: number; offsetY: number }) => {
+    offsetY.set(selection.offsetY)
     if (displayedIndexRef.current !== selection.index) {
       displayedIndexRef.current = selection.index
       onSelectedIndexChange(selection.index)
     }
   })
-
   const settle = (): void => {
-    motion.flush()
-    offsetY.stopAnimation()
-    Animated.spring(offsetY, {
-      toValue: 0,
-      damping: 25,
-      stiffness: 250,
-      mass: 0.75,
-      overshootClamping: true,
-      useNativeDriver: true
-    }).start(() => onBusyChange(false))
+    carouselMotion.flush()
+    stopMotion(offsetY)
+    playMotion(
+      motionStep(offsetY, 0, {
+        damping: 25,
+        stiffness: 250,
+        mass: 0.75,
+        type: 'spring'
+      }),
+      () => onBusyChange(false)
+    )
   }
-
   return (
-    <View
-      accessibilityRole="adjustable"
-      accessibilityLabel={
+    <div
+      className="ui-stack"
+      role={'slider'}
+      aria-label={
         options[selectedIndex] ? `Выбрано: ${options[selectedIndex].title}` : 'Карусель выбора'
       }
-      onStartShouldSetResponder={() => options.length > 0}
-      onMoveShouldSetResponder={() => options.length > 0}
-      onResponderGrant={(event: GestureResponderEvent) => {
-        if (!options.length) return
-        gestureStartYRef.current = event.nativeEvent.pageY
-        gestureBaseIndexRef.current = selectedIndex
-        onBusyChange(true)
-        motion.cancel()
-        offsetY.stopAnimation()
-        offsetY.setValue(0)
+      onPointerDown={(event) => {
+        if (event.button !== 0 || !event.isPrimary) return
+        event.currentTarget.setPointerCapture(event.pointerId)
+        ;((event: PointerEvent<HTMLElement>) => {
+          if (!options.length) return
+          gestureStartYRef.current = event.pageY
+          gestureBaseIndexRef.current = selectedIndex
+          onBusyChange(true)
+          carouselMotion.cancel()
+          stopMotion(offsetY)
+          offsetY.set(0)
+        })(event)
       }}
-      onResponderMove={(event: GestureResponderEvent) => {
-        if (!options.length) return
-        const selection = mobileCreateActionSelection(
-          event.nativeEvent.pageY - gestureStartYRef.current,
-          options.length,
-          gestureBaseIndexRef.current,
-          MOBILE_CREATE_ACTION_STEP
-        )
-        motion.schedule(selection)
+      onPointerMove={(event) => {
+        if (event.currentTarget.hasPointerCapture(event.pointerId))
+          ((event: PointerEvent<HTMLElement>) => {
+            if (!options.length) return
+            const selection = mobileCreateActionSelection(
+              event.pageY - gestureStartYRef.current,
+              options.length,
+              gestureBaseIndexRef.current,
+              MOBILE_CREATE_ACTION_STEP
+            )
+            carouselMotion.schedule(selection)
+          })(event)
       }}
-      onResponderRelease={settle}
-      onResponderTerminationRequest={() => false}
-      onResponderTerminate={settle}
+      onPointerUp={(event) => {
+        if (!event.currentTarget.hasPointerCapture(event.pointerId)) return
+        settle()
+        event.currentTarget.releasePointerCapture(event.pointerId)
+      }}
+      onPointerCancel={settle}
       style={{
         width: '100%',
         maxWidth: 360,
         height: CAROUSEL_HEIGHT,
-        overflow: 'hidden'
+        overflow: 'hidden',
+        touchAction: 'none'
       }}
     >
       {visibleCarouselSlots(options.length, selectedIndex).map(({ index: optionIndex, slot }) => {
         const option = options[optionIndex]
-
-        const scale = offsetY.interpolate({
-          inputRange: [-HALF_STEP, 0, HALF_STEP],
-          outputRange: slotScaleRange(slot),
-          extrapolate: 'clamp'
+        const scale = mapValue(offsetY, [-HALF_STEP, 0, HALF_STEP], slotScaleRange(slot), {
+          clamp: true
         })
-        const opacity = offsetY.interpolate({
-          inputRange: [-HALF_STEP, 0, HALF_STEP],
-          outputRange: slotOpacityRange(slot),
-          extrapolate: 'clamp'
+        const opacity = mapValue(offsetY, [-HALF_STEP, 0, HALF_STEP], slotOpacityRange(slot), {
+          clamp: true
         })
-        const translateY = offsetY.interpolate({
-          inputRange: [-HALF_STEP, HALF_STEP],
-          outputRange: [
+        const translateY = mapValue(
+          offsetY,
+          [-HALF_STEP, HALF_STEP],
+          [
             slot * MOBILE_CREATE_ACTION_STEP - HALF_STEP,
             slot * MOBILE_CREATE_ACTION_STEP + HALF_STEP
           ],
-          extrapolate: 'clamp'
-        })
+          {
+            clamp: true
+          }
+        )
         const active = slot === 0
-
         return (
-          <Animated.View
+          <motion.div
+            className="ui-stack"
             key={options.length === 2 ? option.key + ':' + slot : option.key}
-            pointerEvents="none"
             style={{
               position: 'absolute',
               top: CARD_TOP,
@@ -251,11 +259,14 @@ function QuickCarousel({
               height: CARD_HEIGHT,
               alignItems: 'center',
               justifyContent: 'center',
-              opacity,
-              transform: [{ translateY }, { scale }]
+              opacity: opacity,
+              y: translateY,
+              scale: scale,
+              pointerEvents: 'none'
             }}
           >
-            <View
+            <div
+              className="ui-stack"
               style={{
                 width: '88%',
                 maxWidth: 310,
@@ -263,23 +274,20 @@ function QuickCarousel({
                 flexDirection: 'row',
                 alignItems: 'center',
                 gap: 14,
-                paddingHorizontal: 16,
-                paddingVertical: 14,
+                paddingInline: 16,
+                paddingBlock: 14,
                 borderWidth: 1,
                 borderColor: active ? option.tone + '78' : option.tone + '2E',
                 borderRadius: 22,
                 backgroundColor: active ? '#111318FA' : '#111318F2',
-                elevation: 8,
-                shadowColor: '#000000',
-                shadowOpacity: 0.22,
-                shadowRadius: 14,
-                shadowOffset: { width: 0, height: 7 }
+                boxShadow: `0px ${7}px ${14}px color-mix(in srgb, ${'#000000'} calc(${0.22} * 100%), transparent)`
               }}
             >
               {option.icon.kind === 'visual' ? (
                 <VisualIconBadge value={option.icon.value} size={48} />
               ) : (
-                <View
+                <div
+                  className="ui-stack"
                   style={{
                     width: 48,
                     height: 48,
@@ -305,38 +313,57 @@ function QuickCarousel({
                       color={option.tone}
                     />
                   )}
-                </View>
+                </div>
               )}
 
-              <View style={{ flex: 1, minWidth: 0 }}>
-                <Text
-                  numberOfLines={1}
+              <div
+                className="ui-stack"
+                style={{
+                  flex: '1 1 0%',
+                  minWidth: 0
+                }}
+              >
+                <span
+                  className="ui-text"
+                  data-lines={1}
                   style={{
                     color: theme.text,
                     fontSize: active ? 20 : 17,
-                    lineHeight: active ? 25 : 22,
-                    fontWeight: '700',
-                    letterSpacing: active ? -0.3 : -0.15
+                    lineHeight: active ? '25px' : '22px',
+                    fontWeight: 700,
+                    letterSpacing: active ? -0.3 : -0.15,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    display: '-webkit-box',
+                    WebkitBoxOrient: 'vertical',
+                    WebkitLineClamp: 1
                   }}
                 >
                   {option.title}
-                </Text>
-                <Text
-                  numberOfLines={1}
+                </span>
+                <span
+                  className="ui-text"
+                  data-lines={1}
                   style={{
                     marginTop: 5,
                     color: theme.muted,
                     fontSize: active ? 12 : 11.5,
-                    lineHeight: 16,
-                    fontWeight: '500'
+                    lineHeight: '16px',
+                    fontWeight: 500,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    display: '-webkit-box',
+                    WebkitBoxOrient: 'vertical',
+                    WebkitLineClamp: 1
                   }}
                 >
                   {option.subtitle}
-                </Text>
-              </View>
+                </span>
+              </div>
 
               {active ? (
-                <View
+                <div
+                  className="ui-stack"
                   style={{
                     width: 28,
                     height: 28,
@@ -347,33 +374,40 @@ function QuickCarousel({
                   }}
                 >
                   <AppIcon name="check" size={15} color={option.tone} />
-                </View>
+                </div>
               ) : null}
-            </View>
-          </Animated.View>
+            </div>
+          </motion.div>
         )
       })}
-      {Platform.OS === 'web' && options.length > 1 ? (
-        <View
-          pointerEvents="none"
-          style={{ position: 'absolute', bottom: 2, left: 0, right: 0, alignItems: 'center' }}
+      {options.length > 1 ? (
+        <div
+          className="ui-stack"
+          style={{
+            position: 'absolute',
+            bottom: 2,
+            left: 0,
+            right: 0,
+            alignItems: 'center',
+            pointerEvents: 'none'
+          }}
         >
-          <Text
+          <span
+            className="ui-text"
             style={{
               color: theme.muted,
               fontSize: 12,
-              fontWeight: '700',
-              fontVariant: ['tabular-nums']
+              fontWeight: 700,
+              fontVariant: 'tabular-nums'
             }}
           >
             {selectedIndex + 1} / {options.length}
-          </Text>
-        </View>
+          </span>
+        </div>
       ) : null}
-    </View>
+    </div>
   )
 }
-
 function stageTitle(stage: FinanceQuickTransactionStage, type: FinanceUserTransactionType): string {
   if (stage === 'source-account') {
     return type === 'transfer' ? 'Счёт списания' : 'Выберите счёт'
@@ -382,7 +416,6 @@ function stageTitle(stage: FinanceQuickTransactionStage, type: FinanceUserTransa
   if (stage === 'tag') return 'Выберите тег'
   return 'Введите сумму'
 }
-
 export function FinanceQuickTransactionFlow({
   type,
   api,
@@ -414,89 +447,78 @@ export function FinanceQuickTransactionFlow({
   const [error, setError] = useState('')
   const [impact, setImpact] = useState<FinanceLimitImpact | null>(null)
   const [impactConfirmed, setImpactConfirmed] = useState(false)
-  const [stageOpacity] = useState(() => new Animated.Value(0))
-  const [stageTranslateY] = useState(() => new Animated.Value(-62))
-  const [stageScale] = useState(() => new Animated.Value(0.97))
+  const [stageOpacity] = useState(() => motionValue(0))
+  const [stageTranslateY] = useState(() => motionValue(-62))
+  const [stageScale] = useState(() => motionValue(0.97))
   const [carouselBusy, setCarouselBusy] = useState(false)
-
   const tone = financeOperationTone(type, theme.accent)
   const operationLabel = type === 'income' ? 'Доход' : type === 'expense' ? 'Расход' : 'Перевод'
   const operationIcon: AppIconName =
     type === 'income' ? 'income' : type === 'expense' ? 'expense' : 'transfer'
-
   const sourceAccount = accounts.find((account) => account.id === sourceAccountId)
   const destinationAccount = accounts.find((account) => account.id === destinationAccountId)
   const selectedTag = tags.find((tag) => tag.id === tagId)
-
   const enterStage = useCallback((): void => {
-    stageOpacity.setValue(0)
-    stageTranslateY.setValue(-62)
-    stageScale.setValue(0.97)
-    Animated.parallel([
-      Animated.timing(stageOpacity, {
-        toValue: 1,
-        duration: 210,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true
-      }),
-      Animated.spring(stageTranslateY, {
-        toValue: 0,
-        damping: 24,
-        stiffness: 230,
-        mass: 0.78,
-        overshootClamping: true,
-        useNativeDriver: true
-      }),
-      Animated.spring(stageScale, {
-        toValue: 1,
-        damping: 24,
-        stiffness: 230,
-        mass: 0.78,
-        overshootClamping: true,
-        useNativeDriver: true
-      })
-    ]).start()
+    stageOpacity.set(0)
+    stageTranslateY.set(-62)
+    stageScale.set(0.97)
+    playMotion(
+      parallelMotion([
+        motionStep(stageOpacity, 1, {
+          duration: 210 / 1000,
+          ease: 'easeOut',
+          type: 'tween'
+        }),
+        motionStep(stageTranslateY, 0, {
+          damping: 24,
+          stiffness: 230,
+          mass: 0.78,
+          type: 'spring'
+        }),
+        motionStep(stageScale, 1, {
+          damping: 24,
+          stiffness: 230,
+          mass: 0.78,
+          type: 'spring'
+        })
+      ])
+    )
   }, [stageOpacity, stageScale, stageTranslateY])
-
   useEffect(() => {
     requestAnimationFrame(enterStage)
   }, [enterStage])
-
   const transitionNext = (): void => {
     if (stageIndex >= stages.length - 1) return
-
-    Animated.parallel([
-      Animated.timing(stageOpacity, {
-        toValue: 0,
-        duration: 190,
-        easing: Easing.in(Easing.cubic),
-        useNativeDriver: true
-      }),
-      Animated.timing(stageTranslateY, {
-        toValue: 136,
-        duration: 215,
-        easing: Easing.in(Easing.cubic),
-        useNativeDriver: true
-      }),
-      Animated.timing(stageScale, {
-        toValue: 0.96,
-        duration: 215,
-        easing: Easing.in(Easing.cubic),
-        useNativeDriver: true
-      })
-    ]).start(() => {
-      setStageIndex((index) => index + 1)
-      setCarouselIndex(0)
-      requestAnimationFrame(enterStage)
-    })
+    playMotion(
+      parallelMotion([
+        motionStep(stageOpacity, 0, {
+          duration: 190 / 1000,
+          ease: 'easeIn',
+          type: 'tween'
+        }),
+        motionStep(stageTranslateY, 136, {
+          duration: 215 / 1000,
+          ease: 'easeIn',
+          type: 'tween'
+        }),
+        motionStep(stageScale, 0.96, {
+          duration: 215 / 1000,
+          ease: 'easeIn',
+          type: 'tween'
+        })
+      ]),
+      () => {
+        setStageIndex((index) => index + 1)
+        setCarouselIndex(0)
+        requestAnimationFrame(enterStage)
+      }
+    )
   }
-
   const close = (): void => {
     if (pending) return
     createOverlay?.hide()
     onClose()
   }
-
   const accountOptions = useMemo(
     () =>
       accounts.map<CarouselOption>((account) => ({
@@ -508,12 +530,10 @@ export function FinanceQuickTransactionFlow({
       })),
     [accounts, theme.accent]
   )
-
   const destinationOptions = useMemo(
     () => accountOptions.filter((option) => option.key !== sourceAccountId),
     [accountOptions, sourceAccountId]
   )
-
   const tagOptions = useMemo(
     () =>
       compatibleTags.map<CarouselOption>((tag) => ({
@@ -526,14 +546,12 @@ export function FinanceQuickTransactionFlow({
       })),
     [compatibleTags, theme.accent, type]
   )
-
   const currentOptions =
     stage === 'source-account'
       ? accountOptions
       : stage === 'destination-account'
         ? destinationOptions
         : tagOptions
-
   const confirmCarouselSelection = (): void => {
     if (carouselBusy) return
     const safeIndex = Math.min(carouselIndex, Math.max(0, currentOptions.length - 1))
@@ -542,11 +560,9 @@ export function FinanceQuickTransactionFlow({
       setError('Нет доступных вариантов для выбора')
       return
     }
-
     setError('')
     setImpact(null)
     setImpactConfirmed(false)
-
     if (stage === 'source-account') {
       setSourceAccountId(option.key)
       if (destinationAccountId === option.key) setDestinationAccountId('')
@@ -555,21 +571,17 @@ export function FinanceQuickTransactionFlow({
     } else if (stage === 'tag') {
       setTagId(option.key)
     }
-
     transitionNext()
   }
-
   const save = (): void => {
     if (pending) return
     setError('')
-
     try {
       const source = accounts.find((account) => account.id === sourceAccountId)
       if (!source) throw new Error('Выберите счёт')
       const amountMinor = parseMoneyToMinor(amount, source.currencyCode)
       if (amountMinor <= 0) throw new Error('Сумма должна быть больше нуля')
       const occurredAt = Date.now()
-
       if (type === 'expense' && !impactConfirmed) {
         if (!tagId) throw new Error('Выберите тег')
         const nextImpact = api.previewExpenseImpact({
@@ -585,9 +597,7 @@ export function FinanceQuickTransactionFlow({
           return
         }
       }
-
       setPending(true)
-
       if (type === 'transfer') {
         const destination = accounts.find((account) => account.id === destinationAccountId)
         if (!destination) throw new Error('Выберите счёт зачисления')
@@ -619,7 +629,6 @@ export function FinanceQuickTransactionFlow({
           })
         )
       }
-
       notifyDataChanged()
       onSaved()
       toast.success('Операция создана')
@@ -631,29 +640,34 @@ export function FinanceQuickTransactionFlow({
       setPending(false)
     }
   }
-
   return (
-    <Modal
-      visible
-      transparent
-      statusBarTranslucent
-      navigationBarTranslucent
-      animationType="none"
-      onRequestClose={close}
-    >
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={StyleSheet.absoluteFill}
+    <DialogLayer open={true} transition={'none'} onClose={close}>
+      <div
+        className="ui-stack"
+        style={{
+          position: 'absolute',
+          inset: 0
+        }}
       >
-        <View style={{ flex: 1, paddingHorizontal: 18, paddingTop: 18, paddingBottom: 22 }}>
-          <View
+        <div
+          className="ui-stack"
+          style={{
+            flex: '1 1 0%',
+            paddingInline: 18,
+            paddingTop: 18,
+            paddingBottom: 22
+          }}
+        >
+          <div
+            className="ui-stack"
             style={{
               minHeight: 44,
               position: 'relative',
               justifyContent: 'flex-start'
             }}
           >
-            <View
+            <div
+              className="ui-stack"
               style={{
                 minHeight: 38,
                 flexDirection: 'row',
@@ -691,14 +705,14 @@ export function FinanceQuickTransactionFlow({
                   icon="tag"
                 />
               ) : null}
-            </View>
+            </div>
 
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Закрыть быстрый ввод"
+            <Action
+              role={'button'}
+              aria-label={'Закрыть быстрый ввод'}
               disabled={pending}
-              onPress={close}
-              style={({ pressed }) => ({
+              onClick={close}
+              style={{
                 position: 'absolute',
                 top: 0,
                 right: 0,
@@ -708,61 +722,76 @@ export function FinanceQuickTransactionFlow({
                 justifyContent: 'center',
                 borderRadius: 12,
                 backgroundColor: '#111318E8',
-                opacity: pressed ? 0.72 : 1
-              })}
+                opacity: 1
+              }}
+              pressedStyle={{
+                opacity: 0.72
+              }}
             >
               <AppIcon name="close" size={18} color={theme.muted} />
-            </Pressable>
-          </View>
+            </Action>
+          </div>
 
-          <Animated.View
+          <motion.div
+            className="ui-stack"
             style={{
-              flex: 1,
+              flex: '1 1 0%',
               alignItems: 'center',
               justifyContent: 'center',
               opacity: stageOpacity,
-              transform: [{ translateY: stageTranslateY }, { scale: stageScale }]
+              y: stageTranslateY,
+              scale: stageScale
             }}
           >
-            <Text
+            <span
+              className="ui-text"
               style={{
                 color: theme.text,
                 fontSize: 23,
-                lineHeight: 29,
-                fontWeight: '700',
+                lineHeight: '29px',
+                fontWeight: 700,
                 textAlign: 'center',
                 letterSpacing: -0.4
               }}
             >
               {stageTitle(stage, type)}
-            </Text>
+            </span>
 
             {stage !== 'amount' ? (
               <>
-                <Text
+                <span
+                  className="ui-text"
                   style={{
                     marginTop: 8,
                     color: theme.muted,
                     fontSize: 11.5,
-                    lineHeight: 17,
-                    fontWeight: '600',
+                    lineHeight: '17px',
+                    fontWeight: 600,
                     textAlign: 'center'
                   }}
                 >
                   Проведите вверх или вниз · затем нажмите «Дальше»
-                </Text>
+                </span>
 
-                <View style={{ marginTop: 12, width: '100%', alignItems: 'center' }}>
+                <div
+                  className="ui-stack"
+                  style={{
+                    marginTop: 12,
+                    width: '100%',
+                    alignItems: 'center'
+                  }}
+                >
                   <QuickCarousel
                     options={currentOptions}
                     selectedIndex={Math.min(carouselIndex, Math.max(0, currentOptions.length - 1))}
                     onSelectedIndexChange={setCarouselIndex}
                     onBusyChange={setCarouselBusy}
                   />
-                </View>
+                </div>
               </>
             ) : (
-              <View
+              <div
+                className="ui-stack"
                 style={{
                   width: '100%',
                   maxWidth: 330,
@@ -770,46 +799,47 @@ export function FinanceQuickTransactionFlow({
                   gap: 12
                 }}
               >
-                <View
+                <div
+                  className="ui-stack"
                   style={{
-                    paddingHorizontal: 18,
-                    paddingVertical: 18,
+                    paddingInline: 18,
+                    paddingBlock: 18,
                     borderWidth: 1,
                     borderColor: tone + '55',
                     borderRadius: 22,
                     backgroundColor: '#111318F7'
                   }}
                 >
-                  <TextInput
-                    autoFocus
-                    accessibilityLabel="Сумма операции"
-                    keyboardType="decimal-pad"
+                  <TextControl
+                    autoFocus={true}
+                    aria-label={'Сумма операции'}
+                    inputMode={'decimal'}
                     value={amount}
-                    onChangeText={(value) => {
+                    onValueChange={(value) => {
                       setAmount(value)
                       setError('')
                       setImpact(null)
                       setImpactConfirmed(false)
                     }}
-                    placeholder="0.00"
-                    placeholderTextColor={theme.muted}
-                    selectionColor={tone}
+                    placeholder={'0.00'}
+                    placeholderColor={theme.muted}
                     style={{
                       color: theme.text,
                       fontSize: 34,
-                      lineHeight: 42,
-                      fontWeight: '700',
+                      lineHeight: '42px',
+                      fontWeight: 700,
                       textAlign: 'center',
-                      fontVariant: ['tabular-nums']
+                      fontVariant: 'tabular-nums'
                     }}
-                  />
-                  <Text
+                  ></TextControl>
+                  <span
+                    className="ui-text"
                     style={{
                       marginTop: 6,
                       color: theme.muted,
                       fontSize: 12,
-                      lineHeight: 17,
-                      fontWeight: '600',
+                      lineHeight: '17px',
+                      fontWeight: 600,
                       textAlign: 'center'
                     }}
                   >
@@ -818,24 +848,26 @@ export function FinanceQuickTransactionFlow({
                         ? `${sourceAccount.currencyCode} → ${destinationAccount.currencyCode}`
                         : sourceAccount.currencyCode
                       : 'Выберите счёт'}
-                  </Text>
-                </View>
+                  </span>
+                </div>
 
                 {error ? (
-                  <Text
+                  <span
+                    className="ui-text"
                     style={{
                       color: theme.error,
                       fontSize: 12,
-                      lineHeight: 17,
+                      lineHeight: '17px',
                       textAlign: 'center'
                     }}
                   >
                     {error}
-                  </Text>
+                  </span>
                 ) : null}
 
                 {impact ? (
-                  <View
+                  <div
+                    className="ui-stack"
                     style={{
                       padding: 11,
                       borderWidth: 1,
@@ -844,37 +876,40 @@ export function FinanceQuickTransactionFlow({
                       backgroundColor: '#f59e0b12'
                     }}
                   >
-                    <Text
+                    <span
+                      className="ui-text"
                       style={{
                         color: '#fbbf24',
                         fontSize: 11.5,
-                        lineHeight: 16,
-                        fontWeight: '700',
+                        lineHeight: '16px',
+                        fontWeight: 700,
                         textAlign: 'center'
                       }}
                     >
                       Расход затронет {impact.items.length} лимит(а). Нажмите ещё раз для
                       подтверждения.
-                    </Text>
-                  </View>
+                    </span>
+                  </div>
                 ) : null}
-              </View>
+              </div>
             )}
-          </Animated.View>
+          </motion.div>
 
-          <View
-            pointerEvents="box-none"
+          <div
+            className="ui-stack"
+            data-pass-through="true"
             style={{
               position: 'absolute',
               right: 0,
               bottom: 20,
               left: 0,
-              alignItems: 'center'
+              alignItems: 'center',
+              pointerEvents: 'none'
             }}
           >
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={
+            <Action
+              role={'button'}
+              aria-label={
                 stage === 'amount'
                   ? pending
                     ? 'Сохранение'
@@ -886,13 +921,13 @@ export function FinanceQuickTransactionFlow({
               disabled={
                 pending || carouselBusy || (stage !== 'amount' && currentOptions.length === 0)
               }
-              onPress={stage === 'amount' ? save : confirmCarouselSelection}
-              style={({ pressed }) => ({
+              onClick={stage === 'amount' ? save : confirmCarouselSelection}
+              style={{
                 minWidth: 176,
                 minHeight: 50,
                 alignItems: 'center',
                 justifyContent: 'center',
-                paddingHorizontal: 24,
+                paddingInline: 24,
                 borderRadius: 15,
                 borderWidth: 1,
                 borderColor: tone + '55',
@@ -900,12 +935,23 @@ export function FinanceQuickTransactionFlow({
                 opacity:
                   pending || carouselBusy || (stage !== 'amount' && currentOptions.length === 0)
                     ? 0.45
-                    : pressed
-                      ? 0.8
-                      : 1
-              })}
+                    : 1
+              }}
+              pressedStyle={{
+                opacity:
+                  pending || carouselBusy || (stage !== 'amount' && currentOptions.length === 0)
+                    ? 0.45
+                    : 0.8
+              }}
             >
-              <Text style={{ color: '#ffffff', fontSize: 14, fontWeight: '700' }}>
+              <span
+                className="ui-text"
+                style={{
+                  color: '#ffffff',
+                  fontSize: 14,
+                  fontWeight: 700
+                }}
+              >
                 {stage === 'amount'
                   ? pending
                     ? 'Сохранение…'
@@ -913,11 +959,11 @@ export function FinanceQuickTransactionFlow({
                       ? 'Подтвердить расход'
                       : 'Создать'
                   : 'Дальше'}
-              </Text>
-            </Pressable>
-          </View>
-        </View>
-      </KeyboardAvoidingView>
-    </Modal>
+              </span>
+            </Action>
+          </div>
+        </div>
+      </div>
+    </DialogLayer>
   )
 }

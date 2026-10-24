@@ -1,13 +1,10 @@
 import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { View } from 'react-native'
 import type { ResolveStudyInternalLinkTargetInput, StudyTextBlock } from '@mymind/contracts/study'
-
 import NotesRichTextDom, {
   type NotesRichTextDomRef,
   type NotesRichTextFormattingState
 } from './NotesRichTextDom'
 import { useTheme } from './theme'
-
 function escapeHtml(value: string): string {
   return value
     .replace(/&/g, '&amp;')
@@ -15,17 +12,13 @@ function escapeHtml(value: string): string {
     .replace(/>/g, '&gt;')
     .replace(/\n/g, '<br>')
 }
-
 function initialHtml(block: StudyTextBlock): string {
   return block.html?.trim() ? block.html : `<p>${escapeHtml(block.text)}</p>`
 }
-
 const StableNotesRichTextDom = memo(NotesRichTextDom)
-
 const noopChange = async (): Promise<void> => undefined
 const noopFocus = async (): Promise<void> => undefined
 const noopFormatting = async (): Promise<void> => undefined
-
 export function DocumentRichTextViewer({
   html,
   onOpenInternalLink,
@@ -38,28 +31,30 @@ export function DocumentRichTextViewer({
   const theme = useTheme()
   const [height, setHeight] = useState(64)
   const [initialContent] = useState(() => html || '<p></p>')
-
   const handleHeight = useCallback(async (nextHeight: number): Promise<void> => {
     const normalized = Math.max(32, Math.min(2400, Math.ceil(nextHeight)))
     setHeight((current) => (Math.abs(current - normalized) >= 2 ? normalized : current))
   }, [])
-
   const handleInternalLink = useCallback(
     async (target: ResolveStudyInternalLinkTargetInput): Promise<void> => {
       onOpenInternalLink?.(target)
     },
     [onOpenInternalLink]
   )
-
   const handleExternalLink = useCallback(
     async (href: string): Promise<void> => {
       onOpenExternalLink?.(href)
     },
     [onOpenExternalLink]
   )
-
   return (
-    <View style={{ minHeight: Math.max(32, height), overflow: 'hidden' }}>
+    <div
+      className="ui-stack"
+      style={{
+        minHeight: Math.max(32, height),
+        overflow: 'hidden'
+      }}
+    >
       <StableNotesRichTextDom
         ref={null}
         html={initialContent}
@@ -76,10 +71,9 @@ export function DocumentRichTextViewer({
         onOpenInternalLink={handleInternalLink}
         onOpenExternalLink={handleExternalLink}
       />
-    </View>
+    </div>
   )
 }
-
 export function NotesRichTextBlock({
   block,
   registerRef,
@@ -101,21 +95,18 @@ export function NotesRichTextBlock({
   const formattingChangedRef = useRef(formattingChanged)
   const registrationRef = useRef(registerRef)
   const [initialContent] = useState(() => initialHtml(block))
-
   useLayoutEffect(() => {
     registrationRef.current = registerRef
   }, [registerRef])
   const handleRegistration = useCallback((editor: NotesRichTextDomRef | null): void => {
     registrationRef.current(editor)
   }, [])
-
   useEffect(() => {
     blockRef.current = block
     updateRef.current = update
     activateRef.current = activate
     formattingChangedRef.current = formattingChanged
   }, [activate, block, formattingChanged, update])
-
   const handleChange = useCallback(async (html: string, text: string): Promise<void> => {
     const current = blockRef.current
     if (html === current.html && text === current.text) return
@@ -123,25 +114,22 @@ export function NotesRichTextBlock({
     blockRef.current = next
     updateRef.current(next)
   }, [])
-
   const handleFocus = useCallback(async (): Promise<void> => {
     activateRef.current()
   }, [])
-
   const handleFormatting = useCallback(
     async (state: NotesRichTextFormattingState): Promise<void> => {
       formattingChangedRef.current(state)
     },
     []
   )
-
   const handleHeight = useCallback(async (nextHeight: number): Promise<void> => {
     const normalized = Math.max(32, Math.min(1600, Math.ceil(nextHeight)))
     setHeight((current) => (Math.abs(current - normalized) >= 2 ? normalized : current))
   }, [])
-
   return (
-    <View
+    <div
+      className="ui-stack"
       style={{
         minHeight: Math.max(32, height),
         overflow: 'hidden',
@@ -161,6 +149,6 @@ export function NotesRichTextBlock({
         onFormattingState={handleFormatting}
         onHeightChange={handleHeight}
       />
-    </View>
+    </div>
   )
 }

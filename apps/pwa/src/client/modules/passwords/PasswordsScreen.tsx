@@ -1,15 +1,7 @@
+import { subscribePageHidden } from '../../../ui/lifecycle'
+import { TextControl, openExternalUrl, Action } from '../../../ui/browser'
 import { runAfterInteraction } from '../../shared/ui/run-after-interaction'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import {
-  AppState,
-  Linking,
-  Platform,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  View
-} from 'react-native'
 import {
   Heart,
   KeyRound,
@@ -17,7 +9,7 @@ import {
   ShieldCheck,
   SlidersHorizontal,
   type LucideIcon
-} from 'lucide-react-native'
+} from 'lucide-react'
 import {
   type PasswordGroupRecord,
   type PasswordItemRecord,
@@ -59,17 +51,17 @@ import { ChangeMasterPasswordModal } from './ChangeMasterPasswordModal'
 import { PasswordGeneratorModal } from './PasswordGeneratorModal'
 import { PasswordItemEditor } from './PasswordItemEditor'
 import { passwordClipboard } from './passwordClipboard'
-
 type Tab = 'items' | 'favorites' | 'security'
-
 const PASSWORD_TAB_IDS = ['items', 'favorites', 'security'] as const
-
-const PASSWORD_TABS: ReadonlyArray<{ id: Tab; label: string; icon: LucideIcon }> = [
+const PASSWORD_TABS: ReadonlyArray<{
+  id: Tab
+  label: string
+  icon: LucideIcon
+}> = [
   { id: 'items', label: 'Хранилище', icon: KeyRound },
   { id: 'favorites', label: 'Избранное', icon: Heart },
   { id: 'security', label: 'Безопасность', icon: ShieldCheck }
 ]
-
 function SecurityMetric({
   label,
   value,
@@ -81,44 +73,52 @@ function SecurityMetric({
 }): React.JSX.Element {
   const theme = useTheme()
   const valueColor = tone === 'danger' ? theme.error : tone === 'warning' ? '#fbbf24' : theme.text
-
   return (
-    <View
+    <div
+      className="ui-stack"
       style={{
         minWidth: 140,
         flexGrow: 1,
         flexBasis: '46%',
         minHeight: 76,
-        paddingHorizontal: 12,
-        paddingVertical: 10,
+        paddingInline: 12,
+        paddingBlock: 10,
         borderWidth: 1,
         borderColor: theme.border,
         borderRadius: 14,
         backgroundColor: theme.surface
       }}
     >
-      <Text style={{ color: theme.muted, fontSize: 10.5, lineHeight: 15 }}>{label}</Text>
-      <Text
+      <span
+        className="ui-text"
+        style={{
+          color: theme.muted,
+          fontSize: 10.5,
+          lineHeight: '15px'
+        }}
+      >
+        {label}
+      </span>
+      <span
+        className="ui-text"
         style={{
           marginTop: 7,
           color: valueColor,
           fontSize: 20,
-          lineHeight: 24,
-          fontWeight: '700'
+          lineHeight: '24px',
+          fontWeight: 700
         }}
       >
         {value}
-      </Text>
-    </View>
+      </span>
+    </div>
   )
 }
-
 const securityLabels = {
   weak: 'Слабый пароль',
   reused: 'Повторно используется',
   old: 'Давно не менялся'
 } as const
-
 function VaultGate({
   api,
   status,
@@ -133,7 +133,6 @@ function VaultGate({
   const [confirmation, setConfirmation] = useState('')
   const [error, setError] = useState('')
   const [working, setWorking] = useState(false)
-
   const submit = async (): Promise<void> => {
     if (working) return
     setWorking(true)
@@ -154,58 +153,44 @@ function VaultGate({
       setWorking(false)
     }
   }
-
   return (
-    <ScrollView
-      keyboardShouldPersistTaps="handled"
-      contentContainerStyle={{ paddingTop: 12, paddingBottom: 48, gap: 16 }}
-    >
-      <View
+    <div className="ui-scroll">
+      <div
+        className="ui-stack ui-scroll-content"
         style={{
-          gap: 14,
-          borderWidth: 1,
-          borderColor: theme.border,
-          backgroundColor: theme.surface,
-          borderRadius: 18,
-          padding: 18
+          paddingTop: 12,
+          paddingBottom: 48,
+          gap: 16
         }}
       >
-        <Label title>{status.initialized ? 'Хранилище заблокировано' : 'Защитите хранилище'}</Label>
-        <Label muted>
-          {status.initialized
-            ? 'Введите мастер-пароль. Ключ существует только в памяти до блокировки приложения.'
-            : 'Создайте мастер-пароль минимум из 12 символов. Он не сохраняется в открытом виде и не может быть восстановлен.'}
-        </Label>
-        <TextInput
-          value={masterPassword}
-          onChangeText={setMasterPassword}
-          secureTextEntry
-          autoCapitalize="none"
-          autoCorrect={false}
-          accessibilityLabel="Мастер-пароль"
-          placeholder="Мастер-пароль"
-          placeholderTextColor={theme.muted}
+        <div
+          className="ui-stack"
           style={{
-            minHeight: 52,
+            gap: 14,
             borderWidth: 1,
             borderColor: theme.border,
-            borderRadius: 12,
-            backgroundColor: theme.raised,
-            color: theme.text,
-            paddingHorizontal: 14,
-            fontSize: 16
+            backgroundColor: theme.surface,
+            borderRadius: 18,
+            padding: 18
           }}
-        />
-        {!status.initialized ? (
-          <TextInput
-            value={confirmation}
-            onChangeText={setConfirmation}
-            secureTextEntry
-            autoCapitalize="none"
-            autoCorrect={false}
-            accessibilityLabel="Повторите мастер-пароль"
-            placeholder="Повторите мастер-пароль"
-            placeholderTextColor={theme.muted}
+        >
+          <Label title>
+            {status.initialized ? 'Хранилище заблокировано' : 'Защитите хранилище'}
+          </Label>
+          <Label muted>
+            {status.initialized
+              ? 'Введите мастер-пароль. Ключ существует только в памяти до блокировки приложения.'
+              : 'Создайте мастер-пароль минимум из 12 символов. Он не сохраняется в открытом виде и не может быть восстановлен.'}
+          </Label>
+          <TextControl
+            value={masterPassword}
+            onValueChange={setMasterPassword}
+            type={'password'}
+            autoCapitalize={'none'}
+            autoCorrect={'off'}
+            aria-label={'Мастер-пароль'}
+            placeholder={'Мастер-пароль'}
+            placeholderColor={theme.muted}
             style={{
               minHeight: 52,
               borderWidth: 1,
@@ -213,32 +198,52 @@ function VaultGate({
               borderRadius: 12,
               backgroundColor: theme.raised,
               color: theme.text,
-              paddingHorizontal: 14,
+              paddingInline: 14,
               fontSize: 16
             }}
+          ></TextControl>
+          {!status.initialized ? (
+            <TextControl
+              value={confirmation}
+              onValueChange={setConfirmation}
+              type={'password'}
+              autoCapitalize={'none'}
+              autoCorrect={'off'}
+              aria-label={'Повторите мастер-пароль'}
+              placeholder={'Повторите мастер-пароль'}
+              placeholderColor={theme.muted}
+              style={{
+                minHeight: 52,
+                borderWidth: 1,
+                borderColor: theme.border,
+                borderRadius: 12,
+                backgroundColor: theme.raised,
+                color: theme.text,
+                paddingInline: 14,
+                fontSize: 16
+              }}
+            ></TextControl>
+          ) : null}
+          {error ? <ErrorState message={error} /> : null}
+          <Button
+            label={
+              working ? 'Проверка…' : status.initialized ? 'Разблокировать' : 'Создать хранилище'
+            }
+            selected
+            disabled={working}
+            onClick={() => void submit()}
           />
-        ) : null}
-        {error ? <ErrorState message={error} /> : null}
-        <Button
-          label={
-            working ? 'Проверка…' : status.initialized ? 'Разблокировать' : 'Создать хранилище'
-          }
-          selected
-          disabled={working}
-          onPress={() => void submit()}
-        />
-      </View>
-    </ScrollView>
+        </div>
+      </div>
+    </div>
   )
 }
-
 function itemSubtitle(item: PasswordItemSummary, overview: PasswordsOverview): string {
   const group = overview.groups.find((candidate) => candidate.id === item.groupId)?.name
   return [item.username, group, item.type === 'login' ? 'Логин' : 'Пароль']
     .filter(Boolean)
     .join(' · ')
 }
-
 export function PasswordsScreen(): React.JSX.Element {
   const { passwords: api } = useServices()
   const confirm = useConfirmation()
@@ -262,7 +267,6 @@ export function PasswordsScreen(): React.JSX.Element {
   const [toolsOpen, setToolsOpen] = useState(false)
   const [swipeTabFeedback, showSwipeTabFeedback] = useSwipeTabFeedback<Tab>()
   const [searchOpen, setSearchOpen] = useState(false)
-
   const changeTab = useCallback(
     (next: Tab): void => {
       if (next === tab) return
@@ -270,7 +274,6 @@ export function PasswordsScreen(): React.JSX.Element {
     },
     [tab]
   )
-
   const refresh = useCallback((): void => {
     setLoading(true)
     try {
@@ -285,7 +288,6 @@ export function PasswordsScreen(): React.JSX.Element {
       setLoading(false)
     }
   }, [api])
-
   const lock = useCallback((): void => {
     api.lockPasswordVault()
     setStatus(api.getPasswordVaultStatus())
@@ -299,15 +301,12 @@ export function PasswordsScreen(): React.JSX.Element {
     setForm(null)
     void passwordClipboard.clearTracked()
   }, [api])
-
   useEffect(() => {
     let active = true
     queueMicrotask(() => {
       if (active) refresh()
     })
-    const subscription = AppState.addEventListener('change', (nextState) => {
-      if (nextState !== 'active') lock()
-    })
+    const subscription = subscribePageHidden(lock)
     return () => {
       active = false
       subscription.remove()
@@ -315,7 +314,6 @@ export function PasswordsScreen(): React.JSX.Element {
       void passwordClipboard.clearTracked()
     }
   }, [api, lock, refresh])
-
   const openItem = (summary?: PasswordItemSummary): void => {
     try {
       setEditingItem(summary ? api.getPasswordItem(summary.id) : null)
@@ -324,7 +322,6 @@ export function PasswordsScreen(): React.JSX.Element {
       setError(messageFor(reason))
     }
   }
-
   const editGroup = (group?: PasswordGroupRecord): void => {
     setForm({
       title: group ? 'Изменить группу' : 'Новая группа',
@@ -353,7 +350,6 @@ export function PasswordsScreen(): React.JSX.Element {
       }
     })
   }
-
   const copyField = async (
     item: PasswordItemSummary,
     field: 'username' | 'password'
@@ -369,18 +365,16 @@ export function PasswordsScreen(): React.JSX.Element {
       setError(messageFor(reason))
     }
   }
-
   const openWebsite = async (item: PasswordItemSummary): Promise<void> => {
     try {
       const website = api.getPasswordItem(item.id).website
       if (!/^https?:\/\//i.test(website)) throw new Error('Некорректный адрес сайта')
-      await Linking.openURL(website)
+      await openExternalUrl(website)
       setError('')
     } catch (reason) {
       setError(messageFor(reason))
     }
   }
-
   const deleteGroup = (group: PasswordGroupRecord): void => {
     void confirm({
       title: `Удалить группу «${group.name}»?`,
@@ -399,7 +393,6 @@ export function PasswordsScreen(): React.JSX.Element {
       }
     })
   }
-
   const deleteItem = (item: PasswordItemSummary): void => {
     void confirm({
       title: `Удалить запись «${item.title}»?`,
@@ -417,7 +410,6 @@ export function PasswordsScreen(): React.JSX.Element {
       }
     })
   }
-
   const filteredItems = useMemo(() => {
     if (!overview) return []
     const normalizedQuery = query.trim().toLocaleLowerCase('ru-RU')
@@ -432,7 +424,6 @@ export function PasswordsScreen(): React.JSX.Element {
         .includes(normalizedQuery)
     })
   }, [groupFilter, issueFilter, overview, query, tab, typeFilter])
-
   const groupScopedItems = useMemo(() => {
     if (!overview) return []
     return overview.items.filter((item) => {
@@ -441,7 +432,6 @@ export function PasswordsScreen(): React.JSX.Element {
       return true
     })
   }, [groupFilter, overview])
-
   const securitySummary = useMemo(
     () => ({
       total: groupScopedItems.length,
@@ -451,43 +441,42 @@ export function PasswordsScreen(): React.JSX.Element {
     }),
     [groupScopedItems]
   )
-
   const activeGroupLabel =
     groupFilter === undefined
       ? 'Все записи'
       : groupFilter === null
         ? 'Без группы'
         : (overview?.groups.find((group) => group.id === groupFilter)?.name ?? 'Группа')
-
   const filtersActive =
     groupFilter !== undefined ||
     (tab !== 'security' && (typeFilter !== 'all' || issueFilter !== 'all'))
-
   const groupSelectValue =
     groupFilter === undefined ? '__all__' : groupFilter === null ? '__none__' : groupFilter
-
   const openTool = (action: () => void): void => {
     setToolsOpen(false)
     runAfterInteraction(action)
   }
-
   if (!status.unlocked) {
     return <VaultGate api={api} status={status} unlocked={refresh} />
   }
-
   if (loading && !overview) return <LoadingState />
   if (!overview)
     return <ErrorState message={error || 'Не удалось открыть хранилище'} retry={refresh} />
-
   const tabHeader = (
     <>
-      <View style={{ gap: 10, paddingBottom: 12 }}>
+      <div
+        className="ui-stack"
+        style={{
+          gap: 10,
+          paddingBottom: 12
+        }}
+      >
         <SwipeTabBar
           items={PASSWORD_TABS}
           value={tab}
           onChange={changeTab}
           feedback={swipeTabFeedback}
-          search={tab === 'security' ? undefined : { value: query, onChangeText: setQuery }}
+          search={tab === 'security' ? undefined : { value: query, onValueChange: setQuery }}
           onSearchOpenChange={setSearchOpen}
           renderIcon={(item, selected) => {
             const Icon = item.icon
@@ -501,35 +490,36 @@ export function PasswordsScreen(): React.JSX.Element {
           }}
           trailing={
             <>
-              <View
+              <div
+                className="ui-stack"
                 style={{
                   width: 1,
                   height: 26,
-                  marginHorizontal: 2,
+                  marginInline: 2,
                   backgroundColor: theme.border
                 }}
-              />
+              ></div>
 
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={`Фильтры. Группа: ${activeGroupLabel}`}
-                accessibilityState={{ selected: filtersActive }}
-                onPress={() => setFiltersOpen(true)}
-                style={({ pressed }) => ({
+              <Action
+                role={'button'}
+                aria-label={`Фильтры. Группа: ${activeGroupLabel}`}
+                aria-selected={filtersActive}
+                onClick={() => setFiltersOpen(true)}
+                style={{
                   position: 'relative',
-                  flex: 1,
+                  flex: '1 1 0%',
                   minWidth: 0,
                   height: 40,
                   alignItems: 'center',
                   justifyContent: 'center',
                   borderRadius: 12,
-                  backgroundColor: filtersActive
-                    ? theme.accent + '18'
-                    : pressed
-                      ? theme.raised
-                      : 'transparent',
-                  opacity: pressed ? 0.72 : 1
-                })}
+                  backgroundColor: filtersActive ? theme.accent + '18' : 'transparent',
+                  opacity: 1
+                }}
+                pressedStyle={{
+                  backgroundColor: filtersActive ? theme.accent + '18' : theme.raised,
+                  opacity: 0.72
+                }}
               >
                 <SlidersHorizontal
                   size={19}
@@ -537,8 +527,8 @@ export function PasswordsScreen(): React.JSX.Element {
                   color={filtersActive ? theme.accent : theme.muted}
                 />
                 {filtersActive ? (
-                  <View
-                    pointerEvents="none"
+                  <div
+                    className="ui-stack"
                     style={{
                       position: 'absolute',
                       top: 7,
@@ -546,190 +536,248 @@ export function PasswordsScreen(): React.JSX.Element {
                       width: 6,
                       height: 6,
                       borderRadius: 3,
-                      backgroundColor: theme.accent
+                      backgroundColor: theme.accent,
+                      pointerEvents: 'none'
                     }}
-                  />
+                  ></div>
                 ) : null}
-              </Pressable>
+              </Action>
 
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Действия хранилища"
-                onPress={() => setToolsOpen(true)}
-                style={({ pressed }) => ({
-                  flex: 1,
+              <Action
+                role={'button'}
+                aria-label={'Действия хранилища'}
+                onClick={() => setToolsOpen(true)}
+                style={{
+                  flex: '1 1 0%',
                   minWidth: 0,
                   height: 40,
                   alignItems: 'center',
                   justifyContent: 'center',
                   borderRadius: 12,
-                  backgroundColor: pressed ? theme.raised : 'transparent',
-                  opacity: pressed ? 0.72 : 1
-                })}
+                  backgroundColor: 'transparent',
+                  opacity: 1
+                }}
+                pressedStyle={{
+                  backgroundColor: theme.raised,
+                  opacity: 0.72
+                }}
               >
                 <MoreHorizontal size={19} color={theme.muted} />
-              </Pressable>
+              </Action>
             </>
           }
         />
 
         {error ? <ErrorState message={error} retry={refresh} /> : null}
-      </View>
+      </div>
     </>
   )
-
   let content: React.JSX.Element
   if (tab === 'security') {
     content = (
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 96, gap: 16 }}
-      >
-        {Platform.OS === 'web' ? tabHeader : null}
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-          <SecurityMetric label="Всего" value={securitySummary.total} />
-          <SecurityMetric label="Слабые" value={securitySummary.weak} tone="danger" />
-          <SecurityMetric label="Повторы" value={securitySummary.reused} tone="warning" />
-          <SecurityMetric label="Старые" value={securitySummary.old} tone="warning" />
-        </View>
-
-        <View
+      <div className="ui-scroll">
+        <div
+          className="ui-stack ui-scroll-content"
           style={{
-            padding: 14,
-            borderWidth: 1,
-            borderColor: theme.border,
-            borderRadius: 16,
-            backgroundColor: theme.surface
+            paddingBottom: 96,
+            gap: 16
           }}
         >
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-            <View
+          {tabHeader}
+          <div
+            className="ui-stack"
+            style={{
+              flexDirection: 'row',
+              flexWrap: 'wrap',
+              gap: 8
+            }}
+          >
+            <SecurityMetric label="Всего" value={securitySummary.total} />
+            <SecurityMetric label="Слабые" value={securitySummary.weak} tone="danger" />
+            <SecurityMetric label="Повторы" value={securitySummary.reused} tone="warning" />
+            <SecurityMetric label="Старые" value={securitySummary.old} tone="warning" />
+          </div>
+
+          <div
+            className="ui-stack"
+            style={{
+              padding: 14,
+              borderWidth: 1,
+              borderColor: theme.border,
+              borderRadius: 16,
+              backgroundColor: theme.surface
+            }}
+          >
+            <div
+              className="ui-stack"
               style={{
-                width: 36,
-                height: 36,
+                flexDirection: 'row',
                 alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: 12,
-                backgroundColor: theme.accent + '10'
+                gap: 10
               }}
             >
-              <ShieldCheck size={17} color={theme.accent} />
-            </View>
-            <View style={{ minWidth: 0, flex: 1 }}>
-              <Text style={{ color: theme.text, fontSize: 14, fontWeight: '700' }}>
-                Защита хранилища
-              </Text>
-              <Text style={{ marginTop: 3, color: theme.muted, fontSize: 11.5, lineHeight: 17 }}>
-                Шифрование, автоблокировка и очистка скопированных секретов включены.
-              </Text>
-            </View>
-          </View>
-        </View>
+              <div
+                className="ui-stack"
+                style={{
+                  width: 36,
+                  height: 36,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: 12,
+                  backgroundColor: theme.accent + '10'
+                }}
+              >
+                <ShieldCheck size={17} color={theme.accent} />
+              </div>
+              <div
+                className="ui-stack"
+                style={{
+                  minWidth: 0,
+                  flex: '1 1 0%'
+                }}
+              >
+                <span
+                  className="ui-text"
+                  style={{
+                    color: theme.text,
+                    fontSize: 14,
+                    fontWeight: 700
+                  }}
+                >
+                  Защита хранилища
+                </span>
+                <span
+                  className="ui-text"
+                  style={{
+                    marginTop: 3,
+                    color: theme.muted,
+                    fontSize: 11.5,
+                    lineHeight: '17px'
+                  }}
+                >
+                  Шифрование, автоблокировка и очистка скопированных секретов включены.
+                </span>
+              </div>
+            </div>
+          </div>
 
-        {groupScopedItems.some((item) => item.securityIssues.length > 0) ? (
-          groupScopedItems
-            .filter((item) => item.securityIssues.length > 0)
-            .map((item) => (
-              <WorkspaceNodeCard
-                key={item.id}
-                title={item.title}
-                subtitle={[
-                  item.username,
-                  ...item.securityIssues.map((value) => securityLabels[value])
-                ]
-                  .filter(Boolean)
-                  .join(' · ')}
-                leadingIcon="info"
-                onPress={() => openItem(item)}
-              />
-            ))
-        ) : (
-          <EmptyState text="Проблем безопасности не найдено." />
-        )}
-      </ScrollView>
+          {groupScopedItems.some((item) => item.securityIssues.length > 0) ? (
+            groupScopedItems
+              .filter((item) => item.securityIssues.length > 0)
+              .map((item) => (
+                <WorkspaceNodeCard
+                  key={item.id}
+                  title={item.title}
+                  subtitle={[
+                    item.username,
+                    ...item.securityIssues.map((value) => securityLabels[value])
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
+                  leadingIcon="info"
+                  onClick={() => openItem(item)}
+                />
+              ))
+          ) : (
+            <EmptyState text="Проблем безопасности не найдено." />
+          )}
+        </div>
+      </div>
     )
   } else {
     content = (
-      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 96 }}>
-        {Platform.OS === 'web' ? tabHeader : null}
-        {filteredItems.length ? (
-          filteredItems.map((item) => {
-            const itemGroup = item.groupId
-              ? (overview.groups.find((candidate) => candidate.id === item.groupId) ?? null)
-              : null
-            return (
-              <WorkspaceNodeCard
-                key={item.id}
-                title={item.title}
-                subtitle={itemSubtitle(item, overview)}
-                leading={
-                  itemGroup ? (
-                    <VisualIconBadge value={itemGroup.icon} colorKey={itemGroup.color} />
-                  ) : undefined
-                }
-                leadingIcon={itemGroup ? undefined : 'passwords'}
-                onPress={() => openItem(item)}
-                action={
-                  <ActionMenu
-                    title={item.title}
-                    items={[
-                      ...(item.username
-                        ? [
-                            {
-                              key: 'copy-login',
-                              label: 'Скопировать логин',
-                              icon: 'copy' as const,
-                              onPress: () => void copyField(item, 'username')
-                            }
-                          ]
-                        : []),
-                      {
-                        key: 'copy-password',
-                        label: 'Скопировать пароль',
-                        icon: 'copy',
-                        onPress: () => void copyField(item, 'password')
-                      },
-                      ...(item.website
-                        ? [
-                            {
-                              key: 'website',
-                              label: 'Открыть сайт',
-                              icon: 'forward' as const,
-                              onPress: () => void openWebsite(item)
-                            }
-                          ]
-                        : []),
-                      {
-                        key: 'edit',
-                        label: 'Изменить',
-                        icon: 'edit',
-                        onPress: () => openItem(item)
-                      },
-                      {
-                        key: 'delete',
-                        label: 'Удалить',
-                        icon: 'delete',
-                        danger: true,
-                        onPress: () => deleteItem(item)
-                      }
-                    ]}
-                  />
-                }
-              />
-            )
-          })
-        ) : (
-          <EmptyState
-            text={tab === 'favorites' ? 'Избранных записей пока нет.' : 'Записей пока нет.'}
-          />
-        )}
-      </ScrollView>
+      <div className="ui-scroll">
+        <div
+          className="ui-stack ui-scroll-content"
+          style={{
+            paddingBottom: 96
+          }}
+        >
+          {tabHeader}
+          {filteredItems.length ? (
+            filteredItems.map((item) => {
+              const itemGroup = item.groupId
+                ? (overview.groups.find((candidate) => candidate.id === item.groupId) ?? null)
+                : null
+              return (
+                <WorkspaceNodeCard
+                  key={item.id}
+                  title={item.title}
+                  subtitle={itemSubtitle(item, overview)}
+                  leading={
+                    itemGroup ? (
+                      <VisualIconBadge value={itemGroup.icon} colorKey={itemGroup.color} />
+                    ) : undefined
+                  }
+                  leadingIcon={itemGroup ? undefined : 'passwords'}
+                  onClick={() => openItem(item)}
+                  action={
+                    <ActionMenu
+                      title={item.title}
+                      items={[
+                        ...(item.username
+                          ? [
+                              {
+                                key: 'copy-login',
+                                label: 'Скопировать логин',
+                                icon: 'copy' as const,
+                                onClick: () => void copyField(item, 'username')
+                              }
+                            ]
+                          : []),
+                        {
+                          key: 'copy-password',
+                          label: 'Скопировать пароль',
+                          icon: 'copy',
+                          onClick: () => void copyField(item, 'password')
+                        },
+                        ...(item.website
+                          ? [
+                              {
+                                key: 'website',
+                                label: 'Открыть сайт',
+                                icon: 'forward' as const,
+                                onClick: () => void openWebsite(item)
+                              }
+                            ]
+                          : []),
+                        {
+                          key: 'edit',
+                          label: 'Изменить',
+                          icon: 'edit',
+                          onClick: () => openItem(item)
+                        },
+                        {
+                          key: 'delete',
+                          label: 'Удалить',
+                          icon: 'delete',
+                          danger: true,
+                          onClick: () => deleteItem(item)
+                        }
+                      ]}
+                    />
+                  }
+                />
+              )
+            })
+          ) : (
+            <EmptyState
+              text={tab === 'favorites' ? 'Избранных записей пока нет.' : 'Записей пока нет.'}
+            />
+          )}
+        </div>
+      </div>
     )
   }
-
   return (
-    <View style={{ flex: 1, minHeight: 0 }}>
-      {Platform.OS !== 'web' ? tabHeader : null}
+    <div
+      className="ui-stack"
+      style={{
+        flex: '1 1 0%',
+        minHeight: 0
+      }}
+    >
+      {null}
 
       <SwipeableTabContent
         tabs={PASSWORD_TAB_IDS}
@@ -748,14 +796,14 @@ export function PasswordsScreen(): React.JSX.Element {
             label: 'Новая запись',
             description: 'Добавить логин или пароль',
             icon: 'passwords',
-            onPress: () => openItem()
+            onClick: () => openItem()
           },
           {
             key: 'group',
             label: 'Новая группа',
             description: 'Создать группу для доступов',
             icon: 'folder',
-            onPress: () => editGroup()
+            onClick: () => editGroup()
           }
         ]}
       />
@@ -767,74 +815,90 @@ export function PasswordsScreen(): React.JSX.Element {
         icon="search"
         presentation="sheet"
       >
-        <ScrollView contentContainerStyle={{ padding: 12, paddingBottom: 24, gap: 12 }}>
-          <AppSelect
-            label="Группа"
-            value={groupSelectValue}
-            choices={[
-              { value: '__all__', label: 'Все записи' },
-              { value: '__none__', label: 'Без группы' },
-              ...overview.groups.map((group) => ({ value: group.id, label: group.name }))
-            ]}
-            onChange={(value) => {
-              if (value === '__all__') setGroupFilter(undefined)
-              else if (value === '__none__') setGroupFilter(null)
-              else setGroupFilter(value)
+        <div className="ui-scroll">
+          <div
+            className="ui-stack ui-scroll-content"
+            style={{
+              padding: 12,
+              paddingBottom: 24,
+              gap: 12
             }}
-          />
-
-          {tab !== 'security' ? (
-            <>
-              <AppSelect
-                label="Тип записи"
-                value={typeFilter}
-                choices={[
-                  { value: 'all', label: 'Все типы' },
-                  { value: 'login', label: 'Логин' },
-                  { value: 'password', label: 'Пароль' }
-                ]}
-                onChange={(value) =>
-                  setTypeFilter(value === 'login' || value === 'password' ? value : 'all')
-                }
-              />
-              <AppSelect
-                label="Безопасность"
-                value={issueFilter}
-                choices={[
-                  { value: 'all', label: 'Любая безопасность' },
-                  { value: 'weak', label: 'Слабые' },
-                  { value: 'reused', label: 'Повторяющиеся' },
-                  { value: 'old', label: 'Старые пароли' }
-                ]}
-                onChange={(value) =>
-                  setIssueFilter(
-                    value === 'weak' || value === 'reused' || value === 'old' ? value : 'all'
-                  )
-                }
-              />
-            </>
-          ) : null}
-
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-            <Button
-              label="Сбросить"
-              icon="reset"
-              onPress={() => {
-                setGroupFilter(undefined)
-                setTypeFilter('all')
-                setIssueFilter('all')
+          >
+            <AppSelect
+              label="Группа"
+              value={groupSelectValue}
+              choices={[
+                { value: '__all__', label: 'Все записи' },
+                { value: '__none__', label: 'Без группы' },
+                ...overview.groups.map((group) => ({ value: group.id, label: group.name }))
+              ]}
+              onChange={(value) => {
+                if (value === '__all__') setGroupFilter(undefined)
+                else if (value === '__none__') setGroupFilter(null)
+                else setGroupFilter(value)
               }}
             />
-            <Button
-              label="Группы"
-              icon="folder"
-              onPress={() => {
-                setFiltersOpen(false)
-                runAfterInteraction(() => setGroupsOpen(true))
+
+            {tab !== 'security' ? (
+              <>
+                <AppSelect
+                  label="Тип записи"
+                  value={typeFilter}
+                  choices={[
+                    { value: 'all', label: 'Все типы' },
+                    { value: 'login', label: 'Логин' },
+                    { value: 'password', label: 'Пароль' }
+                  ]}
+                  onChange={(value) =>
+                    setTypeFilter(value === 'login' || value === 'password' ? value : 'all')
+                  }
+                />
+                <AppSelect
+                  label="Безопасность"
+                  value={issueFilter}
+                  choices={[
+                    { value: 'all', label: 'Любая безопасность' },
+                    { value: 'weak', label: 'Слабые' },
+                    { value: 'reused', label: 'Повторяющиеся' },
+                    { value: 'old', label: 'Старые пароли' }
+                  ]}
+                  onChange={(value) =>
+                    setIssueFilter(
+                      value === 'weak' || value === 'reused' || value === 'old' ? value : 'all'
+                    )
+                  }
+                />
+              </>
+            ) : null}
+
+            <div
+              className="ui-stack"
+              style={{
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                gap: 8
               }}
-            />
-          </View>
-        </ScrollView>
+            >
+              <Button
+                label="Сбросить"
+                icon="reset"
+                onClick={() => {
+                  setGroupFilter(undefined)
+                  setTypeFilter('all')
+                  setIssueFilter('all')
+                }}
+              />
+              <Button
+                label="Группы"
+                icon="folder"
+                onClick={() => {
+                  setFiltersOpen(false)
+                  runAfterInteraction(() => setGroupsOpen(true))
+                }}
+              />
+            </div>
+          </div>
+        </div>
       </AppDialog>
 
       <AppDialog
@@ -845,26 +909,33 @@ export function PasswordsScreen(): React.JSX.Element {
         icon="passwords"
         presentation="sheet"
       >
-        <View style={{ padding: 12, paddingBottom: 20, gap: 6 }}>
+        <div
+          className="ui-stack"
+          style={{
+            padding: 12,
+            paddingBottom: 20,
+            gap: 6
+          }}
+        >
           <WorkspaceNodeCard
             title="Генератор паролей"
             subtitle="Создать стойкий пароль и скопировать его"
             leadingIcon="passwords"
-            onPress={() => openTool(() => setGeneratorOpen(true))}
+            onClick={() => openTool(() => setGeneratorOpen(true))}
           />
           <WorkspaceNodeCard
             title="Сменить мастер-пароль"
             subtitle="Обновить ключ доступа к хранилищу"
             leadingIcon="edit"
-            onPress={() => openTool(() => setChangeMasterOpen(true))}
+            onClick={() => openTool(() => setChangeMasterOpen(true))}
           />
           <WorkspaceNodeCard
             title="Заблокировать"
             subtitle="Закрыть хранилище и очистить секрет из памяти"
             leadingIcon="close"
-            onPress={() => openTool(lock)}
+            onClick={() => openTool(lock)}
           />
-        </View>
+        </div>
       </AppDialog>
 
       <AppDialog
@@ -875,76 +946,90 @@ export function PasswordsScreen(): React.JSX.Element {
         icon="folder"
         presentation="sheet"
       >
-        <ScrollView contentContainerStyle={{ padding: 12, paddingBottom: 24 }}>
-          <WorkspaceNodeCard
-            title="Все записи"
-            subtitle={`${overview.items.length} записей`}
-            leadingIcon="passwords"
-            selected={groupFilter === undefined}
-            onPress={() => {
-              setGroupFilter(undefined)
-              setGroupsOpen(false)
+        <div className="ui-scroll">
+          <div
+            className="ui-stack ui-scroll-content"
+            style={{
+              padding: 12,
+              paddingBottom: 24
             }}
-          />
-          <WorkspaceNodeCard
-            title="Без группы"
-            subtitle={`${overview.items.filter((item) => item.groupId === null).length} записей`}
-            leadingIcon="folder"
-            selected={groupFilter === null}
-            onPress={() => {
-              setGroupFilter(null)
-              setGroupsOpen(false)
-            }}
-          />
-          {overview.groups.map((group) => (
+          >
             <WorkspaceNodeCard
-              key={group.id}
-              title={group.name}
-              subtitle={`${overview.items.filter((item) => item.groupId === group.id).length} записей`}
-              leading={<VisualIconBadge value={group.icon} colorKey={group.color} />}
-              selected={groupFilter === group.id}
-              onPress={() => {
-                setGroupFilter(group.id)
+              title="Все записи"
+              subtitle={`${overview.items.length} записей`}
+              leadingIcon="passwords"
+              selected={groupFilter === undefined}
+              onClick={() => {
+                setGroupFilter(undefined)
                 setGroupsOpen(false)
               }}
-              action={
-                <ActionMenu
-                  title={group.name}
-                  items={[
-                    {
-                      label: 'Изменить',
-                      icon: 'edit',
-                      onPress: () => {
-                        setGroupsOpen(false)
-                        editGroup(group)
-                      }
-                    },
-                    {
-                      label: 'Удалить',
-                      icon: 'delete',
-                      danger: true,
-                      onPress: () => {
-                        setGroupsOpen(false)
-                        deleteGroup(group)
-                      }
-                    }
-                  ]}
-                />
-              }
             />
-          ))}
-          <View style={{ marginTop: 8, alignItems: 'flex-start' }}>
-            <Button
-              label="Новая группа"
-              icon="add"
-              primary
-              onPress={() => {
+            <WorkspaceNodeCard
+              title="Без группы"
+              subtitle={`${overview.items.filter((item) => item.groupId === null).length} записей`}
+              leadingIcon="folder"
+              selected={groupFilter === null}
+              onClick={() => {
+                setGroupFilter(null)
                 setGroupsOpen(false)
-                editGroup()
               }}
             />
-          </View>
-        </ScrollView>
+            {overview.groups.map((group) => (
+              <WorkspaceNodeCard
+                key={group.id}
+                title={group.name}
+                subtitle={`${overview.items.filter((item) => item.groupId === group.id).length} записей`}
+                leading={<VisualIconBadge value={group.icon} colorKey={group.color} />}
+                selected={groupFilter === group.id}
+                onClick={() => {
+                  setGroupFilter(group.id)
+                  setGroupsOpen(false)
+                }}
+                action={
+                  <ActionMenu
+                    title={group.name}
+                    items={[
+                      {
+                        label: 'Изменить',
+                        icon: 'edit',
+                        onClick: () => {
+                          setGroupsOpen(false)
+                          editGroup(group)
+                        }
+                      },
+                      {
+                        label: 'Удалить',
+                        icon: 'delete',
+                        danger: true,
+                        onClick: () => {
+                          setGroupsOpen(false)
+                          deleteGroup(group)
+                        }
+                      }
+                    ]}
+                  />
+                }
+              />
+            ))}
+            <div
+              className="ui-stack"
+              style={{
+                marginTop: 8,
+                alignItems: 'flex-start'
+              }}
+            >
+              <Button
+                label="Новая группа"
+                icon="add"
+                primary
+                onClick={() => {
+                  setGroupsOpen(false)
+                  editGroup()
+                }}
+              />
+            </div>
+          </div>
+        </div>
       </AppDialog>
       {form ? <FormSheet spec={form} close={() => setForm(null)} /> : null}
       {editingItem !== undefined ? (
@@ -971,6 +1056,6 @@ export function PasswordsScreen(): React.JSX.Element {
           changed={refresh}
         />
       ) : null}
-    </View>
+    </div>
   )
 }

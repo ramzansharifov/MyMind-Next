@@ -8,7 +8,7 @@
 - `@mymind/core` — pure business/application logic. It may depend on `@mymind/contracts`, but it must not depend on either app or on platform SDKs.
 - `@mymind/design` — platform-neutral design tokens and semantic values. Platform components may map these tokens to Tailwind/CSS or React Native styles.
 - `apps/desktop` — Electron adapters, desktop navigation and desktop UI.
-- `apps/pwa` — browser adapters, phone navigation and React Native Web UI.
+- `apps/pwa` — Next.js client components, HTML/CSS phone UI and browser adapters. It has no React Native, React Native Web or Expo dependencies.
 - `@mymind/persistence` — shared repositories and versioned database migrations; historical mobile schema names remain for data compatibility.
 
 Dependencies always point inward: apps may import packages; packages never import from apps.

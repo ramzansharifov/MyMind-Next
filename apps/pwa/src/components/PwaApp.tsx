@@ -1,3 +1,4 @@
+import { usePreferredTheme } from '../ui/browser'
 import {
   lazy,
   Suspense,
@@ -7,8 +8,6 @@ import {
   useState,
   useSyncExternalStore
 } from 'react'
-import { SafeAreaProvider } from 'react-native-safe-area-context'
-import { View, useColorScheme } from 'react-native'
 import { appearanceTokens } from '@mymind/design'
 import {
   DEFAULT_APPEARANCE_PREFERENCES,
@@ -21,7 +20,7 @@ import { navigationRoutes, routeTitles, routeIcons, type Route } from './navigat
 import { routeFromHash } from './routing'
 import { MobileAppHeader } from '../client/app/MobileAppHeader'
 import { MobileNavigationDrawer } from '../client/app/MobileNavigationDrawer'
-import { dispatchHardwareBack } from '../platform/react-native'
+import { dispatchBack } from '../ui/lifecycle'
 import {
   APP_MODULE_NAVIGATE_EVENT,
   type AppModuleNavigationRequest
@@ -40,7 +39,6 @@ import { ErrorState } from '../client/shared/ui/primitives'
 import { PwaLoading } from './PwaLoading'
 import { syncActivity } from '../sync/activity'
 import packageInfo from '../../package.json'
-
 const Home = lazy(() => import('../client/app/Home').then((module) => ({ default: module.Home })))
 const Tasks = lazy(() =>
   import('../client/modules/tasks/TasksScreen').then((module) => ({
@@ -85,14 +83,17 @@ const Passwords = lazy(() =>
     default: module.PasswordsScreen
   }))
 )
-
 const Notes = lazy(() =>
   import('../client/modules/notes/NotesScreen').then((module) => ({
     default: module.NotesScreen
   }))
 )
-
-let startup: Promise<{ db: PwaDatabase; services: PwaServices }> | undefined
+let startup:
+  | Promise<{
+      db: PwaDatabase
+      services: PwaServices
+    }>
+  | undefined
 function initialize(): NonNullable<typeof startup> {
   startup ??= openPwaDatabase().then(async (db) => ({ db, services: await createPwaServices(db) }))
   return startup
@@ -109,12 +110,10 @@ function appearanceFrom(services: ClientServices): AppearancePreferences {
 function currentRoute(): Route {
   return routeFromHash(window.location.hash)
 }
-
-// A new Android route must deliberately wire its screen here instead of opening Settings.
+// Every route deliberately wires its screen rather than silently opening Settings.
 function unreachableRoute(route: never): never {
   throw new Error(`Неизвестный раздел: ${String(route)}`)
 }
-
 function Workspace({
   db,
   initialServices
@@ -132,7 +131,10 @@ function Workspace({
   }, [])
   const [resourceId, setResourceId] = useState<string | null>(null)
   const [menu, setMenu] = useState(false)
-  const mobileDraft = useRef<{ flush(): Promise<void>; hasUnsavedChanges(): boolean } | null>(null)
+  const mobileDraft = useRef<{
+    flush(): Promise<void>
+    hasUnsavedChanges(): boolean
+  } | null>(null)
   const registerMobileDraft = useCallback((draft: typeof mobileDraft.current) => {
     mobileDraft.current = draft
   }, [])
@@ -143,7 +145,7 @@ function Workspace({
   const busy = operationBusy || syncBusy
   const [error, setError] = useState('')
   const [appearance, setAppearance] = useState(() => appearanceFrom(initialServices))
-  const system = useColorScheme()
+  const system = usePreferredTheme()
   const pwa = usePwa()
   useEffect(() => {
     const viewport = window.visualViewport
@@ -168,7 +170,7 @@ function Workspace({
     ...(dark ? appearanceTokens.dark : appearanceTokens.light),
     accent: appearanceTokens.accents[appearance.accent]
   }
-  // React Native Web modals are rendered in a portal outside .pwa. Keep the
+  // Dialogs are rendered in a React DOM portal outside .pwa. Keep the
   // document-level CSS tokens synchronized so portal focus rings and web
   // controls receive the selected accent rather than a violet fallback.
   useEffect(() => {
@@ -286,7 +288,7 @@ function Workspace({
   }, [busy, db, immersive, route, flushDrafts])
   useEffect(() => {
     const back = (): void => {
-      if (busy || menu || dispatchHardwareBack()) {
+      if (busy || menu || dispatchBack()) {
         setMenu(false)
         history.pushState(null, '', '#' + route)
       }
@@ -294,7 +296,7 @@ function Workspace({
     const escape = (event: KeyboardEvent): void => {
       if (event.key !== 'Escape' || event.defaultPrevented || busy) return
       if (menu) setMenu(false)
-      else dispatchHardwareBack()
+      else dispatchBack()
     }
     window.addEventListener('popstate', back)
     window.addEventListener('keydown', escape)
@@ -311,7 +313,7 @@ function Workspace({
     setEpoch((value) => value + 1)
   }
   return (
-    <SafeAreaProvider>
+    <>
       <ThemeContext.Provider value={palette}>
         <ServicesContext.Provider value={services}>
           <ToastProvider>
@@ -353,7 +355,13 @@ function Workspace({
                   >
                     {error ? <ErrorState message={error} /> : null}
                     <PwaReminders services={services} db={db} paused={busy} />
-                    <View style={{ flex: 1, minHeight: 0 }}>
+                    <div
+                      className="ui-stack"
+                      style={{
+                        flex: '1 1 0%',
+                        minHeight: 0
+                      }}
+                    >
                       <ModuleErrorBoundary key={`${route}:${epoch}`}>
                         <Suspense
                           fallback={
@@ -415,7 +423,7 @@ function Workspace({
                           </div>
                         </Suspense>
                       </ModuleErrorBoundary>
-                    </View>
+                    </div>
                   </main>
                   <div className="connection sr-only" role="status">
                     {!pwa.online
@@ -444,10 +452,9 @@ function Workspace({
           </ToastProvider>
         </ServicesContext.Provider>
       </ThemeContext.Provider>
-    </SafeAreaProvider>
+    </>
   )
 }
-
 export default function PwaApp(): React.JSX.Element {
   const [value, setValue] = useState<Awaited<ReturnType<typeof initialize>>>()
   const [error, setError] = useState('')

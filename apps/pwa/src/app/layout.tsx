@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
-
+import '../ui/ui.css'
 export const metadata: Metadata = {
   title: 'MyMind',
   description: 'Личное пространство. Данные хранятся на вашем устройстве.',
@@ -14,7 +14,6 @@ export const viewport: Viewport = {
   viewportFit: 'cover',
   themeColor: '#0a0b0d'
 }
-
 export default function RootLayout({ children }: { children: React.ReactNode }): React.JSX.Element {
   return (
     <html lang="ru">

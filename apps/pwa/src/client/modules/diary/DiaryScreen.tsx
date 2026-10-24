@@ -1,5 +1,6 @@
+import { motionValue, motion } from 'framer-motion'
+import { Action, subscribeBack, playMotion, motionStep } from '../../../ui/browser'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Animated, BackHandler, FlatList, Pressable, ScrollView, Text, View } from 'react-native'
 import {
   DIARY_COVER_TONES,
   DIARY_ICON_NAMES,
@@ -18,7 +19,7 @@ import {
   Settings2,
   SunMedium,
   type LucideIcon
-} from 'lucide-react-native'
+} from 'lucide-react'
 import { localDateKey } from '@mymind/core/habits'
 import { useServices } from '../../app/context'
 import { useCollection } from '../../shared/hooks/useCollection'
@@ -39,21 +40,17 @@ import {
   diaryPaperToneLabels,
   shiftDiaryMonth
 } from './diary-presentation'
-
 type DiaryDetailView = 'today' | 'reader' | 'calendar' | 'reports' | 'settings'
-
 const WEEKDAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
 const MOOD_CHOICES = DIARY_MOODS.map((value) => ({
   value,
   label: `${diaryMoodMeta(value)?.emoji ?? ''} ${diaryMoodMeta(value)?.label ?? value}`
 }))
-
 export function DiaryScreen(): React.JSX.Element {
   const { diary: api } = useServices()
   const state = useCollection(useCallback(() => api.listDiaryOverview(), [api]))
   const [selected, setSelected] = useState<DiarySummary | null>(null)
   const [form, setForm] = useState<FormSpec | null>(null)
-
   const editDiary = (item?: DiarySummary): void =>
     setForm({
       title: item ? 'Изменить дневник' : 'Новый дневник',
@@ -73,7 +70,6 @@ export function DiaryScreen(): React.JSX.Element {
         state.refresh()
       }
     })
-
   if (selected) {
     return (
       <DiaryDetail
@@ -86,22 +82,38 @@ export function DiaryScreen(): React.JSX.Element {
       />
     )
   }
-
   return (
-    <View style={{ flex: 1, gap: 12 }}>
+    <div
+      className="ui-stack"
+      style={{
+        flex: '1 1 0%',
+        gap: 12
+      }}
+    >
       {state.error ? <ErrorState message={state.error} retry={state.refresh} /> : null}
       {state.loading ? (
         <LoadingState />
       ) : (
-        <FlatList
-          data={state.data?.diaries ?? []}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingBottom: 88 }}
-          ListEmptyComponent={<EmptyState />}
-          renderItem={({ item }) => (
-            <DiaryNotebookCard diary={item} onOpen={() => setSelected(item)} />
-          )}
-        />
+        <div className="ui-scroll">
+          <div
+            className="ui-stack ui-scroll-content"
+            style={{
+              paddingBottom: 88
+            }}
+          >
+            <div className="ui-stack ui-list" style={{}}>
+              {(state.data?.diaries ?? []).length > 0 ? (
+                (state.data?.diaries ?? []).map((item) => (
+                  <div className="ui-stack ui-list-item" key={((item) => item.id)(item)}>
+                    {<DiaryNotebookCard diary={item} onOpen={() => setSelected(item)} />}
+                  </div>
+                ))
+              ) : (
+                <EmptyState />
+              )}
+            </div>
+          </div>
+        </div>
       )}
       <MobileCreateAction
         actions={[
@@ -110,15 +122,14 @@ export function DiaryScreen(): React.JSX.Element {
             label: 'Новый дневник',
             description: 'Создать отдельный личный дневник',
             icon: 'diary',
-            onPress: () => editDiary()
+            onClick: () => editDiary()
           }
         ]}
       />
       {form ? <FormSheet spec={form} close={() => setForm(null)} /> : null}
-    </View>
+    </div>
   )
 }
-
 function DiaryNotebookCard({
   diary,
   onOpen
@@ -128,9 +139,9 @@ function DiaryNotebookCard({
 }): React.JSX.Element {
   const theme = useTheme()
   const palette = diaryAppearancePalette(diary.paperTone, diary.coverTone)
-
   return (
-    <View
+    <div
+      className="ui-stack"
       style={{
         marginBottom: 12,
         borderRadius: 18,
@@ -140,75 +151,116 @@ function DiaryNotebookCard({
         overflow: 'hidden'
       }}
     >
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={`Открыть дневник ${diary.title}`}
-        onPress={onOpen}
-        style={({ pressed }) => ({
+      <Action
+        role={'button'}
+        aria-label={`Открыть дневник ${diary.title}`}
+        onClick={onOpen}
+        style={{
           minHeight: 126,
-          paddingHorizontal: 18,
-          paddingVertical: 17,
-          opacity: pressed ? 0.78 : 1,
+          paddingInline: 18,
+          paddingBlock: 17,
+          opacity: 1,
           flexDirection: 'row',
           gap: 14
-        })}
+        }}
+        pressedStyle={{
+          opacity: 0.78
+        }}
       >
-        <View
+        <div
+          className="ui-stack"
           style={{
             width: 7,
             borderRadius: 99,
             backgroundColor: palette.coverText,
             opacity: 0.2
           }}
-        />
-        <View style={{ flex: 1, justifyContent: 'space-between', gap: 16 }}>
-          <View style={{ gap: 5 }}>
-            <Text style={{ color: palette.coverText, fontSize: 12, opacity: 0.72 }}>
+        ></div>
+        <div
+          className="ui-stack"
+          style={{
+            flex: '1 1 0%',
+            justifyContent: 'space-between',
+            gap: 16
+          }}
+        >
+          <div
+            className="ui-stack"
+            style={{
+              gap: 5
+            }}
+          >
+            <span
+              className="ui-text"
+              style={{
+                color: palette.coverText,
+                fontSize: 12,
+                opacity: 0.72
+              }}
+            >
               {diary.icon}
-            </Text>
-            <Text style={{ color: palette.coverText, fontSize: 21, fontWeight: '800' }}>
+            </span>
+            <span
+              className="ui-text"
+              style={{
+                color: palette.coverText,
+                fontSize: 21,
+                fontWeight: 800
+              }}
+            >
               {diary.title}
-            </Text>
-          </View>
-          <Text style={{ color: palette.coverText, fontSize: 13, opacity: 0.76 }}>
+            </span>
+          </div>
+          <span
+            className="ui-text"
+            style={{
+              color: palette.coverText,
+              fontSize: 13,
+              opacity: 0.76
+            }}
+          >
             {diary.pageCount} дней · {diary.entryCount} записей
-          </Text>
-        </View>
-      </Pressable>
-    </View>
+          </span>
+        </div>
+      </Action>
+    </div>
   )
 }
-
 function DiarySectionTab({
   label,
   icon: Icon,
   selected,
-  onPress
+  onClick
 }: {
   label: string
   icon: LucideIcon
   selected: boolean
-  onPress(): void
+  onClick(): void
 }): React.JSX.Element {
   const theme = useTheme()
   return (
-    <Pressable
-      accessibilityRole="tab"
-      accessibilityState={{ selected }}
-      onPress={onPress}
-      style={({ pressed }) => ({
+    <Action
+      role={'tab'}
+      aria-selected={selected}
+      onClick={onClick}
+      style={{
         height: 40,
         flexDirection: 'row',
         alignItems: 'center',
         gap: 7,
-        paddingHorizontal: 14,
+        paddingInline: 14,
         borderRadius: 12,
-        backgroundColor: selected ? theme.accent : pressed ? theme.raised : 'transparent',
-        opacity: pressed ? 0.78 : 1
-      })}
+        backgroundColor: selected ? theme.accent : 'transparent',
+        opacity: 1
+      }}
+      pressedStyle={{
+        backgroundColor: selected ? theme.accent : theme.raised,
+        opacity: 0.78
+      }}
     >
       <Icon size={16} color={selected ? '#ffffff' : theme.muted} />
-      <Text
+      <span
+        className="ui-text"
         style={{
           color: selected ? '#ffffff' : theme.muted,
           fontSize: 13,
@@ -216,11 +268,10 @@ function DiarySectionTab({
         }}
       >
         {label}
-      </Text>
-    </Pressable>
+      </span>
+    </Action>
   )
 }
-
 function DiaryDetail({
   diary,
   canDelete,
@@ -231,13 +282,12 @@ function DiaryDetail({
   back(): void
 }): React.JSX.Element {
   useEffect(() => {
-    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+    const subscription = subscribeBack(() => {
       back()
       return true
     })
     return () => subscription.remove()
   }, [back])
-
   const { diary: api } = useServices()
   const theme = useTheme()
   const [currentDiary, setCurrentDiary] = useState(diary)
@@ -245,8 +295,7 @@ function DiaryDetail({
   const [view, setView] = useState<DiaryDetailView>('today')
   const [form, setForm] = useState<FormSpec | null>(null)
   const [calendarMonth, setCalendarMonth] = useState(() => diaryMonthKey(localDateKey()))
-  const [pageOffset] = useState(() => new Animated.Value(0))
-
+  const [pageOffset] = useState(() => motionValue(0))
   const state = useCollection(
     useCallback(
       () => ({
@@ -256,25 +305,23 @@ function DiaryDetail({
       [api, currentDiary.id, date]
     )
   )
-
   const refreshDetail = (): void => {
     state.refresh()
     const latest = api.listDiaryOverview().diaries.find((item) => item.id === currentDiary.id)
     if (latest) setCurrentDiary(latest)
   }
-
   const turnToDate = (nextDate: string, direction = 1): void => {
-    pageOffset.setValue(direction >= 0 ? 24 : -24)
+    pageOffset.set(direction >= 0 ? 24 : -24)
     setDate(nextDate)
     setCalendarMonth(diaryMonthKey(nextDate))
     setView('reader')
-    Animated.timing(pageOffset, {
-      toValue: 0,
-      duration: 180,
-      useNativeDriver: true
-    }).start()
+    playMotion(
+      motionStep(pageOffset, 0, {
+        duration: 180 / 1000,
+        type: 'tween'
+      })
+    )
   }
-
   const editEntry = (entry?: DiaryEntry): void =>
     setForm({
       title: entry ? 'Изменить запись' : 'Новая запись',
@@ -297,7 +344,6 @@ function DiaryDetail({
         refreshDetail()
       }
     })
-
   const editMood = (): void =>
     setForm({
       title: 'Настроение дня',
@@ -319,7 +365,6 @@ function DiaryDetail({
         refreshDetail()
       }
     })
-
   const editAppearance = (): void =>
     setForm({
       title: 'Оформление дневника',
@@ -353,7 +398,6 @@ function DiaryDetail({
         state.refresh()
       }
     })
-
   const editDiaryMetadata = (): void =>
     setForm({
       title: 'Изменить дневник',
@@ -373,7 +417,6 @@ function DiaryDetail({
         state.refresh()
       }
     })
-
   const deleteDiary = (): void => {
     if (!canDelete) return
     state.confirmDelete(
@@ -385,13 +428,11 @@ function DiaryDetail({
       'Все страницы, настроения и записи этого дневника будут удалены.'
     )
   }
-
   const moodMeta = diaryMoodMeta(state.data?.day?.mood ?? null)
   const calendarCells = useMemo(
     () => buildDiaryCalendarMonth(calendarMonth, state.data?.days ?? [], localDateKey()),
     [calendarMonth, state.data?.days]
   )
-
   const readerPages = useMemo(
     () =>
       (state.data?.days ?? [])
@@ -403,7 +444,6 @@ function DiaryDetail({
   const previousReaderPage = readerIndex > 0 ? readerPages[readerIndex - 1] : null
   const nextReaderPage =
     readerIndex >= 0 && readerIndex < readerPages.length - 1 ? readerPages[readerIndex + 1] : null
-
   const openSection = (next: DiaryDetailView): void => {
     if (next === 'today') {
       setDate(localDateKey())
@@ -419,10 +459,16 @@ function DiaryDetail({
     }
     setView(next)
   }
-
   return (
-    <View style={{ flex: 1, minHeight: 0 }}>
-      <View
+    <div
+      className="ui-stack"
+      style={{
+        flex: '1 1 0%',
+        minHeight: 0
+      }}
+    >
+      <div
+        className="ui-stack"
         style={{
           marginBottom: 12,
           padding: 6,
@@ -432,56 +478,70 @@ function DiaryDetail({
           backgroundColor: theme.surface
         }}
       >
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ alignItems: 'center', gap: 4 }}
-        >
-          <DiarySectionTab label="Мои дневники" icon={Library} selected={false} onPress={back} />
-          <DiarySectionTab
-            label="Сегодня"
-            icon={SunMedium}
-            selected={view === 'today'}
-            onPress={() => openSection('today')}
-          />
-          <DiarySectionTab
-            label="Просмотр"
-            icon={BookOpen}
-            selected={view === 'reader'}
-            onPress={() => openSection('reader')}
-          />
-          <DiarySectionTab
-            label="Календарь"
-            icon={CalendarDays}
-            selected={view === 'calendar'}
-            onPress={() => openSection('calendar')}
-          />
-          <DiarySectionTab
-            label="Отчёты"
-            icon={BarChart3}
-            selected={view === 'reports'}
-            onPress={() => openSection('reports')}
-          />
-          <DiarySectionTab
-            label="Настройки"
-            icon={Settings2}
-            selected={view === 'settings'}
-            onPress={() => openSection('settings')}
-          />
-        </ScrollView>
-      </View>
+        <div className="ui-scroll" data-horizontal={true}>
+          <div
+            className="ui-stack ui-scroll-content"
+            style={{
+              alignItems: 'center',
+              gap: 4,
+              flexDirection: 'row'
+            }}
+          >
+            <DiarySectionTab label="Мои дневники" icon={Library} selected={false} onClick={back} />
+            <DiarySectionTab
+              label="Сегодня"
+              icon={SunMedium}
+              selected={view === 'today'}
+              onClick={() => openSection('today')}
+            />
+            <DiarySectionTab
+              label="Просмотр"
+              icon={BookOpen}
+              selected={view === 'reader'}
+              onClick={() => openSection('reader')}
+            />
+            <DiarySectionTab
+              label="Календарь"
+              icon={CalendarDays}
+              selected={view === 'calendar'}
+              onClick={() => openSection('calendar')}
+            />
+            <DiarySectionTab
+              label="Отчёты"
+              icon={BarChart3}
+              selected={view === 'reports'}
+              onClick={() => openSection('reports')}
+            />
+            <DiarySectionTab
+              label="Настройки"
+              icon={Settings2}
+              selected={view === 'settings'}
+              onClick={() => openSection('settings')}
+            />
+          </div>
+        </div>
+      </div>
 
       {view === 'today' ? (
-        <View style={{ marginBottom: 10, flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+        <div
+          className="ui-stack"
+          style={{
+            marginBottom: 10,
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            gap: 8
+          }}
+        >
           <Button
             label={moodMeta ? `${moodMeta.emoji} ${moodMeta.label}` : 'Настроение'}
-            onPress={editMood}
+            onClick={editMood}
           />
-        </View>
+        </div>
       ) : null}
 
       {view === 'reader' && readerPages.length > 0 ? (
-        <View
+        <div
+          className="ui-stack"
           style={{
             marginBottom: 10,
             minHeight: 44,
@@ -495,27 +555,49 @@ function DiaryDetail({
             label="‹"
             accessibilityLabel="Предыдущая страница"
             disabled={!previousReaderPage}
-            onPress={() => {
+            onClick={() => {
               if (previousReaderPage) turnToDate(previousReaderPage.dayKey, -1)
             }}
           />
-          <View style={{ minWidth: 132, alignItems: 'center' }}>
-            <Text style={{ color: theme.text, fontSize: 13, fontWeight: '600' }}>
+          <div
+            className="ui-stack"
+            style={{
+              minWidth: 132,
+              alignItems: 'center'
+            }}
+          >
+            <span
+              className="ui-text"
+              style={{
+                color: theme.text,
+                fontSize: 13,
+                fontWeight: 600
+              }}
+            >
               {readerIndex >= 0
                 ? `${readerIndex + 1} / ${readerPages.length}`
                 : `1 / ${readerPages.length}`}
-            </Text>
-            <Text style={{ marginTop: 2, color: theme.muted, fontSize: 11 }}>{date}</Text>
-          </View>
+            </span>
+            <span
+              className="ui-text"
+              style={{
+                marginTop: 2,
+                color: theme.muted,
+                fontSize: 11
+              }}
+            >
+              {date}
+            </span>
+          </div>
           <Button
             label="›"
             accessibilityLabel="Следующая страница"
             disabled={!nextReaderPage}
-            onPress={() => {
+            onClick={() => {
               if (nextReaderPage) turnToDate(nextReaderPage.dayKey, 1)
             }}
           />
-        </View>
+        </div>
       ) : null}
 
       {state.error ? <ErrorState message={state.error} retry={state.refresh} /> : null}
@@ -542,7 +624,13 @@ function DiaryDetail({
         readerPages.length === 0 ? (
           <EmptyState text="В дневнике пока нет страниц. Страница появится после записи или настроения." />
         ) : (
-          <Animated.View style={{ flex: 1, transform: [{ translateX: pageOffset }] }}>
+          <motion.div
+            className="ui-stack"
+            style={{
+              flex: '1 1 0%',
+              x: pageOffset
+            }}
+          >
             <DiaryPaperDay
               diary={currentDiary}
               date={date}
@@ -550,10 +638,16 @@ function DiaryDetail({
               moodLabel={moodMeta ? `${moodMeta.emoji} ${moodMeta.label}` : null}
               readOnly
             />
-          </Animated.View>
+          </motion.div>
         )
       ) : (
-        <Animated.View style={{ flex: 1, transform: [{ translateX: pageOffset }] }}>
+        <motion.div
+          className="ui-stack"
+          style={{
+            flex: '1 1 0%',
+            x: pageOffset
+          }}
+        >
           <DiaryPaperDay
             diary={currentDiary}
             date={date}
@@ -567,7 +661,7 @@ function DiaryDetail({
               })
             }
           />
-        </Animated.View>
+        </motion.div>
       )}
 
       {view === 'today' ? (
@@ -578,16 +672,15 @@ function DiaryDetail({
               label: 'Новая запись',
               description: 'Добавить запись на сегодня',
               icon: 'diary',
-              onPress: () => editEntry()
+              onClick: () => editEntry()
             }
           ]}
         />
       ) : null}
       {form ? <FormSheet spec={form} close={() => setForm(null)} /> : null}
-    </View>
+    </div>
   )
 }
-
 function DiaryCalendar({
   monthKey,
   cells,
@@ -601,20 +694,46 @@ function DiaryCalendar({
 }): React.JSX.Element {
   const theme = useTheme()
   const weeks = Array.from({ length: 6 }, (_, index) => cells.slice(index * 7, index * 7 + 7))
-
   return (
-    <View style={{ flex: 1, gap: 10 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-        <Button label="‹" onPress={() => onMonthChange(shiftDiaryMonth(monthKey, -1))} />
-        <View style={{ flex: 1, alignItems: 'center' }}>
-          <Text style={{ color: theme.text, fontSize: 17, fontWeight: '800' }}>
+    <div
+      className="ui-stack"
+      style={{
+        flex: '1 1 0%',
+        gap: 10
+      }}
+    >
+      <div
+        className="ui-stack"
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 8
+        }}
+      >
+        <Button label="‹" onClick={() => onMonthChange(shiftDiaryMonth(monthKey, -1))} />
+        <div
+          className="ui-stack"
+          style={{
+            flex: '1 1 0%',
+            alignItems: 'center'
+          }}
+        >
+          <span
+            className="ui-text"
+            style={{
+              color: theme.text,
+              fontSize: 17,
+              fontWeight: 800
+            }}
+          >
             {diaryMonthLabel(monthKey)}
-          </Text>
-        </View>
-        <Button label="›" onPress={() => onMonthChange(shiftDiaryMonth(monthKey, 1))} />
-      </View>
+          </span>
+        </div>
+        <Button label="›" onClick={() => onMonthChange(shiftDiaryMonth(monthKey, 1))} />
+      </div>
 
-      <View
+      <div
+        className="ui-stack"
         style={{
           borderWidth: 1,
           borderColor: theme.border,
@@ -623,17 +742,40 @@ function DiaryCalendar({
           backgroundColor: theme.surface
         }}
       >
-        <View
-          style={{ flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: theme.border }}
+        <div
+          className="ui-stack"
+          style={{
+            flexDirection: 'row',
+            borderBottomWidth: 1,
+            borderBottomColor: theme.border
+          }}
         >
           {WEEKDAYS.map((weekday) => (
-            <View key={weekday} style={{ flex: 1, alignItems: 'center', paddingVertical: 8 }}>
-              <Text style={{ color: theme.muted, fontSize: 11, fontWeight: '700' }}>{weekday}</Text>
-            </View>
+            <div
+              className="ui-stack"
+              key={weekday}
+              style={{
+                flex: '1 1 0%',
+                alignItems: 'center',
+                paddingBlock: 8
+              }}
+            >
+              <span
+                className="ui-text"
+                style={{
+                  color: theme.muted,
+                  fontSize: 11,
+                  fontWeight: 700
+                }}
+              >
+                {weekday}
+              </span>
+            </div>
           ))}
-        </View>
+        </div>
         {weeks.map((week, weekIndex) => (
-          <View
+          <div
+            className="ui-stack"
             key={`${monthKey}-${weekIndex}`}
             style={{
               flexDirection: 'row',
@@ -644,24 +786,28 @@ function DiaryCalendar({
             {week.map((cell, dayIndex) => {
               const mood = diaryMoodMeta(cell.summary?.mood ?? null)
               return (
-                <Pressable
+                <Action
                   key={cell.dayKey}
-                  accessibilityRole="button"
-                  accessibilityLabel={`${cell.dayKey}${cell.summary ? `, ${cell.summary.entryCount} записей` : ''}`}
-                  onPress={() => onOpenDay(cell.dayKey)}
-                  style={({ pressed }) => ({
-                    flex: 1,
+                  role={'button'}
+                  aria-label={`${cell.dayKey}${cell.summary ? `, ${cell.summary.entryCount} записей` : ''}`}
+                  onClick={() => onOpenDay(cell.dayKey)}
+                  style={{
+                    flex: '1 1 0%',
                     minHeight: 58,
-                    paddingVertical: 6,
+                    paddingBlock: 6,
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     borderRightWidth: dayIndex === 6 ? 0 : 1,
                     borderRightColor: theme.border,
                     backgroundColor: cell.isToday ? theme.accent + '16' : 'transparent',
-                    opacity: pressed ? 0.58 : cell.inMonth ? 1 : 0.35
-                  })}
+                    opacity: cell.inMonth ? 1 : 0.35
+                  }}
+                  pressedStyle={{
+                    opacity: 0.58
+                  }}
                 >
-                  <Text
+                  <span
+                    className="ui-text"
                     style={{
                       color: cell.isToday ? theme.accent : theme.text,
                       fontSize: 13,
@@ -669,37 +815,55 @@ function DiaryCalendar({
                     }}
                   >
                     {cell.day}
-                  </Text>
+                  </span>
                   {mood ? (
-                    <Text style={{ fontSize: 13 }}>{mood.emoji}</Text>
+                    <span
+                      className="ui-text"
+                      style={{
+                        fontSize: 13
+                      }}
+                    >
+                      {mood.emoji}
+                    </span>
                   ) : cell.summary?.entryCount ? (
-                    <View
+                    <div
+                      className="ui-stack"
                       style={{
                         minWidth: 18,
                         borderRadius: 8,
                         backgroundColor: theme.raised,
-                        paddingHorizontal: 5,
-                        paddingVertical: 1,
+                        paddingInline: 5,
+                        paddingBlock: 1,
                         alignItems: 'center'
                       }}
                     >
-                      <Text style={{ color: theme.muted, fontSize: 9 }}>
+                      <span
+                        className="ui-text"
+                        style={{
+                          color: theme.muted,
+                          fontSize: 9
+                        }}
+                      >
                         {cell.summary.entryCount}
-                      </Text>
-                    </View>
+                      </span>
+                    </div>
                   ) : (
-                    <View style={{ height: 14 }} />
+                    <div
+                      className="ui-stack"
+                      style={{
+                        height: 14
+                      }}
+                    ></div>
                   )}
-                </Pressable>
+                </Action>
               )
             })}
-          </View>
+          </div>
         ))}
-      </View>
-    </View>
+      </div>
+    </div>
   )
 }
-
 function DiarySettingsMobile({
   diary,
   canDelete,
@@ -715,134 +879,257 @@ function DiarySettingsMobile({
 }): React.JSX.Element {
   const theme = useTheme()
   const palette = diaryAppearancePalette(diary.paperTone, diary.coverTone)
-
   return (
-    <ScrollView contentContainerStyle={{ gap: 14, paddingBottom: 28 }}>
-      <View
+    <div className="ui-scroll">
+      <div
+        className="ui-stack ui-scroll-content"
         style={{
-          padding: 18,
-          borderWidth: 1,
-          borderColor: theme.border,
-          borderRadius: 24,
-          backgroundColor: theme.surface
+          gap: 14,
+          paddingBottom: 28
         }}
       >
-        <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 14 }}>
-          <View
-            style={{
-              width: 54,
-              height: 54,
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderWidth: 1,
-              borderColor: theme.accent + '26',
-              borderRadius: 16,
-              backgroundColor: theme.accent + '14'
-            }}
-          >
-            <Text style={{ color: theme.accent, fontSize: 12, fontWeight: '700' }}>
-              {diary.icon}
-            </Text>
-          </View>
-          <View style={{ minWidth: 0, flex: 1 }}>
-            <Text numberOfLines={1} style={{ color: theme.text, fontSize: 20, fontWeight: '700' }}>
-              {diary.title}
-            </Text>
-            <Text style={{ marginTop: 7, color: theme.muted, fontSize: 12, lineHeight: 18 }}>
-              {diary.pageCount} страниц · {diary.entryCount} записей
-            </Text>
-          </View>
-        </View>
-        <View style={{ marginTop: 18, alignItems: 'flex-start' }}>
-          <Button label="Изменить название и иконку" icon="edit" onPress={onEdit} />
-        </View>
-      </View>
-
-      <View
-        style={{
-          padding: 18,
-          borderWidth: 1,
-          borderColor: theme.error + '26',
-          borderRadius: 24,
-          backgroundColor: theme.error + '08'
-        }}
-      >
-        <Text style={{ color: theme.error, fontSize: 15, fontWeight: '700' }}>
-          Удаление дневника
-        </Text>
-        <Text style={{ marginTop: 7, color: theme.muted, fontSize: 13, lineHeight: 21 }}>
-          Удаляются все страницы, настроения и записи. Действие необратимо.
-        </Text>
-        <View style={{ marginTop: 16, alignItems: 'flex-start' }}>
-          <Button
-            label="Удалить дневник"
-            icon="delete"
-            danger
-            disabled={!canDelete}
-            onPress={onDelete}
-          />
-        </View>
-        {!canDelete ? (
-          <Text style={{ marginTop: 8, color: theme.muted, fontSize: 11 }}>
-            Последний дневник удалить нельзя.
-          </Text>
-        ) : null}
-      </View>
-
-      <View
-        style={{
-          padding: 18,
-          borderWidth: 1,
-          borderColor: theme.border,
-          borderRadius: 24,
-          backgroundColor: theme.surface
-        }}
-      >
-        <Text style={{ color: theme.text, fontSize: 15, fontWeight: '700' }}>
-          Оформление бумаги
-        </Text>
-        <Text style={{ marginTop: 5, color: theme.muted, fontSize: 13, lineHeight: 20 }}>
-          Разметка, оттенок листов и цвет переплёта применяются ко всему дневнику.
-        </Text>
-        <View
+        <div
+          className="ui-stack"
           style={{
-            marginTop: 16,
-            overflow: 'hidden',
-            borderRadius: 16,
-            backgroundColor: palette.coverBackground,
-            padding: 14
+            padding: 18,
+            borderWidth: 1,
+            borderColor: theme.border,
+            borderRadius: 24,
+            backgroundColor: theme.surface
           }}
         >
-          <View
+          <div
+            className="ui-stack"
             style={{
-              minHeight: 170,
-              overflow: 'hidden',
-              borderWidth: 1,
-              borderColor: palette.paperLine,
-              borderRadius: 12,
-              backgroundColor: palette.paperBackground,
-              padding: 16
+              flexDirection: 'row',
+              alignItems: 'flex-start',
+              gap: 14
             }}
           >
-            <PaperPattern pattern={diary.paperPattern} lineColor={palette.paperLine} />
-            <Text style={{ color: palette.paperText, fontSize: 16, fontWeight: '700' }}>
-              Предпросмотр страницы
-            </Text>
-            <Text style={{ marginTop: 9, color: palette.paperMuted, fontSize: 13, lineHeight: 20 }}>
-              Разметка «{diaryPaperPatternLabels[diary.paperPattern]}» · бумага «
-              {diaryPaperToneLabels[diary.paperTone]}» · переплёт «
-              {diaryCoverToneLabels[diary.coverTone]}».
-            </Text>
-          </View>
-        </View>
-        <View style={{ marginTop: 16, alignItems: 'flex-start' }}>
-          <Button label="Изменить оформление" onPress={onEditAppearance} />
-        </View>
-      </View>
-    </ScrollView>
+            <div
+              className="ui-stack"
+              style={{
+                width: 54,
+                height: 54,
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderWidth: 1,
+                borderColor: theme.accent + '26',
+                borderRadius: 16,
+                backgroundColor: theme.accent + '14'
+              }}
+            >
+              <span
+                className="ui-text"
+                style={{
+                  color: theme.accent,
+                  fontSize: 12,
+                  fontWeight: 700
+                }}
+              >
+                {diary.icon}
+              </span>
+            </div>
+            <div
+              className="ui-stack"
+              style={{
+                minWidth: 0,
+                flex: '1 1 0%'
+              }}
+            >
+              <span
+                className="ui-text"
+                data-lines={1}
+                style={{
+                  color: theme.text,
+                  fontSize: 20,
+                  fontWeight: 700,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  display: '-webkit-box',
+                  WebkitBoxOrient: 'vertical',
+                  WebkitLineClamp: 1
+                }}
+              >
+                {diary.title}
+              </span>
+              <span
+                className="ui-text"
+                style={{
+                  marginTop: 7,
+                  color: theme.muted,
+                  fontSize: 12,
+                  lineHeight: '18px'
+                }}
+              >
+                {diary.pageCount} страниц · {diary.entryCount} записей
+              </span>
+            </div>
+          </div>
+          <div
+            className="ui-stack"
+            style={{
+              marginTop: 18,
+              alignItems: 'flex-start'
+            }}
+          >
+            <Button label="Изменить название и иконку" icon="edit" onClick={onEdit} />
+          </div>
+        </div>
+
+        <div
+          className="ui-stack"
+          style={{
+            padding: 18,
+            borderWidth: 1,
+            borderColor: theme.error + '26',
+            borderRadius: 24,
+            backgroundColor: theme.error + '08'
+          }}
+        >
+          <span
+            className="ui-text"
+            style={{
+              color: theme.error,
+              fontSize: 15,
+              fontWeight: 700
+            }}
+          >
+            Удаление дневника
+          </span>
+          <span
+            className="ui-text"
+            style={{
+              marginTop: 7,
+              color: theme.muted,
+              fontSize: 13,
+              lineHeight: '21px'
+            }}
+          >
+            Удаляются все страницы, настроения и записи. Действие необратимо.
+          </span>
+          <div
+            className="ui-stack"
+            style={{
+              marginTop: 16,
+              alignItems: 'flex-start'
+            }}
+          >
+            <Button
+              label="Удалить дневник"
+              icon="delete"
+              danger
+              disabled={!canDelete}
+              onClick={onDelete}
+            />
+          </div>
+          {!canDelete ? (
+            <span
+              className="ui-text"
+              style={{
+                marginTop: 8,
+                color: theme.muted,
+                fontSize: 11
+              }}
+            >
+              Последний дневник удалить нельзя.
+            </span>
+          ) : null}
+        </div>
+
+        <div
+          className="ui-stack"
+          style={{
+            padding: 18,
+            borderWidth: 1,
+            borderColor: theme.border,
+            borderRadius: 24,
+            backgroundColor: theme.surface
+          }}
+        >
+          <span
+            className="ui-text"
+            style={{
+              color: theme.text,
+              fontSize: 15,
+              fontWeight: 700
+            }}
+          >
+            Оформление бумаги
+          </span>
+          <span
+            className="ui-text"
+            style={{
+              marginTop: 5,
+              color: theme.muted,
+              fontSize: 13,
+              lineHeight: '20px'
+            }}
+          >
+            Разметка, оттенок листов и цвет переплёта применяются ко всему дневнику.
+          </span>
+          <div
+            className="ui-stack"
+            style={{
+              marginTop: 16,
+              overflow: 'hidden',
+              borderRadius: 16,
+              backgroundColor: palette.coverBackground,
+              padding: 14
+            }}
+          >
+            <div
+              className="ui-stack"
+              style={{
+                minHeight: 170,
+                overflow: 'hidden',
+                borderWidth: 1,
+                borderColor: palette.paperLine,
+                borderRadius: 12,
+                backgroundColor: palette.paperBackground,
+                padding: 16
+              }}
+            >
+              <PaperPattern pattern={diary.paperPattern} lineColor={palette.paperLine} />
+              <span
+                className="ui-text"
+                style={{
+                  color: palette.paperText,
+                  fontSize: 16,
+                  fontWeight: 700
+                }}
+              >
+                Предпросмотр страницы
+              </span>
+              <span
+                className="ui-text"
+                style={{
+                  marginTop: 9,
+                  color: palette.paperMuted,
+                  fontSize: 13,
+                  lineHeight: '20px'
+                }}
+              >
+                Разметка «{diaryPaperPatternLabels[diary.paperPattern]}» · бумага «
+                {diaryPaperToneLabels[diary.paperTone]}» · переплёт «
+                {diaryCoverToneLabels[diary.coverTone]}».
+              </span>
+            </div>
+          </div>
+          <div
+            className="ui-stack"
+            style={{
+              marginTop: 16,
+              alignItems: 'flex-start'
+            }}
+          >
+            <Button label="Изменить оформление" onClick={onEditAppearance} />
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }
-
 function DiaryPaperDay({
   diary,
   date,
@@ -861,95 +1148,173 @@ function DiaryPaperDay({
   onDelete?(entry: DiaryEntry): void
 }): React.JSX.Element {
   const palette = diaryAppearancePalette(diary.paperTone, diary.coverTone)
-
   return (
-    <View
+    <div
+      className="ui-stack"
       style={{
-        flex: 1,
+        flex: '1 1 0%',
         borderRadius: 18,
         overflow: 'hidden',
         backgroundColor: palette.paperBackground,
-        paddingHorizontal: 14,
+        paddingInline: 14,
         paddingTop: 14
       }}
     >
       <PaperPattern pattern={diary.paperPattern} lineColor={palette.paperLine} />
-      <FlatList
-        data={entries}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={{ paddingBottom: 24 }}
-        ListHeaderComponent={
-          <View style={{ marginBottom: 14, gap: 5 }}>
-            <Text style={{ color: palette.paperText, fontSize: 20, fontWeight: '800' }}>
-              {date}
-            </Text>
-            {moodLabel ? (
-              <Text style={{ color: palette.paperMuted, fontSize: 13 }}>{moodLabel}</Text>
-            ) : null}
-          </View>
-        }
-        ListEmptyComponent={
-          readOnly ? (
-            <View style={{ paddingVertical: 36, paddingHorizontal: 8 }}>
-              <Text style={{ color: palette.paperMuted, fontSize: 15, lineHeight: 22 }}>
-                В этот день осталось только настроение.
-              </Text>
-            </View>
-          ) : (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Добавить первую запись"
-              onPress={() => onEdit?.()}
-              style={{ paddingVertical: 36, paddingHorizontal: 8 }}
+      <div className="ui-scroll">
+        <div
+          className="ui-stack ui-scroll-content"
+          style={{
+            paddingBottom: 24
+          }}
+        >
+          {
+            <div
+              className="ui-stack"
+              style={{
+                marginBottom: 14,
+                gap: 5
+              }}
             >
-              <Text style={{ color: palette.paperMuted, fontSize: 15, lineHeight: 22 }}>
-                В этот день ещё нет записей. Нажмите, чтобы начать страницу.
-              </Text>
-            </Pressable>
-          )
-        }
-        renderItem={({ item }) => (
-          <View
-            style={{
-              borderRadius: 13,
-              borderWidth: 1,
-              borderColor: palette.paperLine,
-              backgroundColor: '#ffffff70',
-              marginBottom: 10,
-              padding: 13,
-              gap: 10
-            }}
-          >
-            <Pressable
-              accessibilityRole={readOnly ? undefined : 'button'}
-              accessibilityLabel={readOnly ? undefined : `Изменить запись ${item.text}`}
-              disabled={readOnly}
-              onPress={() => onEdit?.(item)}
-              style={({ pressed }) => ({ opacity: pressed && !readOnly ? 0.65 : 1, gap: 5 })}
-            >
-              <Text style={{ color: palette.paperText, fontSize: 16, lineHeight: 23 }}>
-                {item.text}
-              </Text>
-              <Text style={{ color: palette.paperMuted, fontSize: 11 }}>
-                {new Date(item.occurredAt).toLocaleTimeString('ru-RU', {
-                  hour: '2-digit',
-                  minute: '2-digit'
-                })}
-              </Text>
-            </Pressable>
-            {!readOnly ? (
-              <View style={{ flexDirection: 'row', gap: 8 }}>
-                <Button label="Изменить" onPress={() => onEdit?.(item)} />
-                <Button label="Удалить" danger onPress={() => onDelete?.(item)} />
-              </View>
-            ) : null}
-          </View>
-        )}
-      />
-    </View>
+              <span
+                className="ui-text"
+                style={{
+                  color: palette.paperText,
+                  fontSize: 20,
+                  fontWeight: 800
+                }}
+              >
+                {date}
+              </span>
+              {moodLabel ? (
+                <span
+                  className="ui-text"
+                  style={{
+                    color: palette.paperMuted,
+                    fontSize: 13
+                  }}
+                >
+                  {moodLabel}
+                </span>
+              ) : null}
+            </div>
+          }
+          <div className="ui-stack ui-list" style={{}}>
+            {entries.length > 0 ? (
+              entries.map((item) => (
+                <div className="ui-stack ui-list-item" key={((item) => item.id)(item)}>
+                  {
+                    <div
+                      className="ui-stack"
+                      style={{
+                        borderRadius: 13,
+                        borderWidth: 1,
+                        borderColor: palette.paperLine,
+                        backgroundColor: '#ffffff70',
+                        marginBottom: 10,
+                        padding: 13,
+                        gap: 10
+                      }}
+                    >
+                      <Action
+                        role={readOnly ? undefined : 'button'}
+                        aria-label={readOnly ? undefined : `Изменить запись ${item.text}`}
+                        disabled={readOnly}
+                        onClick={() => onEdit?.(item)}
+                        style={{
+                          opacity: 1,
+                          gap: 5
+                        }}
+                        pressedStyle={{
+                          opacity: !readOnly ? 0.65 : 1
+                        }}
+                      >
+                        <span
+                          className="ui-text"
+                          style={{
+                            color: palette.paperText,
+                            fontSize: 16,
+                            lineHeight: '23px'
+                          }}
+                        >
+                          {item.text}
+                        </span>
+                        <span
+                          className="ui-text"
+                          style={{
+                            color: palette.paperMuted,
+                            fontSize: 11
+                          }}
+                        >
+                          {new Date(item.occurredAt).toLocaleTimeString('ru-RU', {
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </span>
+                      </Action>
+                      {!readOnly ? (
+                        <div
+                          className="ui-stack"
+                          style={{
+                            flexDirection: 'row',
+                            gap: 8
+                          }}
+                        >
+                          <Button label="Изменить" onClick={() => onEdit?.(item)} />
+                          <Button label="Удалить" danger onClick={() => onDelete?.(item)} />
+                        </div>
+                      ) : null}
+                    </div>
+                  }
+                </div>
+              ))
+            ) : readOnly ? (
+              <div
+                className="ui-stack"
+                style={{
+                  paddingBlock: 36,
+                  paddingInline: 8
+                }}
+              >
+                <span
+                  className="ui-text"
+                  style={{
+                    color: palette.paperMuted,
+                    fontSize: 15,
+                    lineHeight: '22px'
+                  }}
+                >
+                  В этот день осталось только настроение.
+                </span>
+              </div>
+            ) : (
+              <Action
+                role={'button'}
+                aria-label={'Добавить первую запись'}
+                onClick={() => onEdit?.()}
+                style={{
+                  paddingBlock: 36,
+                  paddingInline: 8
+                }}
+              >
+                <span
+                  className="ui-text"
+                  style={{
+                    color: palette.paperMuted,
+                    fontSize: 15,
+                    lineHeight: '22px'
+                  }}
+                >
+                  В этот день ещё нет записей. Нажмите, чтобы начать страницу.
+                </span>
+              </Action>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }
-
 function PaperPattern({
   pattern,
   lineColor
@@ -958,12 +1323,20 @@ function PaperPattern({
   lineColor: string
 }): React.JSX.Element | null {
   if (pattern === 'plain') return null
-
   if (pattern === 'dots') {
     return (
-      <View pointerEvents="none" style={{ position: 'absolute', inset: 0, opacity: 0.75 }}>
+      <div
+        className="ui-stack"
+        style={{
+          position: 'absolute',
+          inset: 0,
+          opacity: 0.75,
+          pointerEvents: 'none'
+        }}
+      >
         {Array.from({ length: 10 }, (_, row) => (
-          <View
+          <div
+            className="ui-stack"
             key={row}
             style={{
               position: 'absolute',
@@ -975,21 +1348,34 @@ function PaperPattern({
             }}
           >
             {Array.from({ length: 9 }, (_, column) => (
-              <View
+              <div
+                className="ui-stack"
                 key={column}
-                style={{ width: 2, height: 2, borderRadius: 1, backgroundColor: lineColor }}
-              />
+                style={{
+                  width: 2,
+                  height: 2,
+                  borderRadius: 1,
+                  backgroundColor: lineColor
+                }}
+              ></div>
             ))}
-          </View>
+          </div>
         ))}
-      </View>
+      </div>
     )
   }
-
   return (
-    <View pointerEvents="none" style={{ position: 'absolute', inset: 0 }}>
+    <div
+      className="ui-stack"
+      style={{
+        position: 'absolute',
+        inset: 0,
+        pointerEvents: 'none'
+      }}
+    >
       {Array.from({ length: 14 }, (_, index) => (
-        <View
+        <div
+          className="ui-stack"
           key={`h-${index}`}
           style={{
             position: 'absolute',
@@ -999,11 +1385,12 @@ function PaperPattern({
             height: 1,
             backgroundColor: lineColor
           }}
-        />
+        ></div>
       ))}
       {pattern === 'grid'
         ? Array.from({ length: 10 }, (_, index) => (
-            <View
+            <div
+              className="ui-stack"
               key={`v-${index}`}
               style={{
                 position: 'absolute',
@@ -1013,9 +1400,9 @@ function PaperPattern({
                 width: 1,
                 backgroundColor: lineColor
               }}
-            />
+            ></div>
           ))
         : null}
-    </View>
+    </div>
   )
 }

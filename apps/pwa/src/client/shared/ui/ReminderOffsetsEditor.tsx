@@ -1,25 +1,19 @@
 import { useMemo, useState } from 'react'
-import { View } from 'react-native'
-
 import { AppSelect, AppTextField } from './FormControls'
 import { Button, IconButton, Row } from './primitives'
-
 type ReminderUnit = 'minutes' | 'hours' | 'days' | 'weeks'
-
 const unitChoices = [
   { value: 'minutes', label: 'Минуты' },
   { value: 'hours', label: 'Часы' },
   { value: 'days', label: 'Дни' },
   { value: 'weeks', label: 'Недели' }
 ] as const
-
 const multipliers: Record<ReminderUnit, number> = {
   minutes: 1,
   hours: 60,
   days: 1440,
-  weeks: 10_080
+  weeks: 10080
 }
-
 function plural(value: number, forms: [string, string, string]): string {
   const mod10 = value % 10
   const mod100 = value % 100
@@ -27,11 +21,10 @@ function plural(value: number, forms: [string, string, string]): string {
   if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return forms[1]
   return forms[2]
 }
-
 function reminderOffsetLabel(minutes: number): string {
   if (minutes === 0) return 'В момент события'
-  if (minutes % 10_080 === 0) {
-    const value = minutes / 10_080
+  if (minutes % 10080 === 0) {
+    const value = minutes / 10080
     return `За ${value} ${plural(value, ['неделю', 'недели', 'недель'])}`
   }
   if (minutes % 1440 === 0) {
@@ -44,7 +37,6 @@ function reminderOffsetLabel(minutes: number): string {
   }
   return `За ${minutes} ${plural(minutes, ['минуту', 'минуты', 'минут'])}`
 }
-
 export function ReminderOffsetsEditor({
   value,
   onChange,
@@ -67,7 +59,6 @@ export function ReminderOffsetsEditor({
   )
   const [amount, setAmount] = useState('1')
   const [unit, setUnit] = useState<ReminderUnit>('days')
-
   const add = (): void => {
     const parsed = Math.max(0, Math.round(Number(amount.replace(',', '.'))))
     if (!Number.isFinite(parsed)) return
@@ -75,20 +66,41 @@ export function ReminderOffsetsEditor({
     if (offsets.includes(offset)) return
     onChange([...offsets, offset].sort((a, b) => b - a))
   }
-
   return (
-    <View style={{ gap: 10 }}>
-      <View style={{ flexDirection: 'row', gap: 8, alignItems: 'flex-end' }}>
-        <View style={{ flex: 1 }}>
+    <div
+      className="ui-stack"
+      style={{
+        gap: 10
+      }}
+    >
+      <div
+        className="ui-stack"
+        style={{
+          flexDirection: 'row',
+          gap: 8,
+          alignItems: 'flex-end'
+        }}
+      >
+        <div
+          className="ui-stack"
+          style={{
+            flex: '1 1 0%'
+          }}
+        >
           <AppTextField
-            accessibilityLabel="Количество до напоминания"
+            aria-label="Количество до напоминания"
             value={amount}
             disabled={disabled}
-            keyboardType="number-pad"
-            onChangeText={setAmount}
+            inputMode={'numeric'}
+            onValueChange={setAmount}
           />
-        </View>
-        <View style={{ flex: 1.25 }}>
+        </div>
+        <div
+          className="ui-stack"
+          style={{
+            flex: '1.25 1 0%'
+          }}
+        >
           <AppSelect
             label="Единица времени"
             value={unit}
@@ -100,9 +112,9 @@ export function ReminderOffsetsEditor({
               }
             }}
           />
-        </View>
-        <Button label="Добавить" icon="add" disabled={disabled} onPress={add} />
-      </View>
+        </div>
+        <Button label="Добавить" icon="add" disabled={disabled} onClick={add} />
+      </div>
 
       {offsets.length === 0 ? (
         <Row title="Напоминания не настроены" />
@@ -114,11 +126,11 @@ export function ReminderOffsetsEditor({
               icon="delete"
               compact
               disabled={disabled}
-              onPress={() => onChange(offsets.filter((item) => item !== offset))}
+              onClick={() => onChange(offsets.filter((item) => item !== offset))}
             />
           </Row>
         ))
       )}
-    </View>
+    </div>
   )
 }

@@ -1,3 +1,5 @@
+import { subscribePageHidden } from '../../../ui/lifecycle'
+import { Action, blurActiveElement, subscribeBack, RefreshRegion } from '../../../ui/browser'
 import {
   ArrowDownAZ,
   BookOpen,
@@ -9,18 +11,8 @@ import {
   List,
   StickyNote,
   type LucideIcon
-} from 'lucide-react-native'
+} from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import {
-  AppState,
-  BackHandler,
-  FlatList,
-  Keyboard,
-  Platform,
-  Pressable,
-  Text,
-  View
-} from 'react-native'
 import type { NoteDocument, NoteGroup, NoteRecord, NoteSummary } from '@mymind/contracts/notes'
 import { AutosaveQueue } from '@mymind/core/autosave'
 import * as notesValidation from '@mymind/core/validation/notes'
@@ -49,13 +41,11 @@ import { SwipeableTabContent } from '../../shared/ui/SwipeableTabContent'
 import { SearchableHeaderRow, SwipeTabBar } from '../../shared/ui/SwipeTabBar'
 import { useSwipeTabFeedback, type SwipeTabFeedback } from '../../shared/ui/useSwipeTabFeedback'
 import { MobileNoteCanvas, type MobileNoteMode } from './MobileNoteCanvas'
-
 type NoteEditorMode = MobileNoteMode
 type NoteSaveState = 'saved' | 'dirty' | 'saving' | 'error'
 type NotesLayout = 'grid' | 'list'
 type NotesSort = 'updated' | 'title'
 type NotesView = 'all' | 'recent' | 'groups' | 'ungrouped'
-
 function sortNotes(notes: NoteSummary[], sort: NotesSort): NoteSummary[] {
   return [...notes].sort((left, right) =>
     sort === 'title'
@@ -63,9 +53,7 @@ function sortNotes(notes: NoteSummary[], sort: NotesSort): NoteSummary[] {
       : right.updatedAt - left.updatedAt
   )
 }
-
 const NOTES_VIEW_TABS = ['all', 'recent', 'groups', 'ungrouped'] as const
-
 const NOTES_VIEWS: ReadonlyArray<{
   id: NotesView
   label: string
@@ -76,7 +64,6 @@ const NOTES_VIEWS: ReadonlyArray<{
   { id: 'groups', label: 'По группам', icon: Folder },
   { id: 'ungrouped', label: 'Без группы', icon: CircleSlash2 }
 ]
-
 function NotesTabBar({
   value,
   onChange,
@@ -93,14 +80,13 @@ function NotesTabBar({
   onSearchOpenChange(open: boolean): void
 }): React.JSX.Element {
   const theme = useTheme()
-
   return (
     <SwipeTabBar
       items={NOTES_VIEWS}
       value={value}
       onChange={onChange}
       feedback={feedback}
-      search={{ value: query, onChangeText: onQueryChange }}
+      search={{ value: query, onValueChange: onQueryChange }}
       onSearchOpenChange={onSearchOpenChange}
       renderIcon={(item, selected) => {
         const Icon = item.icon
@@ -115,61 +101,67 @@ function NotesTabBar({
     />
   )
 }
-
 function NotesControl({
   label,
   icon: Icon,
   active = false,
   iconOnly = false,
-  onPress
+  onClick
 }: {
   label: string
   icon: LucideIcon
   active?: boolean
   iconOnly?: boolean
-  onPress(): void
+  onClick(): void
 }): React.JSX.Element {
   const theme = useTheme()
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityState={{ selected: active }}
-      onPress={onPress}
-      style={({ pressed }) => ({
+    <Action
+      role={'button'}
+      aria-label={label}
+      aria-selected={active}
+      onClick={onClick}
+      style={{
         minWidth: iconOnly ? 38 : undefined,
         height: 38,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
         gap: iconOnly ? 0 : 6,
-        paddingHorizontal: iconOnly ? 0 : 10,
+        paddingInline: iconOnly ? 0 : 10,
         borderWidth: 1,
         borderColor: active ? theme.accent + '55' : theme.border,
         borderRadius: 11,
-        backgroundColor: active ? theme.accent + '10' : pressed ? theme.raised : theme.surface,
-        opacity: pressed ? 0.72 : 1
-      })}
+        backgroundColor: active ? theme.accent + '10' : theme.surface,
+        opacity: 1
+      }}
+      pressedStyle={{
+        backgroundColor: active ? theme.accent + '10' : theme.raised,
+        opacity: 0.72
+      }}
     >
       <Icon size={15} color={active ? theme.accent : theme.muted} />
       {!iconOnly ? (
-        <Text
-          style={{ color: active ? theme.accent : theme.text, fontSize: 11.5, fontWeight: '700' }}
+        <span
+          className="ui-text"
+          style={{
+            color: active ? theme.accent : theme.text,
+            fontSize: 11.5,
+            fontWeight: 700
+          }}
         >
           {label}
-        </Text>
+        </span>
       ) : null}
-    </Pressable>
+    </Action>
   )
 }
-
 function noteSaveLabel(state: NoteSaveState): string {
   if (state === 'saving') return 'Сохранение…'
   if (state === 'dirty') return 'Есть изменения'
   if (state === 'error') return 'Ошибка сохранения'
   return 'Сохранено'
 }
-
 function MobileNoteCard({
   note,
   groupTitle,
@@ -196,20 +188,20 @@ function MobileNoteCard({
     month: 'short'
   })
   const actions = [
-    { label: 'Переименовать', icon: 'edit' as const, onPress: onRename },
-    { label: 'Переместить', icon: 'move' as const, onPress: onMove },
+    { label: 'Переименовать', icon: 'edit' as const, onClick: onRename },
+    { label: 'Переместить', icon: 'move' as const, onClick: onMove },
     {
       label: 'Удалить заметку',
       icon: 'delete' as const,
       danger: true,
-      onPress: onDelete
+      onClick: onDelete
     }
   ]
   const meta = [groupTitle, date].filter(Boolean).join(' · ')
-
   if (layout === 'list') {
     return (
-      <View
+      <div
+        className="ui-stack"
         style={{
           minHeight: 78,
           marginBottom: 8,
@@ -222,67 +214,108 @@ function MobileNoteCard({
           backgroundColor: theme.surface
         }}
       >
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={note.title}
-          accessibilityHint="Удерживайте для действий с заметкой"
-          onPress={() => {
+        <Action
+          role={'button'}
+          aria-label={note.title}
+          title={'Удерживайте для действий с заметкой'}
+          onClick={() => {
             if (Date.now() < suppressOpenUntil.current) return
             onOpen()
           }}
-          onLongPress={() => {
+          onHold={() => {
             suppressOpenUntil.current = Date.now() + 900
             setActionsOpen(true)
           }}
-          delayLongPress={380}
-          style={({ pressed }) => ({
+          holdDelay={380}
+          style={{
             minWidth: 0,
-            flex: 1,
+            flex: '1 1 0%',
             flexDirection: 'row',
             alignItems: 'flex-start',
             gap: 11,
             paddingLeft: 12,
             paddingRight: 12,
-            paddingVertical: 12,
-            backgroundColor: pressed ? theme.raised : 'transparent'
-          })}
+            paddingBlock: 12,
+            backgroundColor: 'transparent'
+          }}
+          pressedStyle={{
+            backgroundColor: theme.raised
+          }}
         >
           <VisualIconBadge value="notes" size={36} />
-          <View style={{ minWidth: 0, flex: 1 }}>
-            <Text
-              numberOfLines={1}
-              style={{ color: theme.text, fontSize: 14, lineHeight: 19, fontWeight: '700' }}
+          <div
+            className="ui-stack"
+            style={{
+              minWidth: 0,
+              flex: '1 1 0%'
+            }}
+          >
+            <span
+              className="ui-text"
+              data-lines={1}
+              style={{
+                color: theme.text,
+                fontSize: 14,
+                lineHeight: '19px',
+                fontWeight: 700,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                display: '-webkit-box',
+                WebkitBoxOrient: 'vertical',
+                WebkitLineClamp: 1
+              }}
             >
               {note.title}
-            </Text>
+            </span>
             {subtitle ? (
-              <Text
-                numberOfLines={2}
-                style={{ marginTop: 3, color: theme.muted, fontSize: 11.5, lineHeight: 16 }}
+              <span
+                className="ui-text"
+                data-lines={2}
+                style={{
+                  marginTop: 3,
+                  color: theme.muted,
+                  fontSize: 11.5,
+                  lineHeight: '16px',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  display: '-webkit-box',
+                  WebkitBoxOrient: 'vertical',
+                  WebkitLineClamp: 2
+                }}
               >
                 {subtitle}
-              </Text>
+              </span>
             ) : null}
-            <Text
-              numberOfLines={1}
-              style={{ marginTop: subtitle ? 6 : 4, color: theme.muted, fontSize: 10 }}
+            <span
+              className="ui-text"
+              data-lines={1}
+              style={{
+                marginTop: subtitle ? 6 : 4,
+                color: theme.muted,
+                fontSize: 10,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                display: '-webkit-box',
+                WebkitBoxOrient: 'vertical',
+                WebkitLineClamp: 1
+              }}
             >
               {meta || 'Без группы'}
-            </Text>
-          </View>
-        </Pressable>
+            </span>
+          </div>
+        </Action>
         <ActionMenuDialog
           open={actionsOpen}
           onOpenChange={setActionsOpen}
           title={note.title}
           items={actions}
         />
-      </View>
+      </div>
     )
   }
-
   return (
-    <View
+    <div
+      className="ui-stack"
       style={{
         minHeight: 152,
         marginBottom: 8,
@@ -293,55 +326,101 @@ function MobileNoteCard({
         backgroundColor: theme.surface
       }}
     >
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={note.title}
-        accessibilityHint="Удерживайте для действий с заметкой"
-        onPress={onOpen}
-        onLongPress={() => setActionsOpen(true)}
-        delayLongPress={380}
-        style={({ pressed }) => ({
+      <Action
+        role={'button'}
+        aria-label={note.title}
+        title={'Удерживайте для действий с заметкой'}
+        onClick={onOpen}
+        onHold={() => setActionsOpen(true)}
+        holdDelay={380}
+        style={{
           minHeight: 150,
-          flex: 1,
+          flex: '1 1 0%',
           gap: 8,
           padding: 12,
-          backgroundColor: pressed ? theme.raised : 'transparent'
-        })}
+          backgroundColor: 'transparent'
+        }}
+        pressedStyle={{
+          backgroundColor: theme.raised
+        }}
       >
         <VisualIconBadge value="notes" size={34} />
-        <Text
-          numberOfLines={2}
-          style={{ color: theme.text, fontSize: 13.5, lineHeight: 18, fontWeight: '700' }}
+        <span
+          className="ui-text"
+          data-lines={2}
+          style={{
+            color: theme.text,
+            fontSize: 13.5,
+            lineHeight: '18px',
+            fontWeight: 700,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            display: '-webkit-box',
+            WebkitBoxOrient: 'vertical',
+            WebkitLineClamp: 2
+          }}
         >
           {note.title}
-        </Text>
+        </span>
         {subtitle ? (
-          <Text numberOfLines={3} style={{ color: theme.muted, fontSize: 11, lineHeight: 15 }}>
+          <span
+            className="ui-text"
+            data-lines={3}
+            style={{
+              color: theme.muted,
+              fontSize: 11,
+              lineHeight: '15px',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              display: '-webkit-box',
+              WebkitBoxOrient: 'vertical',
+              WebkitLineClamp: 3
+            }}
+          >
             {subtitle}
-          </Text>
+          </span>
         ) : (
-          <Text style={{ color: theme.muted, fontSize: 11 }}>Пустая заметка</Text>
+          <span
+            className="ui-text"
+            style={{
+              color: theme.muted,
+              fontSize: 11
+            }}
+          >
+            Пустая заметка
+          </span>
         )}
-        <Text numberOfLines={1} style={{ marginTop: 'auto', color: theme.muted, fontSize: 9.5 }}>
+        <span
+          className="ui-text"
+          data-lines={1}
+          style={{
+            marginTop: 'auto',
+            color: theme.muted,
+            fontSize: 9.5,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            display: '-webkit-box',
+            WebkitBoxOrient: 'vertical',
+            WebkitLineClamp: 1
+          }}
+        >
           {meta || 'Без группы'}
-        </Text>
-      </Pressable>
+        </span>
+      </Action>
       <ActionMenuDialog
         open={actionsOpen}
         onOpenChange={setActionsOpen}
         title={note.title}
         items={actions}
       />
-    </View>
+    </div>
   )
 }
-
 function noteMatches(note: NoteSummary, query: string): boolean {
   const normalized = query.trim().toLocaleLowerCase()
   if (!normalized) return true
   return `${note.title} ${note.plainText}`.toLocaleLowerCase().includes(normalized)
 }
-
 export function NotesScreen({
   onImmersiveChange,
   onDraftChange,
@@ -349,13 +428,18 @@ export function NotesScreen({
   onResourceHandled
 }: {
   onImmersiveChange?: (immersive: boolean) => void
-  onDraftChange?: (draft: { flush(): Promise<void>; hasUnsavedChanges(): boolean } | null) => void
+  onDraftChange?: (
+    draft: {
+      flush(): Promise<void>
+      hasUnsavedChanges(): boolean
+    } | null
+  ) => void
   resourceId?: string | null
   onResourceHandled?: () => void
 }): React.JSX.Element {
   const { notes: api } = useServices()
   const theme = useTheme()
-  const isPwa = Platform.OS === 'web'
+  const isPwa = true
   const confirm = useConfirmation()
   const toast = useToast()
   const overview = useCollection(useCallback(() => api.listNotesOverview(), [api]))
@@ -382,7 +466,6 @@ export function NotesScreen({
   const registerEditor = useCallback((editor: NotesRichTextDomRef | null) => {
     editorRef.current = editor
   }, [])
-
   const openNote = useCallback(
     (id: string): void => {
       try {
@@ -431,7 +514,6 @@ export function NotesScreen({
     },
     [api]
   )
-
   useEffect(() => {
     if (!resourceId) return
     let active = true
@@ -445,13 +527,11 @@ export function NotesScreen({
       active = false
     }
   }, [resourceId, openNote, onResourceHandled])
-
   const flush = useCallback(async (): Promise<void> => {
     const documentQueue = queueRef.current
     if (!documentQueue) return
     try {
-      // Persist the native buffer immediately, even if a backgrounded WebView
-      // cannot answer its final snapshot request until the app resumes.
+      // Flush both the current editor transaction and pending document writes before leaving.
       await Promise.all([documentQueue.flush(), editorRef.current?.flushEditor()])
       if (documentQueue.hasPendingChanges()) setSaveState('saving')
       await documentQueue.flush()
@@ -462,10 +542,9 @@ export function NotesScreen({
       throw reason
     }
   }, [])
-
   const closeEditor = useCallback(async (): Promise<void> => {
     if (closing) return
-    Keyboard.dismiss()
+    blurActiveElement()
     setClosing(true)
     try {
       await flush()
@@ -484,18 +563,15 @@ export function NotesScreen({
       setClosing(false)
     }
   }, [closing, flush, overview])
-
   useEffect(() => {
     if (!record) return
-    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+    const subscription = subscribeBack(() => {
       void closeEditor()
       return true
     })
     return () => subscription.remove()
   }, [closeEditor, record])
-
   const editorOpen = record !== null
-
   useEffect(() => {
     onDraftChange?.(
       editorOpen
@@ -504,25 +580,25 @@ export function NotesScreen({
     )
     return () => onDraftChange?.(null)
   }, [editorOpen, flush, onDraftChange])
-
   useEffect(() => {
     onImmersiveChange?.(editorOpen)
     return () => {
       if (editorOpen) onImmersiveChange?.(false)
     }
   }, [editorOpen, onImmersiveChange])
-
   useEffect(() => {
     if (!record) return
-    const subscription = AppState.addEventListener('change', (state) => {
-      if (state !== 'active') {
-        void flush().catch((reason) => setEditorError(messageFor(reason)))
-      }
+    const subscription = subscribePageHidden(() => {
+      void flush().catch((reason) => setEditorError(messageFor(reason)))
     })
     return () => subscription.remove()
   }, [flush, record])
-
-  const changeDocument = (next: NoteDocument, options?: { saveImmediately?: boolean }): void => {
+  const changeDocument = (
+    next: NoteDocument,
+    options?: {
+      saveImmediately?: boolean
+    }
+  ): void => {
     latestDocumentRef.current = next
     setDocument(next)
     setEditorError('')
@@ -535,22 +611,19 @@ export function NotesScreen({
         setEditorError(messageFor(reason))
       })
   }
-
   const changeEditorMode = (nextMode: NoteEditorMode): void => {
     if (nextMode === editorMode || modeChanging || !document) return
-    Keyboard.dismiss()
+    blurActiveElement()
     setModeChanging(true)
     void flush()
       .then(() => setEditorMode(nextMode))
       .catch((reason) => setEditorError(messageFor(reason)))
       .finally(() => setModeChanging(false))
   }
-
   const groupChoices = [
     { value: null, label: 'Без группы' },
     ...(overview.data?.groups ?? []).map((group) => ({ value: group.id, label: group.title }))
   ]
-
   const editGroup = (group?: NoteGroup): void => {
     setForm({
       title: group ? 'Изменить группу' : 'Новая группа',
@@ -593,7 +666,6 @@ export function NotesScreen({
       }
     })
   }
-
   const deleteGroup = (group: NoteGroup): void => {
     void confirm({
       title: 'Удалить группу?',
@@ -608,7 +680,6 @@ export function NotesScreen({
       }
     })
   }
-
   const createNote = (targetGroupId: string | null): void => {
     setForm({
       title: targetGroupId ? 'Новая заметка в группе' : 'Новая заметка',
@@ -625,7 +696,6 @@ export function NotesScreen({
       }
     })
   }
-
   const editNoteProperties = (note: NoteRecord): void => {
     setForm({
       title: 'Свойства заметки',
@@ -649,7 +719,6 @@ export function NotesScreen({
       }
     })
   }
-
   const renameListedNote = (note: NoteSummary): void => {
     setForm({
       title: 'Переименовать заметку',
@@ -669,7 +738,6 @@ export function NotesScreen({
       }
     })
   }
-
   const moveListedNote = (note: NoteSummary): void => {
     setForm({
       title: 'Переместить заметку',
@@ -686,7 +754,6 @@ export function NotesScreen({
       }
     })
   }
-
   const deleteListedNote = (note: NoteSummary): void => {
     void confirm({
       title: 'Удалить заметку?',
@@ -700,7 +767,6 @@ export function NotesScreen({
       }
     })
   }
-
   const deleteCurrentNote = (): void => {
     if (!record) return
     const id = record.id
@@ -729,16 +795,22 @@ export function NotesScreen({
       }
     })
   }
-
   if (record && document) {
     return (
-      <View style={{ flex: 1, backgroundColor: theme.background }}>
-        <View
+      <div
+        className="ui-stack"
+        style={{
+          flex: '1 1 0%',
+          backgroundColor: theme.background
+        }}
+      >
+        <div
+          className="ui-stack"
           style={{
             flexDirection: 'row',
             alignItems: 'center',
             minHeight: 64,
-            paddingHorizontal: 6,
+            paddingInline: 6,
             gap: 4,
             borderBottomWidth: 1,
             borderColor: theme.border
@@ -749,26 +821,50 @@ export function NotesScreen({
             icon="back"
             ghost
             disabled={closing || modeChanging}
-            onPress={() => void closeEditor()}
+            onClick={() => void closeEditor()}
           />
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Переименовать заметку"
-            accessibilityHint={`Статус сохранения: ${noteSaveLabel(saveState)}`}
-            onPress={() => renameListedNote(record)}
-            style={{ flex: 1, minWidth: 0, minHeight: 48, justifyContent: 'center' }}
+          <Action
+            role={'button'}
+            aria-label={'Переименовать заметку'}
+            title={`Статус сохранения: ${noteSaveLabel(saveState)}`}
+            onClick={() => renameListedNote(record)}
+            style={{
+              flex: '1 1 0%',
+              minWidth: 0,
+              minHeight: 48,
+              justifyContent: 'center'
+            }}
           >
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <Text
-                numberOfLines={1}
-                style={{ color: theme.text, fontSize: 17, fontWeight: '700', flexShrink: 1 }}
+            <div
+              className="ui-stack"
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 8
+              }}
+            >
+              <span
+                className="ui-text"
+                data-lines={1}
+                style={{
+                  color: theme.text,
+                  fontSize: 17,
+                  fontWeight: 700,
+                  flexShrink: 1,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  display: '-webkit-box',
+                  WebkitBoxOrient: 'vertical',
+                  WebkitLineClamp: 1
+                }}
               >
                 {record.title}
-              </Text>
+              </span>
               {isPwa ? (
-                <View
-                  testID="note-save-indicator"
-                  accessibilityLabel={`Статус сохранения: ${noteSaveLabel(saveState)}`}
+                <div
+                  className="ui-stack"
+                  data-testid={'note-save-indicator'}
+                  aria-label={`Статус сохранения: ${noteSaveLabel(saveState)}`}
                   style={{
                     width: 8,
                     height: 8,
@@ -780,21 +876,21 @@ export function NotesScreen({
                           ? '#16B58B'
                           : '#F3BF43'
                   }}
-                />
+                ></div>
               ) : null}
-            </View>
+            </div>
             {null}
-          </Pressable>
+          </Action>
           {editorMode !== 'view' ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={
+            <Action
+              role={'button'}
+              aria-label={
                 editorMode === 'read' ? 'Перейти в режим редактирования' : 'Перейти в режим чтения'
               }
-              accessibilityState={{ disabled: closing || modeChanging }}
+              aria-disabled={closing || modeChanging}
               disabled={closing || modeChanging}
-              onPress={() => changeEditorMode(editorMode === 'read' ? 'edit' : 'read')}
-              style={({ pressed }) => ({
+              onClick={() => changeEditorMode(editorMode === 'read' ? 'edit' : 'read')}
+              style={{
                 width: 42,
                 height: 42,
                 flexShrink: 0,
@@ -803,16 +899,19 @@ export function NotesScreen({
                 borderRadius: 11,
                 borderWidth: 1,
                 borderColor: '#16B58B',
-                backgroundColor: pressed ? '#16B58B30' : '#16B58B14',
+                backgroundColor: '#16B58B14',
                 opacity: closing || modeChanging ? 0.5 : 1
-              })}
+              }}
+              pressedStyle={{
+                backgroundColor: '#16B58B30'
+              }}
             >
               {editorMode === 'read' ? (
                 <Pencil size={19} color="#16B58B" />
               ) : (
                 <BookOpen size={19} color="#16B58B" />
               )}
-            </Pressable>
+            </Action>
           ) : null}
           <ActionMenu
             disabled={closing || modeChanging}
@@ -821,17 +920,17 @@ export function NotesScreen({
               {
                 label: 'Вид заметки',
                 icon: 'settings',
-                onPress: () => changeEditorMode('view')
+                onClick: () => changeEditorMode('view')
               },
               {
                 label: 'Свойства заметки',
                 icon: 'edit',
-                onPress: () => editNoteProperties(record)
+                onClick: () => editNoteProperties(record)
               },
-              { label: 'Удалить заметку', icon: 'delete', danger: true, onPress: deleteCurrentNote }
+              { label: 'Удалить заметку', icon: 'delete', danger: true, onClick: deleteCurrentNote }
             ]}
           />
-        </View>
+        </div>
         {editorError ? (
           <ErrorState
             message={editorError}
@@ -850,10 +949,9 @@ export function NotesScreen({
           onError={(reason) => setEditorError(messageFor(reason))}
         />
         {form && <FormSheet spec={form} close={() => setForm(null)} />}
-      </View>
+      </div>
     )
   }
-
   const allNotes = overview.data?.notes ?? []
   const allGroups = overview.data?.groups ?? []
   const notesByRecency = sortNotes(allNotes, 'updated')
@@ -878,14 +976,13 @@ export function NotesScreen({
         : view === 'groups' && selectedGroup
           ? sortedNotes.filter((note) => note.groupId === selectedGroup.id)
           : sortedNotes
-
   const createActions = [
     {
       key: 'group',
       label: 'Новая группа',
       description: 'Создать новую группу заметок',
       icon: 'folder' as const,
-      onPress: () => editGroup()
+      onClick: () => editGroup()
     },
     {
       key: 'note',
@@ -894,59 +991,91 @@ export function NotesScreen({
         ? 'Заметка сразу появится в этой группе'
         : 'Создать заметку без группы',
       icon: 'notes' as const,
-      onPress: () => createNote(selectedGroup?.id ?? null)
+      onClick: () => createNote(selectedGroup?.id ?? null)
     }
   ]
-
   const changeView = (next: NotesView): void => {
     if (next === view) return
     if (next === 'groups') setSelectedGroupId(null)
     if (next === 'recent') setSort('updated')
     setView(next)
   }
-
   return (
-    <View style={{ flex: 1 }}>
-      <View style={{ gap: 10, marginBottom: 10 }}>
+    <div
+      className="ui-stack"
+      style={{
+        flex: '1 1 0%'
+      }}
+    >
+      <div
+        className="ui-stack"
+        style={{
+          gap: 10,
+          marginBottom: 10
+        }}
+      >
         {view === 'groups' && selectedGroup ? (
-          <SearchableHeaderRow search={{ value: query, onChangeText: setQuery }}>
+          <SearchableHeaderRow search={{ value: query, onValueChange: setQuery }}>
             <IconButton
               label="Назад к группам"
               icon="back"
               compact
               ghost
-              onPress={() => setSelectedGroupId(null)}
+              onClick={() => setSelectedGroupId(null)}
             />
             <VisualIconBadge value={selectedGroup.icon ?? 'folder'} size={34} />
-            <View style={{ flex: 1, minWidth: 0 }}>
-              <Text
-                numberOfLines={1}
-                style={{ color: theme.text, fontSize: 13.5, fontWeight: '700' }}
+            <div
+              className="ui-stack"
+              style={{
+                flex: '1 1 0%',
+                minWidth: 0
+              }}
+            >
+              <span
+                className="ui-text"
+                data-lines={1}
+                style={{
+                  color: theme.text,
+                  fontSize: 13.5,
+                  fontWeight: 700,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  display: '-webkit-box',
+                  WebkitBoxOrient: 'vertical',
+                  WebkitLineClamp: 1
+                }}
               >
                 {selectedGroup.title}
-              </Text>
-              <Text style={{ marginTop: 1, color: theme.muted, fontSize: 10.5 }}>
+              </span>
+              <span
+                className="ui-text"
+                style={{
+                  marginTop: 1,
+                  color: theme.muted,
+                  fontSize: 10.5
+                }}
+              >
                 {allNotes.filter((note) => note.groupId === selectedGroup.id).length} заметок
-              </Text>
-            </View>
+              </span>
+            </div>
             <ActionMenu
               title={selectedGroup.title}
               items={[
                 {
                   label: 'Новая заметка',
                   icon: 'add',
-                  onPress: () => createNote(selectedGroup.id)
+                  onClick: () => createNote(selectedGroup.id)
                 },
                 {
                   label: 'Изменить группу',
                   icon: 'edit',
-                  onPress: () => editGroup(selectedGroup)
+                  onClick: () => editGroup(selectedGroup)
                 },
                 {
                   label: 'Удалить группу',
                   icon: 'delete',
                   danger: true,
-                  onPress: () => deleteGroup(selectedGroup)
+                  onClick: () => deleteGroup(selectedGroup)
                 }
               ]}
             />
@@ -963,7 +1092,8 @@ export function NotesScreen({
         )}
 
         {view === 'groups' && !selectedGroup ? (
-          <View
+          <div
+            className="ui-stack"
             style={{
               minHeight: 38,
               flexDirection: 'row',
@@ -972,18 +1102,25 @@ export function NotesScreen({
               gap: 10
             }}
           >
-            <Text style={{ color: theme.muted, fontSize: 11.5 }}>
+            <span
+              className="ui-text"
+              style={{
+                color: theme.muted,
+                fontSize: 11.5
+              }}
+            >
               {visibleGroups.length} из {allGroups.length} групп
-            </Text>
+            </span>
             <NotesControl
               label="Скрыть пустые"
               icon={CircleSlash2}
               active={hideEmptyGroups}
-              onPress={() => setHideEmptyGroups((current) => !current)}
+              onClick={() => setHideEmptyGroups((current) => !current)}
             />
-          </View>
+          </div>
         ) : (
-          <View
+          <div
+            className="ui-stack"
             style={{
               minHeight: 38,
               flexDirection: 'row',
@@ -992,17 +1129,36 @@ export function NotesScreen({
               gap: 10
             }}
           >
-            <Text numberOfLines={1} style={{ flex: 1, color: theme.muted, fontSize: 11.5 }}>
+            <span
+              className="ui-text"
+              data-lines={1}
+              style={{
+                flex: '1 1 0%',
+                color: theme.muted,
+                fontSize: 11.5,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                display: '-webkit-box',
+                WebkitBoxOrient: 'vertical',
+                WebkitLineClamp: 1
+              }}
+            >
               {visibleNotes.length} заметок
               {view === 'all' && allGroups.length ? ` · ${allGroups.length} групп` : ''}
-            </Text>
-            <View style={{ flexDirection: 'row', gap: 6 }}>
+            </span>
+            <div
+              className="ui-stack"
+              style={{
+                flexDirection: 'row',
+                gap: 6
+              }}
+            >
               {view !== 'recent' ? (
                 <NotesControl
                   label={sort === 'updated' ? 'Недавние' : 'А–Я'}
                   icon={sort === 'updated' ? Clock3 : ArrowDownAZ}
                   active
-                  onPress={() =>
+                  onClick={() =>
                     setSort((current) => (current === 'updated' ? 'title' : 'updated'))
                   }
                 />
@@ -1012,12 +1168,12 @@ export function NotesScreen({
                 icon={layout === 'list' ? List : Grid2X2}
                 iconOnly
                 active
-                onPress={() => setLayout((current) => (current === 'list' ? 'grid' : 'list'))}
+                onClick={() => setLayout((current) => (current === 'list' ? 'grid' : 'list'))}
               />
-            </View>
-          </View>
+            </div>
+          </div>
         )}
-      </View>
+      </div>
 
       {overview.error ? <ErrorState message={overview.error} retry={overview.refresh} /> : null}
       {editorError ? <ErrorState message={editorError} /> : null}
@@ -1031,96 +1187,136 @@ export function NotesScreen({
         {overview.loading ? (
           <LoadingState />
         ) : view === 'groups' && !selectedGroup ? (
-          <FlatList
-            data={visibleGroups}
-            keyExtractor={(item) => item.id}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingBottom: 96 }}
-            ListEmptyComponent={
-              <EmptyState
-                text={query.trim() ? 'По этому запросу группы не найдены.' : 'Групп пока нет.'}
-              />
-            }
-            renderItem={({ item }) => (
-              <WorkspaceNodeCard
-                title={item.title}
-                subtitle={`${allNotes.filter((note) => note.groupId === item.id).length} заметок`}
-                leading={<VisualIconBadge value={item.icon ?? 'folder'} />}
-                onPress={() => setSelectedGroupId(item.id)}
-                action={
-                  <ActionMenu
-                    title={item.title}
-                    items={[
+          <div className="ui-scroll">
+            <div
+              className="ui-stack ui-scroll-content"
+              style={{
+                paddingBottom: 96
+              }}
+            >
+              <div className="ui-stack ui-list" style={{}}>
+                {visibleGroups.length > 0 ? (
+                  visibleGroups.map((item) => (
+                    <div className="ui-stack ui-list-item" key={((item) => item.id)(item)}>
                       {
-                        label: 'Новая заметка',
-                        icon: 'add',
-                        onPress: () => createNote(item.id)
-                      },
-                      {
-                        label: 'Изменить группу',
-                        icon: 'edit',
-                        onPress: () => editGroup(item)
-                      },
-                      {
-                        label: 'Удалить группу',
-                        icon: 'delete',
-                        danger: true,
-                        onPress: () => deleteGroup(item)
+                        <WorkspaceNodeCard
+                          title={item.title}
+                          subtitle={`${allNotes.filter((note) => note.groupId === item.id).length} заметок`}
+                          leading={<VisualIconBadge value={item.icon ?? 'folder'} />}
+                          onClick={() => setSelectedGroupId(item.id)}
+                          action={
+                            <ActionMenu
+                              title={item.title}
+                              items={[
+                                {
+                                  label: 'Новая заметка',
+                                  icon: 'add',
+                                  onClick: () => createNote(item.id)
+                                },
+                                {
+                                  label: 'Изменить группу',
+                                  icon: 'edit',
+                                  onClick: () => editGroup(item)
+                                },
+                                {
+                                  label: 'Удалить группу',
+                                  icon: 'delete',
+                                  danger: true,
+                                  onClick: () => deleteGroup(item)
+                                }
+                              ]}
+                            />
+                          }
+                        />
                       }
-                    ]}
+                    </div>
+                  ))
+                ) : (
+                  <EmptyState
+                    text={query.trim() ? 'По этому запросу группы не найдены.' : 'Групп пока нет.'}
                   />
-                }
-              />
-            )}
-          />
+                )}
+              </div>
+            </div>
+          </div>
         ) : (
-          <FlatList
+          <RefreshRegion
+            className="ui-scroll"
             key={`notes-${layout}`}
-            data={visibleNotes}
-            keyExtractor={(item) => item.id}
-            numColumns={layout === 'grid' ? 2 : 1}
-            columnWrapperStyle={layout === 'grid' ? { gap: 8 } : undefined}
-            showsVerticalScrollIndicator={false}
-            refreshing={overview.loading}
             onRefresh={overview.refresh}
-            contentContainerStyle={{ paddingBottom: 96 }}
-            ListEmptyComponent={
-              <EmptyState
-                text={
-                  query.trim()
-                    ? 'По этому запросу заметки не найдены.'
-                    : view === 'ungrouped'
-                      ? 'Все заметки уже распределены по группам.'
-                      : selectedGroup
-                        ? 'В этой группе пока нет заметок.'
-                        : view === 'recent'
-                          ? 'Недавних заметок пока нет.'
-                          : 'Заметок пока нет.'
-                }
-              />
-            }
-            renderItem={({ item }) => {
-              const noteGroup = allGroups.find((group) => group.id === item.groupId)
-              return (
-                <View style={layout === 'grid' ? { flex: 1, maxWidth: '50%' } : undefined}>
-                  <MobileNoteCard
-                    note={item}
-                    groupTitle={noteGroup?.title}
-                    layout={layout}
-                    onOpen={() => openNote(item.id)}
-                    onRename={() => renameListedNote(item)}
-                    onMove={() => moveListedNote(item)}
-                    onDelete={() => deleteListedNote(item)}
+            busy={overview.loading}
+          >
+            <div
+              className="ui-stack ui-scroll-content"
+              style={{
+                paddingBottom: 96
+              }}
+            >
+              <div
+                className="ui-stack ui-list"
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: `repeat(${layout === 'grid' ? 2 : 1}, minmax(0, 1fr))`,
+                  ...(layout === 'grid'
+                    ? {
+                        gap: 8
+                      }
+                    : undefined)
+                }}
+              >
+                {visibleNotes.length > 0 ? (
+                  visibleNotes.map((item) => {
+                    const noteGroup = allGroups.find((group) => group.id === item.groupId)
+                    return (
+                      <div className="ui-stack ui-list-item" key={((item) => item.id)(item)}>
+                        {
+                          <div
+                            className="ui-stack"
+                            style={
+                              layout === 'grid'
+                                ? {
+                                    flex: '1 1 0%'
+                                  }
+                                : undefined
+                            }
+                          >
+                            <MobileNoteCard
+                              note={item}
+                              groupTitle={noteGroup?.title}
+                              layout={layout}
+                              onOpen={() => openNote(item.id)}
+                              onRename={() => renameListedNote(item)}
+                              onMove={() => moveListedNote(item)}
+                              onDelete={() => deleteListedNote(item)}
+                            />
+                          </div>
+                        }
+                      </div>
+                    )
+                  })
+                ) : (
+                  <EmptyState
+                    text={
+                      query.trim()
+                        ? 'По этому запросу заметки не найдены.'
+                        : view === 'ungrouped'
+                          ? 'Все заметки уже распределены по группам.'
+                          : selectedGroup
+                            ? 'В этой группе пока нет заметок.'
+                            : view === 'recent'
+                              ? 'Недавних заметок пока нет.'
+                              : 'Заметок пока нет.'
+                    }
                   />
-                </View>
-              )
-            }}
-          />
+                )}
+              </div>
+            </div>
+          </RefreshRegion>
         )}
       </SwipeableTabContent>
 
       <MobileCreateAction actions={createActions} iconOnly />
       {form && <FormSheet spec={form} close={() => setForm(null)} />}
-    </View>
+    </div>
   )
 }

@@ -1,5 +1,5 @@
+import { TextControl } from '../../../ui/browser'
 import { useMemo, useRef, useState } from 'react'
-import { ScrollView, TextInput, View } from 'react-native'
 import type {
   CreateNutritionRecipeInput,
   NutritionFoodRecord,
@@ -16,7 +16,6 @@ import { useConfirmation } from '../../shared/ui/confirmation-context'
 import { AppDialog } from '../../shared/ui/AppDialog'
 import { Button, ErrorState, Label, SearchField } from '../../shared/ui/primitives'
 import { useTheme } from '../../shared/ui/theme'
-
 export function NutritionRecipeSheet({
   recipe,
   foods,
@@ -56,7 +55,6 @@ export function NutritionRecipeSheet({
       `${food.name} ${food.brand}`.toLocaleLowerCase('ru-RU').includes(normalized)
     )
   }, [foods, query])
-
   const requestClose = (): void => {
     if (!dirty) return close()
     void confirm({
@@ -96,7 +94,6 @@ export function NutritionRecipeSheet({
       setPending(false)
     }
   }
-
   const inputStyle = {
     color: theme.text,
     backgroundColor: theme.surface,
@@ -107,7 +104,6 @@ export function NutritionRecipeSheet({
     minHeight: 50,
     fontSize: 16
   } as const
-
   return (
     <AppDialog
       open
@@ -121,93 +117,113 @@ export function NutritionRecipeSheet({
       busy={pending}
       footer={
         <>
-          <Button label="Отмена" onPress={requestClose} disabled={pending} />
+          <Button label="Отмена" onClick={requestClose} disabled={pending} />
           <Button
             label={pending ? 'Сохранение…' : 'Сохранить'}
-            onPress={submit}
+            onClick={submit}
             disabled={pending}
             primary
           />
         </>
       }
     >
-      <ScrollView
-        keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 28 }}
-      >
-        {error ? <ErrorState message={error} /> : null}
-        <Label>Название</Label>
-        <TextInput
-          accessibilityLabel="Название"
-          value={name}
-          onChangeText={setName}
-          style={inputStyle}
-        />
-        <Label>Описание</Label>
-        <TextInput
-          accessibilityLabel="Описание"
-          value={description}
-          onChangeText={setDescription}
-          multiline
-          style={{ ...inputStyle, minHeight: 90, textAlignVertical: 'top' }}
-        />
-        <Label>Количество порций</Label>
-        <TextInput
-          accessibilityLabel="Количество порций"
-          value={servings}
-          onChangeText={setServings}
-          keyboardType="decimal-pad"
-          style={inputStyle}
-        />
-        <Label>Ингредиенты</Label>
-        <SearchField value={query} onChangeText={setQuery} />
-        {visibleFoods.map((food) => {
-          const selected = food.id in ingredients
-          return (
-            <View
-              key={food.id}
-              style={{
-                borderWidth: 1,
-                borderColor: selected ? theme.accent : theme.border,
-                backgroundColor: theme.surface,
-                borderRadius: 12,
-                padding: 12,
-                gap: 8
-              }}
-            >
-              <Label>{food.name}</Label>
-              <Label muted>
-                На {food.baseAmount} {food.baseUnit}: {food.nutrients.calories} ккал
-              </Label>
-              <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
-                <Button
-                  label={selected ? 'Убрать' : 'Добавить'}
-                  selected={selected}
-                  onPress={() =>
-                    setIngredients((current) => {
-                      const next = { ...current }
-                      if (selected) delete next[food.id]
-                      else next[food.id] = String(food.baseAmount)
-                      return next
-                    })
-                  }
-                />
-                {selected ? (
-                  <TextInput
-                    accessibilityLabel={`Количество: ${food.name}`}
-                    value={ingredients[food.id]}
-                    onChangeText={(value) =>
-                      setIngredients((current) => ({ ...current, [food.id]: value }))
+      <div className="ui-scroll">
+        <div
+          className="ui-stack ui-scroll-content"
+          style={{
+            padding: 16,
+            gap: 16,
+            paddingBottom: 28
+          }}
+        >
+          {error ? <ErrorState message={error} /> : null}
+          <Label>Название</Label>
+          <TextControl
+            aria-label={'Название'}
+            value={name}
+            onValueChange={setName}
+            style={inputStyle}
+          ></TextControl>
+          <Label>Описание</Label>
+          <TextControl
+            aria-label={'Описание'}
+            value={description}
+            onValueChange={setDescription}
+            multiline={true}
+            style={{
+              ...inputStyle,
+              minHeight: 90
+            }}
+          ></TextControl>
+          <Label>Количество порций</Label>
+          <TextControl
+            aria-label={'Количество порций'}
+            value={servings}
+            onValueChange={setServings}
+            inputMode={'decimal'}
+            style={inputStyle}
+          ></TextControl>
+          <Label>Ингредиенты</Label>
+          <SearchField value={query} onValueChange={setQuery} />
+          {visibleFoods.map((food) => {
+            const selected = food.id in ingredients
+            return (
+              <div
+                className="ui-stack"
+                key={food.id}
+                style={{
+                  borderWidth: 1,
+                  borderColor: selected ? theme.accent : theme.border,
+                  backgroundColor: theme.surface,
+                  borderRadius: 12,
+                  padding: 12,
+                  gap: 8
+                }}
+              >
+                <Label>{food.name}</Label>
+                <Label muted>
+                  На {food.baseAmount} {food.baseUnit}: {food.nutrients.calories} ккал
+                </Label>
+                <div
+                  className="ui-stack"
+                  style={{
+                    flexDirection: 'row',
+                    gap: 8,
+                    alignItems: 'center'
+                  }}
+                >
+                  <Button
+                    label={selected ? 'Убрать' : 'Добавить'}
+                    selected={selected}
+                    onClick={() =>
+                      setIngredients((current) => {
+                        const next = { ...current }
+                        if (selected) delete next[food.id]
+                        else next[food.id] = String(food.baseAmount)
+                        return next
+                      })
                     }
-                    keyboardType="decimal-pad"
-                    style={{ ...inputStyle, flex: 1 }}
                   />
-                ) : null}
-              </View>
-            </View>
-          )
-        })}
-      </ScrollView>
+                  {selected ? (
+                    <TextControl
+                      aria-label={`Количество: ${food.name}`}
+                      value={ingredients[food.id]}
+                      onValueChange={(value) =>
+                        setIngredients((current) => ({ ...current, [food.id]: value }))
+                      }
+                      inputMode={'decimal'}
+                      style={{
+                        ...inputStyle,
+                        flex: '1 1 0%'
+                      }}
+                    ></TextControl>
+                  ) : null}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
     </AppDialog>
   )
 }

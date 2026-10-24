@@ -1,17 +1,15 @@
-import { useCallback, useMemo, useState, type ReactNode } from 'react'
+import type { PointerEvent } from 'react'
+import { motionValue, mapValue, motion } from 'framer-motion'
 import {
-  Animated,
-  Easing,
-  PanResponder,
-  Platform,
-  View,
-  useWindowDimensions,
-  type GestureResponderEvent,
-  type PanResponderGestureState
-} from 'react-native'
-
+  useViewport,
+  playMotion,
+  motionStep,
+  DragState,
+  horizontalDrag,
+  stopMotion
+} from '../../../ui/browser'
+import { useCallback, useMemo, useState, type ReactNode } from 'react'
 import { adjacentTab, tabSwipeDirection, type TabSwipeDirection } from './tab-swipe'
-
 export function SwipeableTabContent<T extends string>({
   tabs,
   value,
@@ -27,136 +25,128 @@ export function SwipeableTabContent<T extends string>({
   disabled?: boolean
   children: ReactNode
 }): React.JSX.Element {
-  const { width: screenWidth } = useWindowDimensions()
-  const [translateX] = useState(() => new Animated.Value(0))
+  const { width: screenWidth } = useViewport()
+  const [translateX] = useState(() => motionValue(0))
   const [animating, setAnimating] = useState(false)
   const pageWidth = Math.max(screenWidth - 28, 280)
-
   const resetPosition = useCallback((): void => {
-    Animated.spring(translateX, {
-      toValue: 0,
-      damping: 24,
-      stiffness: 260,
-      mass: 0.72,
-      overshootClamping: true,
-      useNativeDriver: true
-    }).start()
+    playMotion(
+      motionStep(translateX, 0, {
+        damping: 24,
+        stiffness: 260,
+        mass: 0.72,
+        type: 'spring'
+      })
+    )
   }, [translateX])
-
   const completeSwipe = useCallback(
     (nextValue: T, direction: TabSwipeDirection): void => {
       if (nextValue === value || animating || disabled) {
         resetPosition()
         return
       }
-
       setAnimating(true)
       const exitX = direction === 'next' ? -pageWidth : pageWidth
       const enterX = direction === 'next' ? pageWidth : -pageWidth
-
-      Animated.timing(translateX, {
-        toValue: exitX,
-        duration: 135,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true
-      }).start(({ finished }) => {
-        if (!finished) {
-          setAnimating(false)
-          resetPosition()
-          return
-        }
-
-        onChange(nextValue)
-        onSwipeChange?.(nextValue, direction)
-        translateX.setValue(enterX)
-
-        requestAnimationFrame(() => {
-          Animated.timing(translateX, {
-            toValue: 0,
-            duration: 190,
-            easing: Easing.out(Easing.cubic),
-            useNativeDriver: true
-          }).start(() => {
+      playMotion(
+        motionStep(translateX, exitX, {
+          duration: 135 / 1000,
+          ease: 'easeOut',
+          type: 'tween'
+        }),
+        ({ finished }) => {
+          if (!finished) {
             setAnimating(false)
+            resetPosition()
+            return
+          }
+          onChange(nextValue)
+          onSwipeChange?.(nextValue, direction)
+          translateX.set(enterX)
+          requestAnimationFrame(() => {
+            playMotion(
+              motionStep(translateX, 0, {
+                duration: 190 / 1000,
+                ease: 'easeOut',
+                type: 'tween'
+              }),
+              () => {
+                setAnimating(false)
+              }
+            )
           })
-        })
-      })
+        }
+      )
     },
     [animating, disabled, onChange, onSwipeChange, pageWidth, resetPosition, translateX, value]
   )
-
   const responder = useMemo(() => {
     const shouldClaimHorizontalSwipe = (
-      _event: GestureResponderEvent,
-      gesture: PanResponderGestureState
+      _event: PointerEvent<HTMLElement>,
+      gesture: DragState
     ): boolean => {
       if (disabled || animating || gesture.numberActiveTouches !== 1) return false
       const horizontal = Math.abs(gesture.dx)
       const vertical = Math.abs(gesture.dy)
       return horizontal >= 10 && horizontal > vertical * 1.35
     }
-
-    return PanResponder.create({
-      onStartShouldSetPanResponder: () => false,
-      onMoveShouldSetPanResponder: shouldClaimHorizontalSwipe,
-      onMoveShouldSetPanResponderCapture: shouldClaimHorizontalSwipe,
-      onPanResponderGrant: () => {
-        translateX.stopAnimation()
+    return horizontalDrag({
+      shouldStart: shouldClaimHorizontalSwipe,
+      onStart: () => {
+        stopMotion(translateX)
       },
-      onPanResponderMove: (_event, gesture) => {
+      onMove: (_event, gesture) => {
         if (disabled || animating) return
-
         const direction: TabSwipeDirection = gesture.dx < 0 ? 'next' : 'previous'
         const nextValue = adjacentTab(tabs, value, direction)
         const atEdge = nextValue === value
         const raw = atEdge ? gesture.dx * 0.18 : gesture.dx
-        translateX.setValue(Math.max(-pageWidth, Math.min(pageWidth, raw)))
+        translateX.set(Math.max(-pageWidth, Math.min(pageWidth, raw)))
       },
-      onPanResponderTerminationRequest: () => false,
-      onPanResponderRelease: (_event, gesture) => {
+      onEnd: (_event, gesture) => {
         if (disabled || animating) return
-
         const direction = tabSwipeDirection(gesture.dx, gesture.dy, gesture.vx)
         if (!direction) {
           resetPosition()
           return
         }
-
         const nextValue = adjacentTab(tabs, value, direction)
         if (nextValue === value) {
           resetPosition()
           return
         }
-
         completeSwipe(nextValue, direction)
       },
-      onPanResponderTerminate: () => {
+      onCancel: () => {
         if (!animating) resetPosition()
       }
     })
   }, [animating, completeSwipe, disabled, pageWidth, resetPosition, tabs, translateX, value])
-
-  const opacity = translateX.interpolate({
-    inputRange: [-pageWidth, 0, pageWidth],
-    outputRange: [0.9, 1, 0.9],
-    extrapolate: 'clamp'
+  const opacity = mapValue(translateX, [-pageWidth, 0, pageWidth], [0.9, 1, 0.9], {
+    clamp: true
   })
-
   return (
-    <View style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
-      <Animated.View
+    <div
+      className="ui-stack"
+      style={{
+        flex: '1 1 0%',
+        minHeight: 0,
+        overflow: 'hidden'
+      }}
+    >
+      <motion.div
+        className="ui-stack"
         style={{
-          // Let the browser scroll vertically while the shared responder owns horizontal swipes.
-          ...(Platform.OS === 'web' ? { touchAction: 'pan-y' as const } : {}),
-          flex: 1,
+          touchAction: 'pan-y' as const,
+          flex: '1 1 0%',
           minHeight: 0,
-          opacity,
-          transform: [{ translateX }]
+          opacity: opacity,
+          x: translateX
         }}
-        {...responder.panHandlers}
+        {...responder.pointerHandlers}
       >
         {children}
-      </Animated.View>
-    </View>
+      </motion.div>
+    </div>
   )
 }

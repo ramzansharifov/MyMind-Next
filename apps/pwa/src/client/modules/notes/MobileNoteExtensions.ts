@@ -7,16 +7,16 @@ import { normalizeStudyRemoteImageUrl, parseStudyYouTubeUrl } from '@mymind/core
 import { resolveStudyRichTextHtml } from '../../shared/ui/richTextHtml'
 import { NoteTaskItem } from './MobileNoteTaskItem'
 import { NoteHighlightContrast } from './MobileNoteHighlightContrast'
-
 export type MobileNoteAttachment = Extract<
   NoteBlock,
-  { type: 'image' | 'video' | 'audio' | 'file' }
+  {
+    type: 'image' | 'video' | 'audio' | 'file'
+  }
 >
 export type AttachmentAction = 'select' | 'settings' | 'open' | 'record' | 'preview'
 export const attachmentDeleteKey = new PluginKey('mobileNoteAttachmentDelete')
 export const isAttachment = (name: string): boolean =>
   name === 'noteAttachment' || name === 'noteVoiceRecording'
-
 export function canvasHtml(document: NoteDocument): string {
   const texts = document.blocks.filter((block) => block.type === 'text' || block.type === 'heading')
   const referenced = new Set<string>()
@@ -55,7 +55,6 @@ export function canvasHtml(document: NoteDocument): string {
       .join('') || '<p></p>'
   )
 }
-
 export function canvasAttachments(editor: Editor): MobileNoteAttachment[] {
   const result = new Map<string, MobileNoteAttachment>()
   editor.state.doc.descendants((node) => {
@@ -64,7 +63,6 @@ export function canvasAttachments(editor: Editor): MobileNoteAttachment[] {
   })
   return [...result.values()]
 }
-
 function counts(document: DocumentNode): Map<string, number> {
   const result = new Map<string, number>()
   document.descendants((node) => {
@@ -75,14 +73,12 @@ function counts(document: DocumentNode): Map<string, number> {
   })
   return result
 }
-
 interface CanvasOptions {
   getAttachment(id: string): MobileNoteAttachment | undefined
   getUri(id: string): string | undefined
-  onPress(id: string, action: AttachmentAction): void
+  onClick(id: string, action: AttachmentAction): void
   refreshers: Set<() => void>
 }
-
 export function noteCanvasExtensions(options: CanvasOptions): Extensions {
   const Attachment = Node.create({
     name: 'noteAttachment',
@@ -165,14 +161,14 @@ export function noteCanvasExtensions(options: CanvasOptions): Extensions {
                 dom.append(
                   button(
                     'Посмотреть изображение',
-                    () => options.onPress(block.id, 'preview'),
+                    () => options.onClick(block.id, 'preview'),
                     'mobile-note-image-fallback'
                   )
                 )
             }
             dom.append(
               image,
-              button('⛶', () => options.onPress(block.id, 'preview'), 'mobile-note-expand')
+              button('⛶', () => options.onClick(block.id, 'preview'), 'mobile-note-expand')
             )
           } else if (block.type === 'video' && uri && block.source.type === 'url') {
             const parsed = parseStudyYouTubeUrl(uri)
@@ -194,14 +190,14 @@ export function noteCanvasExtensions(options: CanvasOptions): Extensions {
             if (asset)
               dom.append(
                 button(block.type === 'audio' ? 'Открыть плеер' : 'Открыть на устройстве', () =>
-                  options.onPress(block.id, block.type === 'audio' ? 'preview' : 'open')
+                  options.onClick(block.id, block.type === 'audio' ? 'preview' : 'open')
                 )
               )
           } else if (block.type === 'file' && asset) {
             dom.append(
               button(
                 `↗ ${block.title || asset.name}`,
-                () => options.onPress(block.id, 'open'),
+                () => options.onClick(block.id, 'open'),
                 'mobile-note-file'
               )
             )
@@ -211,13 +207,13 @@ export function noteCanvasExtensions(options: CanvasOptions): Extensions {
             empty.textContent = labels[block.type]
             dom.append(empty)
             if (voice && editor.isEditable)
-              dom.append(button('Начать запись', () => options.onPress(block.id, 'record')))
+              dom.append(button('Начать запись', () => options.onClick(block.id, 'record')))
           }
           if (editor.isEditable)
             dom.append(
               button(
                 'Настройки',
-                () => options.onPress(block.id, 'settings'),
+                () => options.onClick(block.id, 'settings'),
                 'mobile-note-attachment-settings'
               )
             )
@@ -229,7 +225,7 @@ export function noteCanvasExtensions(options: CanvasOptions): Extensions {
           if (target.closest('button, audio, video, iframe')) return
           const position = getPos()
           if (typeof position === 'number') editor.commands.setNodeSelection(position)
-          options.onPress(block.id, 'select')
+          options.onClick(block.id, 'select')
         })
         options.refreshers.add(render)
         render()

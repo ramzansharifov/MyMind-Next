@@ -1,4 +1,4 @@
-import type { StyleProp, ViewStyle } from 'react-native'
+import type { CSSProperties } from 'react'
 import {
   ArrowDownLeft,
   ArrowLeft,
@@ -46,8 +46,7 @@ import {
   Wallet,
   X,
   type LucideIcon
-} from 'lucide-react-native'
-
+} from 'lucide-react'
 export type AppIconName =
   | 'brand'
   | 'home'
@@ -93,7 +92,6 @@ export type AppIconName =
   | 'json'
   | 'favorite'
   | 'play'
-
 const icons: Record<AppIconName, LucideIcon> = {
   brand: BrainCircuit,
   home: House,
@@ -140,7 +138,6 @@ const icons: Record<AppIconName, LucideIcon> = {
   favorite: Heart,
   play: Play
 }
-
 export function AppIcon({
   name,
   size = 18,
@@ -152,13 +149,13 @@ export function AppIcon({
   size?: number
   color: string
   strokeWidth?: number
-  style?: StyleProp<ViewStyle>
+  style?: CSSProperties
 }): React.JSX.Element {
   const Icon = icons[name]
   return (
     <Icon
-      accessibilityElementsHidden
-      importantForAccessibility="no-hide-descendants"
+      aria-hidden
+      focusable={false}
       size={size}
       color={color}
       strokeWidth={strokeWidth}
@@ -166,5 +163,4 @@ export function AppIcon({
     />
   )
 }
-
 export const BackIcon = ArrowLeft

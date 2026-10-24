@@ -1,34 +1,36 @@
+import { Action, TextControl, Spinner } from '../../../ui/browser'
 import type { PropsWithChildren } from 'react'
-import { ActivityIndicator, Platform, Pressable, Text, TextInput, View } from 'react-native'
 import { designTokens } from '@mymind/design'
 import { AppIcon, type AppIconName } from './icons'
 import { useTheme } from './theme'
-
 export function Label({
   children,
   muted = false,
   title = false
-}: PropsWithChildren<{ muted?: boolean; title?: boolean }>): React.JSX.Element {
+}: PropsWithChildren<{
+  muted?: boolean
+  title?: boolean
+}>): React.JSX.Element {
   const theme = useTheme()
   return (
-    <Text
+    <span
+      className="ui-text"
       style={{
         color: muted ? theme.muted : theme.text,
         fontSize: title ? designTokens.typography.title : designTokens.typography.body,
         fontWeight: title ? '700' : '400',
-        lineHeight: title ? 30 : 23,
+        lineHeight: title ? '30px' : '23px',
         letterSpacing: title ? -0.45 : 0
       }}
     >
       {children}
-    </Text>
+    </span>
   )
 }
-
 export function Button({
   label,
   accessibilityLabel,
-  onPress,
+  onClick,
   disabled = false,
   danger = false,
   selected = false,
@@ -40,7 +42,7 @@ export function Button({
 }: {
   label: string
   accessibilityLabel?: string
-  onPress(): void
+  onClick(): void
   disabled?: boolean
   danger?: boolean
   selected?: boolean
@@ -58,68 +60,77 @@ export function Button({
       : selected
         ? theme.accent
         : theme.text
-
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={accessibilityLabel ?? label}
-      accessibilityState={{ disabled, selected }}
+    <Action
+      hitPadding={iconOnly ? 4 : undefined}
+      role={'button'}
+      aria-label={accessibilityLabel ?? label}
+      aria-disabled={disabled}
+      aria-selected={selected}
       disabled={disabled}
-      hitSlop={iconOnly ? 4 : undefined}
-      onPress={onPress}
-      style={({ pressed }) => ({
+      onClick={onClick}
+      style={{
         minWidth: iconOnly ? 40 : undefined,
         minHeight: 40,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
         gap: iconOnly ? 0 : 8,
-        paddingHorizontal: iconOnly ? 0 : compact ? 12 : 16,
-        paddingVertical: iconOnly ? 0 : 8,
+        paddingInline: iconOnly ? 0 : compact ? 12 : 16,
+        paddingBlock: iconOnly ? 0 : 8,
         borderRadius: 12,
         borderWidth: ghost || primary ? 0 : 1,
         borderColor: danger ? theme.error + '35' : selected ? theme.accent + '66' : theme.border,
         backgroundColor: primary
-          ? pressed
-            ? theme.accent + 'E8'
-            : theme.accent
+          ? theme.accent
           : ghost
-            ? pressed
-              ? theme.raised
-              : 'transparent'
+            ? 'transparent'
             : danger
-              ? pressed
-                ? theme.error + '14'
-                : theme.surface
+              ? theme.surface
               : selected
                 ? theme.accent + '14'
-                : pressed
-                  ? theme.raised
-                  : theme.surface,
-        opacity: disabled ? 0.42 : pressed ? 0.72 : 1
-      })}
+                : theme.surface,
+        opacity: disabled ? 0.42 : 1
+      }}
+      pressedStyle={{
+        backgroundColor: primary
+          ? theme.accent + 'E8'
+          : ghost
+            ? theme.raised
+            : danger
+              ? theme.error + '14'
+              : selected
+                ? theme.accent + '14'
+                : theme.raised,
+        opacity: disabled ? 0.42 : 0.72
+      }}
     >
       {icon ? <AppIcon name={icon} size={compact ? 16 : 18} color={foreground} /> : null}
       {!iconOnly ? (
-        <Text
-          numberOfLines={1}
+        <span
+          className="ui-text"
+          data-lines={1}
           style={{
             color: foreground,
             fontSize: 14,
-            fontWeight: '500'
+            fontWeight: 500,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            display: '-webkit-box',
+            WebkitBoxOrient: 'vertical',
+            WebkitLineClamp: 1
           }}
         >
           {label}
-        </Text>
+        </span>
       ) : null}
-    </Pressable>
+    </Action>
   )
 }
-
 export function IconButton({
   label,
   icon,
-  onPress,
+  onClick,
   disabled = false,
   danger = false,
   selected = false,
@@ -129,7 +140,7 @@ export function IconButton({
 }: {
   label: string
   icon: AppIconName
-  onPress(): void
+  onClick(): void
   disabled?: boolean
   danger?: boolean
   selected?: boolean
@@ -148,29 +159,28 @@ export function IconButton({
       selected={selected}
       primary={primary}
       ghost={ghost}
-      onPress={onPress}
+      onClick={onClick}
     />
   )
 }
-
 export function Row({
   title,
   subtitle,
-  onPress,
-  onLongPress,
+  onClick,
+  onHold,
   leadingIcon,
   children
 }: PropsWithChildren<{
   title: string
   subtitle?: string
-  onPress?(): void
-  onLongPress?(): void
+  onClick?(): void
+  onHold?(): void
   leadingIcon?: AppIconName
 }>): React.JSX.Element {
   const theme = useTheme()
-
   return (
-    <View
+    <div
+      className="ui-stack"
       style={{
         backgroundColor: theme.surface,
         borderRadius: 16,
@@ -180,24 +190,28 @@ export function Row({
         overflow: 'hidden'
       }}
     >
-      <Pressable
-        onPress={onPress}
-        onLongPress={onLongPress}
-        accessibilityRole={onPress ? 'button' : undefined}
-        accessibilityLabel={title}
-        accessibilityHint={onLongPress ? 'Удерживайте для дополнительных действий' : undefined}
-        style={({ pressed }) => ({
+      <Action
+        onClick={onClick}
+        onHold={onHold}
+        role={onClick ? 'button' : undefined}
+        aria-label={title}
+        title={onHold ? 'Удерживайте для дополнительных действий' : undefined}
+        style={{
           minHeight: 64,
           flexDirection: 'row',
           alignItems: 'center',
           gap: 12,
-          paddingHorizontal: 14,
-          paddingVertical: 12,
-          backgroundColor: pressed && onPress ? theme.raised : theme.surface
-        })}
+          paddingInline: 14,
+          paddingBlock: 12,
+          backgroundColor: theme.surface
+        }}
+        pressedStyle={{
+          backgroundColor: onClick ? theme.raised : theme.surface
+        }}
       >
         {leadingIcon ? (
-          <View
+          <div
+            className="ui-stack"
             style={{
               width: 40,
               height: 40,
@@ -210,35 +224,64 @@ export function Row({
             }}
           >
             <AppIcon name={leadingIcon} size={18} color={theme.accent} />
-          </View>
+          </div>
         ) : null}
 
-        <View style={{ flex: 1, minWidth: 0 }}>
-          <Text
-            numberOfLines={2}
-            style={{ color: theme.text, fontSize: 15, lineHeight: 21, fontWeight: '600' }}
+        <div
+          className="ui-stack"
+          style={{
+            flex: '1 1 0%',
+            minWidth: 0
+          }}
+        >
+          <span
+            className="ui-text"
+            data-lines={2}
+            style={{
+              color: theme.text,
+              fontSize: 15,
+              lineHeight: '21px',
+              fontWeight: 600,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              display: '-webkit-box',
+              WebkitBoxOrient: 'vertical',
+              WebkitLineClamp: 2
+            }}
           >
             {title}
-          </Text>
+          </span>
           {subtitle ? (
-            <Text
-              numberOfLines={3}
-              style={{ color: theme.muted, fontSize: 12.5, marginTop: 4, lineHeight: 18 }}
+            <span
+              className="ui-text"
+              data-lines={3}
+              style={{
+                color: theme.muted,
+                fontSize: 12.5,
+                marginTop: 4,
+                lineHeight: '18px',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                display: '-webkit-box',
+                WebkitBoxOrient: 'vertical',
+                WebkitLineClamp: 3
+              }}
             >
               {subtitle}
-            </Text>
+            </span>
           ) : null}
-        </View>
+        </div>
 
-        {onPress ? <AppIcon name="forward" size={20} color={theme.muted} /> : null}
-      </Pressable>
+        {onClick ? <AppIcon name="forward" size={20} color={theme.muted} /> : null}
+      </Action>
 
       {children ? (
-        <View
+        <div
+          className="ui-stack"
           style={{
             minHeight: 52,
-            paddingHorizontal: 10,
-            paddingVertical: 8,
+            paddingInline: 10,
+            paddingBlock: 8,
             borderTopWidth: 1,
             borderTopColor: theme.border,
             flexDirection: 'row',
@@ -249,23 +292,22 @@ export function Row({
           }}
         >
           {children}
-        </View>
+        </div>
       ) : null}
-    </View>
+    </div>
   )
 }
-
 export function SearchField({
   value,
-  onChangeText
+  onValueChange
 }: {
   value: string
-  onChangeText(value: string): void
+  onValueChange(value: string): void
 }): React.JSX.Element {
   const theme = useTheme()
-
   return (
-    <View
+    <div
+      className="ui-stack"
       style={{
         minHeight: 48,
         flexDirection: 'row',
@@ -274,47 +316,45 @@ export function SearchField({
         borderWidth: 1,
         borderColor: theme.border,
         backgroundColor: theme.surface,
-        paddingHorizontal: 16,
+        paddingInline: 16,
         borderRadius: 16,
         marginBottom: 12
       }}
     >
       <AppIcon name="search" size={17} color={theme.muted} />
-      <TextInput
-        accessibilityLabel="Поиск"
-        placeholder="Поиск…"
-        placeholderTextColor={theme.muted}
+      <TextControl
+        aria-label={'Поиск'}
+        placeholder={'Поиск…'}
+        placeholderColor={theme.muted}
         value={value}
-        onChangeText={onChangeText}
-        clearButtonMode="while-editing"
+        onValueChange={onValueChange}
         style={{
-          flex: 1,
+          flex: '1 1 0%',
           minHeight: 46,
           color: theme.text,
-          paddingVertical: 8,
+          paddingBlock: 8,
           fontSize: 15
         }}
-      />
-    </View>
+      ></TextControl>
+    </div>
   )
 }
-
 export function EmptyState({
   text = 'Здесь пока пусто. Добавьте первую запись.'
 }: {
   text?: string
 }): React.JSX.Element {
   const theme = useTheme()
-
   return (
-    <View
+    <div
+      className="ui-stack"
       style={{
         minHeight: 128,
         alignItems: 'center',
         justifyContent: 'center',
         gap: 12,
-        paddingVertical: 32,
-        paddingHorizontal: 20,
+        paddingBlock: 32,
+        paddingInline: 20,
         borderWidth: 1,
         borderStyle: 'dashed',
         borderColor: theme.border,
@@ -322,7 +362,8 @@ export function EmptyState({
         backgroundColor: theme.surface
       }}
     >
-      <View
+      <div
+        className="ui-stack"
         style={{
           width: 48,
           height: 48,
@@ -335,14 +376,21 @@ export function EmptyState({
         }}
       >
         <AppIcon name="add" size={23} color={theme.accent} />
-      </View>
-      <Text style={{ color: theme.muted, maxWidth: 280, textAlign: 'center', lineHeight: 20 }}>
+      </div>
+      <span
+        className="ui-text"
+        style={{
+          color: theme.muted,
+          maxWidth: 280,
+          textAlign: 'center',
+          lineHeight: '20px'
+        }}
+      >
         {text}
-      </Text>
-    </View>
+      </span>
+    </div>
   )
 }
-
 export function ErrorState({
   message,
   retry
@@ -351,10 +399,10 @@ export function ErrorState({
   retry?(): void
 }): React.JSX.Element {
   const theme = useTheme()
-
   return (
-    <View
-      accessibilityRole="alert"
+    <div
+      className="ui-stack"
+      role={'alert'}
       style={{
         marginBottom: 12,
         padding: 14,
@@ -365,8 +413,16 @@ export function ErrorState({
         borderRadius: 16
       }}
     >
-      <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}>
-        <View
+      <div
+        className="ui-stack"
+        style={{
+          flexDirection: 'row',
+          alignItems: 'flex-start',
+          gap: 10
+        }}
+      >
+        <div
+          className="ui-stack"
           style={{
             width: 28,
             height: 28,
@@ -377,25 +433,31 @@ export function ErrorState({
           }}
         >
           <AppIcon name="info" size={15} color={theme.error} />
-        </View>
-        <Text selectable style={{ flex: 1, color: theme.error, fontSize: 14, lineHeight: 20 }}>
+        </div>
+        <span
+          className="ui-text"
+          style={{
+            flex: '1 1 0%',
+            color: theme.error,
+            fontSize: 14,
+            lineHeight: '20px'
+          }}
+        >
           {message}
-        </Text>
-      </View>
-      {retry ? <Button label="Повторить" icon="reset" compact onPress={retry} /> : null}
-    </View>
+        </span>
+      </div>
+      {retry ? <Button label="Повторить" icon="reset" compact onClick={retry} /> : null}
+    </div>
   )
 }
-
 export function LoadingState(): React.JSX.Element {
   const theme = useTheme()
-  // The web loader should occupy the module naturally instead of leaving a
-  // tiny spinner stranded at the top while IndexedDB-backed screens initialize.
-  if (Platform.OS === 'web') {
+  {
     return (
-      <View
+      <div
+        className="ui-stack"
         style={{
-          flex: 1,
+          flex: '1 1 0%',
           minHeight: 190,
           padding: 22,
           alignItems: 'center',
@@ -403,7 +465,8 @@ export function LoadingState(): React.JSX.Element {
           gap: 12
         }}
       >
-        <View
+        <div
+          className="ui-stack"
           style={{
             width: 44,
             height: 44,
@@ -415,16 +478,38 @@ export function LoadingState(): React.JSX.Element {
             backgroundColor: theme.accent + '10'
           }}
         >
-          <ActivityIndicator accessibilityLabel="Загрузка" color={theme.accent} />
-        </View>
-        <Text style={{ color: theme.muted, fontSize: 13, textAlign: 'center' }}>
+          <Spinner aria-label={'Загрузка'} color={theme.accent}></Spinner>
+        </div>
+        <span
+          className="ui-text"
+          style={{
+            color: theme.muted,
+            fontSize: 13,
+            textAlign: 'center'
+          }}
+        >
           Загружаем содержимое…
-        </Text>
-        <View style={{ width: '100%', maxWidth: 320, gap: 9, marginTop: 14 }}>
-          <View
-            style={{ width: 118, height: 12, borderRadius: 8, backgroundColor: theme.border }}
-          />
-          <View
+        </span>
+        <div
+          className="ui-stack"
+          style={{
+            width: '100%',
+            maxWidth: 320,
+            gap: 9,
+            marginTop: 14
+          }}
+        >
+          <div
+            className="ui-stack"
+            style={{
+              width: 118,
+              height: 12,
+              borderRadius: 8,
+              backgroundColor: theme.border
+            }}
+          ></div>
+          <div
+            className="ui-stack"
             style={{
               height: 54,
               borderRadius: 14,
@@ -432,8 +517,9 @@ export function LoadingState(): React.JSX.Element {
               borderColor: theme.border,
               backgroundColor: theme.surface
             }}
-          />
-          <View
+          ></div>
+          <div
+            className="ui-stack"
             style={{
               height: 54,
               borderRadius: 14,
@@ -442,15 +528,31 @@ export function LoadingState(): React.JSX.Element {
               backgroundColor: theme.surface,
               opacity: 0.55
             }}
-          />
-        </View>
-      </View>
+          ></div>
+        </div>
+      </div>
     )
   }
   return (
-    <View style={{ padding: 32, alignItems: 'center', justifyContent: 'center', gap: 10 }}>
-      <ActivityIndicator accessibilityLabel="Загрузка" color={theme.accent} />
-      <Text style={{ color: theme.muted, fontSize: 12 }}>Загрузка…</Text>
-    </View>
+    <div
+      className="ui-stack"
+      style={{
+        padding: 32,
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 10
+      }}
+    >
+      <Spinner aria-label={'Загрузка'} color={theme.accent}></Spinner>
+      <span
+        className="ui-text"
+        style={{
+          color: theme.muted,
+          fontSize: 12
+        }}
+      >
+        Загрузка…
+      </span>
+    </div>
   )
 }
