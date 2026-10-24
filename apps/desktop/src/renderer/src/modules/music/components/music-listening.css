@@ -577,3 +577,264 @@
 
 /* The older PWA padding rules must not stack with the new content footer. */
 .pwa .mymusic{padding:0}
+
+
+/* Music workspace refinements: correct spacing, scrollable shelves and a dock
+   that respects BOTH the main MyMind sidebar and the music-only sidebar. */
+.mymusic .mymusic-topbar{
+  min-height:48px;
+  margin-bottom:20px;
+  align-items:center;
+}
+.mymusic .mymusic-brand h1{
+  margin-top:5px;
+  font-size:clamp(24px,2vw,29px);
+  letter-spacing:-.045em;
+}
+.mymusic .mymusic-discovery-toolbar{
+  margin:0;
+  align-items:stretch;
+}
+.mymusic .mymusic-search{
+  min-width:0;
+  height:51px;
+  min-height:51px;
+  border-radius:14px;
+}
+.mymusic .mymusic-settings-button{
+  min-height:51px;
+  padding-inline:17px;
+  border-radius:14px;
+}
+.mymusic .mymusic-mood-pills{
+  /* The desktop tab bar was moved to the left rail; these pills must have
+     their own vertical spacing instead of colliding with the search field. */
+  position:relative;
+  display:flex;
+  gap:9px;
+  margin:16px 0 0;
+  padding:1px 0 5px;
+  min-height:42px;
+  align-items:center;
+  overflow-x:auto;
+  overflow-y:hidden;
+}
+.mymusic .mymusic-mood-pills button{
+  min-height:34px;
+  padding:8px 15px;
+  line-height:18px;
+}
+.mymusic .mymusic-home{margin-top:29px}
+.mymusic .mymusic-welcome{margin-bottom:20px}
+.mymusic .mymusic-welcome-title{margin-bottom:13px}
+.mymusic .mymusic-continue-list{
+  display:flex;
+  align-items:stretch;
+  gap:12px;
+  min-width:0;
+  overflow-x:auto;
+  overflow-y:hidden;
+  padding-bottom:3px;
+  scrollbar-width:thin;
+  scrollbar-color:#2d3838 transparent;
+}
+.mymusic .mymusic-continue-card{
+  width:clamp(225px,22vw,278px);
+  flex:0 0 clamp(225px,22vw,278px);
+  min-height:68px;
+  padding:10px 11px;
+  gap:12px;
+  border-radius:13px;
+}
+.mymusic .mymusic-continue-card .mymusic-art{
+  width:48px;
+  height:48px;
+  border-radius:9px;
+}
+.mymusic .mymusic-continue-card strong{
+  font-size:12px;
+  line-height:1.35;
+}
+.mymusic .mymusic-continue-play{
+  opacity:.6;
+  flex-shrink:0;
+}
+.mymusic .mymusic-wave-card{
+  min-height:158px;
+  margin:18px 0 27px;
+  padding:23px 28px;
+  gap:22px;
+  border-radius:20px;
+}
+.mymusic .mymusic-wave-card:before{
+  right:-85px;
+  bottom:-188px;
+  opacity:.34;
+}
+.mymusic .mymusic-wave-orb{
+  width:62px;
+  height:62px;
+}
+.mymusic .mymusic-wave-copy h2{
+  font-size:27px;
+  line-height:1.15;
+  margin:6px 0 9px;
+}
+.mymusic .mymusic-wave-play{
+  min-height:41px;
+  padding:11px 18px;
+}
+.mymusic .mymusic-shelf-heading{
+  margin-bottom:14px;
+}
+.mymusic .mymusic-shelf-track{
+  min-width:0;
+  min-height:0;
+  padding:10px;
+  gap:7px;
+  border-radius:15px;
+}
+.mymusic .mymusic-shelf-track .mymusic-art-large{
+  border-radius:11px;
+}
+.mymusic .mymusic-shelf-track strong,
+.mymusic .mymusic-shelf-track > span:not(.mymusic-shelf-play){
+  width:100%;
+  min-width:0;
+}
+.mymusic .mymusic-shelf-track strong{
+  font-size:12px;
+  line-height:1.45;
+}
+.mymusic .mymusic-rail{
+  background:#101417;
+  gap:20px;
+}
+.mymusic .mymusic-rail-mark{
+  width:45px;
+  height:45px;
+  border-radius:13px;
+}
+.mymusic .mymusic-rail-links{gap:7px}
+.mymusic .mymusic-rail-links>button{
+  width:49px;
+  height:47px;
+  border-radius:12px;
+}
+.mymusic .mymusic-rail-links>button.active{
+  background:rgba(74,164,128,.18);
+  color:#9becbf;
+  box-shadow:inset 0 0 0 1px rgba(91,219,166,.08);
+}
+.mymusic .mymusic-rail-links>button.active:before{
+  background:#43d59c;
+}
+.mymusic .mymusic-rail-separator{margin:5px 0 2px}
+.mymusic .mymusic-player{
+  min-height:78px;
+  padding:10px 17px;
+  gap:14px;
+  grid-template-columns:minmax(150px,1fr) minmax(250px,1.5fr) minmax(145px,.82fr);
+  border-radius:17px;
+  background:rgba(18,22,26,.98);
+  box-shadow:0 12px 35px rgba(0,0,0,.46),0 -4px 22px rgba(0,0,0,.15);
+}
+.mymusic .mymusic-player-track{min-width:0;gap:11px}
+.mymusic .mymusic-player-track .mymusic-art,
+.mymusic .mymusic-idle-art{
+  width:47px;
+  height:47px;
+  border-radius:9px;
+}
+.mymusic .mymusic-player-track strong{
+  display:block;
+  max-width:100%;
+  font-size:12px;
+  line-height:1.4;
+}
+.mymusic .mymusic-player-track span{font-size:11px}
+.mymusic .mymusic-player-center{gap:3px}
+.mymusic .mymusic-player-actions{gap:12px}
+.mymusic .mymusic-player .mymusic-primary-control{
+  height:37px;
+  width:37px;
+}
+.mymusic .mymusic-player-extra input{width:94px}
+.mymusic .mymusic-queue{bottom:calc(100% + 12px)}
+/* Electron renders the global sidebar (72/256px) and the internal music rail
+   (76/66px). Reserve both so the dock never covers either navigation rail. */
+[data-music-workspace="true"] aside[data-collapsed="true"] ~ #workspace .mymusic-player{
+  left:calc(72px + 76px + 12px);
+  right:14px;
+}
+[data-music-workspace="true"] aside[data-collapsed="false"] ~ #workspace .mymusic-player{
+  left:calc(256px + 76px + 12px);
+  right:14px;
+}
+@media(min-width:701px){
+  .mymusic .mymusic-shelf-grid{
+    display:grid;
+    grid-template-columns:none;
+    grid-auto-flow:column;
+    grid-auto-columns:clamp(166px,calc((100% - 65px)/6),208px);
+    gap:13px;
+    overflow-x:auto;
+    overflow-y:hidden;
+    scroll-snap-type:x proximity;
+    scrollbar-width:thin;
+    scrollbar-color:#2f3c3a transparent;
+    padding:0 1px 8px;
+  }
+  .mymusic .mymusic-shelf-track{scroll-snap-align:start}
+  /* The PWA has no Electron global rail, only the local 76px music rail. */
+  .pwa .mymusic .mymusic-player{
+    left:calc(76px + 15px + env(safe-area-inset-left));
+    right:calc(15px + env(safe-area-inset-right));
+  }
+}
+@media(min-width:701px) and (max-width:900px){
+  [data-music-workspace="true"] aside[data-collapsed="true"] ~ #workspace .mymusic-player{
+    left:calc(72px + 66px + 12px);
+  }
+  [data-music-workspace="true"] aside[data-collapsed="false"] ~ #workspace .mymusic-player{
+    left:calc(256px + 66px + 12px);
+  }
+  .pwa .mymusic .mymusic-player{
+    left:calc(66px + 15px + env(safe-area-inset-left));
+  }
+  .mymusic .mymusic-player{
+    grid-template-columns:minmax(105px,1fr) minmax(180px,1.4fr);
+  }
+  .mymusic .mymusic-player-extra input{display:none}
+}
+@media(max-width:700px){
+  .mymusic .mymusic-topbar{min-height:45px;margin-bottom:17px}
+  .mymusic .mymusic-mood-pills{margin-top:14px}
+  .mymusic .mymusic-wave-card{
+    padding:18px 19px;
+    min-height:0;
+    margin:14px 0 23px;
+  }
+  .mymusic .mymusic-wave-orb{width:52px;height:52px}
+  .mymusic .mymusic-wave-copy h2{font-size:23px}
+  .mymusic .mymusic-shelf-track{min-width:135px;max-width:135px}
+  .mymusic .mymusic-player{
+    min-height:0;
+    grid-template-columns:minmax(0,1fr);
+    padding:10px 12px;
+    gap:6px;
+  }
+  .mymusic .mymusic-player-track .mymusic-art,
+  .mymusic .mymusic-idle-art{
+    width:39px;height:39px;
+  }
+  .mymusic .mymusic-player-extra input{display:none}
+  .pwa .mymusic .mymusic-player{
+    left:calc(10px + env(safe-area-inset-left));
+    right:calc(10px + env(safe-area-inset-right));
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  .mymusic .mymusic-continue-card,
+  .mymusic .mymusic-rail-links>button{transition:none}
+}
