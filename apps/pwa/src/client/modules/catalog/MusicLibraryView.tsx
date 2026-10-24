@@ -52,6 +52,7 @@ function IconAction({
   const theme = useTheme()
   return (
     <Action
+      hitPadding={5}
       role={'button'}
       aria-label={label}
       aria-selected={active}

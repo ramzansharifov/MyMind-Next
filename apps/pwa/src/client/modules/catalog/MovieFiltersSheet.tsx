@@ -269,6 +269,7 @@ export function MovieFiltersSheet({
                 const active = rating <= draft.minRating
                 return (
                   <Action
+                    hitPadding={3}
                     key={rating}
                     role={'button'}
                     aria-label={`Минимум ${rating} из 10`}

@@ -1,3 +1,4 @@
+import { FittedText } from '../../../ui/FittedText'
 import { formatMoneyMinor } from '@mymind/core/finance-money'
 import { useTheme } from '../../shared/ui/theme'
 import type { MobileFinanceReportType } from './finance-report-filters'
@@ -172,7 +173,8 @@ function CashFlowChart({
                       }}
                     ></div>
                   </div>
-                  <span
+                  <FittedText
+                    minScale={0.72}
                     className="ui-text"
                     data-lines={1}
                     style={{
@@ -188,7 +190,7 @@ function CashFlowChart({
                     }}
                   >
                     {point.label}
-                  </span>
+                  </FittedText>
                 </div>
               )
             })}
@@ -289,7 +291,8 @@ function BalanceChart({
                     ></div>
                   )}
                 </div>
-                <span
+                <FittedText
+                  minScale={0.72}
                   className="ui-text"
                   data-lines={1}
                   style={{
@@ -305,7 +308,7 @@ function BalanceChart({
                   }}
                 >
                   {point.label}
-                </span>
+                </FittedText>
               </div>
             )
           })}

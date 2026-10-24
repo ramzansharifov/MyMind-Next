@@ -15,6 +15,7 @@ export function Action({
   pressedStyle,
   onHold,
   holdDelay = 500,
+  hitPadding,
   disabled,
   children,
   onClick,
@@ -23,6 +24,7 @@ export function Action({
   pressedStyle?: CSSProperties
   onHold?(): void
   holdDelay?: number
+  hitPadding?: number
 }): React.JSX.Element {
   const [pressed, setPressed] = useState(false)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -45,7 +47,14 @@ export function Action({
       type={props.type ?? 'button'}
       className={`ui-action ${props.className ?? ''}`}
       disabled={disabled}
-      style={{ ...style, ...(pressed && !disabled ? pressedStyle : {}) }}
+      style={
+        {
+          ...style,
+          ...(pressed && !disabled ? pressedStyle : {}),
+          '--hit-padding': `${hitPadding ?? 0}px`
+        } as CSSProperties
+      }
+      data-hit-padding={hitPadding || undefined}
       onPointerDown={(event) => {
         props.onPointerDown?.(event)
         if (disabled || event.button !== 0 || !event.isPrimary) return

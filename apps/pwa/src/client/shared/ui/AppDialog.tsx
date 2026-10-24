@@ -176,6 +176,7 @@ export function AppDialog({
             {busy ? <Spinner color={accent}></Spinner> : null}
             {showClose ? (
               <Action
+                hitPadding={6}
                 role={'button'}
                 aria-label={'Закрыть'}
                 disabled={busy}

@@ -1,3 +1,4 @@
+import { FittedText } from '../../../ui/FittedText'
 import { Action, RefreshRegion } from '../../../ui/browser'
 import { runAfterInteraction } from '../../shared/ui/run-after-interaction'
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -297,7 +298,8 @@ export function CalendarScreen(): React.JSX.Element {
               onClick={selectToday}
             />
             <IconButton label="Предыдущий месяц" icon="back" ghost onClick={() => shiftMonth(-1)} />
-            <span
+            <FittedText
+              minScale={0.82}
               className="ui-text"
               data-lines={1}
               style={{
@@ -315,7 +317,7 @@ export function CalendarScreen(): React.JSX.Element {
               }}
             >
               {monthTitle(month)}
-            </span>
+            </FittedText>
             <IconButton
               label="Следующий месяц"
               icon="forward"

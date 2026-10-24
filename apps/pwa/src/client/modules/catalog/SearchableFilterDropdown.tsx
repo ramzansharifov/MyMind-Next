@@ -94,6 +94,7 @@ export function SearchableFilterDropdown({
         </Action>
         {value ? (
           <Action
+            hitPadding={7}
             role={'button'}
             aria-label={`Сбросить фильтр «${label}»`}
             onClick={(event) => {

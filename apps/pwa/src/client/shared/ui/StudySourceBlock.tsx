@@ -79,6 +79,7 @@ function HeaderIcon({
   const theme = useTheme()
   return (
     <Action
+      hitPadding={4}
       role={'button'}
       aria-label={label}
       aria-selected={active}

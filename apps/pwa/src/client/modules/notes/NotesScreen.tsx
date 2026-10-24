@@ -1275,8 +1275,7 @@ export function NotesScreen({
                             style={
                               layout === 'grid'
                                 ? {
-                                    flex: '1 1 0%',
-                                    maxWidth: '50%'
+                                    flex: '1 1 0%'
                                   }
                                 : undefined
                             }

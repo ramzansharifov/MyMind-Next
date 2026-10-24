@@ -38,6 +38,17 @@
 .ui-action:disabled {
   cursor: default;
 }
+.ui-action[data-hit-padding]::before {
+  content: '';
+  position: absolute;
+  inset: calc(-1 * var(--hit-padding));
+}
+.ui-fitted-text {
+  white-space: nowrap;
+}
+.ui-list > :not(.ui-list-item) {
+  grid-column: 1 / -1;
+}
 .ui-scroll {
   position: relative;
   display: flex;

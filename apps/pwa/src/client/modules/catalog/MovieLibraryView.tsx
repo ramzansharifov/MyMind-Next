@@ -108,6 +108,7 @@ function MovieCard({
         </Action>
 
         <Action
+          hitPadding={4}
           role={'button'}
           aria-label={movie.favorite ? 'Убрать из избранного' : 'Добавить в избранное'}
           aria-selected={movie.favorite}

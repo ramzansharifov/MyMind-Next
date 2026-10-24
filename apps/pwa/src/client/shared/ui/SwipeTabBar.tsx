@@ -66,6 +66,7 @@ function InlineSearchField({
         }}
       ></TextControl>
       <Action
+        hitPadding={4}
         role={'button'}
         aria-label={'Закрыть поиск'}
         onClick={close}

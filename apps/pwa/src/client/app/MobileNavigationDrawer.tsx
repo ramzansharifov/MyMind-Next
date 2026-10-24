@@ -185,6 +185,7 @@ export function AppNavigationDrawer<T extends string>({
             </div>
 
             <Action
+              hitPadding={8}
               role={'button'}
               aria-label={'Закрыть меню'}
               onClick={close}

@@ -152,6 +152,15 @@ export function AppIcon({
   style?: CSSProperties
 }): React.JSX.Element {
   const Icon = icons[name]
-  return <Icon size={size} color={color} strokeWidth={strokeWidth} style={style} />
+  return (
+    <Icon
+      aria-hidden
+      focusable={false}
+      size={size}
+      color={color}
+      strokeWidth={strokeWidth}
+      style={style}
+    />
+  )
 }
 export const BackIcon = ArrowLeft

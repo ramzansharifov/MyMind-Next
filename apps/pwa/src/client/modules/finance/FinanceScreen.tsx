@@ -1,3 +1,4 @@
+import { FittedText } from '../../../ui/FittedText'
 import type { PointerEvent } from 'react'
 import { motionValue, mapValue, motion } from 'framer-motion'
 import {
@@ -120,7 +121,8 @@ function FinanceMetric({
       >
         {label}
       </span>
-      <span
+      <FittedText
+        minScale={0.72}
         className="ui-text"
         data-lines={1}
         style={{
@@ -137,7 +139,7 @@ function FinanceMetric({
         }}
       >
         {value}
-      </span>
+      </FittedText>
     </div>
   )
 }
@@ -301,7 +303,8 @@ function FinanceListCard({
           flex: '1 1 0%'
         }}
       >
-        <span
+        <FittedText
+          minScale={0.76}
           className="ui-text"
           data-lines={1}
           style={{
@@ -318,7 +321,7 @@ function FinanceListCard({
           }}
         >
           {title}
-        </span>
+        </FittedText>
         {subtitle ? (
           <span
             className="ui-text"
@@ -349,7 +352,8 @@ function FinanceListCard({
           }}
         >
           {rightPrimary ? (
-            <span
+            <FittedText
+              minScale={0.76}
               className="ui-text"
               data-lines={1}
               style={{
@@ -367,7 +371,7 @@ function FinanceListCard({
               }}
             >
               {rightPrimary}
-            </span>
+            </FittedText>
           ) : null}
           {rightSecondary ? (
             <span
@@ -838,7 +842,8 @@ export function FinanceScreen(): React.JSX.Element {
                 >
                   Общий баланс
                 </span>
-                <span
+                <FittedText
+                  minScale={0.7}
                   className="ui-text"
                   data-lines={1}
                   aria-label={balanceHidden ? 'Общий баланс скрыт' : 'Общий баланс'}
@@ -858,7 +863,7 @@ export function FinanceScreen(): React.JSX.Element {
                   {balanceHidden
                     ? '******'
                     : formatMoneyMinor(dashboard.totalBalanceMinor, currency)}
-                </span>
+                </FittedText>
               </div>
               <Action
                 role={'button'}

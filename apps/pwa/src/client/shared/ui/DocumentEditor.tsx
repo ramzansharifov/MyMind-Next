@@ -340,6 +340,7 @@ function BlockHeaderIcon({
   const theme = useTheme()
   return (
     <Action
+      hitPadding={5}
       role={'button'}
       aria-label={label}
       aria-disabled={disabled}
@@ -505,6 +506,7 @@ function DesktopParityInsertControl({ onClick }: { onClick(): void }): React.JSX
         }}
       ></div>
       <Action
+        hitPadding={8}
         role={'button'}
         aria-label={'Добавить блок здесь'}
         onClick={onClick}

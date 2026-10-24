@@ -113,6 +113,7 @@ export function MobileAppHeader({
         </div>
 
         <Action
+          hitPadding={6}
           role={'button'}
           aria-label={'Открыть меню навигации'}
           disabled={disabled}

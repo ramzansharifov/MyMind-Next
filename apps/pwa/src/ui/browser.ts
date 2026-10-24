@@ -1,4 +1,5 @@
 export { Action, TextControl, Toggle, Spinner, RefreshRegion } from './controls'
+export { FittedText } from './FittedText'
 export type { TextControlProps } from './controls'
 export { DialogLayer } from './dialog'
 export {

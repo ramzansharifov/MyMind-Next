@@ -1,3 +1,4 @@
+import { FittedText } from '../../../ui/FittedText'
 import { Action, TextControl } from '../../../ui/browser'
 import { useCallback, useMemo, useState, type ReactNode } from 'react'
 import {
@@ -190,7 +191,8 @@ function SummaryMetric({
           <Icon size={14} color={tone} />
         </div>
       </div>
-      <span
+      <FittedText
+        minScale={0.72}
         className="ui-text"
         data-lines={1}
         style={{
@@ -208,7 +210,7 @@ function SummaryMetric({
         }}
       >
         {value}
-      </span>
+      </FittedText>
       <span
         className="ui-text"
         data-lines={2}
@@ -782,7 +784,8 @@ export function FinanceReportsView({
             >
               Чистый результат
             </span>
-            <span
+            <FittedText
+              minScale={0.68}
               className="ui-text"
               data-lines={1}
               style={{
@@ -800,7 +803,7 @@ export function FinanceReportsView({
               }}
             >
               {formatMoneyMinor(report.netMinor, report.currencyCode)}
-            </span>
+            </FittedText>
             <span
               className="ui-text"
               style={{
@@ -872,7 +875,7 @@ export function FinanceReportsView({
                 >
                   Баланс на конец периода
                 </span>
-                <span
+                <FittedText
                   className="ui-text"
                   data-lines={1}
                   style={{
@@ -888,7 +891,7 @@ export function FinanceReportsView({
                   }}
                 >
                   {optionalMoney(report.balanceEndMinor, report.currencyCode)}
-                </span>
+                </FittedText>
               </div>
               <span
                 className="ui-text"

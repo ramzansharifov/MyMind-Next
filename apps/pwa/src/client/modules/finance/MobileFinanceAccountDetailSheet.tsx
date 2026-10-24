@@ -1,3 +1,4 @@
+import { FittedText } from '../../../ui/FittedText'
 import { useMemo } from 'react'
 import type { FinanceAccountSummary, FinanceTransaction } from '@mymind/contracts/finance'
 import type { FinanceRepository } from '@mymind/persistence/finance'
@@ -39,7 +40,7 @@ function Metric({
       >
         {label}
       </span>
-      <span
+      <FittedText
         className="ui-text"
         data-lines={1}
         style={{
@@ -55,7 +56,7 @@ function Metric({
         }}
       >
         {value}
-      </span>
+      </FittedText>
     </div>
   )
 }
@@ -184,7 +185,7 @@ export function MobileFinanceAccountDetailSheet({
               >
                 Текущий баланс
               </span>
-              <span
+              <FittedText
                 className="ui-text"
                 data-lines={1}
                 style={{
@@ -200,7 +201,7 @@ export function MobileFinanceAccountDetailSheet({
                 }}
               >
                 {formatMoneyMinor(account.balanceMinor, account.currencyCode)}
-              </span>
+              </FittedText>
             </div>
           </div>
 

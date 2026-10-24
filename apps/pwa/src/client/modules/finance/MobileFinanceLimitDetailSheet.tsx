@@ -1,3 +1,4 @@
+import { FittedText } from '../../../ui/FittedText'
 import type {
   FinanceAccountSummary,
   FinanceLimitStatus,
@@ -154,7 +155,7 @@ export function MobileFinanceLimitDetailSheet({
                 >
                   Использовано
                 </span>
-                <span
+                <FittedText
                   className="ui-text"
                   data-lines={1}
                   style={{
@@ -170,7 +171,7 @@ export function MobileFinanceLimitDetailSheet({
                   }}
                 >
                   {formatMoneyMinor(limit.spentMinor, limit.currencyCode)}
-                </span>
+                </FittedText>
               </div>
               <span
                 className="ui-text"

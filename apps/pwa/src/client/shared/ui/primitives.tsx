@@ -62,6 +62,7 @@ export function Button({
         : theme.text
   return (
     <Action
+      hitPadding={iconOnly ? 4 : undefined}
       role={'button'}
       aria-label={accessibilityLabel ?? label}
       aria-disabled={disabled}

@@ -237,6 +237,7 @@ function ImageAttachment({
             draggable="false"
           ></img>
           <Action
+            hitPadding={4}
             role={'button'}
             aria-label={`Развернуть фотографию «${title}»`}
             onClick={() => setFullscreen(true)}
@@ -303,6 +304,7 @@ function ImageAttachment({
               {title}
             </span>
             <Action
+              hitPadding={6}
               role={'button'}
               aria-label={`Свернуть фотографию «${title}»`}
               onClick={() => setFullscreen(false)}

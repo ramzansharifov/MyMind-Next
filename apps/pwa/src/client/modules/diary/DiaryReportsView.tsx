@@ -406,7 +406,7 @@ function DiaryMoodTrend({ points }: { points: DiaryReportPoint[] }): React.JSX.E
             gap: 6
           }}
         >
-          <div className="ui-scroll">
+          <div data-horizontal={true} className="ui-scroll">
             <div
               className="ui-stack ui-scroll-content"
               style={{
@@ -544,7 +544,7 @@ function DiaryActivityHeatmap({ points }: { points: DiaryReportPoint[] }): React
           За выбранный период пока нет страниц.
         </span>
       ) : (
-        <div className="ui-scroll">
+        <div data-horizontal={true} className="ui-scroll">
           <div
             className="ui-stack ui-scroll-content"
             style={{
