@@ -3,7 +3,12 @@ import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 're
 import { createPortal } from 'react-dom'
 import { subscribeBack } from './lifecycle'
 let nextLayer = 0
+let nextStackOrder = 1000
 const layers: number[] = []
+const layerElements = new Map<number, HTMLDivElement>()
+function syncLayers(): void {
+  for (const [id, element] of layerElements) element.inert = id !== layers.at(-1)
+}
 let previousBodyOverflow = ''
 const focusable =
   'button:not(:disabled),a[href],input:not(:disabled),textarea:not(:disabled),select:not(:disabled),[tabindex]:not([tabindex="-1"])'
@@ -53,6 +58,11 @@ export function DialogLayer({
     if (layers.length === 0) previousBodyOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     layers.push(layer)
+    if (root.current) {
+      root.current.style.zIndex = String(++nextStackOrder)
+      layerElements.set(layer, root.current)
+    }
+    syncLayers()
     const app = document.querySelector<HTMLElement>('.pwa')
     if (app) app.inert = true
     const top = (): boolean => layers.at(-1) === layer
@@ -114,6 +124,8 @@ export function DialogLayer({
       document.removeEventListener('focusin', contain)
       const index = layers.indexOf(layer)
       if (index >= 0) layers.splice(index, 1)
+      layerElements.delete(layer)
+      syncLayers()
       if (layers.length === 0) document.body.style.overflow = previousBodyOverflow
       if (layers.length === 0 && app) app.inert = false
       if (previous?.isConnected) previous.focus({ preventScroll: true })
@@ -134,7 +146,6 @@ export function DialogLayer({
       onClick={(event) => event.stopPropagation()}
       onPointerDown={(event) => event.stopPropagation()}
       onPointerUp={(event) => event.stopPropagation()}
-      style={{ zIndex: 1000 + layer }}
     >
       {children}
     </div>,

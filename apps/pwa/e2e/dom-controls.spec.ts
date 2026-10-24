@@ -57,6 +57,28 @@ test('native HTML fields keep decimal keyboard hints and multiline text', async 
   await expect(comment).toHaveValue('Первая строка\nВторая строка')
 })
 
+test('nested dirty-form confirmation stays above its parent and restores the draft on cancellation', async ({
+  page
+}) => {
+  await open(page, 'notes')
+  await page.getByRole('button', { name: 'Создать', exact: true }).click()
+  await page.getByRole('button', { name: 'Новая заметка', exact: true }).click()
+  const title = page.getByRole('textbox', { name: 'Название', exact: true })
+  await title.fill('Keep this draft')
+  await page.keyboard.press('Escape')
+  const confirmation = page.getByRole('dialog', { name: 'Отменить изменения?', exact: true })
+  await expect(confirmation).toBeVisible()
+  await confirmation.getByRole('button', { name: 'Отмена', exact: true }).click()
+  await expect(confirmation).toHaveCount(0)
+  await expect(title).toHaveValue('Keep this draft')
+  await page.keyboard.press('Escape')
+  await confirmation.getByRole('button', { name: 'Не сохранять', exact: true }).click()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await expect
+    .poll(() => page.locator('.pwa').evaluate((element) => (element as HTMLElement).inert))
+    .toBe(false)
+})
+
 test('touch pull-to-refresh reads records added to the same local library', async ({
   page,
   context,
