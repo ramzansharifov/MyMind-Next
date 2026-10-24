@@ -510,7 +510,7 @@ export function MusicListening({
       <div className="mymusic-discovery-toolbar">
         <label className="mymusic-search">
           <Search size={21} aria-hidden="true" />
-          <input value={query} onChange={(event) => { setOnlySaved(false); setQuery(event.target.value) }}
+          <input value={query} onChange={(event) => setQuery(event.target.value)}
             placeholder="Треки, исполнители, настроение…" maxLength={200} aria-label="Поиск музыки" />
           {query ? <button type="button" aria-label="Очистить поиск" onClick={() => setQuery('')}><X size={17}/></button> : null}
         </label>
