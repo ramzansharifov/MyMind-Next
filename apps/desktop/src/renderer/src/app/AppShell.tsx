@@ -136,7 +136,11 @@ export function AppShell({
   focusMode = false,
   children
 }: AppShellProps): React.JSX.Element {
-  const [isCollapsed, setIsCollapsed] = useState(() => activeView === 'study')
+  const [userCollapsed, setUserCollapsed] = useState(() => activeView === 'study')
+  const [musicCollapsedOverride, setMusicCollapsedOverride] = useState<boolean | null>(null)
+  // Music has an immersive, icon-only sidebar by default. The user's normal
+  // navigation preference is preserved when leaving the music workspace.
+  const isCollapsed = activeView === 'music' ? (musicCollapsedOverride ?? true) : userCollapsed
   const { showLauncher } = useAiChatPreferences()
   const { reminders: calendarReminders } = useCalendarReminderInbox()
   const { reminders: habitReminders } = useHabitReminderInbox()
@@ -153,10 +157,8 @@ export function AppShell({
   }, [focusMode])
 
   function handleViewChange(view: AppViewId): void {
-    if (view === 'study' && activeView !== 'study') {
-      setIsCollapsed(true)
-    }
-
+    if (view === 'study' && activeView !== 'study') setUserCollapsed(true)
+    if (view !== 'music' && activeView === 'music') setMusicCollapsedOverride(null)
     onViewChange(view)
   }
 
@@ -166,6 +168,7 @@ export function AppShell({
     <TooltipProvider>
       <div
         data-app-focus-mode={focusMode}
+        data-music-workspace={activeView === 'music'}
         className="flex h-screen w-screen flex-col overflow-hidden bg-[var(--app-workspace)] text-[var(--app-text)]"
       >
         {!focusMode && <AppTitleBar />}
@@ -227,7 +230,8 @@ export function AppShell({
                     'motion-reduce:transition-none'
                   )}
                   onClick={() => {
-                    setIsCollapsed((current) => !current)
+                    if (activeView === 'music') setMusicCollapsedOverride(!isCollapsed)
+                    else setUserCollapsed(!isCollapsed)
                   }}
                 >
                   {isCollapsed ? (
