@@ -31,12 +31,23 @@ export interface MusicSourceLink {
 }
 
 export type ExtractedMusicProvider = 'youtube' | 'soundcloud'
-export interface MusicEngineSearchInput { provider: ExtractedMusicProvider; query: string }
-export interface MusicEnginePlaybackInput { provider: ExtractedMusicProvider; id: string }
-export interface MusicRadioInput { videoId: string }
+export interface MusicEngineSearchInput {
+  provider: ExtractedMusicProvider
+  query: string
+}
+export interface MusicEnginePlaybackInput {
+  provider: ExtractedMusicProvider
+  id: string
+}
+export interface MusicRadioInput {
+  videoId: string
+}
 /** Stream metadata for a provider track the user explicitly downloads into MyMind. */
 export type MusicEngineDownloadInput = MusicSourceLink & { downloadUrl?: string | null }
-export interface MusicEngineOfflineInput { provider: MusicSourceLink['provider']; id: string }
+export interface MusicEngineOfflineInput {
+  provider: MusicSourceLink['provider']
+  id: string
+}
 
 export interface SetMusicSourceLinkInput {
   itemId: string

@@ -26,7 +26,6 @@ ftag/
 
 # Tests
 coverage/
-apps/mobile/android-smoke-artifacts/
 
 # IDE
 .idea/
@@ -34,9 +33,6 @@ apps/mobile/android-smoke-artifacts/
 !.vscode/extensions.json
 !.vscode/settings.json
 
-# Expo / React Native
-.expo/
-web-build/
 
 # Next.js PWA generated output
 .next/

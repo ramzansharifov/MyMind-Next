@@ -1,4 +1,4 @@
-import type { MobileServices } from '../../../mobile/src/app/services'
+import type { ClientServices } from '../client/app/services'
 import { addDays, localDateKey } from '@mymind/core/habits'
 
 function text(value: string): string {
@@ -34,7 +34,7 @@ function fold(value: string): string {
 }
 /** Calendar import lets the phone's calendar deliver offline alarms without a remote service. */
 export function reminderCalendar(
-  services: Pick<MobileServices, 'calendar' | 'habits'>,
+  services: Pick<ClientServices, 'calendar' | 'habits'>,
   now = Date.now()
 ): Blob {
   const range = { from: localDateKey(new Date(now)), to: addDays(localDateKey(new Date(now)), 30) }

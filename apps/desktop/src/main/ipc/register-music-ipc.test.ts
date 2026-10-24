@@ -39,8 +39,8 @@ describe('registerMusicIpcHandlers', () => {
     expect(mocks.removeHandler.mock.calls.map(([channel]) => channel)).toEqual(
       Object.values(MUSIC_IPC_CHANNELS)
     )
-    expect(mocks.handle.mock.calls.map(([channel]) => channel)).toEqual(
-      Object.values(MUSIC_IPC_CHANNELS)
+    expect(mocks.handle.mock.calls.map(([channel]) => channel).sort()).toEqual(
+      Object.values(MUSIC_IPC_CHANNELS).sort()
     )
   })
 

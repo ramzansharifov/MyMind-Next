@@ -2,13 +2,13 @@ import { test, expect, open, createNote, navigate, storedAssets } from './helper
 
 test('a real service-worker replacement waits for windows to close and preserves SQLite and attachments', async ({
   page,
-  context
+  context,
+  browserName
 }) => {
   await open(page, 'notes')
   await createNote(page, 'Worker update fixture')
   await page.locator('.notes-editor').fill('Saved before service worker activation')
-  await page.getByRole('button', { name: 'Добавить вложение или разделитель', exact: true }).click()
-  await page.getByRole('button', { name: 'Добавить: Изображение', exact: true }).click()
+  await page.getByRole('button', { name: 'Вставить изображение', exact: true }).click()
   const choosing = page.waitForEvent('filechooser')
   await page.getByRole('button', { name: 'Выбрать', exact: true }).last().click()
   await (
@@ -59,10 +59,34 @@ test('a real service-worker replacement waits for windows to close and preserves
   expect(await page.evaluate(() => navigator.serviceWorker.controller?.scriptURL)).not.toContain(
     'parity-upgrade'
   )
+  const replacement = context
+    .serviceWorkers()
+    .find((worker) => worker.url().includes('parity-upgrade=1'))
+  if (browserName === 'chromium') expect(replacement).toBeDefined()
   await page.close()
+  // Creating a new client before activation can keep the waiting worker blocked.
+  // Observe the worker without an open window, matching an actual closed-app update.
+  // Playwright exposes worker execution contexts only for Chromium. WebKit verifies
+  // the activated controller in the reopened window below, together with the data.
+  if (replacement) {
+    await expect
+      .poll(() =>
+        replacement.evaluate(() => {
+          const scope = self as unknown as { registration: ServiceWorkerRegistration }
+          return {
+            state: scope.registration.active?.state,
+            url: scope.registration.active?.scriptURL
+          }
+        })
+      )
+      .toEqual({ state: 'activated', url: replacement.url() })
+  }
   const reopened = await context.newPage()
   const errors: string[] = []
   reopened.on('pageerror', (error) => errors.push(error.message))
+  reopened.on('console', (message) => {
+    if (message.type() === 'error') errors.push(message.text())
+  })
   await reopened.goto('/#notes')
   await expect(reopened.locator('.module')).toBeVisible()
   await expect

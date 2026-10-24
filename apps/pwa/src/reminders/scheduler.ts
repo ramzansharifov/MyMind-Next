@@ -1,4 +1,4 @@
-import type { MobileServices } from '../../../mobile/src/app/services'
+import type { ClientServices } from '../client/app/services'
 import type { PwaDatabase } from '../storage/database'
 
 const CURSOR = 'pwa.reminders.scanned-at'
@@ -12,7 +12,7 @@ export interface ReminderNotice {
 
 /** Persistent delivery rows make missed/remounted scans idempotent. */
 export async function scanReminders(
-  services: Pick<MobileServices, 'settings' | 'calendar' | 'habits'>,
+  services: Pick<ClientServices, 'settings' | 'calendar' | 'habits'>,
   flush: () => Promise<void>,
   notify: (notice: ReminderNotice) => Promise<void>,
   now = Date.now()
@@ -71,7 +71,7 @@ export async function showReminder(notice: ReminderNotice): Promise<void> {
   }
 }
 
-export async function enableReminders(services: MobileServices, db: PwaDatabase): Promise<void> {
+export async function enableReminders(services: ClientServices, db: PwaDatabase): Promise<void> {
   if (!('Notification' in globalThis))
     throw new Error('Установите PWA на домашний экран и откройте её в поддерживаемом браузере.')
   if ((await Notification.requestPermission()) !== 'granted')

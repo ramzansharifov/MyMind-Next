@@ -15,47 +15,45 @@ import {
   type AppearancePreferences
 } from '@mymind/contracts/preferences'
 import { appearancePreferencesSchema } from '@mymind/core/validation/preferences'
-import { ServicesContext } from '../../../mobile/src/app/context'
-import type { MobileServices } from '../../../mobile/src/app/services'
+import { ServicesContext } from '../client/app/context'
+import type { ClientServices } from '../client/app/services'
 import { navigationRoutes, routeTitles, routeIcons, type Route } from './navigation'
 import { routeFromHash } from './routing'
-import { MobileAppHeader } from '../../../mobile/src/app/MobileAppHeader'
-import { MobileNavigationDrawer } from '../../../mobile/src/app/MobileNavigationDrawer'
+import { MobileAppHeader } from '../client/app/MobileAppHeader'
+import { MobileNavigationDrawer } from '../client/app/MobileNavigationDrawer'
 import { dispatchHardwareBack } from '../platform/react-native'
 import {
   APP_MODULE_NAVIGATE_EVENT,
   type AppModuleNavigationRequest
 } from '../../../desktop/src/renderer/src/app/module-navigation'
-import { ThemeContext } from '../../../mobile/src/shared/ui/theme'
-import { ToastProvider } from '../../../mobile/src/shared/ui/ToastProvider'
-import { ConfirmationProvider } from '../../../mobile/src/shared/ui/ConfirmationProvider'
-import { MobileCreateActionOverlayProvider } from '../../../mobile/src/shared/ui/MobileCreateActionOverlay'
+import { ThemeContext } from '../client/shared/ui/theme'
+import { ToastProvider } from '../client/shared/ui/ToastProvider'
+import { ConfirmationProvider } from '../client/shared/ui/ConfirmationProvider'
+import { MobileCreateActionOverlayProvider } from '../client/shared/ui/MobileCreateActionOverlay'
 import { openPwaDatabase, type PwaDatabase } from '../storage/database'
 import { createPwaServices, type PwaServices } from '../storage/services'
 import { PwaSettings } from './PwaSettings'
 import { usePwa } from './usePwa'
 import { ModuleErrorBoundary } from './ModuleErrorBoundary'
 import { PwaReminders } from './PwaReminders'
-import { ErrorState } from '../../../mobile/src/shared/ui/primitives'
+import { ErrorState } from '../client/shared/ui/primitives'
 import { PwaLoading } from './PwaLoading'
 import { syncActivity } from '../sync/activity'
 import packageInfo from '../../package.json'
 
-const Home = lazy(() =>
-  import('../../../mobile/src/app/Home').then((module) => ({ default: module.Home }))
-)
+const Home = lazy(() => import('../client/app/Home').then((module) => ({ default: module.Home })))
 const Tasks = lazy(() =>
-  import('../../../mobile/src/modules/tasks/TasksScreen').then((module) => ({
+  import('../client/modules/tasks/TasksScreen').then((module) => ({
     default: module.TasksScreen
   }))
 )
 const Habits = lazy(() =>
-  import('../../../mobile/src/modules/habits/HabitsScreen').then((module) => ({
+  import('../client/modules/habits/HabitsScreen').then((module) => ({
     default: module.HabitsScreen
   }))
 )
 const Catalog = lazy(() =>
-  import('../../../mobile/src/modules/catalog/CatalogScreen').then((module) => ({
+  import('../client/modules/catalog/CatalogScreen').then((module) => ({
     default: module.CatalogScreen
   }))
 )
@@ -63,33 +61,33 @@ const MusicHub = lazy(() =>
   import('./PwaMusicHub').then((module) => ({ default: module.PwaMusicHub }))
 )
 const Calendar = lazy(() =>
-  import('../../../mobile/src/modules/calendar/CalendarScreen').then((module) => ({
+  import('../client/modules/calendar/CalendarScreen').then((module) => ({
     default: module.CalendarScreen
   }))
 )
 const Diary = lazy(() =>
-  import('../../../mobile/src/modules/diary/DiaryScreen').then((module) => ({
+  import('../client/modules/diary/DiaryScreen').then((module) => ({
     default: module.DiaryScreen
   }))
 )
 const Nutrition = lazy(() =>
-  import('../../../mobile/src/modules/nutrition/NutritionScreen').then((module) => ({
+  import('../client/modules/nutrition/NutritionScreen').then((module) => ({
     default: module.NutritionScreen
   }))
 )
 const Finance = lazy(() =>
-  import('../../../mobile/src/modules/finance/FinanceScreen').then((module) => ({
+  import('../client/modules/finance/FinanceScreen').then((module) => ({
     default: module.FinanceScreen
   }))
 )
 const Passwords = lazy(() =>
-  import('../../../mobile/src/modules/passwords/PasswordsScreen').then((module) => ({
+  import('../client/modules/passwords/PasswordsScreen').then((module) => ({
     default: module.PasswordsScreen
   }))
 )
 
 const Notes = lazy(() =>
-  import('../../../mobile/src/modules/notes/NotesScreen').then((module) => ({
+  import('../client/modules/notes/NotesScreen').then((module) => ({
     default: module.NotesScreen
   }))
 )
@@ -99,7 +97,7 @@ function initialize(): NonNullable<typeof startup> {
   startup ??= openPwaDatabase().then(async (db) => ({ db, services: await createPwaServices(db) }))
   return startup
 }
-function appearanceFrom(services: MobileServices): AppearancePreferences {
+function appearanceFrom(services: ClientServices): AppearancePreferences {
   try {
     return appearancePreferencesSchema.parse(
       JSON.parse(services.settings.get('appearance') ?? 'null')

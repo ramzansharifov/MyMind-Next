@@ -2,11 +2,11 @@ import {
   MOBILE_BACKUP_HEADER_SIZE,
   decodeMobileBackupHeader,
   decodeMobileBackupManifest
-} from '../../../mobile/src/shared/backup/archive'
-import type { MobileBackupSummary } from '../../../mobile/src/shared/backup/mobileBackup'
+} from '../client/shared/backup/archive'
+import type { BackupSummary } from '../client/shared/backup/types'
 
 // Read the existing shared archive; no extra format or storage keys are introduced.
-export async function backupSummary(file: Blob): Promise<MobileBackupSummary> {
+export async function backupSummary(file: Blob): Promise<BackupSummary> {
   const header = new Uint8Array(await file.slice(0, MOBILE_BACKUP_HEADER_SIZE).arrayBuffer())
   const length = decodeMobileBackupHeader(header)
   const manifest = decodeMobileBackupManifest(

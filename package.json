@@ -2,9 +2,10 @@
   "name": "mymind",
   "version": "1.0.0",
   "private": true,
-  "description": "MyMind desktop and mobile monorepo",
+  "description": "MyMind local-first Desktop and PWA monorepo",
   "workspaces": [
-    "apps/*",
+    "apps/desktop",
+    "apps/pwa",
     "packages/*"
   ],
   "engines": {
@@ -13,16 +14,14 @@
   "scripts": {
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "lint": "npm run lint --workspace=mymind-next",
+    "lint": "npm run lint --workspace=mymind-next && npm run lint:pwa && npm run lint:packages",
     "typecheck:packages": "npm run typecheck --workspace=@mymind/contracts && npm run typecheck --workspace=@mymind/core && npm run typecheck --workspace=@mymind/design && npm run typecheck --workspace=@mymind/persistence",
     "typecheck:desktop": "npm run typecheck --workspace=mymind-next",
-    "typecheck:mobile": "npm run typecheck --workspace=mymind-mobile",
-    "typecheck": "npm run typecheck:packages && npm run typecheck:desktop && npm run typecheck:mobile",
+    "typecheck": "npm run typecheck:packages && npm run typecheck:desktop && npm run typecheck:pwa",
     "start": "npm run start --workspace=mymind-next",
     "preview:existing": "npm run preview:existing --workspace=mymind-next",
     "dev": "npm run dev:desktop",
     "dev:desktop": "npm run dev --workspace=mymind-next",
-    "dev:mobile": "npm run start --workspace=mymind-mobile",
     "dev:pwa": "node apps/pwa/scripts/prepare-assets.mjs && npm run dev --workspace=mymind-pwa",
     "build:pwa": "npm run build --workspace=mymind-pwa",
     "start:pwa": "npm run start --workspace=mymind-pwa",
@@ -50,12 +49,11 @@
     "test": "npm run test --workspace=mymind-next",
     "test:run": "npm run test:run --workspace=mymind-next",
     "test:coverage": "npm run test:coverage --workspace=mymind-next",
-    "check": "npm run check --workspace=mymind-next && npm run typecheck:mobile",
+    "check": "npm run typecheck:packages && npm run lint:packages && npm run test:release && npm run check --workspace=mymind-next && npm run check:pwa",
     "check:fix": "npm run format && npm run check",
-    "lint:mobile": "eslint apps/mobile packages",
-    "test:mobile": "npm run native:node && vitest run --config vitest.mobile.config.ts",
-    "export:android": "npm run export:android --workspace=mymind-mobile",
-    "release:version": "node ./scripts/set-release-version.mjs"
+    "release:version": "node ./scripts/set-release-version.mjs",
+    "lint:packages": "eslint packages",
+    "test:release": "node --test scripts/set-release-version.test.mjs"
   },
   "allowScripts": {
     "esbuild@0.18.20": true,

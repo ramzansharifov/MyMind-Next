@@ -1,6 +1,8 @@
-> Monorepo: desktop-приложение находится в pps/desktop. Команды из этого документа по-прежнему запускаются из корня репозитория через workspace-скрипты.
-
 # Разработка MyMind
+
+Поддерживаются Desktop (`apps/desktop`) и PWA (`apps/pwa`). Команды запускаются из корня. Для PWA используйте `npm run dev:pwa`, `npm run check:pwa` и `npm run test:e2e:pwa`; для совместной проверки типов — `npm run typecheck`. Android SDK, Java и Expo CLI не нужны. Приведённые ниже native ABI-команды относятся к `better-sqlite3` Desktop.
+
+`npm run test:release` проверяет совместное версионирование Desktop/PWA. Полный переход описан в [PWA_MIGRATION.md](PWA_MIGRATION.md).
 
 ## Требования
 

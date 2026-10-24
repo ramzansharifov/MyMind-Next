@@ -14,13 +14,20 @@ test('every Android route opens offline without desktop screens or horizontal ov
   for (const route of navigationRoutes) {
     await navigate(page, route)
     await expect(page.locator('.app-header')).toContainText(routeTitles[route])
-    await expect(page.locator('.module')).not.toContainText('Открываем раздел…')
+    await expect(page.locator('.module .pwa-loading')).toHaveCount(0)
     await expect(page.locator('.desktop-module')).toHaveCount(0)
     await expect(page.locator('.workspace [role=alert]')).toHaveCount(0)
   }
 })
 
-test('Android module screens fit small, phone and landscape viewports', async ({ page }) => {
+test('PWA module screens fit small, phone and landscape viewports offline', async ({
+  page,
+  context
+}) => {
+  await open(page, 'home')
+  await expect(page.locator('.connection')).toHaveText('Готово к офлайн', { timeout: 45000 })
+  await page.reload()
+  await context.setOffline(true)
   for (const viewport of [
     { width: 320, height: 568 },
     { width: 390, height: 844 },
@@ -29,7 +36,7 @@ test('Android module screens fit small, phone and landscape viewports', async ({
     await page.setViewportSize(viewport)
     for (const route of navigationRoutes) {
       await open(page, route)
-      await expect(page.locator('.module')).not.toContainText('Открываем раздел…')
+      await expect(page.locator('.module .pwa-loading')).toHaveCount(0)
       expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
         viewport.width
       )

@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import { View } from 'react-native'
 import type { AppearancePreferences } from '@mymind/contracts/preferences'
-import type { MobileServices } from '../../../mobile/src/app/services'
-import { SettingsScreen } from '../../../mobile/src/app/SettingsScreen'
-import { WorkspacePanel } from '../../../mobile/src/shared/ui/Workspace'
-import { Button, ErrorState, Label } from '../../../mobile/src/shared/ui/primitives'
-import { useConfirmation } from '../../../mobile/src/shared/ui/confirmation-context'
-import { notifyDataChanged } from '../../../mobile/src/app/changes'
+import type { ClientServices } from '../client/app/services'
+import { SettingsScreen } from '../client/app/SettingsScreen'
+import { WorkspacePanel } from '../client/shared/ui/Workspace'
+import { Button, ErrorState, Label } from '../client/shared/ui/primitives'
+import { useConfirmation } from '../client/shared/ui/confirmation-context'
+import { notifyDataChanged } from '../client/app/changes'
 import type { PwaDatabase } from '../storage/database'
 import { exportBackup, restoreBackup, verifyBackup } from '../storage/backup'
 import { backupSummary } from '../storage/backup-summary'
@@ -18,7 +18,7 @@ import type { usePwa } from './usePwa'
 import packageInfo from '../../package.json'
 
 interface Props {
-  services: MobileServices
+  services: ClientServices
   db: PwaDatabase
   appearance: AppearancePreferences
   save(value: AppearancePreferences): void

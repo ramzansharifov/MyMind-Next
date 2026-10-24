@@ -7,7 +7,7 @@ import { studyAssetMimeType, studyAssetExtension } from '@mymind/core/study-asse
 import { migrateDatabase } from './migrations'
 import type { PwaDatabase } from './database'
 import type { StoredAsset } from './indexed-db'
-import { MOBILE_BACKUP_MAX_DATABASE_BYTES } from '../../../mobile/src/shared/backup/archive'
+import { MOBILE_BACKUP_MAX_DATABASE_BYTES } from '../client/shared/backup/archive'
 import { appearancePreferencesSchema } from '@mymind/core/validation/preferences'
 import { noteDocumentSchema } from '@mymind/core/validation/notes'
 import { studyDocumentSchema } from '@mymind/core/validation/study'

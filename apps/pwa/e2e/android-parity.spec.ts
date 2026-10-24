@@ -1,5 +1,5 @@
 import { test, expect, open, navigate, createNote } from './helpers'
-import { navigationRoutes, routeTitles } from '../../mobile/src/app/navigation'
+import { navigationRoutes, routeTitles } from '../src/client/app/navigation'
 
 test('Android shell: shared header, module cards and drawer work at phone size', async ({
   page
@@ -99,9 +99,9 @@ test('Android note: formatting, browser Back and resized viewport preserve the d
   await open(page, 'notes')
   await page.getByRole('button', { name: 'Android formatted note', exact: true }).click()
   await expect(editor.locator('strong')).toContainText('Formatted on this device')
-  await page.getByRole('button', { name: 'Чтение', exact: true }).click()
+  await page.getByRole('button', { name: 'Перейти в режим чтения', exact: true }).click()
   await expect(editor).toHaveAttribute('contenteditable', 'false')
-  await page.getByRole('button', { name: 'Редактирование', exact: true }).click()
+  await page.getByRole('button', { name: 'Перейти в режим редактирования', exact: true }).click()
   await expect(editor).toHaveAttribute('contenteditable', 'true')
 })
 

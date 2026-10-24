@@ -1,5 +1,8 @@
 import { test, expect, open, save, confirmRemoval } from './helpers'
 
+// Catalog fixtures test UI/persistence; real SW/offline behavior is covered separately.
+test.use({ serviceWorkers: 'block' })
+
 test('movies: create, update, reopen and delete a locally stored movie', async ({ page }) => {
   await open(page, 'movies')
   await page.getByRole('button', { name: 'Добавить фильм', exact: true }).click()
@@ -22,15 +25,24 @@ test('movies: create, update, reopen and delete a locally stored movie', async (
 
 test('music: playlists use provider track IDs and persist across restart', async ({ page }) => {
   const result = {
-    key: 'audius:test-track-123', provider: 'audius', id: 'test-track-123',
-    title: 'Provider Song', artist: 'Provider Artist', durationSeconds: 150,
-    artworkUrl: null, streamUrl: 'https://api.audius.co/v1/tracks/test-track-123/stream',
+    key: 'audius:test-track-123',
+    provider: 'audius',
+    id: 'test-track-123',
+    title: 'Provider Song',
+    artist: 'Provider Artist',
+    durationSeconds: 150,
+    artworkUrl: null,
+    streamUrl: 'https://api.audius.co/v1/tracks/test-track-123/stream',
     permalink: null
   }
-  await page.route('**/api/music/discover', route =>
-    route.fulfill({ json: { tracks: [result] } }))
+  await page.route('**/api/music/discover', (route) =>
+    route.fulfill({ json: { tracks: [result] } })
+  )
   await open(page, 'music')
-  await expect(page.getByRole('button', { name: 'Поиск', exact: true })).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.getByRole('button', { name: 'Поиск', exact: true })).toHaveAttribute(
+    'aria-pressed',
+    'true'
+  )
   await page.getByRole('button', { name: 'Новый плейлист' }).click()
   await page.getByRole('textbox', { name: 'Название плейлиста' }).fill('Мой микс')
   await page.getByRole('button', { name: 'Создать', exact: true }).click()

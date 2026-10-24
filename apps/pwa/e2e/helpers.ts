@@ -34,6 +34,9 @@ export async function navigate(page: Page, route: string): Promise<void> {
     .last()
     .click()
   await expect(page.locator('.module')).toBeVisible()
+  await expect(page.locator('.app-header')).toContainText(routeTitles[route as Route])
+  await expect(page.locator('.module .pwa-loading')).toHaveCount(0)
+  await expect(page.locator('.module')).not.toContainText('Загружаем содержимое…')
 }
 export async function storedAssets(page: Page): Promise<Array<{ path: string; size: number }>> {
   return page.evaluate(
@@ -70,6 +73,8 @@ export async function open(page: Page, route: string): Promise<void> {
   await page.goto(`/?runtime=${crypto.randomUUID()}#${route}`)
   await expect(page.locator('.module')).toBeVisible()
   await expect(page.locator('.save-status')).toHaveText('Сохранено на устройстве')
+  await expect(page.locator('.module .pwa-loading')).toHaveCount(0)
+  await expect(page.locator('.module')).not.toContainText('Загружаем содержимое…')
 }
 export async function save(page: Page): Promise<void> {
   await expect(page.getByRole('dialog').last()).toBeVisible()

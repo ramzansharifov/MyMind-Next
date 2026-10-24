@@ -1,6 +1,8 @@
 # Архитектура MyMind
 
-MyMind — локальное Electron-приложение. Renderer построен на React, main process владеет SQLite и файловым хранилищем, а preload публикует узкий типизированный IPC API.
+MyMind состоит из локального Desktop (`apps/desktop`) и PWA (`apps/pwa`). Общая бизнес-логика и persistence находятся в `packages/*`; телефонные экраны принадлежат `apps/pwa/src/client`. Нативный Android/iOS workspace удалён. Подробнее о переходе и совместимости — [PWA_MIGRATION.md](PWA_MIGRATION.md).
+
+Далее описана архитектура Electron Desktop. Renderer построен на React, main process владеет SQLite и файловым хранилищем, а preload публикует узкий типизированный IPC API.
 
 ## Границы процессов
 

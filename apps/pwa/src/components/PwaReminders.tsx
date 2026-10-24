@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { ErrorState } from '../../../mobile/src/shared/ui/primitives'
-import type { MobileServices } from '../../../mobile/src/app/services'
-import { notifyDataChanged, subscribeDataChanges } from '../../../mobile/src/app/changes'
+import { ErrorState } from '../client/shared/ui/primitives'
+import type { ClientServices } from '../client/app/services'
+import { notifyDataChanged, subscribeDataChanges } from '../client/app/changes'
 import { scanReminders, showReminder } from '../reminders/scheduler'
 import type { PwaDatabase } from '../storage/database'
 import { syncActivity } from '../sync/activity'
@@ -11,7 +11,7 @@ export function PwaReminders({
   db,
   paused
 }: {
-  services: MobileServices
+  services: ClientServices
   db: PwaDatabase
   paused: boolean
 }): React.JSX.Element | null {

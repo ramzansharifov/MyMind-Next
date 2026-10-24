@@ -1,6 +1,6 @@
 import { sha256 } from '@noble/hashes/sha2.js'
 import type { Database } from 'sql.js'
-import type { MobileBackupSummary } from '../../../mobile/src/shared/backup/mobileBackup'
+import type { BackupSummary } from '../client/shared/backup/types'
 import {
   MOBILE_BACKUP_FORMAT,
   MOBILE_BACKUP_VERSION,
@@ -13,7 +13,7 @@ import {
   encodeMobileBackupManifest,
   type MobileBackupEntry,
   type MobileBackupManifestV1
-} from '../../../mobile/src/shared/backup/archive'
+} from '../client/shared/backup/archive'
 import type { PwaDatabase } from './database'
 import { applicationSchema, migrateDatabase, PWA_SCHEMA_VERSION } from './migrations'
 import type { StoredAsset } from './indexed-db'
@@ -74,7 +74,7 @@ export async function exportBackup(db: PwaDatabase): Promise<Blob> {
 async function readVerifiedBackup(
   db: PwaDatabase,
   file: Blob
-): Promise<{ candidate: Database; assets: StoredAsset[]; summary: MobileBackupSummary }> {
+): Promise<{ candidate: Database; assets: StoredAsset[]; summary: BackupSummary }> {
   if (file.size > PWA_BACKUP_MAX_BYTES)
     throw new Error('Размер резервной копии превышает ограничение формата MyMind (4 ГБ).')
   const header = new Uint8Array(await file.slice(0, MOBILE_BACKUP_HEADER_SIZE).arrayBuffer())
@@ -140,7 +140,7 @@ async function readVerifiedBackup(
 }
 
 /** Verify hashes, structure, foreign keys and attachments without importing. */
-export async function verifyBackup(db: PwaDatabase, file: Blob): Promise<MobileBackupSummary> {
+export async function verifyBackup(db: PwaDatabase, file: Blob): Promise<BackupSummary> {
   const { candidate, summary } = await readVerifiedBackup(db, file)
   candidate.close()
   return summary

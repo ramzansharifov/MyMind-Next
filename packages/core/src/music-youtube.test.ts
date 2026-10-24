@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { discoverYouTube, discoverYouTubeWithFallback, parseYouTubeSearch } from './music-youtube'
 
-const video = (id: string, title = 'Music Song') => ({
+const video = (id: string, title = 'Music Song'): Record<string, unknown> => ({
   videoRenderer: {
     videoId: id,
     title: { runs: [{ text: title }] },
@@ -13,17 +13,33 @@ const video = (id: string, title = 'Music Song') => ({
 describe('anonymous YouTube InnerTube music catalog', () => {
   it('parses nested WEB search renderers and de-duplicates videos', () => {
     const results = parseYouTubeSearch({
-      contents: { twoColumnSearchResultsRenderer: { primaryContents: { sectionListRenderer: {
-        contents: [{ itemSectionRenderer: { contents: [
-          video('abcdefghijk'),
-          video('abcdefghijk'),
-          video('lmnopqrstuv', 'Other')
-        ] } }]
-      } } } }
+      contents: {
+        twoColumnSearchResultsRenderer: {
+          primaryContents: {
+            sectionListRenderer: {
+              contents: [
+                {
+                  itemSectionRenderer: {
+                    contents: [
+                      video('abcdefghijk'),
+                      video('abcdefghijk'),
+                      video('lmnopqrstuv', 'Other')
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
     })
     expect(results).toHaveLength(2)
-    expect(results[0]).toMatchObject({ provider: 'youtube', id: 'abcdefghijk',
-      artist: 'Band', durationSeconds: 222 })
+    expect(results[0]).toMatchObject({
+      provider: 'youtube',
+      id: 'abcdefghijk',
+      artist: 'Band',
+      durationSeconds: 222
+    })
     expect(results[0].streamUrl).toBe('https://www.youtube.com/watch?v=abcdefghijk')
   })
 
@@ -32,8 +48,10 @@ describe('anonymous YouTube InnerTube music catalog', () => {
   })
 
   it('uses actual youtubei WEB POST without paid developer API keys', async () => {
-    const fetcher = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) =>
-      new Response(JSON.stringify({ contents: [video('abcdefghijk')] }), { status: 200 }))
+    const fetcher = vi.fn<typeof fetch>(
+      async () =>
+        new Response(JSON.stringify({ contents: [video('abcdefghijk')] }), { status: 200 })
+    )
     const result = await discoverYouTube('  music   ', { fetcher })
     expect(result).toHaveLength(1)
     expect(String(fetcher.mock.calls[0][0])).toContain('youtubei/v1/search')
@@ -43,25 +61,38 @@ describe('anonymous YouTube InnerTube music catalog', () => {
     expect(JSON.parse(String(config.body)).context.client.clientName).toBe('WEB')
   })
   it('times out a stalled YouTube response instead of leaving a pending request', async () => {
-    const fetcher = vi.fn((_url: RequestInfo | URL, init?: RequestInit) =>
-      new Promise<Response>((_resolve, reject) => {
-        init?.signal?.addEventListener('abort', () =>
-          reject(new DOMException('Aborted', 'AbortError')), { once: true })
-      }))
-    await expect(discoverYouTube('music', { fetcher, timeoutMs: 35 }))
-      .rejects.toThrow('YouTube не ответил вовремя')
+    const fetcher = vi.fn<typeof fetch>(
+      (_url: RequestInfo | URL, init?: RequestInit) =>
+        new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener(
+            'abort',
+            () => reject(new DOMException('Aborted', 'AbortError')),
+            { once: true }
+          )
+        })
+    )
+    await expect(discoverYouTube('music', { fetcher, timeoutMs: 35 })).rejects.toThrow(
+      'YouTube не ответил вовремя'
+    )
     expect(fetcher).toHaveBeenCalledOnce()
   })
 
   it('forwards a caller cancellation without misreporting it as a timeout', async () => {
     const controller = new AbortController()
-    const fetcher = vi.fn((_url: RequestInfo | URL, init?: RequestInit) =>
-      new Promise<Response>((_resolve, reject) => {
-        init?.signal?.addEventListener('abort', () =>
-          reject(new DOMException('Aborted', 'AbortError')), { once: true })
-      }))
+    const fetcher = vi.fn<typeof fetch>(
+      (_url: RequestInfo | URL, init?: RequestInit) =>
+        new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener(
+            'abort',
+            () => reject(new DOMException('Aborted', 'AbortError')),
+            { once: true }
+          )
+        })
+    )
     const operation = discoverYouTube('music', {
-      fetcher, signal: controller.signal, timeoutMs: 10_000
+      fetcher,
+      signal: controller.signal,
+      timeoutMs: 10_000
     })
     controller.abort()
     await expect(operation).rejects.not.toThrow('YouTube не ответил вовремя')
@@ -78,25 +109,33 @@ describe('anonymous YouTube InnerTube music catalog', () => {
 
   it('uses yt-dlp when the Chromium network request times out', async () => {
     const track = parseYouTubeSearch({ contents: [video('abcdefghijk')] })
-    const primary = vi.fn(async (_query: string): Promise<typeof track> => {
+    const primary = vi.fn(async (): Promise<typeof track> => {
       throw new Error('YouTube не ответил вовремя')
     })
-    const fallback = vi.fn(async (_query: string) => track)
-    await expect(discoverYouTubeWithFallback('song name', primary, fallback)).resolves.toEqual(track)
+    const fallback = vi.fn(async () => track)
+    await expect(discoverYouTubeWithFallback('song name', primary, fallback)).resolves.toEqual(
+      track
+    )
     expect(fallback).toHaveBeenCalledWith('song name')
   })
 
   it('falls back when InnerTube returns no video items, preserving empty valid results', async () => {
-    const primary = vi.fn(async (_query: string) => [])
-    const fallback = vi.fn(async (_query: string) => [])
-    await expect(discoverYouTubeWithFallback('unusual song', primary, fallback)).resolves.toEqual([])
+    const primary = vi.fn(async () => [])
+    const fallback = vi.fn(async () => [])
+    await expect(discoverYouTubeWithFallback('unusual song', primary, fallback)).resolves.toEqual(
+      []
+    )
   })
 
   it('surfaces both network and fallback errors to help diagnose blocked YouTube', async () => {
-    const primary = vi.fn(async (_query: string): Promise<never> => { throw new Error('Network timeout') })
-    const fallback = vi.fn(async (_query: string): Promise<never> => { throw new Error('yt-dlp unavailable') })
-    await expect(discoverYouTubeWithFallback('song', primary, fallback))
-      .rejects.toThrow(/Chromium.*Network timeout.*yt-dlp unavailable/)
+    const primary = vi.fn(async (): Promise<never> => {
+      throw new Error('Network timeout')
+    })
+    const fallback = vi.fn(async (): Promise<never> => {
+      throw new Error('yt-dlp unavailable')
+    })
+    await expect(discoverYouTubeWithFallback('song', primary, fallback)).rejects.toThrow(
+      /Chromium.*Network timeout.*yt-dlp unavailable/
+    )
   })
-
 })

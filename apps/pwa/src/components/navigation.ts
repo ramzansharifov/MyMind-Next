@@ -1,7 +1,2 @@
-// Android owns the module list, order, labels and icons on both platforms.
-export {
-  navigationRoutes,
-  routeTitles,
-  routeIcons,
-  type Route
-} from '../../../mobile/src/app/navigation'
+// One PWA route list owns module order, labels and icons.
+export { navigationRoutes, routeTitles, routeIcons, type Route } from '../client/app/navigation'

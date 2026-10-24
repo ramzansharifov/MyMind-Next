@@ -10,7 +10,9 @@ vi.mock('electron', () => ({
   app: { getPath: () => root }
 }))
 vi.mock('./music-yt-dlp', () => ({
-  resolveAudioUrl: async () => { throw new Error('Offline playback must not access the provider') },
+  resolveAudioUrl: async () => {
+    throw new Error('Offline playback must not access the provider')
+  },
   downloadMusicTrack: async (_provider: string, _id: string, name: string, directory: string) => {
     const { writeFile } = await import('node:fs/promises')
     const { join } = await import('node:path')
@@ -21,19 +23,29 @@ vi.mock('./music-yt-dlp', () => ({
 }))
 
 import {
-  downloadOfflineMusic, findOfflineMusic, listOfflineMusic, removeOfflineMusic
+  downloadOfflineMusic,
+  findOfflineMusic,
+  listOfflineMusic,
+  removeOfflineMusic
 } from './music-offline'
 import { localOfflineMusicStream, stopLocalMusicStream } from './music-audio-proxy'
 
 const youtube: MusicEngineDownloadInput = {
-  key: 'youtube:abcdefghijk', provider: 'youtube', id: 'abcdefghijk',
-  title: 'Song', artist: 'Artist', durationSeconds: 90, artworkUrl: null,
+  key: 'youtube:abcdefghijk',
+  provider: 'youtube',
+  id: 'abcdefghijk',
+  title: 'Song',
+  artist: 'Artist',
+  durationSeconds: 90,
+  artworkUrl: null,
   streamUrl: 'https://www.youtube.com/watch?v=abcdefghijk',
   permalink: 'https://www.youtube.com/watch?v=abcdefghijk'
 }
 
 describe('MyMind internal music downloads', () => {
-  beforeEach(async () => { await rm(join(root, 'music-downloads'), { recursive: true, force: true }) })
+  beforeEach(async () => {
+    await rm(join(root, 'music-downloads'), { recursive: true, force: true })
+  })
 
   it('stores tracks in userData, lists them after restart, and avoids duplicate copies', async () => {
     expect(await listOfflineMusic()).toEqual([])
@@ -65,8 +77,12 @@ describe('MyMind internal music downloads', () => {
 
   it('downloads a SoundCloud result by its canonical ID even if display metadata is incomplete', async () => {
     const result: MusicEngineDownloadInput = {
-      ...youtube, key: 'soundcloud:artist/song', provider: 'soundcloud',
-      id: 'artist/song', title: '', artist: '',
+      ...youtube,
+      key: 'soundcloud:artist/song',
+      provider: 'soundcloud',
+      id: 'artist/song',
+      title: '',
+      artist: '',
       streamUrl: 'https://soundcloud.com/artist/song?utm_source=search',
       permalink: null
     }
@@ -75,14 +91,22 @@ describe('MyMind internal music downloads', () => {
   })
 
   it('rejects unsupported or malformed media IDs without downloading anything', async () => {
-    await expect(downloadOfflineMusic({
-      ...youtube, id: 'bad', key: 'youtube:bad',
-      streamUrl: 'https://music.youtube.com/watch?v=bad'
-    })).rejects.toThrow('идентификатор YouTube')
-    await expect(downloadOfflineMusic({
-      ...youtube, provider: 'soundcloud', id: '../invalid',
-      key: 'soundcloud:../invalid'
-    })).rejects.toThrow('идентификатор')
+    await expect(
+      downloadOfflineMusic({
+        ...youtube,
+        id: 'bad',
+        key: 'youtube:bad',
+        streamUrl: 'https://music.youtube.com/watch?v=bad'
+      })
+    ).rejects.toThrow('идентификатор YouTube')
+    await expect(
+      downloadOfflineMusic({
+        ...youtube,
+        provider: 'soundcloud',
+        id: '../invalid',
+        key: 'soundcloud:../invalid'
+      })
+    ).rejects.toThrow('идентификатор')
     expect(await listOfflineMusic()).toEqual([])
   })
 
@@ -102,7 +126,10 @@ describe('MyMind internal music downloads', () => {
 
   it('rejects arbitrary links and cannot read or remove paths from user input', async () => {
     const audius: MusicEngineDownloadInput = {
-      ...youtube, key: 'audius:alpha', provider: 'audius', id: 'alpha',
+      ...youtube,
+      key: 'audius:alpha',
+      provider: 'audius',
+      id: 'alpha',
       streamUrl: 'https://api.audius.co/v1/tracks/alpha/stream',
       downloadUrl: 'https://example.com/not-authorized.mp3'
     }

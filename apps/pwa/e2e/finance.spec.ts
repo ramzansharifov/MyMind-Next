@@ -97,6 +97,7 @@ test('finance: account, category, income, expense, balance, edit, restart and de
     await page.getByRole('radio', { name: 'PWA category', exact: true }).click()
     await page.getByRole('textbox', { name: 'Сумма', exact: true }).fill(amount)
     await page.getByRole('textbox', { name: 'Комментарий', exact: true }).fill(`PWA ${type}`)
+    await expect(page.getByRole('textbox', { name: 'Сумма', exact: true })).toHaveValue(amount)
     await page.getByRole('dialog').getByRole('button', { name: 'Создать', exact: true }).click()
     await expect(page.getByRole('textbox', { name: 'Сумма', exact: true })).toHaveCount(0)
   }

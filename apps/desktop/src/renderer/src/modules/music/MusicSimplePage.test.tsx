@@ -1,224 +1,142 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-
-import type { MusicItemRecord, MusicOverview } from '../../../../shared/contracts/music'
+import {
+  emptyMusicCollection,
+  type MusicCollectionAction,
+  type MusicStreamingCollection
+} from '@mymind/core/music-collection'
+import type { DiscoveredTrack } from '@mymind/core/music-discovery'
 import { MusicPage } from './MusicSimplePage'
 
 const mocks = vi.hoisted(() => ({
-  listOverview: vi.fn(),
-  getItem: vi.fn(),
-  createItem: vi.fn(),
-  createItems: vi.fn(),
-  upsertLibrary: vi.fn(),
-  updateItem: vi.fn(),
-  deleteItem: vi.fn(),
-  createPlaylist: vi.fn(),
-  updatePlaylist: vi.fn(),
-  deletePlaylist: vi.fn(),
-  setItemPlaylists: vi.fn()
+  streamingCollection: vi.fn(),
+  listSourceLinks: vi.fn(),
+  saveStreamingCollection: vi.fn(),
+  engineSearch: vi.fn(),
+  engineResolve: vi.fn(),
+  engineRadio: vi.fn(),
+  engineDownload: vi.fn(),
+  offlineList: vi.fn(),
+  offlineResolve: vi.fn(),
+  offlineRemove: vi.fn()
 }))
-
-vi.mock('./api/music-client', () => ({
-  musicClient: mocks
-}))
-
-const emptyOverview: MusicOverview = { items: [], playlists: [] }
-
-const createdTrack: MusicItemRecord = {
-  id: 'track-1',
-  title: 'Blinding Lights',
-  artist: 'The Weeknd',
-  year: 2020,
-  durationSeconds: 200,
-  favorite: false,
-  createdAt: 1,
-  updatedAt: 1
+vi.mock('./api/music-client', () => ({ musicClient: mocks }))
+const track: DiscoveredTrack = {
+  key: 'audius:alpha',
+  provider: 'audius',
+  id: 'alpha',
+  title: 'Source track',
+  artist: 'Artist',
+  durationSeconds: 100,
+  artworkUrl: null,
+  streamUrl: 'https://api.audius.co/v1/tracks/alpha/stream',
+  permalink: null
 }
-
-beforeEach(() => {
-  vi.clearAllMocks()
-  mocks.listOverview.mockResolvedValue(emptyOverview)
-  mocks.getItem.mockResolvedValue(null)
-  mocks.createItem.mockResolvedValue(createdTrack)
-  mocks.upsertLibrary.mockResolvedValue({
-    overview: { items: [createdTrack], playlists: [] },
-    itemsCreated: 1,
-    itemsUpdated: 0,
-    playlistsCreated: 0,
-    playlistsUpdated: 0
-  })
-  mocks.updateItem.mockResolvedValue(createdTrack)
-  mocks.deleteItem.mockResolvedValue(true)
-  mocks.createPlaylist.mockResolvedValue({
-    id: 'playlist-1',
-    name: 'Дорога',
-    coverUrl: 'https://example.com/road.jpg',
-    trackIds: [],
-    createdAt: 1,
-    updatedAt: 1
-  })
-  mocks.updatePlaylist.mockResolvedValue({
-    id: 'playlist-1',
-    name: 'Дорога',
-    coverUrl: 'https://example.com/road.jpg',
-    trackIds: [],
-    createdAt: 1,
-    updatedAt: 1
-  })
-  mocks.deletePlaylist.mockResolvedValue(true)
-  mocks.setItemPlaylists.mockResolvedValue([])
-})
-
-describe('MusicPage dialogs', () => {
-  it('размещает поиск и вкладки внутри ModuleHeader как в задачах', async () => {
-    const { container } = render(<MusicPage />)
-
-    await screen.findByRole('heading', { name: 'Музыка' })
-
-    const header = container.querySelector('[data-module-header]')
-    const navigation = container.querySelector('[data-music-library-navigation]')
-
-    expect(header).not.toBeNull()
-    expect(navigation).not.toBeNull()
-    expect(header?.contains(navigation)).toBe(true)
-  })
-
-  it('не падает на старой записи с artists после hot reload', async () => {
-    mocks.listOverview.mockResolvedValue({
-      items: [
-        {
-          id: 'legacy-track',
-          title: 'Legacy track',
-          artists: ['Legacy Artist'],
-          year: 2020,
-          durationSeconds: 180,
-          favorite: false,
-          createdAt: 1,
-          updatedAt: 2
+// The actual player UI is covered by MusicListening.test.tsx and the browser suite.
+// This boundary exercises loading, compatibility and serialized persistence of the page.
+vi.mock('./components/MusicListening', () => ({
+  MusicListening: ({
+    collection,
+    onCollectionAction
+  }: {
+    collection: MusicStreamingCollection
+    onCollectionAction(action: MusicCollectionAction): void
+  }): React.JSX.Element => (
+    <div>
+      <output data-testid="collection">{JSON.stringify(collection)}</output>
+      <button onClick={() => onCollectionAction({ type: 'save', track })}>Save source</button>
+      <button onClick={() => onCollectionAction({ type: 'like', track })}>Like source</button>
+      <button
+        onClick={() =>
+          onCollectionAction({ type: 'playlist-create', id: 'playlist', name: 'Road', now: 1 })
         }
-      ],
-      playlists: []
-    })
+      >
+        Create playlist
+      </button>
+    </div>
+  )
+}))
+beforeEach(() => {
+  vi.resetAllMocks()
+  mocks.streamingCollection.mockResolvedValue(null)
+  mocks.listSourceLinks.mockResolvedValue({})
+  mocks.saveStreamingCollection.mockResolvedValue(undefined)
+})
+const collection = (): MusicStreamingCollection =>
+  JSON.parse(screen.getByTestId('collection').textContent!)
 
+describe('MusicPage source-linked collection', () => {
+  it('opens a saved streaming collection without invoking the retired manual catalog', async () => {
+    mocks.streamingCollection.mockResolvedValue(
+      JSON.stringify({ ...emptyMusicCollection(), tracks: { [track.key]: track } })
+    )
     render(<MusicPage />)
-
-    expect(await screen.findByText('Legacy track')).toBeInTheDocument()
-    expect(screen.getByText('Legacy Artist')).toBeInTheDocument()
+    await screen.findByTestId('collection')
+    expect(collection().tracks[track.key]).toEqual(track)
+    expect(mocks.streamingCollection).toHaveBeenCalledOnce()
+    expect(mocks.listSourceLinks).toHaveBeenCalledOnce()
+    expect(mocks.saveStreamingCollection).not.toHaveBeenCalled()
   })
 
-  it('показывает полный JSON библиотеки и отдельного трека', async () => {
-    const user = userEvent.setup()
-    const playlist = {
-      id: 'playlist-1',
-      name: 'Дорога',
-      coverUrl: null,
-      trackIds: [createdTrack.id],
-      createdAt: 2,
-      updatedAt: 3
-    }
-    const overview: MusicOverview = { items: [createdTrack], playlists: [playlist] }
-    mocks.listOverview.mockResolvedValue(overview)
-
+  it('migrates source links while ignoring incompatible legacy manual items', async () => {
+    mocks.listSourceLinks.mockResolvedValue({ valid: track, manual: { title: 'Old manual item' } })
     render(<MusicPage />)
-
-    await screen.findByText('Blinding Lights')
-    await user.click(screen.getByRole('button', { name: 'JSON библиотеки' }))
-
-    const libraryJson = screen.getByRole('textbox', { name: 'JSON данных музыки' })
-    expect(JSON.parse((libraryJson as HTMLTextAreaElement).value)).toEqual(overview)
-    expect((libraryJson as HTMLTextAreaElement).value).toContain('"trackIds"')
-
-    await user.click(screen.getByRole('button', { name: 'Закрыть' }))
-    await user.click(screen.getByRole('button', { name: 'JSON трека «Blinding Lights»' }))
-
-    const trackJson = screen.getByRole('textbox', { name: 'JSON данных музыки' })
-    expect(JSON.parse((trackJson as HTMLTextAreaElement).value)).toEqual(createdTrack)
-    expect((trackJson as HTMLTextAreaElement).value).not.toContain('"coverUrl"')
-
-    await user.click(screen.getByRole('button', { name: 'Закрыть' }))
-    await user.click(screen.getByRole('tab', { name: 'Плейлисты' }))
-    await user.click(screen.getByRole('button', { name: 'JSON плейлиста «Дорога»' }))
-
-    const playlistJson = screen.getByRole('textbox', { name: 'JSON данных музыки' })
-    expect(JSON.parse((playlistJson as HTMLTextAreaElement).value)).toEqual(playlist)
-    expect((playlistJson as HTMLTextAreaElement).value).toContain('"coverUrl"')
-  })
-
-  it('импортирует музыкальные записи из JSON', async () => {
-    const user = userEvent.setup()
-    render(<MusicPage />)
-
-    await screen.findByRole('heading', { name: 'Музыка' })
-    await user.click(screen.getByRole('button', { name: 'Из JSON' }))
-
-    fireEvent.change(screen.getByRole('textbox', { name: 'JSON музыки' }), {
-      target: {
-        value: '{"title":"Blinding Lights","artist":"The Weeknd","year":2019}'
-      }
-    })
-
-    await user.click(screen.getByRole('button', { name: 'Применить JSON' }))
-
-    await waitFor(() =>
-      expect(mocks.upsertLibrary).toHaveBeenCalledWith({
-        items: [
-          expect.objectContaining({
-            title: 'Blinding Lights',
-            artist: 'The Weeknd',
-            year: 2019
-          })
-        ],
-        playlists: []
-      })
+    await screen.findByTestId('collection')
+    expect(Object.keys(collection().tracks)).toEqual([track.key])
+    await waitFor(() => expect(mocks.saveStreamingCollection).toHaveBeenCalledOnce())
+    expect(JSON.parse(mocks.saveStreamingCollection.mock.calls[0][0]).tracks[track.key]).toEqual(
+      track
     )
   })
 
-  it('сохраняет только данные, которые есть в форме трека', async () => {
-    const user = userEvent.setup()
-    render(<MusicPage />)
-
-    const addTrackButtons = await screen.findAllByRole('button', { name: 'Добавить трек' })
-    await user.click(addTrackButtons[0]!)
-
-    expect(screen.getByRole('dialog')).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Новый трек' })).toBeInTheDocument()
-    expect(screen.queryByLabelText('Обложка плейлиста')).not.toBeInTheDocument()
-    expect(screen.queryByText(/^Обложка$/)).not.toBeInTheDocument()
-
-    await user.type(screen.getByPlaceholderText('Blinding Lights'), 'Blinding Lights')
-    await user.type(screen.getByPlaceholderText('The Weeknd'), 'The Weeknd')
-    await user.click(screen.getByRole('button', { name: 'Сохранить' }))
-
-    await waitFor(() => {
-      expect(mocks.createItem).toHaveBeenCalledWith(
-        expect.objectContaining({
-          title: 'Blinding Lights',
-          artist: 'The Weeknd'
+  it('serializes rapid save, favorite and playlist actions without losing changes', async () => {
+    let release!: () => void
+    mocks.saveStreamingCollection.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          release = resolve
         })
-      )
-    })
-    expect(mocks.setItemPlaylists).toHaveBeenCalledWith({ itemId: 'track-1', playlistIds: [] })
+    )
+    render(<MusicPage />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Save source' }))
+    await waitFor(() => expect(mocks.saveStreamingCollection).toHaveBeenCalledOnce())
+    fireEvent.click(screen.getByRole('button', { name: 'Like source' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Create playlist' }))
+    expect(mocks.saveStreamingCollection).toHaveBeenCalledOnce()
+    await act(async () => release())
+    await waitFor(() => expect(mocks.saveStreamingCollection).toHaveBeenCalledTimes(3))
+    const persisted = JSON.parse(
+      mocks.saveStreamingCollection.mock.calls[2][0]
+    ) as MusicStreamingCollection
+    expect(persisted.tracks[track.key]).toEqual(track)
+    expect(persisted.likedKeys).toEqual([track.key])
+    expect(persisted.playlists[0].name).toBe('Road')
   })
 
-  it('создаёт плейлист через модальное окно с отдельным полем обложки', async () => {
-    const user = userEvent.setup()
+  it('reports a write failure and allows the following action to save again', async () => {
+    mocks.saveStreamingCollection.mockRejectedValueOnce(new Error('Storage is busy'))
     render(<MusicPage />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Save source' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Storage is busy')
+    fireEvent.click(screen.getByRole('button', { name: 'Like source' }))
+    await waitFor(() => expect(mocks.saveStreamingCollection).toHaveBeenCalledTimes(2))
+    expect(JSON.parse(mocks.saveStreamingCollection.mock.calls[1][0]).likedKeys).toEqual([
+      track.key
+    ])
+  })
 
-    await user.click(await screen.findByRole('button', { name: 'Новый плейлист' }))
+  it('reports a loading error and keeps the empty collection usable', async () => {
+    mocks.streamingCollection.mockRejectedValue(new Error('Cannot read collection'))
+    render(<MusicPage />)
+    expect(await screen.findByRole('alert')).toHaveTextContent('Cannot read collection')
+    expect(collection()).toEqual(emptyMusicCollection())
+  })
 
-    expect(screen.getByRole('heading', { name: 'Новый плейлист' })).toBeInTheDocument()
-    expect(screen.getByLabelText('Обложка плейлиста')).toBeInTheDocument()
-
-    await user.type(screen.getByPlaceholderText('Например, Дорога'), 'Дорога')
-    await user.type(screen.getByLabelText('Обложка плейлиста'), 'https://example.com/road.jpg')
-    await user.click(screen.getByRole('button', { name: 'Сохранить' }))
-
-    await waitFor(() => {
-      expect(mocks.createPlaylist).toHaveBeenCalledWith({
-        name: 'Дорога',
-        coverUrl: 'https://example.com/road.jpg'
-      })
-    })
+  it('acknowledges a legacy resource link without deleting or rewriting its record', async () => {
+    const handled = vi.fn()
+    render(<MusicPage resourceId="legacy-item" onResourceHandled={handled} />)
+    await screen.findByTestId('collection')
+    expect(handled).toHaveBeenCalledOnce()
+    expect(mocks.saveStreamingCollection).not.toHaveBeenCalled()
   })
 })
