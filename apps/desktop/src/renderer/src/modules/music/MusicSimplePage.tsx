@@ -1,10 +1,8 @@
-import { Disc3 } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   emptyMusicCollection, migrateLinkedMusicCollection, parseMusicCollection,
   reduceMusicCollection, type MusicCollectionAction, type MusicStreamingCollection
 } from '@mymind/core/music-collection'
-import { ModuleHeader } from '../../shared/ui/ModuleHeader'
 import { StandardModulePage } from '../../shared/ui/StandardModulePage'
 import { musicClient } from './api/music-client'
 import { MusicListening } from './components/MusicListening'
@@ -75,10 +73,7 @@ export function MusicPage({ resourceId, onResourceHandled }: MusicPageProps): Re
   }, [])
 
   return (
-    <StandardModulePage>
-      <ModuleHeader icon={Disc3} title="Музыка"
-        description="Поиск, прослушивание, избранное и плейлисты из музыкальных источников."
-        className="mb-5" />
+    <StandardModulePage className="mymusic-page-shell" contentClassName="mymusic-page-container">
       {error ? <div role="alert" className="mb-4 rounded-xl border border-red-500/30 px-4 py-3 text-sm text-red-400">
         {error}
       </div> : null}
