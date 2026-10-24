@@ -1,6 +1,6 @@
 export type MaybePromise<T> = T | Promise<T>
 
-export type AppPlatform = 'desktop' | 'mobile'
+export type AppPlatform = 'desktop' | 'pwa'
 
 export interface ClockPort {
   now(): Date

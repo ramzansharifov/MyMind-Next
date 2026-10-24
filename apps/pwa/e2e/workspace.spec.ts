@@ -20,7 +20,14 @@ test('every Android route opens offline without desktop screens or horizontal ov
   }
 })
 
-test('Android module screens fit small, phone and landscape viewports', async ({ page }) => {
+test('PWA module screens fit small, phone and landscape viewports offline', async ({
+  page,
+  context
+}) => {
+  await open(page, 'home')
+  await expect(page.locator('.connection')).toHaveText('Готово к офлайн', { timeout: 45000 })
+  await page.reload()
+  await context.setOffline(true)
   for (const viewport of [
     { width: 320, height: 568 },
     { width: 390, height: 844 },

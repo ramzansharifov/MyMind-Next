@@ -21,7 +21,10 @@ test('notes: compact mode actions and grouped editing shortcuts remain usable on
   await expect(page.getByText('Чтение', { exact: true })).toHaveCount(0)
   await expect(page.getByText('Редактирование', { exact: true })).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Перейти в режим чтения' })).toBeInViewport()
-  await expect(page.getByTestId('note-save-indicator')).toHaveCSS('background-color', 'rgb(22, 181, 139)')
+  await expect(page.getByTestId('note-save-indicator')).toHaveCSS(
+    'background-color',
+    'rgb(22, 181, 139)'
+  )
 
   await page.getByRole('button', { name: 'Добавить вложение', exact: true }).click()
   const insertMenu = page.getByRole('dialog').last()
@@ -33,17 +36,23 @@ test('notes: compact mode actions and grouped editing shortcuts remain usable on
   await insertMenu.getByRole('button', { name: 'Закрыть', exact: true }).click()
 
   await page.getByRole('button', { name: 'Вставить разделитель', exact: true }).click()
-  await expect(page.getByRole('button', { name: 'Добавить разделитель', exact: true })).toBeVisible()
+  await expect(
+    page.getByRole('button', { name: 'Добавить разделитель', exact: true })
+  ).toBeVisible()
   await page.getByRole('button', { name: 'Добавить разделитель', exact: true }).click()
 
   await page.getByRole('button', { name: 'Дополнительные действия', exact: true }).click()
   await page.getByRole('button', { name: 'Вид заметки', exact: true }).click()
-  await expect(page.getByRole('button', { name: 'Вид заметки: Полотно', exact: true })).toBeVisible()
+  await expect(
+    page.getByRole('button', { name: 'Вид заметки: Полотно', exact: true })
+  ).toBeVisible()
   await page.getByRole('button', { name: 'Закрыть', exact: true }).last().click()
 
   await page.getByRole('button', { name: 'Перейти в режим чтения' }).click()
   await expect(page.locator('.notes-editor')).toHaveAttribute('contenteditable', 'false')
-  await expect(page.getByRole('button', { name: 'Перейти в режим редактирования' })).toBeInViewport()
+  await expect(
+    page.getByRole('button', { name: 'Перейти в режим редактирования' })
+  ).toBeInViewport()
   await page.getByRole('button', { name: 'Перейти в режим редактирования' }).click()
   await expect(page.locator('.notes-editor')).toHaveAttribute('contenteditable', 'true')
   await expect(page.getByRole('button', { name: 'Перейти в режим чтения' })).toBeInViewport()
@@ -98,11 +107,16 @@ test('notes: checklist shortcut inserts editable checkboxes and persists checked
   await expect(checkbox).toBeChecked()
   const checkedText = taskList.locator('li[data-type="taskItem"]').first().locator('p').first()
   await expect(checkedText).toHaveCSS('text-decoration-line', 'line-through')
-  const checkedGeometry = await taskList.locator('li[data-type="taskItem"]').first().evaluate((row) => {
-    const label = row.querySelector('label')?.getBoundingClientRect()
-    const text = row.querySelector('p')?.getBoundingClientRect()
-    return label && text ? Math.abs((label.top + label.height / 2) - (text.top + text.height / 2)) : 1000
-  })
+  const checkedGeometry = await taskList
+    .locator('li[data-type="taskItem"]')
+    .first()
+    .evaluate((row) => {
+      const label = row.querySelector('label')?.getBoundingClientRect()
+      const text = row.querySelector('p')?.getBoundingClientRect()
+      return label && text
+        ? Math.abs(label.top + label.height / 2 - (text.top + text.height / 2))
+        : 1000
+    })
   expect(checkedGeometry).toBeLessThan(6)
 
   await page.getByRole('button', { name: 'Назад', exact: true }).click()
@@ -113,19 +127,23 @@ test('notes: checklist shortcut inserts editable checkboxes and persists checked
   await expect(restored).toContainText('Второй пункт')
   await expect(restored.locator('input[type="checkbox"]').first()).toBeChecked()
 
-  await expect(restored.locator('li[data-type="taskItem"]').first().locator('p').first()).toHaveCSS('text-decoration-line', 'line-through')
+  await expect(restored.locator('li[data-type="taskItem"]').first().locator('p').first()).toHaveCSS(
+    'text-decoration-line',
+    'line-through'
+  )
   await page.getByRole('button', { name: 'Перейти в режим чтения' }).click()
   await expect(page.locator('.notes-editor')).toHaveAttribute('contenteditable', 'false')
   await restored.locator('input[type="checkbox"]').first().click()
   await expect(restored.locator('input[type="checkbox"]').first()).not.toBeChecked()
-  await expect(restored.locator('li[data-type="taskItem"]').first().locator('p').first()).toHaveCSS('text-decoration-line', 'none')
+  await expect(restored.locator('li[data-type="taskItem"]').first().locator('p').first()).toHaveCSS(
+    'text-decoration-line',
+    'none'
+  )
   await page.getByRole('button', { name: 'Перейти в режим редактирования' }).click()
   await expect(restored.locator('input[type="checkbox"]').first()).not.toBeChecked()
 })
 
-test('notes: bullet and numbered lists keep two editable rows close together', async ({
-  page
-}) => {
+test('notes: bullet and numbered lists keep two editable rows close together', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 568 })
   for (const [label, selector] of [
     ['Маркированный список', 'ul:not([data-type="taskList"])'],
@@ -142,9 +160,11 @@ test('notes: bullet and numbered lists keep two editable rows close together', a
     const list = page.locator('.notes-editor').locator(selector).first()
     await expect(list).toBeVisible()
     await list.locator('li p').first().click()
-    await expect.poll(() =>
-      page.evaluate(() => document.activeElement?.classList.contains('notes-editor') === true)
-    ).toBe(true)
+    await expect
+      .poll(() =>
+        page.evaluate(() => document.activeElement?.classList.contains('notes-editor') === true)
+      )
+      .toBe(true)
     await page.keyboard.type('Первый пункт')
     await expect(list).toContainText('Первый пункт')
     await page.keyboard.press('End')
@@ -177,7 +197,9 @@ test('notes: a single mode toggle stays in the header at 320px', async ({ page }
   await expect(headerMode).toBeInViewport()
   await headerMode.click()
   await expect(page.locator('.notes-editor')).toHaveAttribute('contenteditable', 'false')
-  await expect(page.getByRole('button', { name: 'Перейти в режим редактирования' })).toBeInViewport()
+  await expect(
+    page.getByRole('button', { name: 'Перейти в режим редактирования' })
+  ).toBeInViewport()
   await expect(page.getByRole('button', { name: 'Добавить вложение' })).toHaveCount(0)
   await page.getByRole('button', { name: 'Перейти в режим редактирования' }).click()
   await expect(page.locator('.notes-editor')).toHaveAttribute('contenteditable', 'true')

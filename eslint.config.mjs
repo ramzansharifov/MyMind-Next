@@ -54,14 +54,7 @@ export default defineConfig(
     }
   },
   {
-    // Metro and Expo config plugins are loaded through CommonJS.
-    files: ['apps/mobile/metro.config.js', 'apps/mobile/plugins/*.js'],
-    rules: {
-      '@typescript-eslint/no-require-imports': 'off'
-    }
-  },
-  {
-    files: ['apps/mobile/**/*.{ts,tsx}'],
+    files: ['apps/pwa/src/client/**/*.{ts,tsx}'],
     rules: {
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }]
     }

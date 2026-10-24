@@ -3,9 +3,9 @@ import type { NoteVoiceRecordingMimeType } from '@mymind/contracts/notes'
 import type { StudyLocalAsset } from '@mymind/contracts/study'
 import { NOTE_VOICE_RECORDING_MAX_BYTES } from '@mymind/contracts/notes'
 import { View } from 'react-native'
-import { Button, Label } from '../../../mobile/src/shared/ui/primitives'
-import { useTheme } from '../../../mobile/src/shared/ui/theme'
-import { AudioPlaybackControls } from '../../../mobile/src/shared/ui/AudioPlaybackControls'
+import { Button, Label } from '../client/shared/ui/primitives'
+import { useTheme } from '../client/shared/ui/theme'
+import { AudioPlaybackControls } from '../client/shared/ui/AudioPlaybackControls'
 
 export interface VoiceRecordingInput {
   uri: string

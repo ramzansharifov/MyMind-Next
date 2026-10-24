@@ -12,10 +12,6 @@ coverage
 **/drizzle/meta/
 package-lock.json
 
-# Generated Expo native projects and local caches
-/apps/mobile/android/
-/apps/mobile/ios/
-**/.expo/
 
 # Generated Next.js output and PWA assets
 **/.next/

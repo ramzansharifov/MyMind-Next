@@ -1,10 +1,14 @@
 import { useCallback, useRef, useState } from 'react'
 import {
-  MUSIC_COLLECTION_KEY, migrateLinkedMusicCollection, parseMusicCollection,
-  reduceMusicCollection, type MusicCollectionAction, type MusicStreamingCollection
+  MUSIC_COLLECTION_KEY,
+  migrateLinkedMusicCollection,
+  parseMusicCollection,
+  reduceMusicCollection,
+  type MusicCollectionAction,
+  type MusicStreamingCollection
 } from '@mymind/core/music-collection'
 import { MusicListening } from '../../../desktop/src/renderer/src/modules/music/components/MusicListening'
-import { useServices } from '../../../mobile/src/app/context'
+import { useServices } from '../client/app/context'
 
 /** PWA-only provider music experience. Native Android UI remains unchanged. */
 export function PwaMusicHub(): React.JSX.Element {
@@ -15,21 +19,28 @@ export function PwaMusicHub(): React.JSX.Element {
   })
   const current = useRef(collection)
   const [error, setError] = useState('')
-  const apply = useCallback((action: MusicCollectionAction) => {
-    const next = reduceMusicCollection(current.current, action)
-    current.current = next
-    setCollection(next)
-    try {
-      services.settings.set(MUSIC_COLLECTION_KEY, JSON.stringify(next))
-      setError('')
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : 'Не удалось сохранить музыку')
-    }
-  }, [services])
+  const apply = useCallback(
+    (action: MusicCollectionAction) => {
+      const next = reduceMusicCollection(current.current, action)
+      current.current = next
+      setCollection(next)
+      try {
+        services.settings.set(MUSIC_COLLECTION_KEY, JSON.stringify(next))
+        setError('')
+      } catch (reason) {
+        setError(reason instanceof Error ? reason.message : 'Не удалось сохранить музыку')
+      }
+    },
+    [services]
+  )
 
   return (
     <div style={{ width: '100%', minWidth: 0, flex: 1, padding: 12, overflowX: 'hidden' }}>
-      {error ? <p role="alert" style={{ color: '#fb7185' }}>{error}</p> : null}
+      {error ? (
+        <p role="alert" style={{ color: '#fb7185' }}>
+          {error}
+        </p>
+      ) : null}
       <MusicListening searchProxy collection={collection} onCollectionAction={apply} />
     </div>
   )

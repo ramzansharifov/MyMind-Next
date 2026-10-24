@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
-  emptyMusicCollection, migrateLinkedMusicCollection, parseMusicCollection,
-  reduceMusicCollection, type MusicCollectionAction, type MusicStreamingCollection
+  emptyMusicCollection,
+  migrateLinkedMusicCollection,
+  parseMusicCollection,
+  reduceMusicCollection,
+  type MusicCollectionAction,
+  type MusicStreamingCollection
 } from '@mymind/core/music-collection'
 import { StandardModulePage } from '../../shared/ui/StandardModulePage'
 import { musicClient } from './api/music-client'
@@ -51,7 +55,9 @@ export function MusicPage({ resourceId, onResourceHandled }: MusicPageProps): Re
         if (active) setLoading(false)
       }
     })()
-    return () => { active = false }
+    return () => {
+      active = false
+    }
   }, [])
 
   useEffect(() => {
@@ -68,18 +74,27 @@ export function MusicPage({ resourceId, onResourceHandled }: MusicPageProps): Re
       .catch(() => undefined)
       .then(() => musicClient.saveStreamingCollection(JSON.stringify(next)))
       .catch((reason) => {
-        setError(reason instanceof Error ? reason.message : 'Не удалось сохранить музыкальную коллекцию')
+        setError(
+          reason instanceof Error ? reason.message : 'Не удалось сохранить музыкальную коллекцию'
+        )
       })
   }, [])
 
   return (
     <StandardModulePage className="mymusic-page-shell" contentClassName="mymusic-page-container">
-      {error ? <div role="alert" className="mb-4 rounded-xl border border-red-500/30 px-4 py-3 text-sm text-red-400">
-        {error}
-      </div> : null}
-      {loading ? <div className="py-10 text-center text-sm text-[var(--app-muted)]">
-        Загружаем сохранённую музыку…
-      </div> : (
+      {error ? (
+        <div
+          role="alert"
+          className="mb-4 rounded-xl border border-red-500/30 px-4 py-3 text-sm text-red-400"
+        >
+          {error}
+        </div>
+      ) : null}
+      {loading ? (
+        <div className="py-10 text-center text-sm text-[var(--app-muted)]">
+          Загружаем сохранённую музыку…
+        </div>
+      ) : (
         <MusicListening
           collection={collection}
           onCollectionAction={onCollectionAction}

@@ -1,25 +1,36 @@
 # MyMind
 
-Параллельная PWA на Next.js находится в [`apps/pwa`](apps/pwa/README.md). Запуск: `npm run dev:pwa`; production и офлайн: `npm run build:pwa` и `npm run start:pwa`. Данные хранятся локально на устройстве. Текущие Android/iOS-версии сохраняются.
+Локальное приложение с двумя версиями: **Desktop** (Electron + React) и **PWA** (Next.js + React Native Web). Пользовательские данные хранятся на устройстве, удалённой базы данных нет.
 
-MyMind теперь организован как monorepo с двумя приложениями:
-
-`	ext
+```text
 apps/
-  desktop/  # Electron + React, существующее desktop-приложение
-  mobile/   # React Native + Expo, базовая мобильная структура
-`
+  desktop/       # Desktop
+  pwa/           # PWA для телефона и браузера
+  music-bridge/  # Вспомогательный локальный сервис музыки Desktop
+packages/        # Общие контракты, бизнес-логика, дизайн и persistence
+```
 
-Все npm-команды запускаются из корня репозитория. Для разработки:
+Все команды запускаются из корня репозитория:
 
-`ash
+```bash
 npm ci
 npm run dev:desktop
-npm run dev:mobile
-`
+# Или PWA:
+npm run dev:pwa
+```
 
-Команда
-pm run dev сохранена как алиас для desktop-приложения.
+`npm run dev` остаётся алиасом Desktop. Нативная сборка Android/iOS больше не поддерживается; используемый телефонный интерфейс перенесён внутрь PWA. Подробности совместимости данных и перехода — [PWA_MIGRATION.md](PWA_MIGRATION.md).
+
+## PWA
+
+Публичный адрес: https://mymind-pwa.vercel.app. Установка выполняется через браузер. SQLite WASM, IndexedDB, вложения, профиль и сейф работают локально. Офлайн-кэш доступен после первоначальной загрузки production-версии.
+
+```bash
+npm run build:pwa
+npm run start:pwa
+```
+
+Сценарии установки, резервные копии и ограничения браузера описаны в [apps/pwa/README.md](apps/pwa/README.md).
 
 ## Desktop
 
@@ -80,6 +91,9 @@ npm run dev
 Подробные инструкции находятся в [DEVELOPMENT.md](DEVELOPMENT.md).
 
 ## Документация
+
+- [PWA_MIGRATION.md](PWA_MIGRATION.md) — переход на Desktop/PWA и совместимость прежних данных.
+- [apps/pwa/PARITY.md](apps/pwa/PARITY.md) — состав, архитектура и границы проверки PWA.
 
 - [DEVELOPMENT.md](DEVELOPMENT.md) — запуск, тестирование, native ABI, миграции и сборка.
 - [ARCHITECTURE.md](ARCHITECTURE.md) — процессы Electron, IPC, autosave, shutdown и хранение.

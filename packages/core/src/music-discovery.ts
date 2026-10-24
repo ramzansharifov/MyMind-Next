@@ -74,14 +74,21 @@ export function audiusTrack(raw: unknown): DiscoveredTrack | null {
   const path = new URL(AUDIUS_API + '/tracks/' + encodeURIComponent(id) + '/stream')
   path.searchParams.set('app_name', 'MyMind')
   return {
-    key: 'audius:' + id, provider: 'audius', id, title, artist,
+    key: 'audius:' + id,
+    provider: 'audius',
+    id,
+    title,
+    artist,
     durationSeconds: positive(track.duration),
     artworkUrl: secureUrl(artwork['480x480'] ?? artwork['1000x1000'] ?? artwork['150x150']),
     streamUrl: path.href,
     permalink: secureUrl(track.permalink),
-    ...(track.is_downloadable === true ? {
-      downloadUrl: AUDIUS_API + '/tracks/' + encodeURIComponent(id) + '/download?app_name=MyMind'
-    } : {})
+    ...(track.is_downloadable === true
+      ? {
+          downloadUrl:
+            AUDIUS_API + '/tracks/' + encodeURIComponent(id) + '/download?app_name=MyMind'
+        }
+      : {})
   }
 }
 
@@ -93,7 +100,11 @@ export function jamendoTrack(raw: unknown): DiscoveredTrack | null {
   const streamUrl = secureUrl(track.audio)
   if (!id || !title || !artist || !streamUrl) return null
   return {
-    key: 'jamendo:' + id, provider: 'jamendo', id, title, artist,
+    key: 'jamendo:' + id,
+    provider: 'jamendo',
+    id,
+    title,
+    artist,
     durationSeconds: positive(track.duration),
     artworkUrl: secureUrl(track.image ?? track.album_image),
     streamUrl,
@@ -104,7 +115,9 @@ export function jamendoTrack(raw: unknown): DiscoveredTrack | null {
   }
 }
 
-export function providerSearchUrl(options: Pick<MusicSearchOptions, 'provider' | 'query' | 'jamendoClientId'>): string {
+export function providerSearchUrl(
+  options: Pick<MusicSearchOptions, 'provider' | 'query' | 'jamendoClientId'>
+): string {
   const query = options.query?.trim().slice(0, 200) ?? ''
   if (options.provider === 'youtube' || options.provider === 'soundcloud')
     throw new Error('Этот источник использует отдельный музыкальный движок.')
@@ -133,14 +146,19 @@ export async function discoverMusic(options: MusicSearchOptions): Promise<Discov
     throw new Error('Требуется музыкальный движок для этого источника.')
   const fetcher = options.fetcher ?? fetch
   const response = await fetcher(providerSearchUrl(options), {
-    signal: options.signal, headers: { Accept: 'application/json' }
+    signal: options.signal,
+    headers: { Accept: 'application/json' }
   })
   if (!response.ok) throw new Error('Источник музыки недоступен (HTTP ' + response.status + ').')
   const json = obj(await response.json())
   const header = obj(json.headers)
   if (options.provider === 'jamendo' && typeof header.code === 'number' && header.code !== 0)
     throw new Error(str(header.error_message) || 'Ошибка запроса к Jamendo.')
-  const data = Array.isArray(json.data) ? json.data : Array.isArray(json.results) ? json.results : []
+  const data = Array.isArray(json.data)
+    ? json.data
+    : Array.isArray(json.results)
+      ? json.results
+      : []
   const normalize = options.provider === 'audius' ? audiusTrack : jamendoTrack
   const unique = new Set<string>()
   const tracks: DiscoveredTrack[] = []
@@ -169,23 +187,44 @@ export function parseSavedMusicSources(value: string | null | undefined): SavedM
     const raw = obj(JSON.parse(value))
     const mapped: SavedMusicSourceMap = Object.create(null) as SavedMusicSourceMap
     for (const [itemId, candidate] of Object.entries(raw)) {
-      if (!/^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/.test(itemId) ||
-          ['__proto__', 'prototype', 'constructor'].includes(itemId)) continue
+      if (
+        !/^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/.test(itemId) ||
+        ['__proto__', 'prototype', 'constructor'].includes(itemId)
+      )
+        continue
       const track = obj(candidate)
       const provider = track.provider
       const id = str(track.id)
       const url = secureUrl(track.streamUrl)
       const artist = str(track.artist)
       const title = str(track.title)
-      if ((provider !== 'youtube' && provider !== 'soundcloud' && provider !== 'audius' && provider !== 'jamendo') ||
-        !id || !url || !title || !artist) continue
+      if (
+        (provider !== 'youtube' &&
+          provider !== 'soundcloud' &&
+          provider !== 'audius' &&
+          provider !== 'jamendo') ||
+        !id ||
+        !url ||
+        !title ||
+        !artist
+      )
+        continue
       const host = new URL(url).hostname
-      if (provider === 'youtube' && (!/^[A-Za-z0-9_-]{11}$/.test(id) ||
-          host !== 'www.youtube.com' || new URL(url).searchParams.get('v') !== id)) continue
+      if (
+        provider === 'youtube' &&
+        (!/^[A-Za-z0-9_-]{11}$/.test(id) ||
+          host !== 'www.youtube.com' ||
+          new URL(url).searchParams.get('v') !== id)
+      )
+        continue
       if (provider === 'soundcloud' && host !== 'soundcloud.com') continue
       if (provider === 'audius' && host !== 'api.audius.co') continue
       mapped[itemId] = {
-        key: provider + ':' + id, provider, id, title, artist,
+        key: provider + ':' + id,
+        provider,
+        id,
+        title,
+        artist,
         durationSeconds: positive(track.durationSeconds),
         artworkUrl: secureUrl(track.artworkUrl),
         streamUrl: url,

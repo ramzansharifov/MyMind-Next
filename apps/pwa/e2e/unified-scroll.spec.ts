@@ -24,7 +24,8 @@ async function moduleScrollAncestor(
 }
 
 test('calendar grid and day events share a single vertical scroll on a short phone', async ({
-  page
+  page,
+  browserName
 }) => {
   await page.setViewportSize({ width: 390, height: 480 })
   await open(page, 'calendar')
@@ -33,13 +34,30 @@ test('calendar grid and day events share a single vertical scroll on a short pho
   expect(await moduleScrollAncestor(page, 'Сегодня')).toBe(true)
 
   const before = await today.evaluate((element) => element.getBoundingClientRect().top)
-  await page.mouse.move(180, 325)
-  await page.mouse.wheel(0, 650)
+  const scroll = async (delta: number): Promise<void> => {
+    if (browserName !== 'webkit') {
+      await page.mouse.move(180, 325)
+      await page.mouse.wheel(0, delta)
+      return
+    }
+    // Playwright cannot inject wheel events into mobile WebKit. Check actual DOM
+    // scrolling and resulting geometry there; trusted touch is covered in Chrome.
+    await today.evaluate((element, amount) => {
+      for (let parent = element.parentElement; parent; parent = parent.parentElement) {
+        if (['auto', 'scroll'].includes(getComputedStyle(parent).overflowY)) {
+          parent.scrollTop += amount
+          return
+        }
+      }
+      throw new Error('Calendar has no scroll container')
+    }, delta)
+  }
+  await scroll(650)
   await expect
     .poll(() => today.evaluate((element) => element.getBoundingClientRect().top))
     .toBeLessThan(before - 40)
 
-  await page.mouse.wheel(0, -900)
+  await scroll(-900)
   await expect(today).toBeInViewport()
   await page.getByRole('button', { name: 'Следующий месяц', exact: true }).click()
   await expect(page.locator('.module')).toContainText('Выбранный день')
@@ -56,13 +74,16 @@ test('tasks, habits, finance and nutrition put their top controls inside their m
     ['nutrition', 'Сегодня']
   ] as const) {
     await open(page, route)
-    expect(
-      await moduleScrollAncestor(
-        page,
-        label,
-        route === 'finance' || route === 'nutrition' ? 'tab' : 'button'
-      ),
-      `${route}: header must move with list`
-    ).toBe(true)
+    await expect
+      .poll(
+        () =>
+          moduleScrollAncestor(
+            page,
+            label,
+            route === 'finance' || route === 'nutrition' ? 'tab' : 'button'
+          ),
+        { message: `${route}: header must move with list` }
+      )
+      .toBe(true)
   }
 })

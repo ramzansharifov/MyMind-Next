@@ -1,7 +1,7 @@
-import type { CSSProperties } from 'react'
+import type { CSSProperties, RefAttributes } from 'react'
 import { View, StyleSheet, type ViewProps } from 'react-native'
 
-export function BlurTargetView(props: ViewProps): React.JSX.Element {
+export function BlurTargetView(props: ViewProps & RefAttributes<View>): React.JSX.Element {
   return <View {...props} />
 }
 export function BlurView({

@@ -1,13 +1,20 @@
 import { describe, expect, it } from 'vitest'
 import { audiusTrack, jamendoTrack, type DiscoveredTrack } from './music-discovery'
 import {
-  emptyMusicCollection, migrateLinkedMusicCollection,
-  parseMusicCollection, reduceMusicCollection
+  emptyMusicCollection,
+  migrateLinkedMusicCollection,
+  parseMusicCollection,
+  reduceMusicCollection
 } from './music-collection'
 
 const track: DiscoveredTrack = {
-  key: 'youtube:abcdefghijk', id: 'abcdefghijk', provider: 'youtube',
-  title: 'Song', artist: 'Artist', durationSeconds: 200, artworkUrl: null,
+  key: 'youtube:abcdefghijk',
+  id: 'abcdefghijk',
+  provider: 'youtube',
+  title: 'Song',
+  artist: 'Artist',
+  durationSeconds: 200,
+  artworkUrl: null,
   streamUrl: 'https://www.youtube.com/watch?v=abcdefghijk',
   permalink: 'https://www.youtube.com/watch?v=abcdefghijk'
 }
@@ -20,7 +27,10 @@ describe('provider-based streaming library', () => {
     state = reduceMusicCollection(state, { type: 'like', track })
     expect(state.likedKeys).toEqual([track.key])
     state = reduceMusicCollection(state, {
-      type: 'playlist-create', id: 'test_playlist', name: 'New Mix', now: 123
+      type: 'playlist-create',
+      id: 'test_playlist',
+      name: 'New Mix',
+      now: 123
     })
     state = reduceMusicCollection(state, { type: 'playlist-toggle', id: 'test_playlist', track })
     expect(state.playlists[0].trackKeys).toEqual([track.key])
@@ -33,8 +43,10 @@ describe('provider-based streaming library', () => {
   })
 
   it('migrates only source-linked legacy songs; does not import manual entries', () => {
-    const collection = migrateLinkedMusicCollection(emptyMusicCollection(),
-      JSON.stringify({ 'old-song-1': track, manual: { title: 'Manual' } }))
+    const collection = migrateLinkedMusicCollection(
+      emptyMusicCollection(),
+      JSON.stringify({ 'old-song-1': track, manual: { title: 'Manual' } })
+    )
     expect(Object.values(collection.tracks)).toEqual([track])
   })
 
@@ -60,40 +72,65 @@ describe('provider-based streaming library', () => {
     }
     const state = reduceMusicCollection(emptyMusicCollection(), { type: 'save', track: alternate })
     expect(state.tracks[track.key]).toMatchObject({
-      key: track.key, artist: 'YouTube', streamUrl: track.streamUrl
+      key: track.key,
+      artist: 'YouTube',
+      streamUrl: track.streamUrl
     })
-    expect(parseMusicCollection(JSON.stringify(state)).tracks[track.key]).toEqual(state.tracks[track.key])
+    expect(parseMusicCollection(JSON.stringify(state)).tracks[track.key]).toEqual(
+      state.tracks[track.key]
+    )
   })
 
   it('accepts provider-linked SoundCloud tracks with no uploader while rejecting forged URLs', () => {
     const missingArtist = {
       ...track,
-      provider: 'soundcloud' as const, id: 'artist/song', key: 'soundcloud:artist/song',
-      artist: '', streamUrl: 'https://soundcloud.com/artist/song'
+      provider: 'soundcloud' as const,
+      id: 'artist/song',
+      key: 'soundcloud:artist/song',
+      artist: '',
+      streamUrl: 'https://soundcloud.com/artist/song'
     }
-    const state = reduceMusicCollection(emptyMusicCollection(), { type: 'save', track: missingArtist })
+    const state = reduceMusicCollection(emptyMusicCollection(), {
+      type: 'save',
+      track: missingArtist
+    })
     expect(state.tracks[missingArtist.key].artist).toBe('SoundCloud')
-    const injected = parseMusicCollection(JSON.stringify({
-      version: 2,
-      tracks: { unsafe: {
-        ...track, streamUrl: 'https://localhost/watch?v=abcdefghijk'
-      }}
-    }))
+    const injected = parseMusicCollection(
+      JSON.stringify({
+        version: 2,
+        tracks: {
+          unsafe: {
+            ...track,
+            streamUrl: 'https://localhost/watch?v=abcdefghijk'
+          }
+        }
+      })
+    )
     expect(Object.keys(injected.tracks)).toEqual([])
   })
 
   it('exposes downloads only when source explicitly permits them', () => {
     const denied = jamendoTrack({
-      id: '16', name: 'Allowed Song', artist_name: 'Artist', audio: 'https://audio.example/stream.mp3',
-      audiodownload_allowed: false, audiodownload: 'https://download.example/song.mp3'
+      id: '16',
+      name: 'Allowed Song',
+      artist_name: 'Artist',
+      audio: 'https://audio.example/stream.mp3',
+      audiodownload_allowed: false,
+      audiodownload: 'https://download.example/song.mp3'
     })
     expect(denied?.downloadUrl).toBeUndefined()
     const permitted = jamendoTrack({
-      id: '16', name: 'Allowed Song', artist_name: 'Artist', audio: 'https://audio.example/stream.mp3',
-      audiodownload_allowed: true, audiodownload: 'https://download.example/song.mp3'
+      id: '16',
+      name: 'Allowed Song',
+      artist_name: 'Artist',
+      audio: 'https://audio.example/stream.mp3',
+      audiodownload_allowed: true,
+      audiodownload: 'https://download.example/song.mp3'
     })
     expect(permitted?.downloadUrl).toBe('https://download.example/song.mp3')
-    expect(audiusTrack({ id: 'audio1', title: 'Audio', user: { name: 'A' },
-      is_downloadable: true })?.downloadUrl).toContain('/download?app_name=MyMind')
+    expect(
+      audiusTrack({ id: 'audio1', title: 'Audio', user: { name: 'A' }, is_downloadable: true })
+        ?.downloadUrl
+    ).toContain('/download?app_name=MyMind')
   })
 })

@@ -35,7 +35,7 @@ import {
   summarizeSyncInventory
 } from '@mymind/persistence/sync'
 
-import type { MobileLanSyncClient } from '../../../mobile/src/shared/sync/lanSyncClient'
+import type { LanSyncClient } from './types'
 import type { SyncAssetPort } from './asset-port'
 
 // The native v1 wire protocol is preserved; only transport and file IO are browser adapters.
@@ -48,7 +48,7 @@ export function createPwaProtocolClient(
   database: SqlDatabasePort,
   profileRepository: LocalProfileRepository,
   ports: PwaSyncPorts
-): MobileLanSyncClient {
+): LanSyncClient {
   const {
     cleanupMobileSyncAssetStage,
     collectMobileSyncAssetManifest,
@@ -697,7 +697,7 @@ export function createPwaProtocolClient(
   function createProtocolClient(
     database: SqlDatabasePort,
     profileRepository: LocalProfileRepository
-  ): MobileLanSyncClient {
+  ): LanSyncClient {
     return {
       async discover(manualHost) {
         const hosts: string[] = []

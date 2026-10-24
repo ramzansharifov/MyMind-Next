@@ -5,7 +5,7 @@ import type {
   StudyLocalAsset
 } from '@mymind/contracts/study'
 import { STUDY_SAFE_ID_PATTERN } from '@mymind/contracts/study'
-import type { MobileDocumentAssetStore } from '../../../mobile/src/shared/platform/documentAssets'
+import type { DocumentAssetStore } from '../client/shared/platform/documentAssets'
 import type { NoteVoiceRecordingMimeType } from '@mymind/contracts/notes'
 import {
   assertNoteVoiceRecordingSize,
@@ -43,7 +43,7 @@ export function assetPath(asset: StudyLocalAsset): string {
 
 export async function createPwaAssetStore(
   disk: PwaDisk
-): Promise<MobileDocumentAssetStore & { reload(): Promise<void>; dispose(): void }> {
+): Promise<DocumentAssetStore & { reload(): Promise<void>; dispose(): void }> {
   const assets = new Map<string, { blob: Blob; uri: string }>()
   const reservations = new Map<string, number>()
   const register = ({ path, blob }: StoredAsset): void => {

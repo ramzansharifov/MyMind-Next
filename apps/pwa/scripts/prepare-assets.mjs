@@ -13,7 +13,7 @@ await copyFile(
   require.resolve('sql.js/dist/sql-wasm-browser.wasm'),
   path.join(root, 'public/sqlite/sql-wasm.wasm')
 )
-const icon = path.resolve(root, '../mobile/assets/icon.png')
+const icon = path.resolve(root, 'assets/icon.png')
 
 // Match the proven Game Hub WebAPK artwork layout:
 //   regular icons: symbol occupies 91% of the image

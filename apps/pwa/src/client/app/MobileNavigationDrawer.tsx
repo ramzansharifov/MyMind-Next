@@ -1,0 +1,237 @@
+import type { ReactNode } from 'react'
+import { Modal, Pressable, ScrollView, Text, View } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
+
+import { navigationRoutes, routeIcons, routeTitles, type Route } from './navigation'
+import { AppIcon, type AppIconName } from '../shared/ui/icons'
+import { useTheme } from '../shared/ui/theme'
+
+const moduleRoutes = navigationRoutes.filter((route) => route !== 'settings')
+
+export interface NavigationItem<T extends string> {
+  route: T
+  title: string
+  icon: AppIconName
+}
+export function AppNavigationDrawer<T extends string>({
+  visible,
+  currentRoute,
+  entries,
+  settingsEntry,
+  versionLabel,
+  updateContent,
+  close,
+  navigate
+}: {
+  visible: boolean
+  currentRoute: T
+  entries: readonly NavigationItem<T>[]
+  settingsEntry: NavigationItem<T>
+  versionLabel: string
+  updateContent?: ReactNode
+  close(): void
+  navigate(route: T): void
+}): React.JSX.Element {
+  const theme = useTheme()
+  const renderRoute = (entry: NavigationItem<T>): React.JSX.Element => {
+    const route = entry.route
+    const selected = route === currentRoute
+
+    return (
+      <Pressable
+        key={route}
+        accessibilityRole="button"
+        accessibilityLabel={entry.title}
+        accessibilityState={{ selected }}
+        onPress={() => navigate(route)}
+        style={({ pressed }) => ({
+          minHeight: 54,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 12,
+          paddingHorizontal: 12,
+          paddingVertical: 8,
+          borderWidth: 1,
+          borderColor: selected ? theme.accent + '33' : 'transparent',
+          borderRadius: 14,
+          backgroundColor: selected ? theme.accent + '14' : pressed ? theme.raised : 'transparent',
+          opacity: pressed ? 0.78 : 1
+        })}
+      >
+        <View
+          style={{
+            width: 34,
+            height: 34,
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderWidth: 1,
+            borderColor: selected ? theme.accent + '35' : theme.border,
+            borderRadius: 11,
+            backgroundColor: selected ? theme.accent + '12' : theme.background
+          }}
+        >
+          <AppIcon name={entry.icon} size={18} color={selected ? theme.accent : theme.muted} />
+        </View>
+
+        <Text
+          numberOfLines={1}
+          style={{
+            flex: 1,
+            color: selected ? theme.text : theme.muted,
+            fontSize: 15,
+            lineHeight: 20,
+            fontWeight: selected ? '700' : '600'
+          }}
+        >
+          {entry.title}
+        </Text>
+
+        {selected ? (
+          <View
+            accessibilityLabel="Текущий раздел"
+            style={{
+              width: 7,
+              height: 7,
+              borderRadius: 4,
+              backgroundColor: theme.accent
+            }}
+          />
+        ) : null}
+      </Pressable>
+    )
+  }
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      statusBarTranslucent
+      navigationBarTranslucent
+      onRequestClose={close}
+    >
+      <View style={{ flex: 1, flexDirection: 'row', backgroundColor: '#00000073' }}>
+        <SafeAreaView
+          edges={['top', 'bottom', 'left']}
+          style={{
+            width: '84%',
+            maxWidth: 360,
+            backgroundColor: theme.surface,
+            borderRightWidth: 1,
+            borderRightColor: theme.border
+          }}
+        >
+          <View
+            style={{
+              minHeight: 72,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 12,
+              paddingHorizontal: 16,
+              borderBottomWidth: 1,
+              borderBottomColor: theme.border
+            }}
+          >
+            <View
+              style={{
+                width: 42,
+                height: 42,
+                alignItems: 'center',
+                justifyContent: 'center',
+                overflow: 'hidden',
+                borderWidth: 1,
+                borderColor: theme.accent + '30',
+                borderRadius: 13,
+                backgroundColor: theme.accent + '12'
+              }}
+            >
+              <AppIcon name="brand" size={22} strokeWidth={2} color={theme.accent} />
+            </View>
+
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: theme.text, fontSize: 17, fontWeight: '700' }}>MyMind</Text>
+              <Text style={{ marginTop: 2, color: theme.muted, fontSize: 11 }}>{versionLabel}</Text>
+            </View>
+
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Закрыть меню"
+              onPress={close}
+              hitSlop={8}
+              style={({ pressed }) => ({
+                width: 40,
+                height: 40,
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: 12,
+                backgroundColor: pressed ? theme.raised : 'transparent',
+                opacity: pressed ? 0.75 : 1
+              })}
+            >
+              <AppIcon name="close" size={20} color={theme.muted} />
+            </Pressable>
+          </View>
+
+          {updateContent}
+
+          <ScrollView
+            testID="mymind-navigation-items"
+            style={{ flex: 1, minHeight: 0 }}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ padding: 12, paddingBottom: 18, gap: 4 }}
+          >
+            {entries.map(renderRoute)}
+
+            <View
+              style={{
+                height: 1,
+                marginHorizontal: 4,
+                marginVertical: 8,
+                backgroundColor: theme.border
+              }}
+            />
+
+            {renderRoute(settingsEntry)}
+          </ScrollView>
+        </SafeAreaView>
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Закрыть меню навигации"
+          onPress={close}
+          style={{ flex: 1 }}
+        />
+      </View>
+    </Modal>
+  )
+}
+
+export function MobileNavigationDrawer({
+  visible,
+  currentRoute,
+  versionLabel,
+  close,
+  navigate
+}: {
+  visible: boolean
+  currentRoute: Route
+  versionLabel?: string
+  close(): void
+  navigate(route: Route): void
+}): React.JSX.Element {
+  return (
+    <AppNavigationDrawer
+      visible={visible}
+      currentRoute={currentRoute}
+      close={close}
+      navigate={navigate}
+      entries={moduleRoutes.map((route) => ({
+        route,
+        title: routeTitles[route],
+        icon: routeIcons[route]
+      }))}
+      settingsEntry={{ route: 'settings', title: routeTitles.settings, icon: routeIcons.settings }}
+      versionLabel={versionLabel ?? ''}
+    />
+  )
+}

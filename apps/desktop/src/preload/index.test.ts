@@ -108,7 +108,18 @@ describe('preload API contract', () => {
       'updatePlaylist',
       'deletePlaylist',
       'setItemPlaylists',
-      'searchWeb'
+      'searchWeb',
+      'listSourceLinks',
+      'setSourceLink',
+      'engineSearch',
+      'engineResolve',
+      'engineRadio',
+      'engineDownload',
+      'offlineList',
+      'offlineResolve',
+      'offlineRemove',
+      'streamingCollection',
+      'saveStreamingCollection'
     ])
     expect(Object.keys(api.tasks)).toEqual([
       'listOverview',

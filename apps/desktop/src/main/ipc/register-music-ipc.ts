@@ -1,9 +1,21 @@
 import { ipcMain, net, shell } from 'electron'
 
-import { MUSIC_IPC_CHANNELS, type MusicEngineSearchInput, type MusicEnginePlaybackInput, type MusicRadioInput, type MusicEngineDownloadInput, type MusicEngineOfflineInput, type SetMusicSourceLinkInput } from '../../shared/contracts/music'
+import {
+  MUSIC_IPC_CHANNELS,
+  type MusicEngineSearchInput,
+  type MusicEnginePlaybackInput,
+  type MusicRadioInput,
+  type MusicEngineDownloadInput,
+  type MusicEngineOfflineInput,
+  type SetMusicSourceLinkInput
+} from '../../shared/contracts/music'
 import { discoverYouTube, discoverYouTubeWithFallback } from '@mymind/core/music-youtube'
 import { searchSoundCloud, searchYouTubeViaYtDlp, youtubeRadio } from '../services/music-yt-dlp'
-import { downloadOfflineMusic, listOfflineMusic, removeOfflineMusic } from '../services/music-offline'
+import {
+  downloadOfflineMusic,
+  listOfflineMusic,
+  removeOfflineMusic
+} from '../services/music-offline'
 import { localMusicStream, localOfflineMusicStream } from '../services/music-audio-proxy'
 import { parseSavedMusicSources } from '@mymind/core/music-discovery'
 import { MUSIC_COLLECTION_KEY, parseMusicCollection } from '@mymind/core/music-collection'
@@ -39,14 +51,18 @@ import { mainOperationTracker } from '../services/main-operation-tracker'
 const MUSIC_SOURCE_KEY = 'music.sources.v1'
 
 function readSourceLinks(): ReturnType<typeof parseSavedMusicSources> {
-  const row = getSqlite().prepare('SELECT value FROM app_meta WHERE key = ?').get(MUSIC_SOURCE_KEY) as { value: string } | undefined
+  const row = getSqlite()
+    .prepare('SELECT value FROM app_meta WHERE key = ?')
+    .get(MUSIC_SOURCE_KEY) as { value: string } | undefined
   return parseSavedMusicSources(row?.value)
 }
 
 function writeSourceLinks(links: ReturnType<typeof parseSavedMusicSources>): void {
-  getSqlite().prepare(
-    'INSERT INTO app_meta(key,value,updated_at) VALUES(?,?,?) ON CONFLICT(key) DO UPDATE SET value = excluded.value,updated_at = excluded.updated_at'
-  ).run(MUSIC_SOURCE_KEY, JSON.stringify(links), Date.now())
+  getSqlite()
+    .prepare(
+      'INSERT INTO app_meta(key,value,updated_at) VALUES(?,?,?) ON CONFLICT(key) DO UPDATE SET value = excluded.value,updated_at = excluded.updated_at'
+    )
+    .run(MUSIC_SOURCE_KEY, JSON.stringify(links), Date.now())
 }
 
 export function registerMusicIpcHandlers(): void {
@@ -114,7 +130,8 @@ export function registerMusicIpcHandlers(): void {
   )
   ipcMain.handle(MUSIC_IPC_CHANNELS.streamingCollection, () =>
     mainOperationTracker.run(() => {
-      const stored = getSqlite().prepare('SELECT value FROM app_meta WHERE key = ?')
+      const stored = getSqlite()
+        .prepare('SELECT value FROM app_meta WHERE key = ?')
         .get(MUSIC_COLLECTION_KEY) as { value: string } | undefined
       return stored?.value ?? null
     })
@@ -126,26 +143,33 @@ export function registerMusicIpcHandlers(): void {
       // Reject malformed or forged input; only provider-linked music persists.
       const parsed = parseMusicCollection(value)
       const canonical = JSON.stringify(parsed)
-      getSqlite().prepare(
-        'INSERT INTO app_meta(key,value,updated_at) VALUES(?,?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value,updated_at=excluded.updated_at'
-      ).run(MUSIC_COLLECTION_KEY, canonical, Date.now())
+      getSqlite()
+        .prepare(
+          'INSERT INTO app_meta(key,value,updated_at) VALUES(?,?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value,updated_at=excluded.updated_at'
+        )
+        .run(MUSIC_COLLECTION_KEY, canonical, Date.now())
     })
   )
   ipcMain.handle(MUSIC_IPC_CHANNELS.engineSearch, (_event, rawInput: unknown) =>
     mainOperationTracker.run(async () => {
       const data = rawInput as MusicEngineSearchInput
-      if (!data || (data.provider !== 'youtube' && data.provider !== 'soundcloud') ||
-          typeof data.query !== 'string' || data.query.length > 180)
+      if (
+        !data ||
+        (data.provider !== 'youtube' && data.provider !== 'soundcloud') ||
+        typeof data.query !== 'string' ||
+        data.query.length > 180
+      )
         throw new Error('Некорректные параметры поиска')
       return data.provider === 'youtube'
         ? discoverYouTubeWithFallback(
             data.query,
-            (query) => discoverYouTube(query, {
-              // Chromium networking respects system proxy/PAC settings. Node's
-              // global fetch does not automatically use the Electron session.
-              fetcher: (url, init) => net.fetch(String(url), init),
-              timeoutMs: 9_000
-            }),
+            (query) =>
+              discoverYouTube(query, {
+                // Chromium networking respects system proxy/PAC settings. Node's
+                // global fetch does not automatically use the Electron session.
+                fetcher: (url, init) => net.fetch(String(url), init),
+                timeoutMs: 9_000
+              }),
             searchYouTubeViaYtDlp
           )
         : searchSoundCloud(data.query)
@@ -154,8 +178,12 @@ export function registerMusicIpcHandlers(): void {
   ipcMain.handle(MUSIC_IPC_CHANNELS.engineResolve, (_event, rawInput: unknown) =>
     mainOperationTracker.run(async () => {
       const data = rawInput as MusicEnginePlaybackInput
-      if (!data || (data.provider !== 'youtube' && data.provider !== 'soundcloud') ||
-          typeof data.id !== 'string' || data.id.length > 180)
+      if (
+        !data ||
+        (data.provider !== 'youtube' && data.provider !== 'soundcloud') ||
+        typeof data.id !== 'string' ||
+        data.id.length > 180
+      )
         throw new Error('Некорректные параметры воспроизведения')
       return localMusicStream(data.provider, data.id)
     })

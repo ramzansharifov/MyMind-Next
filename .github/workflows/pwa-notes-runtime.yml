@@ -3,11 +3,11 @@ name: PWA Notes Runtime
 on:
   push:
     branches:
-      - fix/pwa-notes-list-runtime-20261022
+      - main
   pull_request:
     paths:
-      - 'apps/mobile/src/modules/notes/**'
-      - 'apps/mobile/src/shared/ui/NotesRichTextDom.tsx'
+      - 'apps/pwa/src/client/modules/notes/**'
+      - 'apps/pwa/src/client/shared/ui/NotesRichTextDom.tsx'
       - 'apps/pwa/e2e/notes-toolbar.spec.ts'
       - '.github/workflows/pwa-notes-runtime.yml'
 

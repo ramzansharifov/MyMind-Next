@@ -1,4 +1,4 @@
-import type { MobileLanSyncClient } from '../../../mobile/src/shared/sync/lanSyncClient'
+import type { LanSyncClient } from './types'
 import type { LocalProfileRepository } from '@mymind/persistence/local-profile'
 import { createPwaProtocolClient } from './protocol-client'
 import { createPwaSyncAssets } from './asset-port'
@@ -8,7 +8,7 @@ import { syncActivity } from './activity'
 export function createPwaLanSyncClient(
   db: PwaDatabase,
   profile: LocalProfileRepository
-): MobileLanSyncClient {
+): LanSyncClient {
   const networkIp = async (): Promise<string> => {
     const response = await fetch('/api/lan-sync/network', {
       headers: { 'X-MyMind-Lan': '1' },

@@ -88,7 +88,9 @@ export const musicClient = {
   async offlineList(): Promise<string[]> {
     const handler = window.api.music.offlineList
     if (typeof handler !== 'function') {
-      throw new Error('Музыкальные загрузки обновились. Полностью закрой MyMind и запусти Electron заново.')
+      throw new Error(
+        'Музыкальные загрузки обновились. Полностью закрой MyMind и запусти Electron заново.'
+      )
     }
     return handler()
   },

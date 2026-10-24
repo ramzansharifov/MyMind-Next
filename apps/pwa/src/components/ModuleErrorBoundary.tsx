@@ -1,6 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
 import { View } from 'react-native'
-import { ErrorState, Label } from '../../../mobile/src/shared/ui/primitives'
+import { ErrorState, Label } from '../client/shared/ui/primitives'
 
 export class ModuleErrorBoundary extends Component<{ children: ReactNode }, { error: string }> {
   state = { error: '' }

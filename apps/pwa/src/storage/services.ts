@@ -10,15 +10,15 @@ import { createFinanceRepository } from '@mymind/persistence/finance'
 import { createPasswordsRepository } from '@mymind/persistence/passwords'
 import { createPwaProfileRepository } from '../sync/profile'
 import { createPwaLanSyncClient } from '../sync/client'
-import type { MobileServices } from '../../../mobile/src/app/services'
-import { mobilePasswordCrypto } from '../../../mobile/src/modules/passwords/passwordCrypto'
+import type { ClientServices } from '../client/app/services'
+import { passwordCrypto } from '../client/modules/passwords/passwordCrypto'
 import { createPwaAssetStore } from './assets'
 import type { PwaDatabase } from './database'
 import { createDesktopRepositories } from '../desktop/repositories'
 import { bindDesktopRuntime } from '../desktop/runtime'
 import { createDesktopBridge } from '../desktop/bridge'
 
-export interface PwaServices extends MobileServices {
+export interface PwaServices extends ClientServices {
   dispose(): void
 }
 export async function createPwaServices(db: PwaDatabase): Promise<PwaServices> {
@@ -66,7 +66,7 @@ export async function createPwaServices(db: PwaDatabase): Promise<PwaServices> {
     diary: createDiaryRepository(runtime),
     nutrition: createNutritionRepository(runtime),
     finance: createFinanceRepository(runtime),
-    passwords: createPasswordsRepository(runtime, mobilePasswordCrypto),
+    passwords: createPasswordsRepository(runtime, passwordCrypto),
     notes,
     documentAssets,
     profile,

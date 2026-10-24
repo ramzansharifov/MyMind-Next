@@ -5,12 +5,25 @@ import { mkdir, readFile, readdir, rename, rm, stat, writeFile } from 'node:fs/p
 import { extname, join } from 'node:path'
 import { Readable, Transform } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
-import type { MusicEngineDownloadInput, MusicEngineOfflineInput } from '../../shared/contracts/music'
+import type {
+  MusicEngineDownloadInput,
+  MusicEngineOfflineInput
+} from '../../shared/contracts/music'
 import { validStreamingTrack } from '@mymind/core/music-collection'
 import { downloadMusicTrack } from './music-yt-dlp'
 
 const MAX_AUDIO_BYTES = 160 * 1024 * 1024
-const EXTENSIONS = new Set(['.mp3', '.m4a', '.mp4', '.webm', '.ogg', '.opus', '.aac', '.flac', '.wav'])
+const EXTENSIONS = new Set([
+  '.mp3',
+  '.m4a',
+  '.mp4',
+  '.webm',
+  '.ogg',
+  '.opus',
+  '.aac',
+  '.flac',
+  '.wav'
+])
 
 interface OfflineEntry {
   key: string
@@ -30,28 +43,46 @@ function digest(key: string): string {
 }
 function keyFor(input: MusicEngineOfflineInput): string {
   const { provider, id } = input
-  if (!['youtube', 'soundcloud', 'audius', 'jamendo'].includes(provider) ||
-      typeof id !== 'string' || id.length > 250 || !/^[a-zA-Z0-9_/-]+$/.test(id) ||
-      id.includes('//') || id.startsWith('/') || id.endsWith('/'))
+  if (
+    !['youtube', 'soundcloud', 'audius', 'jamendo'].includes(provider) ||
+    typeof id !== 'string' ||
+    id.length > 250 ||
+    !/^[a-zA-Z0-9_/-]+$/.test(id) ||
+    id.includes('//') ||
+    id.startsWith('/') ||
+    id.endsWith('/')
+  )
     throw new Error('Недопустимый идентификатор музыки')
   return provider + ':' + id
 }
 function mimeFor(extension: string): string {
   const known: Record<string, string> = {
-    '.mp3': 'audio/mpeg', '.m4a': 'audio/mp4', '.mp4': 'audio/mp4',
-    '.webm': 'audio/webm', '.ogg': 'audio/ogg', '.opus': 'audio/ogg',
-    '.aac': 'audio/aac', '.flac': 'audio/flac', '.wav': 'audio/wav'
+    '.mp3': 'audio/mpeg',
+    '.m4a': 'audio/mp4',
+    '.mp4': 'audio/mp4',
+    '.webm': 'audio/webm',
+    '.ogg': 'audio/ogg',
+    '.opus': 'audio/ogg',
+    '.aac': 'audio/aac',
+    '.flac': 'audio/flac',
+    '.wav': 'audio/wav'
   }
   return known[extension] ?? 'application/octet-stream'
 }
 async function stored(key: string): Promise<{ entry: OfflineEntry; path: string } | null> {
   const hash = digest(key)
   try {
-    const entry = JSON.parse(await readFile(join(directory(), hash + '.json'), 'utf8')) as OfflineEntry
+    const entry = JSON.parse(
+      await readFile(join(directory(), hash + '.json'), 'utf8')
+    ) as OfflineEntry
     const extension = extname(entry.filename).toLowerCase()
-    if (entry.key !== key || !EXTENSIONS.has(extension) ||
-        entry.filename !== hash + extension ||
-        entry.mime !== mimeFor(extension)) return null
+    if (
+      entry.key !== key ||
+      !EXTENSIONS.has(extension) ||
+      entry.filename !== hash + extension ||
+      entry.mime !== mimeFor(extension)
+    )
+      return null
     const path = join(directory(), entry.filename)
     const file = await stat(path)
     return file.isFile() && file.size > 0 && file.size <= MAX_AUDIO_BYTES ? { entry, path } : null
@@ -66,13 +97,21 @@ export async function listOfflineMusic(): Promise<string[]> {
     if (!/^[a-f0-9]{64}\.json$/.test(name)) continue
     try {
       const entry = JSON.parse(await readFile(join(directory(), name), 'utf8')) as OfflineEntry
-      if (typeof entry.key === 'string' && name === digest(entry.key) + '.json' &&
-          await stored(entry.key)) keys.push(entry.key)
-    } catch { /* ignore incomplete/older metadata */ }
+      if (
+        typeof entry.key === 'string' &&
+        name === digest(entry.key) + '.json' &&
+        (await stored(entry.key))
+      )
+        keys.push(entry.key)
+    } catch {
+      /* ignore incomplete/older metadata */
+    }
   }
   return keys
 }
-export async function findOfflineMusic(input: MusicEngineOfflineInput): Promise<OfflineAudio | null> {
+export async function findOfflineMusic(
+  input: MusicEngineOfflineInput
+): Promise<OfflineAudio | null> {
   const result = await stored(keyFor(input))
   return result ? { path: result.path, mime: result.entry.mime } : null
 }
@@ -90,8 +129,10 @@ function downloadableUrl(track: NonNullable<ReturnType<typeof validStreamingTrac
   if (!track.downloadUrl) throw new Error('Источник не разрешил скачивание этого трека')
   const url = new URL(track.downloadUrl)
   if (track.provider === 'audius') {
-    if (url.hostname !== 'api.audius.co' ||
-        url.pathname !== '/v1/tracks/' + encodeURIComponent(track.id) + '/download')
+    if (
+      url.hostname !== 'api.audius.co' ||
+      url.pathname !== '/v1/tracks/' + encodeURIComponent(track.id) + '/download'
+    )
       throw new Error('Некорректная ссылка Audius')
   } else if (track.provider === 'jamendo') {
     if (url.hostname !== 'jamendo.com' && !url.hostname.endsWith('.jamendo.com'))
@@ -104,17 +145,30 @@ function publicAudioUrl(value: string): boolean {
     const url = new URL(value)
     const host = url.hostname.toLowerCase()
     // Reject localhost/private literal hosts and non-web schemes on redirects.
-    return url.protocol === 'https:' && !url.username && !url.password && !url.port &&
-      !host.endsWith('.local') && !host.endsWith('.internal') &&
-      host !== 'localhost' && host !== '::1' &&
-      !/^\[/.test(host) && !/^\d+\.\d+\.\d+\.\d+$/.test(host)
-  } catch { return false }
+    return (
+      url.protocol === 'https:' &&
+      !url.username &&
+      !url.password &&
+      !url.port &&
+      !host.endsWith('.local') &&
+      !host.endsWith('.internal') &&
+      host !== 'localhost' &&
+      host !== '::1' &&
+      !/^\[/.test(host) &&
+      !/^\d+\.\d+\.\d+\.\d+$/.test(host)
+    )
+  } catch {
+    return false
+  }
 }
 async function fetchAudio(url: string, dest: string): Promise<string> {
   let location = url
   for (let hop = 0; hop <= 5; hop++) {
     if (!publicAudioUrl(location)) throw new Error('Небезопасная ссылка аудиофайла')
-    const response = await fetch(location, { redirect: 'manual', signal: AbortSignal.timeout(90_000) })
+    const response = await fetch(location, {
+      redirect: 'manual',
+      signal: AbortSignal.timeout(90_000)
+    })
     if (response.status >= 300 && response.status < 400) {
       const next = response.headers.get('location')
       await response.body?.cancel()
@@ -122,8 +176,12 @@ async function fetchAudio(url: string, dest: string): Promise<string> {
       location = new URL(next, location).href
       continue
     }
-    if (!response.ok || !response.body) throw new Error('Не удалось получить аудио (HTTP ' + response.status + ')')
-    const contentType = (response.headers.get('content-type') ?? '').split(';')[0].trim().toLowerCase()
+    if (!response.ok || !response.body)
+      throw new Error('Не удалось получить аудио (HTTP ' + response.status + ')')
+    const contentType = (response.headers.get('content-type') ?? '')
+      .split(';')[0]
+      .trim()
+      .toLowerCase()
     if (!contentType.startsWith('audio/') && contentType !== 'application/octet-stream')
       throw new Error('Источник вернул не аудиофайл')
     const declared = Number(response.headers.get('content-length') ?? 0)
@@ -135,7 +193,11 @@ async function fetchAudio(url: string, dest: string): Promise<string> {
         done(size > MAX_AUDIO_BYTES ? new Error('Аудиофайл превышает 160 МБ') : null, chunk)
       }
     })
-    await pipeline(Readable.fromWeb(response.body as never), limit, createWriteStream(dest, { flags: 'wx' }))
+    await pipeline(
+      Readable.fromWeb(response.body as never),
+      limit,
+      createWriteStream(dest, { flags: 'wx' })
+    )
     if (!size) throw new Error('Источник вернул пустой аудиофайл')
     if (declared > 0 && size !== declared) throw new Error('Загрузка аудиофайла прервана')
     return contentType
@@ -159,8 +221,10 @@ export async function downloadOfflineMusic(input: MusicEngineDownloadInput): Pro
   const key = keyFor(input)
   if (input.provider === 'youtube' && !/^[A-Za-z0-9_-]{11}$/.test(input.id))
     throw new Error('Некорректный идентификатор YouTube')
-  if (input.provider === 'soundcloud' &&
-      !/^[A-Za-z0-9_-]+(?:\/[A-Za-z0-9_-]+){1,3}$/.test(input.id))
+  if (
+    input.provider === 'soundcloud' &&
+    !/^[A-Za-z0-9_-]+(?:\/[A-Za-z0-9_-]+){1,3}$/.test(input.id)
+  )
     throw new Error('Некорректный идентификатор SoundCloud')
 
   const pending = active.get(key)
@@ -184,11 +248,18 @@ export async function downloadOfflineMusic(input: MusicEngineDownloadInput): Pro
         const url = downloadableUrl(track)
         source = join(temporary, hash + '.audio')
         const contentType = await fetchAudio(url, source)
-        extension = contentType.includes('mp4') || contentType.includes('aac') ? '.m4a' :
-          contentType.includes('ogg') ? '.ogg' :
-          contentType.includes('flac') ? '.flac' :
-          contentType.includes('wav') ? '.wav' :
-          contentType.includes('webm') ? '.webm' : '.mp3'
+        extension =
+          contentType.includes('mp4') || contentType.includes('aac')
+            ? '.m4a'
+            : contentType.includes('ogg')
+              ? '.ogg'
+              : contentType.includes('flac')
+                ? '.flac'
+                : contentType.includes('wav')
+                  ? '.wav'
+                  : contentType.includes('webm')
+                    ? '.webm'
+                    : '.mp3'
       }
       if (!EXTENSIONS.has(extension)) throw new Error('Неподдерживаемый аудиоформат')
       const file = await stat(source)
@@ -206,5 +277,9 @@ export async function downloadOfflineMusic(input: MusicEngineDownloadInput): Pro
     }
   })()
   active.set(key, task)
-  try { return await task } finally { active.delete(key) }
+  try {
+    return await task
+  } finally {
+    active.delete(key)
+  }
 }

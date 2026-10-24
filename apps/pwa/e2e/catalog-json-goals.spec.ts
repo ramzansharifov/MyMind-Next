@@ -1,17 +1,17 @@
 import { test, expect, open, save, navigate } from './helpers'
-import { MOBILE_CREATE_ACTION_STEP } from '../../mobile/src/shared/ui/mobile-create-action-gesture'
+import { MOBILE_CREATE_ACTION_STEP } from '../src/client/shared/ui/mobile-create-action-gesture'
 
-const legacyCatalogScenarios: ReadonlyArray<readonly [
-  'movies' | 'music', string, string, string, string
-]> = [
-  ['movies', 'Добавить фильм', 'JSON фильмов', 'JSON данных фильмов', 'JSON библиотеки']
-]
+const legacyCatalogScenarios: ReadonlyArray<
+  readonly ['movies' | 'music', string, string, string, string]
+> = [['movies', 'Добавить фильм', 'JSON фильмов', 'JSON данных фильмов', 'JSON библиотеки']]
 for (const [route, add, input, output, jsonButton] of legacyCatalogScenarios) {
   test(`${route}: JSON validation, import, export, search and restart use the Android dialogs`, async ({
     page
   }) => {
     if (route === 'music')
-      await page.route('**/api/music/discover', (request) => request.fulfill({ json: { tracks: [] } }))
+      await page.route('**/api/music/discover', (request) =>
+        request.fulfill({ json: { tracks: [] } })
+      )
     await open(page, route)
     if (route === 'music') await page.getByRole('tab', { name: 'Моя библиотека' }).click()
     await page.getByRole('button', { name: add, exact: true }).click()
@@ -39,7 +39,9 @@ for (const [route, add, input, output, jsonButton] of legacyCatalogScenarios) {
     await page.getByRole('button', { name: 'Применить JSON', exact: true }).click()
     await expect(editor).toHaveCount(0)
     if (route === 'music')
-      await page.route('**/api/music/discover', (request) => request.fulfill({ json: { tracks: [] } }))
+      await page.route('**/api/music/discover', (request) =>
+        request.fulfill({ json: { tracks: [] } })
+      )
     await open(page, route)
     if (route === 'music') await page.getByRole('tab', { name: 'Моя библиотека' }).click()
     await expect(page.getByText(item.title, { exact: true })).toBeVisible()
